@@ -1,5 +1,10 @@
 export default defineNuxtPlugin(() => {
-  const { play, unlock } = useSound()
+  const { play, unlock, preload } = useSound()
+
+  // Prepare the common sounds while the browser is idle, so the first click doesn't stall
+  // while they're built (noticeable on old computers)
+  const idle = window.requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 1500))
+  idle(() => preload(['press', 'select', 'forward', 'back', 'success', 'toggle-on', 'toggle-off', 'open', 'copy', 'delete']))
 
   // Browsers only allow audio after a real click or key press
   const onFirstInteraction = () => {

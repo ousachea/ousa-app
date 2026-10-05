@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<{
   followPointer?: boolean
   /** Click (or Enter/Space) to shuffle; every click adds more turns */
   interactive?: boolean
-  /** Up to 12 links shown as icons on the stickers of the top, front and right faces */
+  /** Up to 16 links shown as icons on the stickers of the top, front and right faces */
   links?: CubeLink[]
   /** Paint icon stickers in each app's own colour instead of the classic cube colours */
   appColors?: boolean
@@ -105,7 +105,7 @@ function createCubies(): Cubie[] {
     [[0, -1, 0], 'top'], [[0, -1, 1], 'top'], [[1, -1, 0], 'top'], [[-1, -1, 0], 'top'],
     [[0, 0, 1], 'front'], [[-1, 0, 1], 'front'], [[1, 0, 1], 'front'], [[0, 1, 1], 'front'],
     [[1, 0, 0], 'right'], [[1, 1, 0], 'right'], [[1, 0, -1], 'right'], [[1, -1, 0], 'right'],
-    [[-1, -1, 1], 'top']
+    [[-1, -1, 1], 'top'], [[-1, 1, 1], 'front'], [[1, 1, -1], 'right'], [[1, -1, 1], 'top']
   ]
   props.links.slice(0, SLOTS.length).forEach((link, i) => {
     const [pos, face] = SLOTS[i]!
@@ -136,13 +136,19 @@ function toMatrix3d(cubie: Cubie, anim: Mat3): string {
   return `matrix3d(${l[0][0]},${l[1][0]},${l[2][0]},0,${l[0][1]},${l[1][1]},${l[2][1]},0,${l[0][2]},${l[1][2]},${l[2][2]},0,${t[0]},${t[1]},${t[2]},1)`
 }
 
-const transforms = ref<string[]>(cubies.map(c => toMatrix3d(c, IDENTITY)))
+// Initial pose for the server render; after that each frame writes transforms straight to the
+// elements, so a turn never re-renders the 27 pieces and their 162 faces through Vue
+const initialTransforms = cubies.map(c => toMatrix3d(c, IDENTITY))
+const cubieEls: HTMLElement[] = []
 
 function render(move?: Move, angle = 0) {
   const anim = move ? rotation(move.axis, angle) : IDENTITY
-  transforms.value = cubies.map(c =>
-    toMatrix3d(c, move && c.pos[move.axis] === move.layer ? anim : IDENTITY)
-  )
+  cubies.forEach((c, i) => {
+    // Only the turning layer changes mid-turn; the rest keep their last transform
+    if (move && c.pos[move.axis] !== move.layer && angle !== 0) return
+    const el = cubieEls[i]
+    if (el) el.style.transform = toMatrix3d(c, move && c.pos[move.axis] === move.layer ? anim : IDENTITY)
+  })
 }
 
 function commit(move: Move) {
@@ -232,7 +238,8 @@ function idleSteps(): Step[] {
       ...history.slice().reverse().map(m => ({ kind: 'turn', move: inverse(m), solving: true, fast: hold }) as Step)
     ]
   }
-  if (hold) return []
+  // Lite effects (old or slow computers): rest solved until clicked instead of scrambling forever
+  if (hold || lite.value) return []
   return [{ kind: 'pause', ms: 1200 }, ...scrambleSteps(props.scrambleLength, false)]
 }
 
@@ -254,6 +261,7 @@ function shuffle() {
 }
 
 const { play } = useSound()
+const { lite } = useEffects()
 
 function onShuffle() {
   if (!props.interactive) return
@@ -296,13 +304,19 @@ function startOrientation() {
   // Leaving the window counts as going idle straight away
   const onLeave = () => (lastMove = -Infinity)
 
-  if (props.followPointer) {
+  if (props.followPointer && !lite.value) {
     window.addEventListener('pointermove', onPointerMove, { passive: true })
     document.documentElement.addEventListener('pointerleave', onLeave)
   }
 
   let prev = performance.now()
+  let lastPose = ''
   const tick = (now: number) => {
+    if (!visible) {
+      prev = now
+      orientFrame = requestAnimationFrame(tick)
+      return
+    }
     // Frame-rate independent smoothing
     const dt = Math.min((now - prev) / 16.67, 4)
     prev = now
@@ -314,7 +328,7 @@ function startOrientation() {
     } else if (now - lastMove > IDLE_AFTER) {
       lookX *= Math.pow(0.97, dt)
       lookY *= Math.pow(0.97, dt)
-      spin += 0.25 * dt
+      if (!lite.value) spin += 0.25 * dt
     }
 
     const targetX = BASE_TILT - lookY * LOOK_X
@@ -323,7 +337,10 @@ function startOrientation() {
     rx += (targetX - rx) * ease
     ry += (targetY - ry) * ease
 
-    if (cubeEl.value) cubeEl.value.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`
+    const pose = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`
+    // Skip the style write once the cube has settled (lite mode, or held at home)
+    if (cubeEl.value && pose !== lastPose) cubeEl.value.style.transform = pose
+    lastPose = pose
     orientFrame = requestAnimationFrame(tick)
   }
   orientFrame = requestAnimationFrame(tick)
@@ -337,8 +354,16 @@ function startOrientation() {
 
 let stopOrientation: (() => void) | undefined
 
+// Off screen (scrolled past) nothing animates; the loops just idle until it's back
+let visible = true
+let observer: IntersectionObserver | undefined
+
 onMounted(() => {
   reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (sceneEl.value) {
+    observer = new IntersectionObserver(([entry]) => (visible = !!entry?.isIntersecting))
+    observer.observe(sceneEl.value)
+  }
   if (reducedMotion) return
   stopOrientation = startOrientation()
 
@@ -347,6 +372,12 @@ onMounted(() => {
 
   const tick = (now: number) => {
     if (stopped) return
+    if (!visible) {
+      // Shift the current step's clock so it resumes where it left off
+      start += 16
+      frame = requestAnimationFrame(tick)
+      return
+    }
     // A click may have cleared a pause; drop it so the burst starts right away
     if (current?.kind === 'pause' && queue[0]?.kind === 'turn' && queue[0].fast) current = undefined
     // Hovering ends any pause right away so the cube can settle for clicking
@@ -386,6 +417,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  observer?.disconnect()
   stopped = true
   cancelAnimationFrame(frame)
   stopOrientation?.()
@@ -412,13 +444,14 @@ onBeforeUnmount(() => {
       <div
         v-for="(cubie, i) in cubies"
         :key="i"
+        :ref="el => el && (cubieEls[i] = el as HTMLElement)"
         class="cubie"
-        :style="{ transform: transforms[i] }"
+        :style="{ transform: initialTransforms[i] }"
       >
         <div
           v-for="face in FACES"
           :key="face"
-          :class="['face', face]"
+          :class="['face', face, { sticker: cubie.stickers[face] }]"
           :style="faceStyle(cubie, face)"
         >
           <!-- Clicking an icon opens that app; clicking a plain sticker still shuffles -->
@@ -515,13 +548,18 @@ onBeforeUnmount(() => {
   transform: scale(0.96);
 }
 
-.face::after {
+.face.sticker::after {
   content: '';
   position: absolute;
   inset: calc(var(--s) * 0.06);
   border-radius: calc(var(--s) * 0.12);
   background: var(--c, transparent);
   box-shadow: inset 0 0 calc(var(--s) * 0.18) rgb(0 0 0 / 0.18);
+}
+
+/* Lite effects: flat stickers are much cheaper for an old graphics chip to redraw */
+:root[data-effects='lite'] .face.sticker::after {
+  box-shadow: none;
 }
 
 .front { transform: translateZ(calc(var(--s) / 2)); }

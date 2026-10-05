@@ -139,6 +139,26 @@ defineProps<{ name: ToolIconName }>()
       <path d="M9.5 8h5" />
     </template>
 
+    <!-- Phone battery: a battery with a charge bar -->
+    <template v-else-if="name === 'battery'">
+      <rect x="2.5" y="7" width="17" height="10" rx="2.5" />
+      <path d="M21.5 10.5v3" />
+      <path d="M6 10.5v3M9.5 10.5v3" />
+    </template>
+
+    <!-- Salary: a banknote with a rising arrow -->
+    <template v-else-if="name === 'salary'">
+      <rect x="2.5" y="6" width="19" height="12" rx="2" />
+      <path d="M8 14.5l3-3 2 2 3-3.5" />
+      <path d="M14 10h2v2" />
+    </template>
+
+    <!-- Gold tracker: a stacked gold bar -->
+    <template v-else-if="name === 'gold'">
+      <path d="M7 10.5h10l3 7.5H4z" />
+      <path d="M9.5 4.5h5l1.6 6h-8.2z" />
+    </template>
+
     <!-- Settings (sound): a speaker with two sound waves -->
     <template v-else-if="name === 'sound'">
       <path d="M3.5 9.5h3l5-4v13l-5-4h-3z" />

@@ -87,7 +87,15 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
   background: var(--ink-3);
 }
 
-[data-state='synced'] .dot { background: var(--green); }
+[data-state='synced'] .dot { position: relative; background: var(--green); }
+[data-state='synced'] .dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--green);
+  animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
 [data-state='saving'] .dot { background: var(--blue); animation: pulse 0.9s ease-in-out infinite alternate; }
 [data-state='offline'] .dot,
 [data-state='needs-setup'] .dot { background: var(--orange); }
@@ -115,11 +123,17 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
   color: var(--ink-2);
 }
 
+@keyframes live-ping {
+  0% { opacity: 0.75; scale: 1; }
+  80%, 100% { opacity: 0; scale: 2.6; }
+}
+
 @keyframes pulse {
   to { opacity: 0.35; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-state='saving'] .dot { animation: none; }
+  [data-state='saving'] .dot,
+  [data-state='synced'] .dot::after { animation: none; }
 }
 </style>

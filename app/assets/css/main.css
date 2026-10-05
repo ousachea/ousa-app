@@ -25,6 +25,9 @@
   --indigo: #3949ab;
   --sky: #1479b0;
   --rust: #b8471c;
+  --cyan: #0e7490;
+  --slate: #4b5b78;
+  --gold: #c9971c;
 
   /* The black plastic of the cube: sticker rims, the menu button, toasts. Stays dark in both themes. */
   --plastic: #1b1f2a;
@@ -328,4 +331,39 @@ input[type='range']:disabled {
   .slide-back-leave-to {
     transform: none;
   }
+}
+
+/* ---------- Lite effects: old or slow computers (composables/useEffects.ts) ----------
+   Blur and big animated filters are the costliest things for an old graphics chip to redraw,
+   so they go; page changes become a quick fade instead of a slide. */
+:root[data-effects='lite'] *,
+:root[data-effects='lite'] *::before,
+:root[data-effects='lite'] *::after,
+:root[data-effects='lite'] ::backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-effects='lite'] body {
+  transition: none;
+}
+
+:root[data-effects='lite'] .slide-forward-enter-active,
+:root[data-effects='lite'] .slide-forward-leave-active,
+:root[data-effects='lite'] .slide-back-enter-active,
+:root[data-effects='lite'] .slide-back-leave-active {
+  transition: opacity 0.12s linear;
+}
+
+:root[data-effects='lite'] .slide-forward-enter-from,
+:root[data-effects='lite'] .slide-forward-leave-to,
+:root[data-effects='lite'] .slide-back-enter-from,
+:root[data-effects='lite'] .slide-back-leave-to {
+  transform: none;
+}
+
+/* Decorative loops that never stop (shimmer, drifting glows, bubbles) */
+:root[data-effects='lite'] .ambient-motion,
+:root[data-effects='lite'] .ambient-motion * {
+  animation: none !important;
 }

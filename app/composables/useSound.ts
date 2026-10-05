@@ -47,6 +47,7 @@ export function useSound() {
     state: readonly(state),
     play: (cue: CueName, options?: PlayOptions) => getPlayer()?.play(cue, options) ?? null,
     unlock: () => getPlayer()?.unlock() ?? Promise.resolve(false),
+    preload: (cues: CueName[]) => getPlayer()?.preload(cues).catch(() => {}) ?? Promise.resolve(),
     setEnabled(enabled: boolean) {
       getPlayer()?.setEnabled(enabled)
       state.enabled = enabled

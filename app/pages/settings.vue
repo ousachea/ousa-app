@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import type { EffectsPreference } from '~/composables/useEffects'
 import { getPack, packNames, type CueName, type PackName } from 'uisfx'
 
 const sound = useSound()
@@ -40,6 +41,20 @@ function chooseTheme(value: ThemePreference) {
   setTheme(value)
   sound.play('select')
   toast(value === 'system' ? 'Following your device’s theme' : `${value === 'dark' ? 'Dark' : 'Light'} theme on`)
+}
+
+// Effects: lite keeps old computers smooth
+const { effects, setEffects } = useEffects()
+const EFFECTS: { value: EffectsPreference, label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'full', label: 'Full' },
+  { value: 'lite', label: 'Lite' }
+]
+
+function chooseEffects(value: EffectsPreference) {
+  setEffects(value)
+  sound.play('select')
+  toast(value === 'lite' ? 'Lite effects on' : value === 'full' ? 'Full effects on' : 'Effects follow this computer’s speed')
 }
 
 const PACKS = packNames.map(name => getPack(name))
@@ -94,6 +109,24 @@ const volume = computed({
             </div>
             <p class="theme-note">
               Showing {{ theme.resolved }} mode. Press <kbd>D</kbd> anywhere to switch.
+            </p>
+
+            <h3 class="effects-head">Effects</h3>
+            <div class="segmented" role="radiogroup" aria-label="Effects">
+              <label v-for="e in EFFECTS" :key="e.value" :class="{ active: effects.preference === e.value }">
+                <input
+                  type="radio"
+                  name="effects"
+                  :value="e.value"
+                  :checked="effects.preference === e.value"
+                  @change="chooseEffects(e.value)"
+                >
+                {{ e.label }}
+              </label>
+            </div>
+            <p class="theme-note">
+              Lite turns off blur and background animation so older computers stay smooth.
+              <template v-if="effects.preference === 'auto'">This computer gets {{ effects.slowDevice ? 'lite' : 'full' }} effects.</template>
             </p>
           </div>
         </Step>
@@ -219,6 +252,12 @@ const volume = computed({
 
 .appearance {
   padding: 1rem 1.1rem;
+}
+
+.effects-head {
+  margin-top: 1.25rem;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
 }
 
 .theme-note {

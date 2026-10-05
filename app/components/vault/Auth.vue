@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 
+// `account` is the sign-in popup from the top bar: same account, worded for syncing data
+const props = withDefaults(defineProps<{ purpose?: 'vault' | 'account' }>(), { purpose: 'vault' })
+const emit = defineEmits<{ done: [] }>()
+const forAccount = computed(() => props.purpose === 'account')
+
 const { vault, signIn, signUp, unlock, signOut } = useVault()
 const { play } = useSound()
 
@@ -56,7 +61,9 @@ async function submit() {
       await signIn(email.value, password.value)
     }
     play('unlock')
-    toast.success('Vault unlocked')
+    if (forAccount.value) toast.success('Signed in', { description: 'Your apps now save to Supabase and sync across devices.' })
+    else toast.success('Vault unlocked')
+    emit('done')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Something went wrong. Try again.'
     play('error')
@@ -69,7 +76,7 @@ async function submit() {
 </script>
 
 <template>
-  <section class="panel auth">
+  <section class="panel auth" :class="{ bare: forAccount }">
     <template v-if="locked">
       <h2>Vault locked</h2>
       <p class="lead">Signed in as <strong>{{ vault.email }}</strong>. Enter your master password to unlock.</p>
@@ -82,7 +89,7 @@ async function submit() {
         </label>
         <label :class="{ active: mode === 'create' }">
           <input type="radio" name="auth-mode" :checked="mode === 'create'" @change="switchMode('create')">
-          Create a vault
+          {{ forAccount ? 'Create an account' : 'Create a vault' }}
         </label>
       </div>
       <p v-if="awaitingEmail" class="notice" role="status">
@@ -121,14 +128,14 @@ async function submit() {
       <button type="submit" class="btn" :disabled="!canSubmit">
         <template v-if="busy">Working…</template>
         <template v-else-if="locked">Unlock</template>
-        <template v-else-if="mode === 'create'">Create vault</template>
-        <template v-else>Sign in and unlock</template>
+        <template v-else-if="mode === 'create'">{{ forAccount ? 'Create account' : 'Create vault' }}</template>
+        <template v-else>{{ forAccount ? 'Sign in' : 'Sign in and unlock' }}</template>
       </button>
     </form>
 
     <p v-if="mode === 'create' && !locked" class="warning">
       Your master password never leaves this device, so nobody can reset it for you.
-      If you forget it, the passwords in this vault are lost for good.
+      If you forget it, {{ forAccount ? 'you can’t sign in again and your saved passwords' : 'the passwords in this vault' }} are lost for good.
     </p>
 
     <button v-if="locked" type="button" class="link" @click="signOut">Sign out</button>
@@ -140,6 +147,15 @@ async function submit() {
   max-width: 460px;
   margin: 0 auto;
   padding: 1.5rem;
+}
+
+/* Inside the sign-in popup the dialog is already the panel */
+.auth.bare {
+  max-width: none;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
 }
 
 h2 {

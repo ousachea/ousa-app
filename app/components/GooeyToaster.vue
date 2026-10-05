@@ -56,6 +56,19 @@ import 'vue-sonner/style.css'
   to { scale: 0.6 0.8; filter: blur(4px); }
 }
 
+/* Lite effects: a plain fade; blurring a moving element is expensive on old graphics chips */
+:root[data-effects='lite'] [data-sonner-toast].goey[data-mounted='true'] {
+  animation: goey-fade 0.15s ease-out;
+}
+
+:root[data-effects='lite'] [data-sonner-toast].goey[data-removed='true'] {
+  animation: none;
+}
+
+@keyframes goey-fade {
+  from { opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-sonner-toast].goey[data-mounted='true'],
   [data-sonner-toast].goey[data-removed='true'] {

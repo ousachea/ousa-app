@@ -13,11 +13,25 @@ const route = useRoute()
 const tool = computed(() => props.tool ?? toolFor(route.path)!)
 
 useHead({ title: () => tool.value.name })
+
+// Back to wherever you came from in the app (same as Esc); straight in from outside, it goes home
+const router = useRouter()
+function goBack(e: MouseEvent) {
+  // Let cmd/ctrl-click open home in a new tab as a normal link would
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+  if (window.history.state?.back) {
+    e.preventDefault()
+    router.back()
+  }
+}
 </script>
 
 <template>
   <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
-    <NuxtLink to="/" class="home"><AppLogo class="home-logo" />Ousa App</NuxtLink>
+    <NuxtLink to="/" class="home" aria-label="Back, Ousa App" title="Back (Esc)" @click="goBack">
+      <svg class="back" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+      <AppLogo class="home-logo" />Ousa App
+    </NuxtLink>
 
     <header class="head">
       <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
@@ -49,7 +63,8 @@ useHead({ title: () => tool.value.name })
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 0.8rem 0.35rem 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.3rem;
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--ink-2);
@@ -60,6 +75,23 @@ useHead({ title: () => tool.value.name })
 
 .home-logo {
   font-size: 1.4rem;
+}
+
+.back {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-right: -0.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: translate 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* The arrow nudges left on hover, pointing the way you'll go */
+.home:hover .back {
+  translate: -2px 0;
 }
 
 .home:hover {

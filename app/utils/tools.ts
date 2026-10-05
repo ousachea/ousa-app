@@ -1,6 +1,6 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'list'
-  | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'phrases' | 'bookmarks'
+  | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'phrases' | 'bookmarks' | 'battery' | 'salary' | 'gold'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -43,7 +43,7 @@ export const TOOLS: Tool[] = [
     name: 'Text case converter',
     summary: 'Switch text between lowercase, UPPERCASE, Title Case and Sentence case.',
     color: 'var(--yellow)',
-    onColor: 'var(--ink)',
+    onColor: '#1b1f2a',
     icon: 'case'
   },
   {
@@ -114,6 +114,29 @@ export const TOOLS: Tool[] = [
     summary: 'Save links with tags and notes, and pin the ones you open every day.',
     color: 'var(--rust)',
     icon: 'bookmarks',
+    group: 'Life'
+  },
+  {
+    to: '/battery',
+    name: 'Phone battery',
+    summary: 'See how much of your phone battery is really left compared with when it was new.',
+    color: 'var(--cyan)',
+    icon: 'battery'
+  },
+  {
+    to: '/salary',
+    name: 'Salary & raise',
+    summary: 'Work out what a raise is really worth after Cambodian salary tax.',
+    color: 'var(--slate)',
+    icon: 'salary'
+  },
+  {
+    to: '/gold',
+    name: 'Gold tracker',
+    summary: 'Live gold price in chi and damlung, and what your gold is worth now.',
+    color: 'var(--gold)',
+    onColor: '#1b1f2a',
+    icon: 'gold',
     group: 'Life'
   }
 ]

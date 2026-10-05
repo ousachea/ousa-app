@@ -32,6 +32,11 @@ export default defineNuxtConfig({
           // Apply the saved theme before first paint so dark mode never flashes white
           innerHTML: "(function(){try{var p=localStorage.getItem('ousa-app:theme')||'system';var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light'}catch(e){}})()",
           tagPosition: 'head'
+        },
+        {
+          // Lite effects for old or slow computers, decided before first paint (see composables/useEffects.ts)
+          innerHTML: "(function(){try{var p=localStorage.getItem('ousa-app:effects')||'auto';var n=navigator;var slow=localStorage.getItem('ousa-app:effects-detected')==='slow'||(n.hardwareConcurrency||8)<=2||(n.deviceMemory||8)<=2||!!(n.connection&&n.connection.saveData);document.documentElement.dataset.effects=p==='lite'||(p==='auto'&&slow)?'lite':'full'}catch(e){}})()",
+          tagPosition: 'head'
         }
       ],
       link: [
