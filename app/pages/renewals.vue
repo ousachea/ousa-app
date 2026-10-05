@@ -15,7 +15,18 @@ interface Renewal {
 const SOON_DAYS = 7
 
 const { play } = useSound()
-const { items, ready, sync, add, update, remove, restore } = useCollection<Renewal>('renewals')
+// Demo: everyday subscriptions, a couple renewing this week so the timeline has something to show
+const DEMO = (): Omit<Renewal, 'id'>[] => [
+  { name: 'Netflix', price: 9.99, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(3) },
+  { name: 'Spotify', price: 5.99, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(11) },
+  { name: 'iCloud+ 200 GB', price: 2.99, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(6) },
+  { name: 'ChatGPT Plus', price: 20, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(18) },
+  { name: 'Home internet', price: 25, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(1) },
+  { name: 'Gym', price: 35, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(24) },
+  { name: 'Domain name', price: 12, currency: 'USD', cycle: 'yearly', nextDate: isoDaysAhead(45) },
+  { name: 'Phone top-up', price: 20000, currency: 'KHR', cycle: 'weekly', nextDate: isoDaysAhead(2) }
+]
+const { items, ready, sync, add, update, remove, restore } = useCollection<Renewal>('renewals', undefined, { demo: DEMO })
 const rate = useMarketRate()
 
 const isoToday = () => new Date().toISOString().slice(0, 10)

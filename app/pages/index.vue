@@ -71,6 +71,9 @@ useAppSeo({
           class="tile"
           :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff' }"
         >
+          <span v-if="tool.demo" class="demo-badge" title="Try it with sample data: click the app’s icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>Demo
+          </span>
           <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
           <strong>{{ tool.name }}</strong>
           <span class="summary">{{ tool.summary }}</span>
@@ -174,6 +177,7 @@ h1 {
 }
 
 .tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -236,6 +240,33 @@ h1 {
 .tile:active .sticker {
   transform: translateY(1px) scale(0.96);
   transition-duration: 0.08s;
+}
+
+/* Apps you can try with sample data; same purple as the demo switch inside each app */
+.demo-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.5rem 0.12rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--purple);
+  background: color-mix(in srgb, var(--purple) 12%, var(--surface));
+  border-radius: 999px;
+}
+
+:root[data-theme='dark'] .demo-badge {
+  color: #c4b1ff;
+}
+
+.demo-badge svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  fill: currentColor;
 }
 
 .tile strong {

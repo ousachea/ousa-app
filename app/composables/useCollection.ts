@@ -16,6 +16,7 @@ export type SyncState =
   | 'synced' // matches Supabase
   | 'offline' // signed in, but Supabase couldn't be reached; changes kept on this device
   | 'needs-setup' // signed in, but the user_items table doesn't exist yet
+  | 'demo' // showing sample data; nothing is saved
 
 export const SYNC_TABLE = 'user_items'
 
@@ -32,14 +33,35 @@ function readCache<T>(key: string): T[] | undefined {
   }
 }
 
-export function useCollection<T extends StoredItem>(name: string, seed: () => T[] = () => []) {
+export function useCollection<T extends StoredItem>(
+  name: string,
+  seed: () => T[] = () => [],
+  options: { demo?: () => Omit<T, 'id'>[] } = {}
+) {
   const key = `ousa-app:${name}`
   const items = ref<T[]>([]) as Ref<T[]>
   const ready = ref(false)
   const state = ref<SyncState>('loading')
   const signedIn = ref(false)
 
+  // Demo mode: sample items live only in memory. Nothing reaches this device's storage or Supabase,
+  // and switching it off brings the real list back exactly as it was.
+  const demoOn = options.demo ? useDemo().active : ref(false)
+  let realItems: T[] = []
+  if (options.demo) {
+    const makeDemo = options.demo
+    watch(demoOn, (on) => {
+      if (on) {
+        realItems = items.value
+        items.value = makeDemo().map(item => ({ ...item, id: crypto.randomUUID() }) as T)
+      } else {
+        items.value = readCache<T>(key) ?? realItems
+      }
+    })
+  }
+
   function cache() {
+    if (demoOn.value) return
     try {
       localStorage.setItem(key, JSON.stringify(items.value))
     } catch {}
@@ -64,7 +86,7 @@ export function useCollection<T extends StoredItem>(name: string, seed: () => T[
 
   // Run a write against Supabase in the background and reflect the outcome in the badge
   async function sync(task: () => PromiseLike<{ error: PostgrestError | null }> | Promise<void>) {
-    if (!signedIn.value || state.value === 'needs-setup') return
+    if (demoOn.value || !signedIn.value || state.value === 'needs-setup') return
     state.value = 'saving'
     try {
       const result = await task()
@@ -76,6 +98,7 @@ export function useCollection<T extends StoredItem>(name: string, seed: () => T[
   }
 
   async function load() {
+    if (demoOn.value) return
     const supabase = useSupabase()
     const local = readCache<T>(key)
     const { data } = await supabase.auth.getSession()
@@ -135,7 +158,7 @@ export function useCollection<T extends StoredItem>(name: string, seed: () => T[
   })
 
   const onStorage = (e: StorageEvent) => {
-    if (e.key === key) items.value = readCache<T>(key) ?? []
+    if (e.key === key && !demoOn.value) items.value = readCache<T>(key) ?? []
   }
   onMounted(() => window.addEventListener('storage', onStorage))
   onBeforeUnmount(() => {
@@ -146,7 +169,7 @@ export function useCollection<T extends StoredItem>(name: string, seed: () => T[
   return {
     items,
     ready,
-    sync: { state, signedIn, retry: load },
+    sync: { state: computed<SyncState>(() => (demoOn.value ? 'demo' : state.value)), signedIn, retry: load },
     add(item: Omit<T, 'id'>) {
       const record = { ...item, id: crypto.randomUUID() } as T
       items.value = [...items.value, record]

@@ -18,6 +18,8 @@ export interface Tool {
   seoTitle?: string
   /** Meta description, ~120–160 characters */
   description?: string
+  /** Has a demo: sample data behind the app icon (or demo files, for the compressor) */
+  demo?: boolean
 }
 
 export const TOOLS: Tool[] = [
@@ -37,16 +39,18 @@ export const TOOLS: Tool[] = [
     color: 'var(--red)',
     icon: 'phone',
     seoTitle: 'Cambodian phone number checker',
-    description: 'Check any Cambodian phone number: see if it’s Smart, Cellcard, Metfone or a landline, catch missing digits, and format it for WhatsApp or Telegram.'
+    description: 'Check any Cambodian phone number: see if it’s Smart, Cellcard, Metfone or a landline, catch missing digits, and format it for WhatsApp or Telegram.',
+    demo: true
   },
   {
     to: '/compress',
     name: 'Image compressor',
-    summary: 'Make images smaller without uploading them.',
+    summary: 'Make images and PDFs smaller without uploading them.',
     color: 'var(--orange)',
     icon: 'compress',
-    seoTitle: 'Image compressor: shrink photos in your browser',
-    description: 'Make JPG, PNG and WebP images smaller without uploading them. Compare before and after, pick the quality and size, and download in one click.'
+    seoTitle: 'Compress images and PDFs in your browser',
+    description: 'Make JPG, PNG, WebP and PDF files smaller without uploading them. Keep PDF text sharp or shrink scans, compare before and after, and download.',
+    demo: true
   },
   {
     to: '/case',
@@ -56,7 +60,8 @@ export const TOOLS: Tool[] = [
     onColor: '#1b1f2a',
     icon: 'case',
     seoTitle: 'Text case converter',
-    description: 'Change text to lowercase, UPPERCASE, Title Case or Sentence case instantly. Paste your text, pick a style and copy the result.'
+    description: 'Change text to lowercase, UPPERCASE, Title Case or Sentence case instantly. Paste your text, pick a style and copy the result.',
+    demo: true
   },
   {
     to: '/password',
@@ -84,7 +89,8 @@ export const TOOLS: Tool[] = [
     icon: 'things',
     group: 'Life',
     seoTitle: 'Things I own: track what your stuff is worth',
-    description: 'Keep a list of your phone, laptop and everything else you own, what you paid, and an estimate of what it’s worth today.'
+    description: 'Keep a list of your phone, laptop and everything else you own, what you paid, and an estimate of what it’s worth today.',
+    demo: true
   },
   {
     to: '/eat',
@@ -94,7 +100,8 @@ export const TOOLS: Tool[] = [
     icon: 'eat',
     group: 'Life',
     seoTitle: 'What should I eat? Food picker',
-    description: 'Can’t decide what to eat? Swipe through your favourite foods and places until one sounds good, with your own photos.'
+    description: 'Can’t decide what to eat? Swipe through your favourite foods and places until one sounds good, with your own photos.',
+    demo: true
   },
   {
     to: '/weight',
@@ -104,7 +111,8 @@ export const TOOLS: Tool[] = [
     icon: 'weight',
     group: 'Life',
     seoTitle: 'Weight tracker with trend chart',
-    description: 'Log your weight and see the trend over weeks and months on a clear chart, with your progress toward a goal.'
+    description: 'Log your weight and see the trend over weeks and months on a clear chart, with your progress toward a goal.',
+    demo: true
   },
   {
     to: '/countdown',
@@ -124,7 +132,8 @@ export const TOOLS: Tool[] = [
     icon: 'renewals',
     group: 'Life',
     seoTitle: 'Subscription and renewal tracker',
-    description: 'See what your subscriptions cost each month and year, and what renews in the next 30 days, so nothing charges you by surprise.'
+    description: 'See what your subscriptions cost each month and year, and what renews in the next 30 days, so nothing charges you by surprise.',
+    demo: true
   },
   {
     to: '/phrases',
@@ -144,7 +153,8 @@ export const TOOLS: Tool[] = [
     icon: 'bookmarks',
     group: 'Life',
     seoTitle: 'Bookmark manager with tags',
-    description: 'Save links with tags and notes, pin the sites you open every day, and import or export your browser bookmarks.'
+    description: 'Save links with tags and notes, pin the sites you open every day, and import or export your browser bookmarks.',
+    demo: true
   },
   {
     to: '/battery',
@@ -173,7 +183,8 @@ export const TOOLS: Tool[] = [
     icon: 'gold',
     group: 'Life',
     seoTitle: 'Gold price in chi and damlung today',
-    description: 'Live gold price per chi, damlung and gram for Cambodia, a gold unit converter, and what your gold purchases are worth now.'
+    description: 'Live gold price per chi, damlung and gram for Cambodia, a gold unit converter, and what your gold purchases are worth now.',
+    demo: true
   }
 ]
 

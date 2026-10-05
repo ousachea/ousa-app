@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import type { PdfMode } from '~/utils/pdfCompress'
 
 const { play } = useSound()
 
@@ -7,8 +8,12 @@ type Format = 'image/webp' | 'image/jpeg' | 'image/png'
 
 interface Item {
   id: number
+  kind: 'image' | 'pdf'
   file: File
-  previewUrl: string
+  previewUrl: string // for a PDF, a picture of its first page
+  pages?: number
+  imagesChanged?: number
+  errorText?: string
   width: number
   height: number
   status: 'loading' | 'compressing' | 'done' | 'error'
@@ -26,12 +31,20 @@ const FORMATS: { value: Format, label: string, ext: string }[] = [
   { value: 'image/png', label: 'PNG', ext: 'png' }
 ]
 
+// PDF settings (only shown once a PDF is added)
+const pdfMode = ref<PdfMode>('keep-text')
+const pdfDpi = ref(150)
+const pdfMaxPx = ref(2000)
+
 const quality = ref(75)
 const format = ref<Format>('image/webp')
 const maxWidth = ref(0) // 0 = keep original size
 const items = ref<Item[]>([])
 const dragging = ref(false)
 let nextId = 0
+
+const hasPdf = computed(() => items.value.some(i => i.kind === 'pdf'))
+const hasImage = computed(() => items.value.some(i => i.kind === 'image'))
 
 const busy = computed(() => items.value.filter(i => i.status === 'loading' || i.status === 'compressing').length)
 
@@ -40,7 +53,7 @@ watch(busy, (now, before) => {
   if (!before || now || !items.value.some(i => i.status === 'done')) return
   play('complete')
   const t = totals.value
-  toast.success(`${t.count} ${t.count === 1 ? 'image' : 'images'} ready`, {
+  toast.success(`${t.count} ${t.count === 1 ? 'file' : 'files'} ready`, {
     description: t.saved >= 0 ? `${Math.round(t.saved * 100)}% smaller in total` : `${Math.abs(Math.round(t.saved * 100))}% larger in total. Try a lower quality.`
   })
 })
@@ -49,7 +62,8 @@ watch(busy, (now, before) => {
 const compareId = ref<number>()
 const comparePos = ref(50) // % of the width showing the original
 const compareItem = computed(() => {
-  const done = items.value.filter(i => i.status === 'done' && i.outputUrl)
+  // The before/after slider is for pictures; a PDF's pages can't be overlaid like that
+  const done = items.value.filter(i => i.kind === 'image' && i.status === 'done' && i.outputUrl)
   return done.find(i => i.id === compareId.value) ?? done[0]
 })
 
@@ -72,7 +86,7 @@ function onCompareUp() {
 }
 
 function compare(item: Item) {
-  if (item.status !== 'done') return
+  if (item.status !== 'done' || item.kind !== 'image') return
   compareId.value = item.id
   play('select')
 }
@@ -155,6 +169,21 @@ async function encode(item: Item) {
   return { blob, w, h }
 }
 
+async function encodePdf(item: Item, run: number) {
+  const bytes = new Uint8Array(await item.file.arrayBuffer())
+  const result = await compressPdf(
+    bytes,
+    { mode: pdfMode.value, quality: quality.value / 100, dpi: pdfDpi.value, maxPx: pdfMaxPx.value },
+    // Real progress, page by page or photo by photo
+    (p) => {
+      if (run === item.run) item.progress = Math.max(item.progress, p * 0.95)
+    }
+  )
+  item.pages = result.pages
+  item.imagesChanged = result.imagesChanged
+  return { blob: new Blob([result.bytes], { type: 'application/pdf' }), w: item.width, h: item.height }
+}
+
 async function compress(item: Item, { initial = false } = {}) {
   const run = ++item.run
   try {
@@ -168,8 +197,9 @@ async function compress(item: Item, { initial = false } = {}) {
 
     item.status = 'compressing'
     item.progress = 0
-    const work = encode(item)
-    const [out] = await Promise.all([work, tween(item, run, 0.9, initial ? COMPRESS_MS : RECOMPRESS_MS)])
+    const [out] = item.kind === 'pdf'
+      ? [await encodePdf(item, run)]
+      : await Promise.all([encode(item), tween(item, run, 0.9, initial ? COMPRESS_MS : RECOMPRESS_MS)])
     if (run !== item.run) return // settings changed mid-way; a newer run owns this item
     await tween(item, run, 1, 150)
     if (run !== item.run) return
@@ -180,22 +210,32 @@ async function compress(item: Item, { initial = false } = {}) {
     item.outWidth = out.w
     item.outHeight = out.h
     item.status = 'done'
-  } catch {
-    if (run === item.run) item.status = 'error'
+  } catch (e) {
+    if (run !== item.run) return
+    item.status = 'error'
+    const message = e instanceof Error ? `${e.name} ${e.message}` : ''
+    item.errorText = item.kind === 'pdf'
+      ? /encrypt|password/i.test(message) ? 'This PDF is password-protected, so it can’t be changed' : 'This PDF couldn’t be read'
+      : 'This file couldn’t be read as an image'
   }
 }
 
 async function addFiles(files: FileList | File[]) {
-  const images = [...files].filter(f => f.type.startsWith('image/'))
-  if (images.length < files.length) {
-    toast.warning('Some files were skipped because they aren’t images')
+  const accepted = [...files].filter(f => f.type.startsWith('image/') || isPdf(f))
+  if (accepted.length < files.length) {
+    toast.warning('Some files were skipped because they aren’t images or PDFs')
     play('warning')
   }
-  if (images.length) play('drop')
+  if (accepted.length) play('drop')
 
-  for (const file of images) {
+  for (const file of accepted) {
+    if (isPdf(file)) {
+      addPdf(file)
+      continue
+    }
     const item = reactive<Item>({
       id: nextId++,
+      kind: 'image',
       file,
       previewUrl: URL.createObjectURL(file),
       width: 0,
@@ -215,16 +255,62 @@ async function addFiles(files: FileList | File[]) {
   }
 }
 
-// Re-encode everything when the settings change (debounced while dragging the slider)
+function addPdf(file: File) {
+  const item = reactive<Item>({
+    id: nextId++,
+    kind: 'pdf',
+    file,
+    previewUrl: '',
+    width: 0,
+    height: 0,
+    status: 'loading',
+    progress: 0,
+    run: 0
+  })
+  items.value.push(item)
+  // A picture of the first page for the list; failing that, the file still compresses
+  file.arrayBuffer()
+    .then(buf => pdfThumbnail(new Uint8Array(buf)))
+    .then((thumb) => {
+      if (thumb.blob) item.previewUrl = URL.createObjectURL(thumb.blob)
+      item.pages = thumb.pages
+      item.width = thumb.width
+      item.height = thumb.height
+    })
+    .catch(() => {})
+  compress(item, { initial: true })
+}
+
+// Re-encode when the settings change (debounced while dragging the slider).
+// Image-only settings leave PDFs alone and PDF-only settings leave images alone.
 let timer: ReturnType<typeof setTimeout> | undefined
-watch([quality, format, maxWidth], () => {
+function recompress(kind?: Item['kind']) {
   clearTimeout(timer)
-  timer = setTimeout(() => items.value.forEach(item => compress(item)), 200)
-})
+  timer = setTimeout(() => items.value.filter(i => !kind || i.kind === kind).forEach(item => compress(item)), 200)
+}
+watch(quality, () => recompress())
+watch([format, maxWidth], () => recompress('image'))
+watch([pdfMode, pdfDpi, pdfMaxPx], () => recompress('pdf'))
 
 function onDrop(e: DragEvent) {
   dragging.value = false
   if (e.dataTransfer?.files.length) addFiles(e.dataTransfer.files)
+}
+
+// Three sample files drawn in the browser: a photo, a screenshot and a PDF brochure
+const loadingDemo = ref(false)
+async function tryDemo() {
+  if (loadingDemo.value) return
+  loadingDemo.value = true
+  play('press')
+  try {
+    await addFiles(await makeDemoFiles())
+  } catch {
+    toast.error('Couldn’t make the demo files')
+    play('error')
+  } finally {
+    loadingDemo.value = false
+  }
 }
 
 function onPick(e: Event) {
@@ -234,7 +320,7 @@ function onPick(e: Event) {
 }
 
 function outputName(item: Item) {
-  const ext = FORMATS.find(f => f.value === format.value)!.ext
+  const ext = item.kind === 'pdf' ? 'pdf' : FORMATS.find(f => f.value === format.value)!.ext
   return `${item.file.name.replace(/\.[^.]+$/, '')}-compressed.${ext}`
 }
 
@@ -260,7 +346,7 @@ async function downloadAll() {
 }
 
 function remove(item: Item) {
-  URL.revokeObjectURL(item.previewUrl)
+  if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
   if (item.outputUrl) URL.revokeObjectURL(item.outputUrl)
   items.value = items.value.filter(i => i !== item)
 }
@@ -285,7 +371,8 @@ onBeforeUnmount(clearAll)
 <template>
   <ToolPage header="bar">
     <div class="top">
-    <Step :n="1" title="Add images" class="fill">
+    <Step :n="1" title="Add images or PDFs" class="fill">
+    <div class="drop-wrap">
     <label
       class="drop"
       :class="{ dragging }"
@@ -293,18 +380,23 @@ onBeforeUnmount(clearAll)
       @dragleave="dragging = false"
       @drop.prevent="onDrop"
     >
-      <input type="file" accept="image/*" multiple @change="onPick">
+      <input type="file" accept="image/*,application/pdf,.pdf" multiple @change="onPick">
       <span class="drop-icon" aria-hidden="true">⇲</span>
-      <strong>Drop images here, or choose files</strong>
-      <span>JPEG, PNG, WebP and more. Your images stay on this device.</span>
+      <strong>Drop images or PDFs here, or choose files</strong>
+      <span>JPEG, PNG, WebP, PDF and more. Your files stay on this device.</span>
     </label>
+    <!-- Outside the label so it isn't read as part of the file picker, but shown inside the drop box -->
+    <button type="button" class="btn btn-quiet btn-sm demo" :disabled="loadingDemo" @click="tryDemo">
+      {{ loadingDemo ? 'Making demo files…' : 'No files handy? Try 3 demo files' }}
+    </button>
+    </div>
     </Step>
 
-    <Step :n="2" title="Adjust the settings" hint="Changes apply to every image right away." class="fill">
+    <Step :n="2" title="Adjust the settings" hint="Changes apply to every file right away." class="fill">
     <section class="panel settings">
       <label class="field">
-        <span class="field-head">Quality <output>{{ format === 'image/png' ? 'Lossless' : `${quality}%` }}</output></span>
-        <input v-model.number="quality" type="range" min="10" max="100" step="1" :disabled="format === 'image/png'">
+        <span class="field-head">Quality <output>{{ format === 'image/png' && !hasPdf ? 'Lossless' : `${quality}%` }}</output></span>
+        <input v-model.number="quality" type="range" min="10" max="100" step="1" :disabled="format === 'image/png' && !hasPdf">
       </label>
 
       <div class="field">
@@ -329,13 +421,51 @@ onBeforeUnmount(clearAll)
         </select>
       </label>
 
-      <p v-if="format === 'image/png'" class="hint">PNG keeps every pixel, so it only gets smaller if you lower the max width.</p>
+      <p v-if="format === 'image/png' && hasImage" class="hint">PNG keeps every pixel, so images only get smaller if you lower the max width.</p>
+
+      <!-- PDF settings: only once a PDF is added -->
+      <div v-if="hasPdf" class="pdf-settings">
+        <h3>PDFs</h3>
+        <div class="segmented" role="radiogroup" aria-label="How to compress PDFs">
+          <label :class="{ active: pdfMode === 'keep-text' }">
+            <input v-model="pdfMode" type="radio" name="pdf-mode" value="keep-text">
+            Keep text sharp
+          </label>
+          <label :class="{ active: pdfMode === 'raster' }">
+            <input v-model="pdfMode" type="radio" name="pdf-mode" value="raster">
+            Smallest file
+          </label>
+        </div>
+        <label v-if="pdfMode === 'keep-text'" class="field">
+          <span class="field-head">Photos inside, longest side</span>
+          <select v-model.number="pdfMaxPx" class="input">
+            <option :value="0">Keep original size</option>
+            <option :value="2400">2400 px (print)</option>
+            <option :value="2000">2000 px</option>
+            <option :value="1500">1500 px (screen)</option>
+            <option :value="1000">1000 px (smallest)</option>
+          </select>
+        </label>
+        <label v-else class="field">
+          <span class="field-head">Page sharpness</span>
+          <select v-model.number="pdfDpi" class="input">
+            <option :value="200">Sharp · 200 dpi</option>
+            <option :value="150">Clear · 150 dpi</option>
+            <option :value="110">Smaller · 110 dpi</option>
+            <option :value="80">Smallest · 80 dpi</option>
+          </select>
+        </label>
+        <p class="hint">
+          <template v-if="pdfMode === 'keep-text'">Text stays sharp and selectable; only the photos inside get smaller. Best for documents.</template>
+          <template v-else>Each page becomes a picture: the smallest files, ideal for scans. Text can no longer be selected or searched.</template>
+        </p>
+      </div>
     </section>
     </Step>
     </div>
 
     <Step :n="3" title="Download" class="results">
-    <p v-if="!items.length" class="waiting">Your compressed images show up here, ready to download.</p>
+    <p v-if="!items.length" class="waiting">Your compressed files show up here, ready to download.</p>
     <template v-else>
       <!-- Drag the handle to compare the original (left) with the compressed image (right) -->
       <figure v-if="compareItem" class="compare">
@@ -384,14 +514,16 @@ onBeforeUnmount(clearAll)
         <li v-for="item in items" :key="item.id" class="item">
           <div
             class="thumb"
-            :class="[item.status, { comparing: compareItem?.id === item.id }]"
-            :role="item.status === 'done' ? 'button' : undefined"
-            :tabindex="item.status === 'done' ? 0 : undefined"
-            :aria-label="item.status === 'done' ? `Compare ${item.file.name}` : undefined"
+            :class="[item.status, item.kind, { comparing: compareItem?.id === item.id }]"
+            :role="item.status === 'done' && item.kind === 'image' ? 'button' : undefined"
+            :tabindex="item.status === 'done' && item.kind === 'image' ? 0 : undefined"
+            :aria-label="item.status === 'done' && item.kind === 'image' ? `Compare ${item.file.name}` : undefined"
             @click="compare(item)"
             @keydown.enter="compare(item)"
           >
-            <img :src="item.outputUrl ?? item.previewUrl" :alt="item.file.name">
+            <img v-if="item.kind === 'image'" :src="item.outputUrl ?? item.previewUrl" :alt="item.file.name">
+            <img v-else-if="item.previewUrl" :src="item.previewUrl" :alt="`First page of ${item.file.name}`">
+            <span v-if="item.kind === 'pdf'" class="pdf-badge">PDF</span>
             <Transition name="fade">
               <div v-if="item.status === 'loading' || item.status === 'compressing'" class="stage">
                 <span class="stage-label">{{ item.status === 'loading' ? 'Loading' : 'Compressing' }}</span>
@@ -418,9 +550,12 @@ onBeforeUnmount(clearAll)
               </template>
               <span v-else-if="item.status === 'loading'" class="muted">Loading {{ Math.round(item.progress * 100) }}%</span>
               <span v-else-if="item.status === 'compressing'" class="muted">Compressing {{ Math.round(item.progress * 100) }}%</span>
-              <span v-else class="warn">This file couldn’t be read as an image</span>
+              <span v-else class="warn">{{ item.errorText ?? 'This file couldn’t be read' }}</span>
             </p>
-            <p v-if="item.outWidth" class="meta muted">
+            <p v-if="item.kind === 'pdf' && item.pages" class="meta muted">
+              {{ item.pages }} {{ item.pages === 1 ? 'page' : 'pages' }}<template v-if="item.status === 'done' && pdfMode === 'keep-text'"> · {{ item.imagesChanged ? `${item.imagesChanged} ${item.imagesChanged === 1 ? 'photo' : 'photos'} made smaller` : 'no photos to shrink' }}</template><template v-else-if="item.status === 'done'"> · pages redrawn at {{ pdfDpi }} dpi</template>
+            </p>
+            <p v-else-if="item.outWidth" class="meta muted">
               {{ item.width }} × {{ item.height }}<template v-if="item.outWidth !== item.width"> to {{ item.outWidth }} × {{ item.outHeight }}</template>
             </p>
           </div>
@@ -449,9 +584,19 @@ onBeforeUnmount(clearAll)
   flex-direction: column;
 }
 
-.fill > .drop,
+.fill > .drop-wrap,
 .fill > .settings {
   flex: 1;
+}
+
+.drop-wrap {
+  position: relative;
+  display: flex;
+}
+
+.drop-wrap > .drop {
+  flex: 1;
+  padding-bottom: 5rem;
 }
 
 .waiting {
@@ -489,6 +634,14 @@ onBeforeUnmount(clearAll)
 .drop:has(input:focus-visible) {
   outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 2px;
+}
+
+.demo {
+  position: absolute;
+  left: 50%;
+  bottom: 1.75rem;
+  translate: -50% 0;
+  white-space: nowrap;
 }
 
 .drop input {
@@ -536,6 +689,22 @@ onBeforeUnmount(clearAll)
   margin: 0;
   font-size: 0.85rem;
   color: var(--ink-3);
+}
+
+.pdf-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.pdf-settings h3 {
+  font-size: 0.95rem;
+}
+
+.pdf-settings .segmented label {
+  white-space: nowrap;
 }
 
 .results {
@@ -701,6 +870,31 @@ onBeforeUnmount(clearAll)
 
 .thumb.done {
   cursor: zoom-in;
+}
+
+/* PDFs can't be compared on the slider, so no zoom cursor; show the first page from the top */
+.thumb.pdf {
+  cursor: default;
+  min-height: 4rem;
+  background: var(--surface-2);
+}
+
+.thumb.pdf img {
+  object-position: top;
+  background: #fff;
+}
+
+.pdf-badge {
+  position: absolute;
+  left: 0.4rem;
+  bottom: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: #c4271f;
+  border-radius: 5px;
 }
 
 .thumb.comparing {

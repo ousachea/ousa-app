@@ -29,7 +29,18 @@ const FILTERS: { value: 'all' | Kind, label: string }[] = [
 const SWIPE_THRESHOLD = 110 // px of drag that counts as a decision
 
 const { play } = useSound()
-const { items, ready, sync, add, update, remove, restore } = useCollection<Spot>('eat', SEED)
+// Demo: a mix of dishes and places to swipe through
+const DEMO = (): Omit<Spot, 'id'>[] => [
+  { name: 'Fish amok', kind: 'food', note: 'Steamed curry in banana leaf', price: 2 },
+  { name: 'Beef lok lak', kind: 'food', note: 'With lime-pepper dip', price: 2 },
+  { name: 'Kuy teav', kind: 'food', note: 'Noodle soup for breakfast', price: 1 },
+  { name: 'Bai sach chrouk', kind: 'food', note: 'Grilled pork and broken rice', price: 1 },
+  { name: 'Nom banh chok', kind: 'food', note: 'Rice noodles with green curry', price: 1 },
+  { name: 'Malis', kind: 'place', note: 'Khmer fine dining by the river', price: 3 },
+  { name: 'Brown Coffee', kind: 'place', note: 'Iced latte and a quiet corner', price: 2 },
+  { name: 'Night market noodle cart', kind: 'place', note: 'Open late, always busy', price: 1 }
+]
+const { items, ready, sync, add, update, remove, restore } = useCollection<Spot>('eat', SEED, { demo: DEMO })
 
 // ---------- Adding ----------
 const form = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'] })

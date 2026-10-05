@@ -42,7 +42,18 @@ const SORTS = [
 ] as const
 
 const { play } = useSound()
-const { items, ready, sync, add, update, remove, restore } = useCollection<Thing>('things')
+// Demo (the app icon switches it on): a typical set of gadgets, a vehicle and something bought in riel
+const DEMO = (): Omit<Thing, 'id'>[] => [
+  { name: 'iPhone 15 Pro', category: 'Phone', purchaseDate: isoDaysAgo(420), price: 1099, currency: 'USD', currentValue: null, notes: '256 GB, natural titanium' },
+  { name: 'MacBook Air M2', category: 'Computer', purchaseDate: isoDaysAgo(760), price: 1299, currency: 'USD', currentValue: null, notes: 'For work' },
+  { name: 'iPad (10th gen)', category: 'Tablet', purchaseDate: isoDaysAgo(300), price: 449, currency: 'USD', currentValue: null, notes: '' },
+  { name: 'Sony A7 III', category: 'Camera', purchaseDate: isoDaysAgo(1500), price: 1999, currency: 'USD', currentValue: 1100, notes: 'With 28–70 mm kit lens' },
+  { name: 'PlayStation 5', category: 'Gaming', purchaseDate: isoDaysAgo(900), price: 499, currency: 'USD', currentValue: null, notes: '' },
+  { name: 'AirPods Pro', category: 'Audio', purchaseDate: isoDaysAgo(200), price: 249, currency: 'USD', currentValue: null, notes: '' },
+  { name: 'Honda Dream 125', category: 'Vehicle', purchaseDate: isoDaysAgo(1100), price: 2350, currency: 'USD', currentValue: 1800, notes: 'Plate 2AB-1234' },
+  { name: 'Rice cooker', category: 'Home', purchaseDate: isoDaysAgo(60), price: 180000, currency: 'KHR', currentValue: null, notes: '' }
+]
+const { items, ready, sync, add, update, remove, restore } = useCollection<Thing>('things', undefined, { demo: DEMO })
 const rate = useMarketRate()
 
 const today = () => new Date().toISOString().slice(0, 10)

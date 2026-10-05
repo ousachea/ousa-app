@@ -14,7 +14,8 @@ const COPY: Record<SyncState, { label: string, detail: string }> = {
   'saving': { label: 'Saving…', detail: 'Sending your latest change to Supabase.' },
   'synced': { label: 'Synced with Supabase', detail: 'Stored in your Supabase account and also kept on this device, so it works offline.' },
   'offline': { label: 'Saved on this device', detail: 'Couldn’t reach Supabase, so your changes are saved in this browser for now.' },
-  'needs-setup': { label: 'On this device', detail: 'You’re signed in, but Supabase needs a one-time setup before it can store this data.' }
+  'needs-setup': { label: 'On this device', detail: 'You’re signed in, but Supabase needs a one-time setup before it can store this data.' },
+  'demo': { label: 'Demo data', detail: 'Sample data to try the app. Nothing you change here is saved. Click the app icon again to go back to your own data.' }
 }
 
 function onOutside(e: PointerEvent) {
@@ -97,6 +98,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
   animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 [data-state='saving'] .dot { background: var(--blue); animation: pulse 0.9s ease-in-out infinite alternate; }
+[data-state='demo'] .dot { background: var(--purple); }
 [data-state='offline'] .dot,
 [data-state='needs-setup'] .dot { background: var(--orange); }
 

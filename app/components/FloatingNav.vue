@@ -220,6 +220,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="toggle"
+      :class="{ live: signedIn }"
       :aria-expanded="open"
       aria-controls="fab-menu"
       :aria-label="open ? 'Close navigation' : 'Open navigation'"
@@ -228,9 +229,8 @@ onBeforeUnmount(() => {
       @click="toggleMenu"
     >
       <span class="bars" aria-hidden="true" />
-      <!-- Signed in and syncing: a small live light on the button -->
+      <!-- Signed in and syncing: the whole button turns live green and pulses -->
       <ClientOnly>
-        <span v-if="signedIn" class="badge" aria-hidden="true" />
         <span v-if="signedIn" class="visually-hidden">, synced with Supabase</span>
       </ClientOnly>
     </button>
@@ -361,6 +361,31 @@ onBeforeUnmount(() => {
 }
 
 .toggle:hover { background: var(--plastic-hover); }
+
+/* Live: signed in and syncing. Green button (white lines stay readable) with a ring pulsing out */
+.toggle.live {
+  background: #15803d;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15), 0 8px 22px rgb(21 128 61 / 0.4);
+}
+
+.toggle.live:hover {
+  background: #166534;
+}
+
+.toggle.live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #22c55e;
+  z-index: -1;
+  animation: live-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes live-pulse {
+  0% { opacity: 0.55; scale: 1; }
+  70%, 100% { opacity: 0; scale: 1.45; }
+}
 .toggle:active { transform: scale(0.96); }
 
 /* Hamburger that morphs into an X */
@@ -495,8 +520,7 @@ onBeforeUnmount(() => {
 .chip.primary:hover { background: var(--plastic-hover); }
 
 /* Live light: a green dot whose ring keeps pinging outward */
-.live-dot,
-.badge {
+.live-dot {
   position: relative;
   flex: none;
   width: 0.55rem;
@@ -505,21 +529,13 @@ onBeforeUnmount(() => {
   background: #3ddc84;
 }
 
-.live-dot::after,
-.badge::after {
+.live-dot::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 50%;
   background: #3ddc84;
   animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-.badge {
-  position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
-  box-shadow: 0 0 0 2px var(--plastic);
 }
 
 @keyframes live-ping {
@@ -784,7 +800,7 @@ kbd {
   }
 
   .live-dot::after,
-  .badge::after {
+  .toggle.live::after {
     animation: none;
   }
 }

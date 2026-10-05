@@ -39,6 +39,14 @@ const seo = useAppSeo(() => ({
 }))
 void seo
 
+// Demo: on pages that have one, the app icon switches sample data on and off
+const demo = useDemoState(route.path)
+const { play } = useSound()
+function toggleDemo() {
+  demo.active.value = !demo.active.value
+  play(demo.active.value ? 'toggle-on' : 'toggle-off')
+}
+
 // Back to wherever you came from in the app (same as Esc); straight in from outside, it goes home
 const router = useRouter()
 function goBack(e: MouseEvent) {
@@ -59,7 +67,20 @@ function goBack(e: MouseEvent) {
     </NuxtLink>
 
     <header class="head">
-      <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
+      <button
+        v-if="demo.supported.value"
+        type="button"
+        class="sticker demo-toggle"
+        :class="{ on: demo.active.value }"
+        :aria-pressed="demo.active.value"
+        :aria-label="demo.active.value ? 'Turn off the demo' : `Try ${tool.name} with demo data`"
+        :title="demo.active.value ? 'Turn off the demo' : 'Try it with demo data'"
+        @click="toggleDemo"
+      >
+        <ToolIcon :name="tool.icon" />
+        <span class="demo-tag" aria-hidden="true">{{ demo.active.value ? 'Demo on' : 'Demo' }}</span>
+      </button>
+      <span v-else class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
       <div class="head-text">
         <h1>{{ tool.name }}</h1>
         <p>{{ tool.summary }}</p>
@@ -68,6 +89,10 @@ function goBack(e: MouseEvent) {
     </header>
 
     <div class="body">
+      <p v-if="demo.active.value" class="demo-banner" role="status">
+        <span><strong>You’re looking at demo data.</strong> Try anything: nothing you change is saved.</span>
+        <button type="button" class="btn btn-sm" @click="toggleDemo">Exit demo</button>
+      </p>
       <slot />
     </div>
   </main>
@@ -148,6 +173,84 @@ function goBack(e: MouseEvent) {
     0 0 0 5px var(--plastic-edge),
     inset 0 -6px 0 rgb(0 0 0 / 0.12),
     inset 0 6px 10px rgb(255 255 255 / 0.25);
+}
+
+/* ---------- Demo switch: the app icon itself ---------- */
+.demo-toggle {
+  position: relative;
+  padding: 0;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition: scale 0.15s, translate 0.15s;
+}
+
+.demo-toggle:hover {
+  translate: 0 -1px;
+}
+
+.demo-toggle:active {
+  scale: 0.96;
+}
+
+.demo-toggle:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  outline-offset: 7px;
+}
+
+/* A small tag hanging off the icon says it can be pressed */
+.demo-tag {
+  position: absolute;
+  left: 50%;
+  bottom: -0.85rem;
+  translate: -50% 0;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--line), 0 2px 6px rgb(var(--shadow) / 0.15);
+}
+
+.demo-toggle.on .demo-tag {
+  color: #fff;
+  background: var(--purple);
+  box-shadow: 0 2px 6px rgb(var(--shadow) / 0.2);
+}
+
+/* While the demo is on, the icon gets a dashed ring so it reads as "switched" */
+.demo-toggle.on {
+  box-shadow:
+    0 0 0 4px var(--plastic),
+    0 0 0 5px var(--plastic-edge),
+    0 0 0 8px var(--bg),
+    0 0 0 10px var(--purple),
+    inset 0 -6px 0 rgb(0 0 0 / 0.12),
+    inset 0 6px 10px rgb(255 255 255 / 0.25);
+}
+
+.demo-banner {
+  width: 100%;
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 0.75rem 0.75rem 1.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  font-size: 0.925rem;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--purple) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--purple) 35%, transparent);
+  border-radius: 16px;
+}
+
+.demo-banner .btn {
+  --accent: var(--purple);
+  --on-accent: #fff;
 }
 
 h1 {

@@ -26,7 +26,15 @@ const SETTINGS_KEY = 'ousa-app:gold-settings'
 const HISTORY_KEY = 'ousa-app:gold-history'
 
 const { play } = useSound()
-const { items: purchases, ready, sync, add, addMany, update, remove, restore } = useCollection<Purchase>('gold')
+// Demo: a few purchases over two years, mostly in chi, bought when gold was cheaper
+const DEMO = (): Omit<Purchase, 'id'>[] => [
+  { weight: 1, unit: 'chi', price: 255, date: isoDaysAgo(720) },
+  { weight: 2, unit: 'chi', price: 560, date: isoDaysAgo(500) },
+  { weight: 5, unit: 'chi', price: 1650, date: isoDaysAgo(330) },
+  { weight: 1, unit: 'damlung', price: 3900, date: isoDaysAgo(150) },
+  { weight: 0.5, unit: 'chi', price: 262, date: isoDaysAgo(20) }
+]
+const { items: purchases, ready, sync, add, addMany, update, remove, restore } = useCollection<Purchase>('gold', undefined, { demo: DEMO })
 
 // ---------- Words (English / Khmer) ----------
 const WORDS = {

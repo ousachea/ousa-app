@@ -9,6 +9,22 @@ const copied = ref(false)
 
 const output = computed(() => convertCase(input.value, mode.value))
 
+// Demo (the app icon switches it on): messy text to convert; your own text comes back when it's off
+const DEMO_TEXT = `MEETING NOTES – monday
+the new office opens in phnom penh next MONTH. please bring your ID card on the first day.
+
+action items: book the meeting room, ORDER coffee, and send the slides to sokha before friday.`
+const { active: demoOn } = useDemo()
+let savedInput = ''
+watch(demoOn, (on) => {
+  if (on) {
+    savedInput = input.value
+    input.value = DEMO_TEXT
+  } else {
+    input.value = savedInput
+  }
+})
+
 // Each case button previews the start of the visitor's own text in that case
 const SAMPLE = 'the quick brown fox. jumps over the lazy dog'
 const specimen = (m: CaseMode) => {

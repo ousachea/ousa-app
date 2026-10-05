@@ -3,7 +3,20 @@ import { toast } from 'vue-sonner'
 import type { Bookmark } from '~/utils/bookmarks'
 
 const { play } = useSound()
-const { items, ready, sync, add, addMany, update, remove, restore } = useCollection<Bookmark>('bookmarks')
+// Demo: a few pinned daily sites, tagged reading, and a note
+const demoMark = (url: string, title: string, tags: string[], extra: Partial<Bookmark> = {}): Omit<Bookmark, 'id'> => ({
+  url, title, tags, description: '', note: '', icon: new URL('/favicon.ico', url).href, pinned: false, visits: 0, createdAt: new Date(isoDaysAgo(Math.round(Math.random() * 90))).toISOString(), ...extra
+})
+const DEMO = (): Omit<Bookmark, 'id'>[] => [
+  demoMark('https://github.com/', 'GitHub', ['dev'], { pinned: true, visits: 42, icon: 'https://github.com/fluidicon.png' }),
+  demoMark('https://nuxt.com/', 'Nuxt', ['dev', 'docs'], { pinned: true, visits: 18, icon: 'https://nuxt.com/icon.png', note: 'Docs for the framework this app is built on' }),
+  demoMark('https://developer.mozilla.org/', 'MDN Web Docs', ['dev', 'docs'], { visits: 9, description: 'Resources for developers, by developers.' }),
+  demoMark('https://www.figma.com/', 'Figma', ['design'], { pinned: true, visits: 12 }),
+  demoMark('https://fonts.google.com/', 'Google Fonts', ['design'], { description: 'Making the web more beautiful, fast, and open through great typography.' }),
+  demoMark('https://www.khmertimeskh.com/', 'Khmer Times', ['news', 'khmer'], { visits: 5 }),
+  demoMark('https://www.youtube.com/', 'YouTube', [], { visits: 30 })
+]
+const { items, ready, sync, add, addMany, update, remove, restore } = useCollection<Bookmark>('bookmarks', undefined, { demo: DEMO })
 
 // ---------- Save a link ----------
 const linkInput = ref('')

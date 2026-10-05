@@ -17,7 +17,17 @@ const RANGES = [
 ]
 
 const { play } = useSound()
-const { items, ready, sync, add, update, remove, restore } = useCollection<Entry>('weight')
+// Demo: four months of weigh-ins every few days, slowly trending down with day-to-day wobble
+const DEMO = (): Omit<Entry, 'id'>[] => {
+  const out: Omit<Entry, 'id'>[] = []
+  for (let day = 120, i = 0; day >= 0; day -= 2 + (i % 3 === 0 ? 1 : 0), i++) {
+    const trend = 78.4 - (120 - day) * 0.045
+    const wobble = Math.sin(i * 1.7) * 0.45 + Math.cos(i * 0.6) * 0.25
+    out.push({ date: isoDaysAgo(day), kg: Math.round((trend + wobble) * 10) / 10 })
+  }
+  return out
+}
+const { items, ready, sync, add, update, remove, restore } = useCollection<Entry>('weight', undefined, { demo: DEMO })
 
 // Display unit is a per-visitor preference
 const unit = ref<Unit>('kg')

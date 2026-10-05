@@ -71,7 +71,7 @@ function isForeign(raw: string) {
 
 const networkOf = (r: PhoneResult) => (r.valid ? r.operator?.name ?? 'Landline' : 'Invalid')
 
-function loadContacts(list: RawContact[], source: string) {
+function loadContacts(list: RawContact[], source: string, { quiet = false } = {}) {
   const seen = new Set<string>()
   const out: CheckedContact[] = []
   let foreign = 0
@@ -94,6 +94,7 @@ function loadContacts(list: RawContact[], source: string) {
   networkFilter.value = 'All'
   contactQuery.value = ''
   showCount.value = 100
+  if (quiet) return
   if (!out.length) {
     toast(`No Cambodian numbers in ${source}`, { description: foreign ? `${foreign} numbers from other countries were skipped.` : undefined })
     return
@@ -103,6 +104,36 @@ function loadContacts(list: RawContact[], source: string) {
     description: foreign ? `From ${source}. ${foreign} from other countries skipped.` : `From ${source}.`
   })
 }
+
+// ---------- Demo (the app icon switches it on) ----------
+// A number to check plus a small address book with every network, a landline, a short number
+// and a foreign one, so each part of the page has something to show
+const DEMO_CONTACTS: RawContact[] = [
+  { name: 'Sokha Chan', numbers: ['012 345 678', '+855 96 777 8888'] },
+  { name: 'Dara Pich', numbers: ['097 123 4567'] },
+  { name: 'Sreymom Ly', numbers: ['088 812 3456'] },
+  { name: 'Vibol Keo', numbers: ['015 999 888'] },
+  { name: 'Chenda Ouk', numbers: ['071 234 5678'] },
+  { name: 'Rithy Heng', numbers: ['010 23 45'] },
+  { name: 'Phnom Penh office', numbers: ['023 225 333'] },
+  { name: 'Bopha Sun', numbers: ['081 456 789'] },
+  { name: 'Alex (USA)', numbers: ['+1 415 555 0100'] }
+]
+const { active: demoOn } = useDemo()
+let savedInput = ''
+let savedContacts: { list: CheckedContact[], source: string } | undefined
+watch(demoOn, (on) => {
+  if (on) {
+    savedInput = input.value
+    savedContacts = { list: contacts.value, source: contactSource.value }
+    input.value = '096 777 8888'
+    loadContacts(DEMO_CONTACTS, 'demo contacts', { quiet: true })
+  } else {
+    input.value = savedInput
+    contacts.value = savedContacts?.list ?? []
+    contactSource.value = savedContacts?.source ?? ''
+  }
+})
 
 async function fromGoogle() {
   importing.value = 'google'
@@ -145,6 +176,11 @@ async function fromPicker() {
 }
 
 function clearContacts() {
+  // In the demo, clearing the sample contacts means leaving the demo
+  if (demoOn.value) {
+    demoOn.value = false
+    return
+  }
   contacts.value = []
   contactSource.value = ''
   play('delete')
