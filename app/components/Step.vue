@@ -1,15 +1,16 @@
 <script setup lang="ts">
+// Without `n` it's a plain section heading: used where the content isn't a sequence
 defineProps<{
-  n: number
+  n?: number
   title: string
   hint?: string
 }>()
 </script>
 
 <template>
-  <section class="step" :aria-label="`Step ${n}: ${title}`">
+  <section class="step" :aria-label="n ? `Step ${n}: ${title}` : title">
     <header class="step-head">
-      <span class="num" aria-hidden="true">{{ n }}</span>
+      <span v-if="n" class="num" aria-hidden="true">{{ n }}</span>
       <div class="step-text">
         <h2>{{ title }}</h2>
         <p v-if="hint">{{ hint }}</p>

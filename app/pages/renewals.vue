@@ -22,6 +22,13 @@ const isoToday = () => new Date().toISOString().slice(0, 10)
 const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: 'USD', cycle: 'monthly', nextDate: isoToday() })
 const form = reactive(blank())
 const editingId = ref<string>()
+const formOpen = ref(false)
+
+function openAdd() {
+  cancel()
+  formOpen.value = true
+  play('open')
+}
 
 const toUsd = (r: Pick<Renewal, 'price' | 'currency'>) => (r.currency === 'USD' ? r.price : rate.value ? r.price / rate.value : undefined)
 const perMonth = (r: Renewal) => CYCLES.find(c => c.value === r.cycle)!.perMonth
@@ -126,11 +133,13 @@ function save() {
 function edit(r: Renewal) {
   editingId.value = r.id
   Object.assign(form, { name: r.name, price: r.price, currency: r.currency, cycle: r.cycle, nextDate: nextRenewal(r.nextDate, r.cycle) })
-  play('select')
+  formOpen.value = true
+  play('open')
 }
 
 function cancel() {
   editingId.value = undefined
+  formOpen.value = false
   Object.assign(form, blank())
 }
 
@@ -143,46 +152,51 @@ function del(r: Renewal) {
 </script>
 
 <template>
-  <ToolPage>
-    <div class="workspace">
-      <Step :n="1" :title="editingId ? 'Edit subscription' : 'Add a subscription'" class="form-step">
-        <form class="panel form" @submit.prevent="save">
-          <label class="field">
-            <span class="field-head">Name</span>
-            <input v-model="form.name" class="input" placeholder="Netflix, iCloud, phone plan…" required>
-          </label>
-          <div class="field">
-            <span class="field-head">Price</span>
-            <div class="price">
-              <input v-model.number="form.price" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="Price" required>
-              <div class="segmented" role="radiogroup" aria-label="Currency">
-                <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }">
-                  <input v-model="form.currency" type="radio" name="currency" :value="c">
-                  {{ c === 'USD' ? '$' : '៛' }}
-                </label>
-              </div>
+  <ToolPage header="bar">
+    <template #actions>
+      <button type="button" class="btn" @click="openAdd">+ Add subscription</button>
+    </template>
+
+    <Modal :open="formOpen" :title="editingId ? 'Edit subscription' : 'Add a subscription'" @close="cancel">
+      <form class="form" @submit.prevent="save">
+        <label class="field">
+          <span class="field-head">Name</span>
+          <input v-model="form.name" class="input" placeholder="Netflix, iCloud, phone plan…" required>
+        </label>
+        <div class="field">
+          <span class="field-head">Price</span>
+          <div class="price">
+            <input v-model.number="form.price" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="Price" required>
+            <div class="segmented" role="radiogroup" aria-label="Currency">
+              <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }">
+                <input v-model="form.currency" type="radio" name="currency" :value="c">
+                {{ c === 'USD' ? '$' : '៛' }}
+              </label>
             </div>
           </div>
-          <div class="row">
-            <label class="field">
-              <span class="field-head">Billed</span>
-              <select v-model="form.cycle" class="input">
-                <option v-for="c in CYCLES" :key="c.value" :value="c.value">{{ c.label }}</option>
-              </select>
-            </label>
-            <label class="field">
-              <span class="field-head">Next renewal</span>
-              <input v-model="form.nextDate" class="input" type="date" required>
-            </label>
-          </div>
-          <div class="actions">
-            <button type="submit" class="btn" :disabled="!canSave">{{ editingId ? 'Save changes' : 'Add subscription' }}</button>
-            <button v-if="editingId" type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
-          </div>
-        </form>
-      </Step>
+        </div>
+        <div class="row">
+          <label class="field">
+            <span class="field-head">Billed</span>
+            <select v-model="form.cycle" class="input">
+              <option v-for="c in CYCLES" :key="c.value" :value="c.value">{{ c.label }}</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-head">Next renewal</span>
+            <input v-model="form.nextDate" class="input" type="date" required>
+          </label>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn" :disabled="!canSave">{{ editingId ? 'Save changes' : 'Add subscription' }}</button>
+          <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
+        </div>
+      </form>
+    </Modal>
 
-      <Step :n="2" title="What you’re paying for" class="list-step">
+    <!-- Read like a billing statement: one centred column -->
+    <div class="statement">
+      <Step title="What you’re paying for" class="list-step">
         <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
@@ -242,6 +256,7 @@ function del(r: Renewal) {
           <div v-else-if="ready" class="panel empty">
             <h2>No subscriptions yet</h2>
             <p>Add your streaming, cloud storage or phone plan to see what they cost each month.</p>
+            <button type="button" class="btn" @click="openAdd">+ Add subscription</button>
           </div>
         </ClientOnly>
       </Step>
@@ -250,20 +265,12 @@ function del(r: Renewal) {
 </template>
 
 <style scoped>
-.workspace {
-  display: grid;
-  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
-  gap: 2rem 2.5rem;
-  align-items: start;
-}
-
-.form-step {
-  position: sticky;
-  top: 5.5rem;
+.statement {
+  max-width: 880px;
+  margin: 0 auto;
 }
 
 .form {
-  padding: 1.4rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -325,7 +332,7 @@ function del(r: Renewal) {
 /* Timeline: today on the left, one marker per renewal, lanes so close dates don't collide */
 .timeline {
   margin-top: 1rem;
-  padding: 1.1rem 1.4rem 1.4rem;
+  padding: 1.1rem 1.4rem 2.4rem; /* room for the date labels under the track */
 }
 
 .timeline h3 {
@@ -507,13 +514,10 @@ function del(r: Renewal) {
 }
 
 .empty p {
-  margin: 0.5rem 0 0;
+  margin: 0.5rem 0 1rem;
 }
 
-@media (max-width: 960px) {
-  .workspace { grid-template-columns: 1fr; }
-  .form-step { position: static; }
-}
+
 
 @media (max-width: 560px) {
   .summary { grid-template-columns: 1fr 1fr; }

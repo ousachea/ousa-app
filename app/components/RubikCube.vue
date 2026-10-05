@@ -9,6 +9,8 @@ interface CubeLink {
   to: string
   name: string
   icon: ToolIconName
+  color?: string
+  onColor?: string
 }
 
 interface Cubie {
@@ -34,6 +36,8 @@ const props = withDefaults(defineProps<{
   interactive?: boolean
   /** Up to 12 links shown as icons on the stickers of the top, front and right faces */
   links?: CubeLink[]
+  /** Paint icon stickers in each app's own colour instead of the classic cube colours */
+  appColors?: boolean
   scrambleLength?: number
 }>(), {
   size: 64,
@@ -41,7 +45,8 @@ const props = withDefaults(defineProps<{
   scrambleLength: 18,
   followPointer: false,
   interactive: false,
-  links: () => []
+  links: () => [],
+  appColors: false
 })
 
 // CSS uses a y-down coordinate system: -y is the top face.
@@ -112,6 +117,15 @@ function createCubies(): Cubie[] {
 // Dark ink on the light stickers (white, yellow, orange), white on the rest
 const LIGHT_STICKERS = new Set([COLORS.top, COLORS.bottom, COLORS.left])
 const inkOn = (color?: string) => (color && LIGHT_STICKERS.has(color) ? '#1b1f2a' : '#ffffff')
+
+function faceStyle(cubie: Cubie, face: Face) {
+  const color = cubie.stickers[face]
+  if (!color) return undefined
+  const link = cubie.links[face]
+  // App colours: the icon sticker takes its app's colour; plain stickers keep the cube's
+  if (props.appColors && link?.color) return { '--c': link.color, '--ink': link.onColor ?? '#ffffff' }
+  return { '--c': color, '--ink': inkOn(color) }
+}
 
 const cubies = createCubies()
 
@@ -404,7 +418,7 @@ onBeforeUnmount(() => {
           v-for="face in FACES"
           :key="face"
           :class="['face', face]"
-          :style="cubie.stickers[face] ? { '--c': cubie.stickers[face], '--ink': inkOn(cubie.stickers[face]) } : undefined"
+          :style="faceStyle(cubie, face)"
         >
           <!-- Clicking an icon opens that app; clicking a plain sticker still shuffles -->
           <NuxtLink

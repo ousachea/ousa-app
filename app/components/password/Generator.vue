@@ -68,14 +68,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   <div class="tab-body">
     <div class="workspace">
       <div class="settings">
-        <Step :n="1" title="Choose the length" hint="Longer is stronger. 16 or more is a good habit.">
+        <Step title="Length" hint="Longer is stronger. 16 or more is a good habit.">
           <label class="panel field length">
             <span class="field-head">Length <output>{{ length }} characters</output></span>
             <input v-model.number="length" type="range" min="8" max="64" step="1">
           </label>
         </Step>
 
-        <Step :n="2" title="Choose the characters" hint="Some sites don’t allow symbols. Turn them off if a site rejects the password." class="chars-step">
+        <Step title="Characters" hint="Some sites don’t allow symbols. Turn them off if a site rejects the password." class="chars-step">
           <div class="sets">
             <button
               v-for="set in ALL_SETS"
@@ -107,7 +107,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
         </Step>
       </div>
 
-      <Step :n="3" title="Copy your password" class="result-step">
+      <Step title="Your password" class="result-step">
         <div class="panel result">
           <ClientOnly>
             <output class="password" aria-live="polite" aria-label="Generated password">
@@ -168,15 +168,30 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 </template>
 
 <style scoped>
+/* The password leads, full width; length and characters sit side by side underneath */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 2rem 2.5rem;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'result'
+    'settings';
+  gap: 2rem;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.result-step { grid-area: result; }
+
+.settings {
+  grid-area: settings;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 1.5rem 2rem;
   align-items: start;
 }
 
 .chars-step {
-  margin-top: 2rem;
+  margin-top: 0;
 }
 
 .length {
@@ -292,8 +307,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 .result-step {
-  position: sticky;
-  top: 5.5rem; /* clear of the menu button in the top-right corner */
+  position: static;
 }
 
 .result {
@@ -306,7 +320,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   min-height: 4.5rem;
   padding: 1.25rem 1.4rem;
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: clamp(1.25rem, 2.6vw, 1.75rem);
+  font-size: clamp(1.4rem, 3.4vw, 2.4rem);
   line-height: 1.45;
   letter-spacing: 0.04em;
   overflow-wrap: anywhere;
@@ -494,12 +508,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 @media (max-width: 900px) {
-  .workspace {
+  .settings {
     grid-template-columns: 1fr;
-  }
-
-  .result-step {
-    position: static;
   }
 }
 

@@ -9,6 +9,7 @@ interface Spot {
   kind: Kind
   note: string
   price: 1 | 2 | 3
+  image?: string // path inside public/, e.g. /eat/3f2a….webp
 }
 
 const SEED = (): Spot[] => [
@@ -28,18 +29,98 @@ const FILTERS: { value: 'all' | Kind, label: string }[] = [
 const SWIPE_THRESHOLD = 110 // px of drag that counts as a decision
 
 const { play } = useSound()
-const { items, ready, sync, add, remove, restore } = useCollection<Spot>('eat', SEED)
+const { items, ready, sync, add, update, remove, restore } = useCollection<Spot>('eat', SEED)
 
 // ---------- Adding ----------
 const form = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'] })
+const photo = ref<{ blob: Blob, preview: string }>()
+const saving = ref(false)
+const PHOTO_SIZE = 800
 
-function save() {
-  if (!form.name.trim()) return
-  const spot = add({ name: form.name.trim(), kind: form.kind, note: form.note.trim(), price: form.price })
+// Crop to a centred square and shrink to 800×800 WebP in the browser, so files stay small
+async function squarePhoto(file: File) {
+  const bitmap = await createImageBitmap(file)
+  const side = Math.min(bitmap.width, bitmap.height)
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = PHOTO_SIZE
+  canvas.getContext('2d')!.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, PHOTO_SIZE, PHOTO_SIZE)
+  bitmap.close()
+  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.82))
+  if (!blob) throw new Error('Could not prepare the photo')
+  return blob
+}
+
+async function onPhotoPick(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    toast.error('That file isn’t an image')
+    return
+  }
+  try {
+    const blob = await squarePhoto(file)
+    if (photo.value) URL.revokeObjectURL(photo.value.preview)
+    photo.value = { blob, preview: URL.createObjectURL(blob) }
+    play('drop')
+  } catch {
+    toast.error('Couldn’t read that image')
+  }
+}
+
+function clearPhoto() {
+  if (photo.value) URL.revokeObjectURL(photo.value.preview)
+  photo.value = undefined
+}
+
+// Saved into public/eat/ by a local-only server route, so the photo lives in the project for git
+async function uploadPhoto(blob: Blob) {
+  const res = await $fetch<{ path: string }>('/api/eat-image', {
+    method: 'POST',
+    body: blob,
+    headers: { 'Content-Type': blob.type }
+  })
+  return res.path
+}
+
+async function save() {
+  if (!form.name.trim() || saving.value) return
+  saving.value = true
+  let image: string | undefined
+  try {
+    if (photo.value) image = await uploadPhoto(photo.value.blob)
+  } catch (e) {
+    const message = (e as { data?: { message?: string } }).data?.message
+    toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed. The item was added without it.' })
+  }
+  const spot = add({ name: form.name.trim(), kind: form.kind, note: form.note.trim(), price: form.price, ...(image ? { image } : {}) })
   deck.value.push(spot.id) // new cards join the end of the current deck
-  toast.success(`${spot.name} added`)
+  toast.success(`${spot.name} added`, image ? { description: `Photo saved to public${image}. Commit it to keep it.` } : undefined)
   play('success')
   Object.assign(form, { name: '', note: '' })
+  clearPhoto()
+  saving.value = false
+}
+
+onBeforeUnmount(clearPhoto)
+
+// Add or replace the photo of something already in the list
+async function setPhoto(spot: Spot, e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  try {
+    const path = await uploadPhoto(await squarePhoto(file))
+    update(spot.id, { image: path })
+    toast.success(`Photo added to ${spot.name}`, { description: `Saved to public${path}. Commit it to keep it.` })
+    play('success')
+  } catch (err) {
+    const message = (err as { data?: { message?: string } }).data?.message
+    toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed.' })
+    play('error')
+  }
 }
 
 function del(s: Spot) {
@@ -54,6 +135,9 @@ const filter = ref<'all' | Kind>('all')
 const deck = ref<string[]>([])
 const chosen = ref<Spot>()
 
+// Swiping right adds to this shortlist; the pick is made from it at the end
+const liked = ref<string[]>([])
+
 function shuffle() {
   const ids = items.value.filter(s => filter.value === 'all' || s.kind === filter.value).map(s => s.id)
   for (let i = ids.length - 1; i > 0; i--) {
@@ -64,11 +148,33 @@ function shuffle() {
   chosen.value = undefined
 }
 
+function startOver() {
+  liked.value = []
+  shuffle()
+  play('retry')
+}
+
+function unlike(id: string) {
+  liked.value = liked.value.filter(x => x !== id)
+  play('remove-from-cart')
+}
+
+// Choose at random among the liked ones, avoiding the current pick when there's another option
+function pickOne() {
+  const pool = shortlist.value.length > 1 ? shortlist.value.filter(s => s.id !== chosen.value?.id) : shortlist.value
+  const spot = pool[Math.floor(Math.random() * pool.length)]
+  if (!spot) return
+  chosen.value = spot
+  play('success')
+  toast.success(`${spot.name} it is`, { description: 'Enjoy your meal!' })
+}
+
 watch([ready, filter], ([r]) => {
   if (r) shuffle()
 })
 
 const byId = (id?: string) => items.value.find(s => s.id === id)
+const shortlist = computed(() => liked.value.map(id => byId(id)).filter((s): s is Spot => !!s))
 const current = computed(() => byId(deck.value[0]))
 const next = computed(() => byId(deck.value[1]))
 const third = computed(() => byId(deck.value[2]))
@@ -103,12 +209,9 @@ function decide(dir: 'left' | 'right') {
   const spot = current.value
   if (!spot || flying.value) return
   flying.value = dir
-  play(dir === 'right' ? 'success' : 'swipe')
+  play(dir === 'right' ? 'add-to-cart' : 'swipe')
   setTimeout(() => {
-    if (dir === 'right') {
-      chosen.value = spot
-      toast.success(`${spot.name} it is`, { description: 'Enjoy your meal!' })
-    }
+    if (dir === 'right' && !liked.value.includes(spot.id)) liked.value = [...liked.value, spot.id]
     deck.value = deck.value.slice(1)
     flying.value = undefined
     dx.value = 0
@@ -145,162 +248,361 @@ const cardStyle = computed(() => {
 })
 
 const priceText = (p: number) => '$'.repeat(p)
+// A card's photo as a CSS variable; the card styles add a gradient so text stays readable
+const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image}")` } : undefined)
 </script>
 
 <template>
   <ToolPage>
-    <div class="workspace">
-      <div class="side">
-        <Step :n="1" title="Save foods and places">
-        <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
-          <form class="panel form" @submit.prevent="save">
-            <div class="segmented" role="radiogroup" aria-label="Type">
-              <label :class="{ active: form.kind === 'food' }"><input v-model="form.kind" type="radio" value="food">A food</label>
-              <label :class="{ active: form.kind === 'place' }"><input v-model="form.kind" type="radio" value="place">A place</label>
-            </div>
-            <label class="field">
-              <span class="field-head">Name</span>
-              <input v-model="form.name" class="input" :placeholder="form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required>
-            </label>
-            <label class="field">
-              <span class="field-head">Note <span class="optional">Optional</span></span>
-              <input v-model="form.note" class="input" placeholder="Extra spicy, good for lunch…">
-            </label>
-            <div class="field">
-              <span class="field-head">Price</span>
-              <div class="segmented" role="radiogroup" aria-label="Price">
-                <label v-for="p in ([1, 2, 3] as const)" :key="p" :class="{ active: form.price === p }">
-                  <input v-model="form.price" type="radio" :value="p">{{ priceText(p) }}
-                </label>
-              </div>
-            </div>
-            <button type="submit" class="btn" :disabled="!form.name.trim()">Save</button>
-          </form>
-
-          <ClientOnly>
-            <details v-if="items.length" class="saved">
-              <summary>Your list ({{ items.length }})</summary>
-              <ul>
-                <li v-for="s in items" :key="s.id">
-                  <span>{{ s.name }} <span class="kind">{{ s.kind === 'food' ? 'food' : 'place' }}</span></span>
-                  <button type="button" class="link danger" :aria-label="`Delete ${s.name}`" @click="del(s)">Delete</button>
-                </li>
-              </ul>
-            </details>
-          </ClientOnly>
-        </Step>
-      </div>
-
-      <Step :n="2" title="Swipe until something sounds good" hint="Right for “let’s eat”, left for “not today”. Arrow keys work too." class="deck-step">
+    <!-- Centre stage: the deck. Managing the list lives underneath. -->
+    <section class="stage-area" aria-label="Swipe to decide">
+      <div class="stage-top">
         <div class="segmented filter" role="radiogroup" aria-label="Show">
           <label v-for="f in FILTERS" :key="f.value" :class="{ active: filter === f.value }">
             <input v-model="filter" type="radio" name="filter" :value="f.value">{{ f.label }}
           </label>
         </div>
+        <ClientOnly><DataSource :sync="sync" /></ClientOnly>
+      </div>
+      <p class="how">Swipe right to add to your shortlist, left to skip. Arrow keys work too.</p>
+
+      <ClientOnly>
+        <div class="stage" tabindex="0" aria-label="Food cards. Use the left and right arrow keys to decide." @keydown="onKey">
+          <div v-if="chosen" class="panel chosen" role="status">
+            <img v-if="chosen.image" :src="chosen.image" alt="" class="chosen-photo">
+            <span class="label">You’re eating</span>
+            <h2>{{ chosen.name }}</h2>
+            <p v-if="chosen.note">{{ chosen.note }}</p>
+            <div class="chosen-actions">
+              <button v-if="shortlist.length > 1" type="button" class="btn" @click="pickOne">Pick another</button>
+              <button v-if="current" type="button" class="btn btn-quiet" @click="chosen = undefined">Keep swiping</button>
+              <button type="button" class="btn btn-quiet" @click="startOver">Start over</button>
+            </div>
+          </div>
+
+          <template v-else-if="current">
+            <div v-if="third" class="card behind deep" :data-kind="third.kind" :style="photoStyle(third)" aria-hidden="true" />
+            <div v-if="next" class="card behind" :data-kind="next.kind" :style="photoStyle(next)" aria-hidden="true" />
+            <div
+              :key="current.id"
+              class="card"
+              :class="{ 'has-photo': current.image }"
+              :data-kind="current.kind"
+              :style="[photoStyle(current), cardStyle]"
+              @pointerdown="onPointerDown"
+              @pointermove="onPointerMove"
+              @pointerup="onPointerUp"
+              @pointercancel="onPointerUp"
+            >
+              <span class="verdict yes" :style="{ opacity: yes }" aria-hidden="true">Shortlist</span>
+              <span class="verdict no" :style="{ opacity: no }" aria-hidden="true">Skip</span>
+              <span class="badge">{{ current.kind === 'food' ? 'Food' : 'Place' }}</span>
+              <h3>{{ current.name }}</h3>
+              <p v-if="current.note">{{ current.note }}</p>
+              <span class="price">{{ priceText(current.price) }}</span>
+            </div>
+          </template>
+
+          <div v-else-if="ready && shortlist.length" class="panel out">
+            <h2>You liked {{ shortlist.length }}</h2>
+            <p>{{ shortlist.length === 1 ? `Looks like ${shortlist[0]!.name} it is.` : 'Let the app choose one from your shortlist.' }}</p>
+            <div class="chosen-actions">
+              <button type="button" class="btn" @click="pickOne">{{ shortlist.length === 1 ? `Eat ${shortlist[0]!.name}` : 'Pick one for me' }}</button>
+              <button type="button" class="btn btn-quiet" @click="startOver">Start over</button>
+            </div>
+          </div>
+
+          <div v-else-if="ready" class="panel out">
+            <h2>{{ items.length ? 'That’s everything' : 'Nothing saved yet' }}</h2>
+            <p>{{ items.length ? 'Nothing caught your eye? Shuffle the deck and go again.' : 'Add a few foods or places below first.' }}</p>
+            <button v-if="items.length" type="button" class="btn" @click="shuffle">Shuffle again</button>
+          </div>
+        </div>
+
+        <div v-if="current && !chosen" class="buttons">
+          <button type="button" class="btn btn-quiet round" aria-label="Not today" @click="decide('left')">✕</button>
+          <button type="button" class="btn round" aria-label="Add to shortlist" @click="decide('right')">♥</button>
+        </div>
+
+        <!-- Everything swiped right so far -->
+        <section v-if="shortlist.length" class="shortlist" aria-label="Your shortlist">
+          <span class="shortlist-label">Shortlist</span>
+          <TransitionGroup tag="ul" name="chip" class="chips">
+            <li v-for="s in shortlist" :key="s.id" class="chip" :class="{ picked: chosen?.id === s.id }">
+              <span class="chip-img" :data-kind="s.kind" :style="photoStyle(s)" aria-hidden="true" />
+              {{ s.name }}
+              <button type="button" class="chip-x" :aria-label="`Remove ${s.name} from shortlist`" @click="unlike(s.id)">×</button>
+            </li>
+          </TransitionGroup>
+          <button v-if="shortlist.length > 1 && !chosen && current" type="button" class="btn btn-sm" @click="pickOne">Pick one for me</button>
+        </section>
+      </ClientOnly>
+    </section>
+
+    <section class="manage" aria-labelledby="manage-title">
+      <h2 id="manage-title">Your foods and places</h2>
+      <div class="manage-grid">
+        <form class="panel form" @submit.prevent="save">
+          <h3>Add one</h3>
+          <div class="segmented" role="radiogroup" aria-label="Type">
+            <label :class="{ active: form.kind === 'food' }"><input v-model="form.kind" type="radio" value="food">A food</label>
+            <label :class="{ active: form.kind === 'place' }"><input v-model="form.kind" type="radio" value="place">A place</label>
+          </div>
+          <div class="form-row">
+            <label class="photo-pick" :class="{ filled: photo }">
+              <input type="file" accept="image/*" aria-label="Add a photo" @change="onPhotoPick">
+              <img v-if="photo" :src="photo.preview" alt="Photo preview">
+              <span v-else>+ Photo</span>
+            </label>
+            <div class="form-fields">
+              <label class="field">
+                <span class="field-head">Name</span>
+                <input v-model="form.name" class="input" :placeholder="form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required>
+              </label>
+              <label class="field">
+                <span class="field-head">Note <span class="optional">Optional</span></span>
+                <input v-model="form.note" class="input" placeholder="Extra spicy, good for lunch…">
+              </label>
+            </div>
+          </div>
+          <button v-if="photo" type="button" class="link remove-photo" @click="clearPhoto">Remove photo</button>
+          <div class="field">
+            <span class="field-head">Price</span>
+            <div class="segmented" role="radiogroup" aria-label="Price">
+              <label v-for="p in ([1, 2, 3] as const)" :key="p" :class="{ active: form.price === p }">
+                <input v-model="form.price" type="radio" :value="p">{{ priceText(p) }}
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="btn" :disabled="!form.name.trim() || saving">{{ saving ? 'Saving photo…' : 'Save' }}</button>
+          <p class="hint">Photos are cropped square and saved to <code>public/eat/</code> in this project, so you can commit them. That only works while running the app locally.</p>
+        </form>
 
         <ClientOnly>
-          <div class="stage" tabindex="0" aria-label="Food cards. Use the left and right arrow keys to decide." @keydown="onKey">
-            <div v-if="chosen" class="panel chosen" role="status">
-              <span class="label">You’re eating</span>
-              <h2>{{ chosen.name }}</h2>
-              <p v-if="chosen.note">{{ chosen.note }}</p>
-              <div class="chosen-actions">
-                <button type="button" class="btn" @click="shuffle">Pick again</button>
-                <button v-if="current" type="button" class="btn btn-quiet" @click="chosen = undefined">Keep swiping</button>
-              </div>
-            </div>
-
-            <template v-else-if="current">
-              <div v-if="third" class="card behind deep" :data-kind="third.kind" aria-hidden="true" />
-              <div v-if="next" class="card behind" :data-kind="next.kind" aria-hidden="true">
-                <span class="badge">{{ next.kind === 'food' ? 'Food' : 'Place' }}</span>
-                <h3>{{ next.name }}</h3>
-              </div>
-              <div
-                :key="current.id"
-                class="card"
-                :data-kind="current.kind"
-                :style="cardStyle"
-                @pointerdown="onPointerDown"
-                @pointermove="onPointerMove"
-                @pointerup="onPointerUp"
-                @pointercancel="onPointerUp"
-              >
-                <span class="verdict yes" :style="{ opacity: yes }" aria-hidden="true">Let’s eat</span>
-                <span class="verdict no" :style="{ opacity: no }" aria-hidden="true">Not today</span>
-                <span class="badge">{{ current.kind === 'food' ? 'Food' : 'Place' }}</span>
-                <h3>{{ current.name }}</h3>
-                <p v-if="current.note">{{ current.note }}</p>
-                <span class="price">{{ priceText(current.price) }}</span>
-              </div>
-            </template>
-
-            <div v-else-if="ready" class="panel out">
-              <h2>{{ items.length ? 'That’s everything' : 'Nothing saved yet' }}</h2>
-              <p>{{ items.length ? 'Nothing caught your eye? Shuffle the deck and go again.' : 'Save a few foods or places first.' }}</p>
-              <button v-if="items.length" type="button" class="btn" @click="shuffle">Shuffle again</button>
-            </div>
-          </div>
-
-          <div v-if="current && !chosen" class="buttons">
-            <button type="button" class="btn btn-quiet round" aria-label="Not today" @click="decide('left')">✕</button>
-            <button type="button" class="btn round" aria-label="Let’s eat" @click="decide('right')">♥</button>
-          </div>
+          <ul v-if="items.length" class="thumbs">
+            <li v-for="s in items" :key="s.id" class="thumb" :data-kind="s.kind">
+              <!-- Click a thumbnail to add or replace its photo -->
+              <label class="thumb-img" :style="photoStyle(s)" :title="s.image ? 'Replace photo' : 'Add a photo'">
+                <input type="file" accept="image/*" :aria-label="s.image ? `Replace photo of ${s.name}` : `Add a photo of ${s.name}`" @change="setPhoto(s, $event)">
+                <span v-if="!s.image" aria-hidden="true">{{ s.name.slice(0, 1) }}</span>
+                <span class="thumb-hint" aria-hidden="true">{{ s.image ? 'Replace photo' : '+ Photo' }}</span>
+              </label>
+              <span class="thumb-name">{{ s.name }}</span>
+              <button type="button" class="link danger" :aria-label="`Delete ${s.name}`" @click="del(s)">Delete</button>
+            </li>
+          </ul>
         </ClientOnly>
-      </Step>
-    </div>
+      </div>
+    </section>
   </ToolPage>
 </template>
 
 <style scoped>
-.workspace {
+.stage-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stage-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.how {
+  margin: 0.6rem 0 1.5rem;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+.manage {
+  max-width: 1080px;
+  margin: 4rem auto 0;
+}
+
+.manage > h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.manage-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
-  gap: 2rem 2.5rem;
+  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 
 .form {
-  padding: 1.4rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.9rem;
+}
+
+.form h3 {
+  font-size: 1rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.9rem;
+}
+
+.form-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Square photo picker, the same shape the card will be */
+.photo-pick {
+  position: relative;
+  flex: none;
+  width: 7.5rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 2px dashed var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.photo-pick:hover {
+  border-color: var(--accent);
+}
+
+.photo-pick.filled {
+  border-style: solid;
+}
+
+.photo-pick:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.photo-pick input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.photo-pick img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  outline: 1px solid rgb(0 0 0 / 0.1);
+  outline-offset: -1px;
+}
+
+.remove-photo {
+  align-self: flex-start;
+  margin-top: -0.4rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+}
+
+.hint code {
+  font-size: 0.9em;
+}
+
+.thumbs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.9rem;
+}
+
+.thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.thumb-img {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--photo, none) center / cover, var(--pink);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
+}
+
+.thumb-img {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.thumb-img input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.thumb-img:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* Hint slides up on hover */
+.thumb-hint {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  background: rgb(0 0 0 / 0.55);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.thumb-img:hover .thumb-hint,
+.thumb-img:has(input:focus-visible) .thumb-hint {
+  opacity: 1;
+  transform: none;
+}
+
+.thumb[data-kind='place'] .thumb-img {
+  background: var(--photo, none) center / cover, var(--indigo);
+}
+
+.thumb-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thumb .link {
+  align-self: flex-start;
 }
 
 .optional {
   font-weight: 400;
-  color: var(--ink-3);
-}
-
-.saved {
-  margin-top: 1rem;
-  padding: 0.9rem 1.1rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-}
-
-.saved summary {
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.saved ul {
-  list-style: none;
-  margin: 0.75rem 0 0;
-  padding: 0;
-}
-
-.saved li {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.45rem 0;
-  border-top: 1px solid var(--line);
-}
-
-.kind {
-  font-size: 0.8rem;
   color: var(--ink-3);
 }
 
@@ -320,15 +622,14 @@ const priceText = (p: number) => '$'.repeat(p)
 }
 
 .filter {
-  max-width: 360px;
-  margin: 0 auto 1.25rem;
+  width: 340px;
+  max-width: 100%;
 }
 
 .stage {
   position: relative;
-  height: 340px;
-  max-width: 380px;
-  margin: 0 auto;
+  width: min(400px, 100%);
+  aspect-ratio: 1; /* square cards */
   border-radius: 24px;
 }
 
@@ -354,6 +655,13 @@ const priceText = (p: number) => '$'.repeat(p)
   cursor: grab;
   touch-action: pan-y; /* let the page scroll vertically; we handle horizontal drags */
   user-select: none;
+}
+
+.card.has-photo[data-kind],
+.card.behind[style*='--photo'] {
+  background:
+    linear-gradient(to bottom, rgb(0 0 0 / 0) 35%, rgb(0 0 0 / 0.72)),
+    var(--photo) center / cover;
 }
 
 .card[data-kind='place'] {
@@ -415,6 +723,98 @@ const priceText = (p: number) => '$'.repeat(p)
   pointer-events: none;
 }
 
+.shortlist {
+  width: min(640px, 100%);
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.shortlist-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.2rem 0.2rem 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.chip.picked {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.chip-img {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--photo, none) center / cover, var(--pink);
+}
+
+.chip-img[data-kind='place'] {
+  background: var(--photo, none) center / cover, var(--indigo);
+}
+
+.chip-x {
+  width: 1.6rem;
+  height: 1.6rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--ink-3);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.chip-x:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+/* A new chip pops in; removed ones fade */
+.chip-enter-active {
+  transition: opacity 0.2s, transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.chip-leave-active {
+  transition: opacity 0.15s;
+}
+
+.chip-enter-from {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+.chip-leave-to {
+  opacity: 0;
+}
+
 .verdict.yes {
   left: 1.5rem;
   color: var(--green);
@@ -442,6 +842,16 @@ const priceText = (p: number) => '$'.repeat(p)
 
 .chosen {
   border: 3px solid var(--accent);
+}
+
+.chosen-photo {
+  width: 7rem;
+  height: 7rem;
+  margin-bottom: 0.75rem;
+  object-fit: cover;
+  border-radius: 16px;
+  outline: 1px solid rgb(0 0 0 / 0.1);
+  outline-offset: -1px;
 }
 
 .chosen .label {
@@ -486,7 +896,7 @@ const priceText = (p: number) => '$'.repeat(p)
   border-radius: 50%;
 }
 
-@media (max-width: 960px) {
-  .workspace { grid-template-columns: 1fr; }
+@media (max-width: 860px) {
+  .manage-grid { grid-template-columns: 1fr; }
 }
 </style>

@@ -53,9 +53,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <div class="workspace">
-      <Step :n="1" title="Paste or type your text" class="input-step">
+      <Step title="Your text" class="input-step">
         <div class="panel editor">
           <textarea
             v-model="input"
@@ -77,7 +77,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
       </Step>
 
       <div class="side">
-        <Step :n="2" title="Pick a case">
+        <Step title="Case" class="modes-step">
           <div class="modes" role="radiogroup" aria-label="Case">
             <label
               v-for="m in CASE_MODES"
@@ -98,7 +98,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
           </div>
         </Step>
 
-        <Step :n="3" title="Copy the result" class="output-step">
+        <Step title="Result" class="output-step">
           <div class="panel result">
             <output class="output" :class="{ empty: !input }" aria-live="polite">
               {{ input ? output : 'Your converted text shows up here as you type.' }}
@@ -120,12 +120,25 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 </template>
 
 <style scoped>
+/* Editor: the case picker is a toolbar across the top, input and result side by side below */
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 2rem 2.5rem;
+  grid-template-areas:
+    'modes modes'
+    'input output';
+  gap: 1.5rem 1.25rem;
   align-items: stretch;
 }
+
+/* Its two steps join the grid directly (beats the flex rule below) */
+.workspace > .side {
+  display: contents;
+}
+
+.modes-step { grid-area: modes; }
+.input-step { grid-area: input; }
+.output-step { grid-area: output; }
 
 .input-step,
 .side {
@@ -134,7 +147,6 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 .output-step {
-  margin-top: 2rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -208,7 +220,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 .modes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -301,6 +313,11 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: 1fr;
+    grid-template-areas: 'modes' 'input' 'output';
+  }
+
+  .modes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .text {

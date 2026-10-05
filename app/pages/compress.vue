@@ -283,7 +283,7 @@ onBeforeUnmount(clearAll)
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <div class="top">
     <Step :n="1" title="Add images" class="fill">
     <label

@@ -23,6 +23,73 @@ let ticker: ReturnType<typeof setInterval> | undefined
 onMounted(() => (ticker = setInterval(() => (now.value = Date.now()), 1000)))
 onBeforeUnmount(() => clearInterval(ticker))
 
+// Live clock in Cambodia time, whatever time zone this device is set to
+const TZ = 'Asia/Phnom_Penh'
+const clockFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit', second: '2-digit' })
+const dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+const clock = computed(() => {
+  const p = clockFmt.formatToParts(now.value)
+  const get = (t: string) => p.find(x => x.type === t)?.value ?? ''
+  return { time: `${get('hour')}:${get('minute')}`, seconds: get('second'), period: get('dayPeriod') }
+})
+const todayText = computed(() => dateFmt.format(now.value))
+
+// Written out by hand: not every browser ships Khmer locale data for Intl
+const KM_DAYS = ['អាទិត្យ', 'ច័ន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍']
+const KM_MONTHS = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
+const kmDigits = (n: number) => String(n).replace(/\d/g, d => '០១២៣៤៥៦៧៨៩'[+d]!)
+const todayKhmer = computed(() => {
+  // Shift to UTC+7 (Cambodia has no daylight saving) and read the fields in UTC
+  const d = new Date(now.value + 7 * 3_600_000)
+  return `ថ្ងៃ${KM_DAYS[d.getUTCDay()]} ទី${kmDigits(d.getUTCDate())} ខែ${KM_MONTHS[d.getUTCMonth()]} ឆ្នាំ${kmDigits(d.getUTCFullYear())}`
+})
+
+// Public holidays come from the server (Nager.Date); each one starts at midnight Cambodia time
+const { data: holidayData, status: holidayStatus, refresh: refreshHolidays } = useFetch('/api/holidays', { server: false, lazy: true })
+const DAY = 86_400_000
+const khMidnight = (iso: string) => new Date(`${iso}T00:00:00+07:00`).getTime()
+
+const holidays = computed(() => (holidayData.value?.holidays ?? [])
+  .map((h) => {
+    const startAt = khMidnight(h.start)
+    const endAt = khMidnight(h.end) + DAY
+    return { ...h, startAt, endAt, left: startAt - now.value, onNow: now.value >= startAt && now.value < endAt }
+  })
+  // Anything not yet over, up to a year ahead
+  .filter(h => h.endAt > now.value && h.startAt < now.value + 365 * DAY))
+
+const nextHoliday = computed(() => holidays.value[0])
+const showAllHolidays = ref(false)
+const laterHolidays = computed(() => holidays.value.slice(1, showAllHolidays.value ? undefined : 7))
+
+const holidayDateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' })
+const holidayWeekdayFmt = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short' })
+function holidayRange(h: { startAt: number, endAt: number, days: number }) {
+  if (h.days === 1) return `${holidayWeekdayFmt.format(h.startAt)}, ${holidayDateFmt.format(h.startAt)}`
+  return `${holidayDateFmt.format(h.startAt)} – ${holidayDateFmt.format(h.endAt - DAY)}`
+}
+const holidayDay = (h: { startAt: number }) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric' }).format(h.startAt)
+const holidayMonth = (h: { startAt: number }) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, month: 'short' }).format(h.startAt)
+
+// Calendar days between today and the holiday, both in Cambodia time
+function holidayWhen(h: { start: string, onNow: boolean }) {
+  if (h.onNow) return 'On now'
+  const today = khMidnight(new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now.value))
+  const days = Math.round((khMidnight(h.start) - today) / DAY)
+  if (days === 1) return 'Tomorrow'
+  if (days < 60) return `In ${days} days`
+  return `In ${Math.round(days / 30.44)} months`
+}
+
+const isTracked = (h: { name: string, start: string }) => items.value.some(e => e.title === h.name && e.date === h.start)
+
+function track(h: { name: string, start: string }) {
+  if (isTracked(h)) return
+  add({ title: h.name, date: h.start, time: '', createdAt: new Date().toISOString() })
+  play('success')
+  toast.success(`Counting down to ${h.name}`)
+}
+
 const target = (e: CountdownEvent) => new Date(`${e.date}T${e.time || '00:00'}`).getTime()
 
 const events = computed(() => items.value
@@ -105,10 +172,22 @@ function del(e: CountdownEvent) {
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="band">
+    <template #actions>
+      <ClientOnly>
+        <div class="now" role="timer" aria-live="off" :aria-label="`Cambodia time ${clock.time} ${clock.period}, ${todayText}`">
+          <span class="now-place">Phnom Penh time</span>
+          <span class="now-time">{{ clock.time }}<small>:{{ clock.seconds }}</small> <span class="now-period">{{ clock.period }}</span></span>
+          <span class="now-date">{{ todayText }}</span>
+          <span class="now-date km" lang="km">{{ todayKhmer }}</span>
+        </div>
+      </ClientOnly>
+    </template>
+
     <div class="workspace">
-      <Step :n="1" :title="editingId ? 'Edit date' : 'Add a date'" class="form-step">
-        <form class="panel form" @submit.prevent="save">
+      <!-- One-row add bar resting on the band -->
+      <div class="form-step">
+        <form class="panel form" :aria-label="editingId ? 'Edit date' : 'Add a date'" @submit.prevent="save">
           <label class="field">
             <span class="field-head">What’s happening?</span>
             <input v-model="form.title" class="input" placeholder="Khmer New Year, trip to Siem Reap…" required>
@@ -128,9 +207,9 @@ function del(e: CountdownEvent) {
             <button v-if="editingId" type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
           </div>
         </form>
-      </Step>
+      </div>
 
-      <Step :n="2" title="Coming up" class="list-step">
+      <Step title="Coming up" class="list-step">
         <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
@@ -186,6 +265,59 @@ function del(e: CountdownEvent) {
           </div>
         </ClientOnly>
       </Step>
+
+      <Step title="Cambodian public holidays" hint="Official days off. Lunar dates move every year, so they’re fetched fresh." class="holiday-step">
+        <ClientOnly>
+          <div v-if="holidayStatus === 'error'" class="panel holiday-msg">
+            <p>Couldn’t load the holiday list.</p>
+            <button type="button" class="btn btn-sm" @click="refreshHolidays()">Try again</button>
+          </div>
+          <div v-else-if="!holidayData" class="panel holiday-msg">
+            <p>Loading holidays…</p>
+          </div>
+          <template v-else-if="nextHoliday">
+            <!-- The next day off, counting down live -->
+            <section class="panel next-off" :class="{ 'on-now': nextHoliday.onNow }">
+              <span class="label">{{ nextHoliday.onNow ? 'Today is a holiday' : 'Next day off' }}</span>
+              <h3>{{ nextHoliday.name }}</h3>
+              <p class="km" lang="km">{{ nextHoliday.localName }}</p>
+              <p class="next-when">
+                {{ holidayRange(nextHoliday) }}<template v-if="nextHoliday.days > 1"> · {{ nextHoliday.days }} days off</template>
+              </p>
+              <div v-if="!nextHoliday.onNow" class="mini-clock" role="timer" :aria-label="`${parts(nextHoliday.left).days} days until ${nextHoliday.name}`">
+                <div v-for="(v, k) in parts(nextHoliday.left)" :key="k">
+                  <strong>{{ String(v).padStart(k === 'days' ? 1 : 2, '0') }}</strong>
+                  <span>{{ k }}</span>
+                </div>
+              </div>
+              <button v-if="!isTracked(nextHoliday)" type="button" class="btn btn-sm add-mine" @click="track(nextHoliday)">Add to my countdowns</button>
+            </section>
+
+            <ol class="holidays">
+              <li v-for="h in laterHolidays" :key="h.start" class="holiday">
+                <span class="h-date" aria-hidden="true">
+                  <strong>{{ holidayDay(h) }}</strong>
+                  <span>{{ holidayMonth(h) }}</span>
+                </span>
+                <span class="h-text">
+                  <span class="h-name">{{ h.name }}</span>
+                  <span class="h-km km" lang="km">{{ h.localName }}</span>
+                  <span class="h-meta">{{ holidayRange(h) }}<template v-if="h.days > 1"> · {{ h.days }} days</template></span>
+                </span>
+                <span class="h-side">
+                  <span class="h-when">{{ holidayWhen(h) }}</span>
+                  <button v-if="!isTracked(h)" type="button" class="link" :aria-label="`Add ${h.name} to my countdowns`" @click="track(h)">Add</button>
+                  <span v-else class="h-added">Added</span>
+                </span>
+              </li>
+            </ol>
+            <button v-if="holidays.length > 7" type="button" class="btn btn-quiet btn-sm more" :aria-expanded="showAllHolidays" @click="showAllHolidays = !showAllHolidays">
+              {{ showAllHolidays ? 'Show fewer' : `Show all ${holidays.length - 1}` }}
+            </button>
+            <p class="source-note">Holiday dates from Nager.Date. The government sometimes adds or moves days off, so check close to the date.</p>
+          </template>
+        </ClientOnly>
+      </Step>
     </div>
   </ToolPage>
 </template>
@@ -193,24 +325,26 @@ function del(e: CountdownEvent) {
 <style scoped>
 .workspace {
   display: grid;
-  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
-  gap: 2rem 2.5rem;
-  align-items: start;
+  grid-template-columns: 1fr;
+  gap: 2.25rem;
 }
 
-.form-step {
-  position: sticky;
-  top: 5.5rem;
-}
-
+/* Add bar: what, date, time and the button on one line */
 .form {
-  padding: 1.4rem;
+  padding: 1rem 1.1rem;
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  box-shadow: 0 12px 30px -14px rgb(var(--shadow) / 0.35);
+}
+
+.form > .field {
+  flex: 2 1 260px;
 }
 
 .row {
+  flex: 1 1 320px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
@@ -222,6 +356,7 @@ function del(e: CountdownEvent) {
 }
 
 .actions {
+  flex: 0 0 auto;
   display: flex;
   gap: 0.5rem;
 }
@@ -479,10 +614,254 @@ function del(e: CountdownEvent) {
   margin: 0.5rem 0 0;
 }
 
-@media (max-width: 960px) {
-  .workspace { grid-template-columns: 1fr; }
-  .form-step { position: static; }
+/* ---------- Live Cambodia clock, sitting in the band ---------- */
+.now {
+  min-width: 14rem;
+  padding: 0.75rem 1rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  background: rgb(0 0 0 / 0.16);
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15);
 }
 
+@media (max-width: 640px) {
+  .now {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+.now-place {
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.now-time {
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.now-time small {
+  font-size: 0.55em;
+  opacity: 0.75;
+}
+
+.now-period {
+  font-size: 0.45em;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.now-date {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.km {
+  font-family: 'Noto Sans Khmer', var(--font);
+  line-height: 1.5;
+}
+
+/* ---------- Public holidays: a side column on wide screens ---------- */
+@media (min-width: 1000px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    align-items: start;
+    column-gap: 2rem;
+  }
+
+  .form-step {
+    grid-column: 1 / -1;
+  }
+}
+
+.holiday-msg {
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--ink-2);
+}
+
+.holiday-msg p {
+  margin: 0;
+}
+
+/* Next day off: Cambodian flag stripe (blue, red, blue) along the top */
+.next-off {
+  --kh-blue: #032ea1;
+  --kh-red: #e00025;
+  position: relative;
+  padding: 1.5rem 1.25rem 1.25rem;
+  overflow: hidden;
+}
+
+.next-off::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 6px;
+  background: linear-gradient(var(--kh-blue) 0 25%, var(--kh-red) 25% 75%, var(--kh-blue) 75%);
+}
+
+.next-off .label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.next-off.on-now .label {
+  color: var(--good-ink);
+}
+
+.next-off h3 {
+  margin-top: 0.15rem;
+  font-size: 1.35rem;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.next-off .km {
+  margin: 0.15rem 0 0;
+  color: var(--ink-2);
+}
+
+.next-when {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.mini-clock {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.mini-clock div {
+  padding: 0.5rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface-2);
+  border-radius: 10px;
+}
+
+.mini-clock strong {
+  font-size: 1.4rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-clock span {
+  font-size: 0.7rem;
+  text-transform: capitalize;
+  color: var(--ink-2);
+}
+
+.add-mine {
+  margin-top: 1rem;
+}
+
+.holidays {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+
+.holiday {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* A small tear-off date, echoing the calendar pages */
+.h-date {
+  flex: none;
+  width: 3rem;
+  padding: 0.3rem 0 0.35rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--line), 0 2px 0 var(--line);
+}
+
+.h-date strong {
+  font-size: 1.25rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.h-date span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.h-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.h-name {
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.h-km {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+.h-meta {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+}
+
+.h-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.h-when {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.h-added {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+}
+
+.more {
+  margin-top: 0.75rem;
+}
+
+.source-note {
+  margin: 0.9rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
 
 </style>

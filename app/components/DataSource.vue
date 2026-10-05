@@ -45,6 +45,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 <style scoped>
 .source {
   position: relative;
+  flex: none;
   display: inline-block;
 }
 
@@ -60,6 +61,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 999px;
+  white-space: nowrap;
   cursor: pointer;
   transition: border-color 0.15s;
 }

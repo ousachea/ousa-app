@@ -51,8 +51,8 @@ function goBack() {
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    // Something on the page (e.g. a chart) already handled it
-    if (e.defaultPrevented) return
+    // Something on the page (e.g. a chart) already handled it, or a popup is closing itself
+    if (e.defaultPrevented || document.querySelector('dialog[open]')) return
     if (open.value) open.value = false
     // Leave a text field so the shortcuts work again
     else if (isTyping(e.target)) (e.target as HTMLElement).blur()

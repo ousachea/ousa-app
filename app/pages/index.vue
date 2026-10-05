@@ -1,4 +1,20 @@
 <script setup lang="ts">
+// Cube sticker style for the app icons, remembered per visitor
+const appColors = ref(false)
+onMounted(() => {
+  try {
+    appColors.value = localStorage.getItem('ousa-app:cube-colors') === 'apps'
+  } catch {}
+})
+const { play } = useSound()
+function setColors(apps: boolean) {
+  appColors.value = apps
+  play('select')
+  try {
+    localStorage.setItem('ousa-app:cube-colors', apps ? 'apps' : 'cube')
+  } catch {}
+}
+
 const GROUPS = [
   { name: 'Tools', tools: TOOLS.filter(t => (t.group ?? 'Tools') === 'Tools') },
   { name: 'Life', tools: TOOLS.filter(t => t.group === 'Life') }
@@ -10,7 +26,19 @@ useHead({ title: 'Ousa App', titleTemplate: '%s' })
 <template>
   <main class="home">
     <div class="hero">
-      <RubikCube :size="60" follow-pointer interactive :links="TOOLS" class="hero-cube" />
+      <RubikCube :size="60" follow-pointer interactive :links="TOOLS" :app-colors="appColors" class="hero-cube" />
+      <div class="segmented cube-colors" role="radiogroup" aria-label="Icon sticker colours">
+        <label :class="{ active: !appColors }">
+          <input type="radio" name="cube-colors" :checked="!appColors" @change="setColors(false)">
+          <span class="swatches" aria-hidden="true"><i style="background: #1f5bd8" /><i style="background: #f7c324" /><i style="background: #179a54" /></span>
+          Cube colours
+        </label>
+        <label :class="{ active: appColors }">
+          <input type="radio" name="cube-colors" :checked="appColors" @change="setColors(true)">
+          <span class="swatches" aria-hidden="true"><i style="background: var(--teal)" /><i style="background: var(--purple)" /><i style="background: var(--pink)" /></span>
+          App colours
+        </label>
+      </div>
       <h1>Ousa App</h1>
       <p>Small tools for everyday jobs, and simple trackers for the things in your life. Click an icon on the cube to open it, or anywhere else to shuffle.</p>
     </div>
@@ -51,6 +79,32 @@ useHead({ title: 'Ousa App', titleTemplate: '%s' })
   flex-direction: column;
   align-items: center;
   text-align: center;
+}
+
+.cube-colors {
+  width: fit-content;
+  margin: -0.5rem 0 1.75rem;
+  font-size: 0.85rem;
+}
+
+.cube-colors label {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.swatches {
+  display: inline-flex;
+}
+
+.swatches i {
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-left: -0.15rem;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1.5px var(--surface);
 }
 
 .hero-cube {

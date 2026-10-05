@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import type { PhoneResult } from '~/utils/cambodiaPhone'
+import type { RawContact } from '~/utils/contactImport'
 
 const { play } = useSound()
 
@@ -40,6 +42,140 @@ async function copy(value: string) {
     toast.error('Could not copy')
     play('error')
   }
+}
+
+// ---------- Contacts: check a whole address book at once ----------
+// Kept in memory only: never saved, synced or uploaded
+interface CheckedContact { id: number, name: string, raw: string, result: PhoneResult, network: string }
+
+const { available: googleReady, importFromGoogle } = useGoogleContacts()
+const contacts = ref<CheckedContact[]>([])
+const contactSource = ref('')
+const importing = ref<'' | 'google' | 'file' | 'picker'>('')
+const fileInput = ref<HTMLInputElement>()
+const contactQuery = ref('')
+const networkFilter = ref('All')
+const showCount = ref(100)
+const isDev = import.meta.dev
+
+// The Contact Picker API exists on Android Chrome; feature-checked after mount so SSR matches
+const canPick = ref(false)
+onMounted(() => (canPick.value = 'contacts' in navigator && 'ContactsManager' in window))
+
+// A number written with another country's code (+1…, 0066…) isn't ours to check
+function isForeign(raw: string) {
+  const t = raw.trim()
+  const digits = t.replace(/\D/g, '').replace(/^00/, '')
+  return (t.startsWith('+') || t.startsWith('00')) && !digits.startsWith('855')
+}
+
+const networkOf = (r: PhoneResult) => (r.valid ? r.operator?.name ?? 'Landline' : 'Invalid')
+
+function loadContacts(list: RawContact[], source: string) {
+  const seen = new Set<string>()
+  const out: CheckedContact[] = []
+  let foreign = 0
+  for (const c of list) {
+    for (const raw of c.numbers) {
+      if (isForeign(raw)) {
+        foreign++
+        continue
+      }
+      const result = checkCambodiaPhone(raw)
+      const key = `${c.name}|${result.valid ? result.e164 : raw.replace(/\D/g, '')}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push({ id: out.length, name: c.name.trim() || 'No name', raw, result, network: networkOf(result) })
+    }
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name))
+  contacts.value = out
+  contactSource.value = source
+  networkFilter.value = 'All'
+  contactQuery.value = ''
+  showCount.value = 100
+  if (!out.length) {
+    toast(`No Cambodian numbers in ${source}`, { description: foreign ? `${foreign} numbers from other countries were skipped.` : undefined })
+    return
+  }
+  play('success')
+  toast.success(`${out.length} Cambodian ${out.length === 1 ? 'number' : 'numbers'} checked`, {
+    description: foreign ? `From ${source}. ${foreign} from other countries skipped.` : `From ${source}.`
+  })
+}
+
+async function fromGoogle() {
+  importing.value = 'google'
+  try {
+    loadContacts(await importFromGoogle(), 'Google Contacts')
+  } catch (e) {
+    toast.error('Couldn’t read Google Contacts', { description: e instanceof Error ? e.message : undefined })
+    play('error')
+  } finally {
+    importing.value = ''
+  }
+}
+
+async function fromFile(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  ;(e.target as HTMLInputElement).value = ''
+  if (!file) return
+  importing.value = 'file'
+  try {
+    loadContacts(parseContactFile(file.name, await file.text()), file.name)
+  } catch (err) {
+    toast.error('Couldn’t read that file', { description: err instanceof Error ? err.message : undefined })
+    play('error')
+  } finally {
+    importing.value = ''
+  }
+}
+
+async function fromPicker() {
+  importing.value = 'picker'
+  try {
+    const picked = await (navigator as unknown as { contacts: { select: (p: string[], o: { multiple: boolean }) => Promise<{ name?: string[], tel?: string[] }[]> } })
+      .contacts.select(['name', 'tel'], { multiple: true })
+    if (picked.length) loadContacts(picked.map(p => ({ name: p.name?.[0] ?? '', numbers: p.tel ?? [] })), 'this phone')
+  } catch {
+    toast.error('Couldn’t open your contacts')
+  } finally {
+    importing.value = ''
+  }
+}
+
+function clearContacts() {
+  contacts.value = []
+  contactSource.value = ''
+  play('delete')
+  toast('Contacts cleared from this page')
+}
+
+// One chip per network, in the reference order, then landlines and invalid numbers
+const networks = computed(() => {
+  const counts = new Map<string, number>()
+  for (const c of contacts.value) counts.set(c.network, (counts.get(c.network) ?? 0) + 1)
+  const order = [...OPERATORS.map(o => o.name), 'Landline', 'Invalid']
+  return [
+    { name: 'All', count: contacts.value.length, color: undefined as string | undefined },
+    ...order.filter(n => counts.has(n)).map(n => ({ name: n, count: counts.get(n)!, color: OPERATORS.find(o => o.name === n)?.color }))
+  ]
+})
+
+const filteredContacts = computed(() => {
+  const q = contactQuery.value.trim().toLowerCase()
+  const qDigits = q.replace(/\D/g, '').replace(/^0+/, '')
+  return contacts.value.filter(c =>
+    (networkFilter.value === 'All' || c.network === networkFilter.value)
+    && (!q || c.name.toLowerCase().includes(q) || (qDigits && c.raw.replace(/\D/g, '').includes(qDigits))))
+})
+
+const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+
+function checkContact(c: CheckedContact) {
+  input.value = c.raw
+  play('select')
+  window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
 }
 </script>
 
@@ -129,8 +265,77 @@ async function copy(value: string) {
     </Step>
     </div>
 
-    <section class="panel reference">
-      <h2>Mobile prefixes</h2>
+    <Step title="Check your contacts" hint="See which network each number is on, and catch numbers that are missing a digit." class="contacts-step">
+      <template v-if="contacts.length" #aside>
+        <button type="button" class="btn btn-quiet btn-sm" @click="clearContacts">Clear</button>
+      </template>
+
+      <div v-if="!contacts.length" class="panel import">
+        <div class="sources">
+          <button v-if="googleReady" type="button" class="btn source google" :disabled="!!importing" @click="fromGoogle">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2-1.9 3.2-4.7 3.2-8z" /><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z" /><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z" /><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.2 1.6l3.1-3.1A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z" /></svg>
+            {{ importing === 'google' ? 'Reading contacts…' : 'Sign in with Google' }}
+          </button>
+          <button type="button" class="btn source" :class="{ 'btn-quiet': googleReady }" :disabled="!!importing" @click="fileInput?.click()">
+            {{ importing === 'file' ? 'Reading file…' : 'Import a contacts file' }}
+          </button>
+          <button v-if="canPick" type="button" class="btn btn-quiet source" :disabled="!!importing" @click="fromPicker">Pick from this phone</button>
+          <input ref="fileInput" type="file" accept=".csv,.vcf,text/csv,text/vcard" hidden @change="fromFile">
+        </div>
+        <p class="how">
+          In <a href="https://contacts.google.com" target="_blank" rel="noopener">Google Contacts</a>, choose Export, then <b>Google CSV</b>. A <b>.vcf</b> file from your phone works too.
+        </p>
+        <p v-if="!googleReady && isDev" class="how dev">
+          To sign in with Google directly, set <code>NUXT_PUBLIC_GOOGLE_CLIENT_ID</code> in <code>.env</code>.
+        </p>
+        <p class="private">Contacts stay on this page. They’re never saved or uploaded.</p>
+      </div>
+
+      <div v-else class="panel book">
+        <p class="book-source">{{ contacts.length }} Cambodian {{ contacts.length === 1 ? 'number' : 'numbers' }} from {{ contactSource }}</p>
+
+        <div class="nets" role="group" aria-label="Filter by network">
+          <button
+            v-for="n in networks"
+            :key="n.name"
+            type="button"
+            class="net"
+            :class="{ on: networkFilter === n.name, invalid: n.name === 'Invalid' }"
+            :style="n.color ? { '--op': n.color } : undefined"
+            :aria-pressed="networkFilter === n.name"
+            @click="networkFilter = n.name; showCount = 100"
+          >
+            <span v-if="n.color" class="net-dot" aria-hidden="true" />
+            {{ n.name }} <b>{{ n.count }}</b>
+          </button>
+        </div>
+
+        <input v-model="contactQuery" class="input search" type="search" placeholder="Search by name or number" aria-label="Search contacts">
+
+        <ul v-if="filteredContacts.length" class="people">
+          <li v-for="c in filteredContacts.slice(0, showCount)" :key="c.id">
+            <button type="button" class="person" @click="checkContact(c)">
+              <span class="avatar" :style="{ '--op': c.result.valid ? c.result.operator?.color ?? 'var(--ink-3)' : 'var(--red)' }" aria-hidden="true">{{ initials(c.name) || '?' }}</span>
+              <span class="who">
+                <span class="who-name">{{ c.name }}</span>
+                <span class="who-number">{{ c.result.valid ? c.result.international : c.raw }}</span>
+              </span>
+              <span v-if="c.result.valid" class="net-tag" :style="{ '--op': c.result.operator?.color ?? 'var(--ink-3)' }">
+                {{ c.result.operator?.name ?? c.result.region }}
+              </span>
+              <span v-else class="net-tag bad" :title="c.result.reason">{{ c.result.match ? 'Wrong length' : 'Invalid' }}</span>
+            </button>
+          </li>
+        </ul>
+        <p v-else class="none">No contacts match.</p>
+        <button v-if="filteredContacts.length > showCount" type="button" class="btn btn-quiet btn-sm more" @click="showCount += 200">
+          Show {{ Math.min(200, filteredContacts.length - showCount) }} more
+        </button>
+      </div>
+    </Step>
+
+    <details class="panel reference">
+      <summary>Mobile prefixes for every network</summary>
       <ul class="ops">
         <li v-for="op in OPERATORS" :key="op.name" :style="{ '--op': op.color }">
           <strong>{{ op.name }}</strong>
@@ -142,17 +347,19 @@ async function copy(value: string) {
       <p class="note">
         People can keep their number when they switch networks, so the network shown is a best guess from the prefix.
       </p>
-    </section>
+    </details>
     </div>
   </ToolPage>
 </template>
 
 <style scoped>
+/* One narrow column, like a phone screen: dial, see the SIM, reference tucked below */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  gap: 2rem;
-  align-items: start;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 .number {
@@ -224,7 +431,7 @@ async function copy(value: string) {
   position: relative;
   aspect-ratio: 1.6;
   max-width: 340px;
-  margin: 1.1rem 0 1.4rem;
+  margin: 1.1rem auto 1.4rem;
   padding: 1.1rem 1.25rem;
   display: flex;
   flex-direction: column;
@@ -416,7 +623,49 @@ dd {
 }
 
 .reference {
-  padding: 1.4rem;
+  padding: 0;
+  overflow: hidden;
+}
+
+.reference summary {
+  padding: 1rem 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reference summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A plus that turns into a minus when open */
+.reference summary::after {
+  content: '+';
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--ink-3);
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.reference[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.reference[open] summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.reference .ops,
+.reference .note {
+  margin-left: 1.25rem;
+  margin-right: 1.25rem;
+}
+
+.reference .note {
+  margin-bottom: 1.25rem;
 }
 
 h2 {
@@ -457,6 +706,221 @@ h2 {
   margin: 1rem 0 0;
   font-size: 0.875rem;
   color: var(--ink-3);
+}
+
+/* ---------- Contacts ---------- */
+.import {
+  padding: 1.25rem;
+}
+
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.source {
+  flex: 1 1 12rem;
+  justify-content: center;
+}
+
+.google {
+  gap: 0.6rem;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(var(--shadow) / 0.12);
+}
+
+.google:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.google svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.how {
+  margin: 0.9rem 0 0;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.how a {
+  color: inherit;
+}
+
+.how.dev {
+  margin-top: 0.4rem;
+  color: var(--ink-3);
+}
+
+.private {
+  margin: 0.9rem 0 0;
+  padding-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  border-top: 1px solid var(--line);
+}
+
+.book {
+  padding: 1rem 1rem 0.5rem;
+}
+
+.book-source {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+.nets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.net {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, scale 0.15s;
+}
+
+.net:active {
+  scale: 0.96;
+}
+
+.net b {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+.net.on {
+  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.net.on b {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.net.invalid:not(.on) {
+  color: var(--bad-ink);
+}
+
+.net-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--op);
+}
+
+.search {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.people {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.people li + li {
+  border-top: 1px solid var(--line);
+}
+
+.person {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.4rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.person:hover {
+  background: var(--surface-2);
+}
+
+.avatar {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--op) 18%, var(--surface));
+  border: 2px solid var(--op);
+  border-radius: 50%;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.who-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.who-number {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.net-tag {
+  flex: none;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--op) 14%, var(--surface));
+  border-left: 3px solid var(--op);
+  border-radius: 3px 999px 999px 3px;
+}
+
+.net-tag.bad {
+  --op: var(--red);
+  color: var(--bad-ink);
+}
+
+.none {
+  margin: 0.75rem 0;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.more {
+  margin: 0.5rem 0 0.5rem 0.4rem;
 }
 
 @keyframes settle {

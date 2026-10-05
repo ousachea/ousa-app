@@ -152,9 +152,9 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <div class="workspace">
-      <Step :n="1" title="Log your weight" class="form-step">
+      <Step title="Log your weight" class="form-step">
         <form class="panel form" @submit.prevent="save">
           <div class="row">
             <label class="field">
@@ -179,7 +179,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
         </form>
       </Step>
 
-      <Step :n="2" title="Your trend" class="chart-step">
+      <Step title="Your trend" class="chart-step">
         <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">

@@ -243,7 +243,7 @@ async function copyImage() {
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <div class="workspace">
       <Step :n="1" title="Enter your link or text" class="text">
         <textarea
@@ -438,7 +438,7 @@ async function copyImage() {
         </div>
       </Step>
 
-      <Step :n="4" title="Download or copy" class="preview">
+      <Step title="Preview" class="preview">
         <div class="panel preview-panel">
           <!-- The code on a sheet of paper with printer's crop marks -->
           <div class="paper">
@@ -478,13 +478,14 @@ async function copyImage() {
 </template>
 
 <style scoped>
+/* Studio: the canvas on the left, the controls in a sidebar on the right */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   grid-template-areas:
-    'text preview'
-    'style preview'
-    'decorate preview';
+    'preview text'
+    'preview style'
+    'preview decorate';
   grid-template-rows: auto auto 1fr;
   gap: 2rem 2.5rem;
   align-items: start;

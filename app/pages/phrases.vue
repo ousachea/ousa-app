@@ -117,17 +117,17 @@ function del(p: Phrase) {
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <div class="workspace">
-      <Step :n="1" :title="editingId ? 'Edit phrase' : 'Save a phrase'" class="form-step">
+      <Step :title="editingId ? 'Edit phrase' : 'Save a phrase'" class="form-step">
         <form class="panel form" @submit.prevent="save">
           <label class="field">
             <span class="field-head">English</span>
-            <textarea v-model="form.english" class="input" rows="2" placeholder="Could you send me the report by Friday?" required />
+            <textarea v-model="form.english" class="input" rows="1" placeholder="Could you send me the report by Friday?" required />
           </label>
           <label class="field">
             <span class="field-head">Khmer</span>
-            <textarea v-model="form.khmer" class="input km" rows="2" lang="km" placeholder="ខ្មែរ" required />
+            <textarea v-model="form.khmer" class="input km" rows="1" lang="km" placeholder="ខ្មែរ" required />
           </label>
           <label class="field">
             <span class="field-head">Category</span>
@@ -142,7 +142,7 @@ function del(p: Phrase) {
         </form>
       </Step>
 
-      <Step :n="2" title="Your phrases" class="list-step">
+      <Step title="Your phrases" class="list-step">
         <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
@@ -215,23 +215,31 @@ function del(p: Phrase) {
 </template>
 
 <style scoped>
+/* Add bar across the top, then the flashcards get the full width */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
-  gap: 2rem 2.5rem;
-  align-items: start;
-}
-
-.form-step {
-  position: sticky;
-  top: 5.5rem;
+  grid-template-columns: 1fr;
+  gap: 2rem;
 }
 
 .form {
-  padding: 1.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  padding: 1rem 1.1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(140px, 0.6fr) auto;
+  align-items: end;
+  gap: 0.75rem 1rem;
+}
+
+.form textarea {
+  height: 2.75rem;
+  min-height: 0;
+  resize: none;
+  overflow: hidden;
+}
+
+/* Khmer's tall line height would make its box taller than the others in the bar */
+.form textarea.km {
+  line-height: 1.35;
 }
 
 /* Khmer script has tall stacked vowels; give it its own font and more line height */
@@ -285,7 +293,7 @@ function del(p: Phrase) {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 0.6rem;
 }
 
@@ -469,8 +477,11 @@ p.km {
   .en, .km { transition: none; }
 }
 
-@media (max-width: 960px) {
-  .workspace { grid-template-columns: 1fr; }
-  .form-step { position: static; }
+@media (max-width: 900px) {
+  .form { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 560px) {
+  .form { grid-template-columns: 1fr; }
 }
 </style>

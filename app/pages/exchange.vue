@@ -284,11 +284,13 @@ async function reloadRate() {
   box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
 }
 
+/* A calculator: one narrow column, amount → rate → market → the receipt prints out underneath */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 2rem 2.5rem;
-  align-items: start;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 560px;
+  margin: 0 auto;
 }
 
 .gap { margin-top: 2rem; }
@@ -411,8 +413,7 @@ async function reloadRate() {
 }
 
 .result-step {
-  position: sticky;
-  top: 5.5rem;
+  position: static;
 }
 
 /* Receipt paper: slightly warm, a zig-zag torn bottom edge, dashed rules */
