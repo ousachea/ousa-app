@@ -56,6 +56,17 @@ defineProps<{ name: ToolIconName }>()
       <path d="M21 11.5V19" />
     </template>
 
+    <!-- Password generator: a padlock with hidden-password dots -->
+    <template v-else-if="name === 'password'">
+      <rect x="3.5" y="10" width="17" height="11.5" rx="2.5" />
+      <path d="M7.5 10V7a4.5 4.5 0 0 1 9 0v3" />
+      <g fill="currentColor" stroke="none">
+        <circle cx="8.5" cy="15.75" r="1.25" />
+        <circle cx="12" cy="15.75" r="1.25" />
+        <circle cx="15.5" cy="15.75" r="1.25" />
+      </g>
+    </template>
+
     <!-- Settings (sound): a speaker with two sound waves -->
     <template v-else-if="name === 'sound'">
       <path d="M3.5 9.5h3l5-4v13l-5-4h-3z" />

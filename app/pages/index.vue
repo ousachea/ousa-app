@@ -7,7 +7,7 @@ useHead({ title: 'Ousa App', titleTemplate: '%s' })
     <div class="hero">
       <RubikCube :size="60" follow-pointer class="hero-cube" />
       <h1>Ousa App</h1>
-      <p>Make a QR code, check a Cambodian phone number, shrink an image, or change text case.</p>
+      <p>Small tools for everyday jobs: QR codes, Cambodian phone numbers, images, text and passwords.</p>
     </div>
 
     <nav class="tools" aria-label="Tools">
@@ -66,10 +66,16 @@ h1 {
 
 .tools {
   width: 100%;
-  max-width: 1080px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: 1320px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
+}
+
+.tools > * {
+  flex: 1 1 220px;
+  max-width: 260px;
 }
 
 .tile {
@@ -122,17 +128,15 @@ h1 {
   color: var(--ink-2);
 }
 
-@media (max-width: 960px) {
-  .tools {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 640px;
-  }
-}
-
 @media (max-width: 720px) {
   .tools {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     max-width: 420px;
+  }
+
+  .tools > * {
+    flex: none;
+    max-width: none;
   }
 
   .tile {

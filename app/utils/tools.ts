@@ -1,4 +1,4 @@
-export type ToolIconName = 'qr' | 'phone' | 'compress' | 'case' | 'sound'
+export type ToolIconName = 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'sound'
 
 // Single source of truth for the tools: used by the home grid, the floating nav and each page header.
 export interface Tool {
@@ -40,6 +40,13 @@ export const TOOLS: Tool[] = [
     color: 'var(--yellow)',
     onColor: 'var(--ink)',
     icon: 'case'
+  },
+  {
+    to: '/password',
+    name: 'Password generator',
+    summary: 'Make a strong random password. It never leaves your browser.',
+    color: 'var(--green)',
+    icon: 'password'
   }
 ]
 

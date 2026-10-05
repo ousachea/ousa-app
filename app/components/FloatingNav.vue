@@ -4,11 +4,14 @@ const LINKS = [
   ...TOOLS,
   SETTINGS
 ]
+// Shortcut key for each page: 0 is Home, then 1, 2, 3… in menu order
+const keyFor = (i: number) => String(i)
 
 const open = ref(false)
 const { play } = useSound()
 const root = ref<HTMLElement>()
 const route = useRoute()
+const router = useRouter()
 
 watch(() => route.path, () => (open.value = false))
 
@@ -21,8 +24,43 @@ function onPointerDown(e: PointerEvent) {
   if (open.value && !root.value?.contains(e.target as Node)) open.value = false
 }
 
+// Keys typed into these go into the field, not to the shortcuts
+function isTyping(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true
+  return target instanceof HTMLInputElement
+    && ['text', 'tel', 'search', 'email', 'url', 'password', 'number'].includes(target.type)
+}
+
+function goTo(index: number) {
+  const link = LINKS[index]
+  if (!link) return
+  if (link.to === route.path) open.value = false
+  else router.push(link.to)
+}
+
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') open.value = false
+  if (e.key === 'Escape') {
+    if (open.value) open.value = false
+    // Leave a text field so the shortcuts work again
+    else if (isTyping(e.target)) (e.target as HTMLElement).blur()
+    return
+  }
+
+  // Never take over browser or OS shortcuts, and never steal keys while someone is typing
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || isTyping(e.target)) return
+
+  const current = LINKS.findIndex(l => l.to === route.path)
+  if (/^[0-9]$/.test(e.key) && Number(e.key) < LINKS.length) goTo(Number(e.key))
+  else if (e.key === ']') goTo(current + 1)
+  else if (e.key === '[') goTo(current - 1)
+  else if (e.key === 'm' || e.key === 'M') toggleMenu()
+  else if (e.key === '?') {
+    if (!open.value) toggleMenu()
+  }
+  else return
+
+  e.preventDefault()
 }
 
 onMounted(() => {
@@ -39,8 +77,17 @@ onBeforeUnmount(() => {
 <template>
   <nav ref="root" class="fab" :class="{ open }" aria-label="Site navigation">
     <ul id="fab-menu" class="menu" :inert="!open">
+      <li class="hint" :style="{ '--i': LINKS.length + 1 }">
+        <kbd>[</kbd> <kbd>]</kbd> previous and next page, <kbd>M</kbd> menu
+      </li>
       <li v-for="(link, i) in LINKS" :key="link.to" :style="{ '--i': LINKS.length - i }">
-        <NuxtLink :to="link.to" class="item" :aria-current="route.path === link.to ? 'page' : undefined">
+        <NuxtLink
+          :to="link.to"
+          class="item"
+          :aria-current="route.path === link.to ? 'page' : undefined"
+          :aria-keyshortcuts="keyFor(i)"
+        >
+          <kbd>{{ keyFor(i) }}</kbd>
           <span class="label">{{ link.name }}</span>
           <span class="icon" aria-hidden="true" :style="{ '--c': link.color, '--on-c': 'onColor' in link ? link.onColor : '#fff' }">
             <ToolIcon v-if="link.icon" :name="link.icon" />
@@ -56,6 +103,8 @@ onBeforeUnmount(() => {
       :aria-expanded="open"
       aria-controls="fab-menu"
       :aria-label="open ? 'Close navigation' : 'Open navigation'"
+      aria-keyshortcuts="M"
+      :title="open ? 'Close menu (M)' : 'Open menu (M)'"
       @click="toggleMenu"
     >
       <span class="bars" aria-hidden="true" />
@@ -73,6 +122,12 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: flex-end;
   gap: 0.75rem;
+  /* The hidden menu still takes up space; don't let that invisible box block clicks on the page */
+  pointer-events: none;
+}
+
+.toggle {
+  pointer-events: auto;
 }
 
 .menu {
@@ -116,6 +171,44 @@ onBeforeUnmount(() => {
 
 .item:hover {
   border-color: var(--ink-3);
+}
+
+kbd {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.3rem;
+  display: inline-grid;
+  place-items: center;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--line);
+}
+
+/* Only show key hints to people with a keyboard */
+@media (pointer: coarse) {
+  kbd,
+  .hint {
+    display: none;
+  }
+}
+
+.hint {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.hint kbd {
+  min-width: 1.2rem;
+  height: 1.2rem;
 }
 
 .label {
