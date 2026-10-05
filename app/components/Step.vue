@@ -41,7 +41,7 @@ defineProps<{
   font-size: 0.95rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: #fff;
+  color: var(--on-accent, #fff);
   background: var(--accent);
   border-radius: 7px;
   box-shadow:

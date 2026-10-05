@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const LINKS = [
-  { to: '/', name: 'Home', glyph: '⌂', color: 'var(--green)' },
+  { to: '/', name: 'Home', icon: undefined, color: 'var(--ink)' },
   ...TOOLS,
   SETTINGS
 ]
@@ -42,7 +42,10 @@ onBeforeUnmount(() => {
       <li v-for="(link, i) in LINKS" :key="link.to" :style="{ '--i': LINKS.length - i }">
         <NuxtLink :to="link.to" class="item" :aria-current="route.path === link.to ? 'page' : undefined">
           <span class="label">{{ link.name }}</span>
-          <span class="icon" aria-hidden="true" :style="{ '--c': link.color }">{{ link.glyph }}</span>
+          <span class="icon" aria-hidden="true" :style="{ '--c': link.color, '--on-c': 'onColor' in link ? link.onColor : '#fff' }">
+            <ToolIcon v-if="link.icon" :name="link.icon" />
+            <AppLogo v-else class="logo" />
+          </span>
         </NuxtLink>
       </li>
     </ul>
@@ -126,11 +129,16 @@ onBeforeUnmount(() => {
   height: 2.1rem;
   display: grid;
   place-items: center;
-  font-size: 1rem;
-  color: #fff;
+  font-size: 1.3rem;
+  color: var(--on-c);
   background: var(--c);
   border-radius: 9px;
   box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.12), inset 0 4px 6px rgb(255 255 255 / 0.25);
+}
+
+/* The app logo already is a dark tile, so it fills the icon slot */
+.icon .logo {
+  font-size: 2.1rem;
 }
 
 .item[aria-current='page'] {

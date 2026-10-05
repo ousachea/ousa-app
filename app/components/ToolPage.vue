@@ -8,11 +8,11 @@ useHead({ title: () => tool.value.name })
 </script>
 
 <template>
-  <main class="tool" :style="{ '--accent': tool.color, '--width': props.width }">
-    <NuxtLink to="/" class="home">Ousa App</NuxtLink>
+  <main class="tool" :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
+    <NuxtLink to="/" class="home"><AppLogo class="home-logo" />Ousa App</NuxtLink>
 
     <header class="head">
-      <span class="sticker" aria-hidden="true">{{ tool.glyph }}</span>
+      <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
       <h1>{{ tool.name }}</h1>
       <p>{{ tool.summary }}</p>
     </header>
@@ -34,13 +34,20 @@ useHead({ title: () => tool.value.name })
 
 .home {
   align-self: center;
-  padding: 0.35rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.4rem;
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--ink-2);
   text-decoration: none;
   border-radius: 999px;
   transition: background-color 0.15s, color 0.15s;
+}
+
+.home-logo {
+  font-size: 1.4rem;
 }
 
 .home:hover {
@@ -62,8 +69,8 @@ useHead({ title: () => tool.value.name })
   height: 3.5rem;
   display: grid;
   place-items: center;
-  font-size: 1.6rem;
-  color: #fff;
+  font-size: 2rem;
+  color: var(--on-accent);
   background: var(--accent);
   border-radius: 14px;
   /* Glossy sticker on black plastic, like the cube */

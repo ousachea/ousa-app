@@ -1,10 +1,14 @@
+export type ToolIconName = 'qr' | 'phone' | 'compress' | 'case' | 'sound'
+
 // Single source of truth for the tools: used by the home grid, the floating nav and each page header.
 export interface Tool {
   to: string
   name: string
   summary: string
   color: string
-  glyph: string
+  /** Text colour on top of `color`; light stickers like yellow need dark text */
+  onColor?: string
+  icon: ToolIconName
 }
 
 export const TOOLS: Tool[] = [
@@ -13,21 +17,29 @@ export const TOOLS: Tool[] = [
     name: 'QR code',
     summary: 'Turn a link or text into a QR code you can download.',
     color: 'var(--blue)',
-    glyph: '▦'
+    icon: 'qr'
   },
   {
     to: '/phone',
     name: 'Phone checker',
     summary: 'Check a Cambodian number and see its network.',
     color: 'var(--red)',
-    glyph: '☎'
+    icon: 'phone'
   },
   {
     to: '/compress',
     name: 'Image compressor',
     summary: 'Make images smaller without uploading them.',
     color: 'var(--orange)',
-    glyph: '⇲'
+    icon: 'compress'
+  },
+  {
+    to: '/case',
+    name: 'Text case converter',
+    summary: 'Switch text between lowercase, UPPERCASE, Title Case and Sentence case.',
+    color: 'var(--yellow)',
+    onColor: 'var(--ink)',
+    icon: 'case'
   }
 ]
 
@@ -36,7 +48,7 @@ export const SETTINGS: Tool = {
   name: 'Settings',
   summary: 'Choose how the app sounds, or turn sound off.',
   color: 'var(--ink)',
-  glyph: '⚙'
+  icon: 'sound'
 }
 
 export const toolFor = (path: string) => [...TOOLS, SETTINGS].find(t => t.to === path)

@@ -7,7 +7,7 @@ useHead({ title: 'Ousa App', titleTemplate: '%s' })
     <div class="hero">
       <RubikCube :size="60" follow-pointer class="hero-cube" />
       <h1>Ousa App</h1>
-      <p>Make a QR code, check a Cambodian phone number, or shrink an image.</p>
+      <p>Make a QR code, check a Cambodian phone number, shrink an image, or change text case.</p>
     </div>
 
     <nav class="tools" aria-label="Tools">
@@ -16,9 +16,9 @@ useHead({ title: 'Ousa App', titleTemplate: '%s' })
         :key="tool.to"
         :to="tool.to"
         class="tile"
-        :style="{ '--accent': tool.color }"
+        :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff' }"
       >
-        <span class="sticker" aria-hidden="true">{{ tool.glyph }}</span>
+        <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
         <strong>{{ tool.name }}</strong>
         <span class="summary">{{ tool.summary }}</span>
       </NuxtLink>
@@ -66,9 +66,9 @@ h1 {
 
 .tools {
   width: 100%;
-  max-width: 820px;
+  max-width: 1080px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
@@ -96,8 +96,8 @@ h1 {
   margin-bottom: 0.6rem;
   display: grid;
   place-items: center;
-  font-size: 1.25rem;
-  color: #fff;
+  font-size: 1.6rem;
+  color: var(--on-accent);
   background: var(--accent);
   border-radius: 11px;
   box-shadow:
@@ -120,6 +120,13 @@ h1 {
 .summary {
   font-size: 0.925rem;
   color: var(--ink-2);
+}
+
+@media (max-width: 960px) {
+  .tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 640px;
+  }
 }
 
 @media (max-width: 720px) {
