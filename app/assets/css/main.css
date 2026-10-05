@@ -1,0 +1,271 @@
+:root {
+  /* Surfaces */
+  --bg: #e8ebf0;
+  --surface: #ffffff;
+  --surface-2: #f3f5f8;
+  --line: #d6dbe3;
+
+  /* Ink */
+  --ink: #1b1f2a;
+  --ink-2: #555d70;
+  --ink-3: #8a92a3;
+
+  /* Cube stickers: each tool owns one */
+  --blue: #1f5bd8;
+  --red: #d7263d;
+  --orange: #ef7d16;
+  --green: #179a54;
+  --yellow: #f7c324;
+
+  --accent: var(--green);
+  --font: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+}
+
+body {
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Pages slide sideways during transitions; don't let that create a horizontal scrollbar */
+  overflow-x: clip;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---------- Shared controls ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0 1.15rem;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 86%, #000);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-quiet {
+  color: var(--ink);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.btn-quiet:hover:not(:disabled) {
+  background: var(--line);
+}
+
+.btn-sm {
+  min-height: 2.1rem;
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+  border-radius: 9px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.field-head output {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.input,
+textarea.input,
+select.input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input:hover {
+  border-color: var(--ink-3);
+}
+
+.input:focus,
+.input:focus-within {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+textarea.input {
+  resize: vertical;
+  line-height: 1.45;
+}
+
+input[type='range'] {
+  width: 100%;
+  margin: 0;
+  height: 2rem;
+  accent-color: var(--accent);
+}
+
+input[type='range']:disabled {
+  opacity: 0.4;
+}
+
+/* Segmented control built from radio inputs */
+.segmented {
+  display: flex;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.segmented label {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--ink-2);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.segmented label.active {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(27 31 42 / 0.12), 0 0 0 1px var(--line);
+}
+
+.segmented label:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Page transitions (direction set in middleware/transition.global.ts) ---------- */
+
+.slide-forward-enter-active,
+.slide-forward-leave-active,
+.slide-back-enter-active,
+.slide-back-leave-active {
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.slide-forward-leave-active,
+.slide-back-leave-active {
+  transition-duration: 0.16s;
+  transition-timing-function: ease-in;
+}
+
+.slide-forward-enter-from,
+.slide-back-leave-to {
+  opacity: 0;
+  transform: translateX(32px);
+}
+
+.slide-forward-leave-to,
+.slide-back-enter-from {
+  opacity: 0;
+  transform: translateX(-32px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-forward-enter-from,
+  .slide-forward-leave-to,
+  .slide-back-enter-from,
+  .slide-back-leave-to {
+    transform: none;
+  }
+}

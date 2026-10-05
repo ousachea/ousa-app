@@ -1,41 +1,156 @@
+<script setup lang="ts">
+useHead({ title: 'Ousa App', titleTemplate: '%s' })
+</script>
+
 <template>
   <main class="home">
-    <RubikCube :size="72" />
-    <h1>Ousa App</h1>
-    <p>Scramble, solve, repeat.</p>
+    <div class="hero">
+      <RubikCube :size="60" follow-pointer class="hero-cube" />
+      <h1>Ousa App</h1>
+      <p>Make a QR code, check a Cambodian phone number, or shrink an image.</p>
+    </div>
+
+    <nav class="tools" aria-label="Tools">
+      <NuxtLink
+        v-for="tool in TOOLS"
+        :key="tool.to"
+        :to="tool.to"
+        class="tile"
+        :style="{ '--accent': tool.color }"
+      >
+        <span class="sticker" aria-hidden="true">{{ tool.glyph }}</span>
+        <strong>{{ tool.name }}</strong>
+        <span class="summary">{{ tool.summary }}</span>
+      </NuxtLink>
+    </nav>
   </main>
 </template>
 
 <style scoped>
 .home {
-  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 2rem 1rem 7rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3.5rem;
-  padding: 1rem;
-  background: radial-gradient(circle at 50% 40%, #1d2433 0%, #0b0d12 70%);
-  color: #e8ecf3;
-  font-family: system-ui, -apple-system, sans-serif;
-  text-align: center;
+  gap: 3rem;
   overflow: hidden;
 }
 
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.hero-cube {
+  margin: -1rem 0 1rem;
+}
+
 h1 {
-  margin: 0;
-  font-size: clamp(2rem, 6vw, 3.5rem);
-  letter-spacing: -0.02em;
+  font-size: clamp(3.25rem, 12vw, 6.5rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  font-variation-settings: 'opsz' 96;
 }
 
-p {
-  margin: -2.5rem 0 0;
-  color: #9aa3b2;
+.hero p {
+  margin: 1rem 0 0;
+  max-width: 28rem;
+  font-size: 1.15rem;
+  color: var(--ink-2);
 }
 
-@media (max-width: 480px) {
-  .home :deep(.scene) {
-    scale: 0.72;
+.tools {
+  width: 100%;
+  max-width: 820px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.5rem 1.25rem 1.4rem;
+  text-align: center;
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  transition: border-color 0.15s;
+}
+
+.tile:hover {
+  border-color: var(--accent);
+}
+
+.sticker {
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 0.6rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 11px;
+  box-shadow:
+    0 0 0 3px var(--ink),
+    inset 0 -5px 0 rgb(0 0 0 / 0.12),
+    inset 0 5px 8px rgb(255 255 255 / 0.25);
+  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.6, 1);
+}
+
+/* The one playful moment: the sticker gives a quarter-turn, like a cube face */
+.tile:hover .sticker {
+  transform: rotate(90deg);
+}
+
+.tile strong {
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+
+.summary {
+  font-size: 0.925rem;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  .tools {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+
+  .tile {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 1.1rem;
+    padding: 1rem 1.15rem;
+    text-align: left;
+    align-items: center;
+  }
+
+  .sticker {
+    grid-row: span 2;
+    margin: 0 0 0 3px;
+  }
+
+  .hero-cube {
+    margin: -3.5rem 0 -2.5rem;
+    scale: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile:hover .sticker {
+    transform: none;
   }
 }
 </style>

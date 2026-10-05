@@ -18,11 +18,14 @@ interface Move {
 const props = withDefaults(defineProps<{
   size?: number
   moveDuration?: number
+  /** Turn the whole cube to face the mouse pointer */
+  followPointer?: boolean
   scrambleLength?: number
 }>(), {
   size: 64,
   moveDuration: 380,
-  scrambleLength: 18
+  scrambleLength: 18,
+  followPointer: false
 })
 
 // CSS uses a y-down coordinate system: -y is the top face.
@@ -129,8 +132,77 @@ function buildSequence(): (Move | 'pause')[] {
 let frame = 0
 let stopped = false
 
+// ---------- Whole-cube orientation: slow idle spin, or turn to face the pointer ----------
+
+const BASE_TILT = -28 // degrees; shows the top face
+const LOOK_X = 32 // how far the cube tilts up/down toward the pointer
+const LOOK_Y = 55 // how far it turns left/right toward the pointer
+const IDLE_AFTER = 2500 // ms without pointer movement before the idle spin resumes
+
+const sceneEl = ref<HTMLElement>()
+const cubeEl = ref<HTMLElement>()
+let orientFrame = 0
+
+function startOrientation() {
+  let rx = BASE_TILT
+  let ry = -35
+  let spin = -35 // idle spin angle; frozen while the pointer is being followed
+  let lookX = 0 // pointer offset from the cube centre, -1..1
+  let lookY = 0
+  let lastMove = -Infinity
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse' || !sceneEl.value) return
+    const box = sceneEl.value.getBoundingClientRect()
+    const clamp = (n: number) => Math.max(-1, Math.min(1, n))
+    lookX = clamp((e.clientX - (box.left + box.width / 2)) / (window.innerWidth / 2))
+    lookY = clamp((e.clientY - (box.top + box.height / 2)) / (window.innerHeight / 2))
+    lastMove = performance.now()
+  }
+
+  // Leaving the window counts as going idle straight away
+  const onLeave = () => (lastMove = -Infinity)
+
+  if (props.followPointer) {
+    window.addEventListener('pointermove', onPointerMove, { passive: true })
+    document.documentElement.addEventListener('pointerleave', onLeave)
+  }
+
+  let prev = performance.now()
+  const tick = (now: number) => {
+    // Frame-rate independent smoothing
+    const dt = Math.min((now - prev) / 16.67, 4)
+    prev = now
+
+    if (now - lastMove > IDLE_AFTER) {
+      lookX *= Math.pow(0.97, dt)
+      lookY *= Math.pow(0.97, dt)
+      spin += 0.25 * dt
+    }
+
+    const targetX = BASE_TILT - lookY * LOOK_X
+    const targetY = spin + lookX * LOOK_Y
+    const ease = 1 - Math.pow(1 - 0.08, dt)
+    rx += (targetX - rx) * ease
+    ry += (targetY - ry) * ease
+
+    if (cubeEl.value) cubeEl.value.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`
+    orientFrame = requestAnimationFrame(tick)
+  }
+  orientFrame = requestAnimationFrame(tick)
+
+  return () => {
+    cancelAnimationFrame(orientFrame)
+    window.removeEventListener('pointermove', onPointerMove)
+    document.documentElement.removeEventListener('pointerleave', onLeave)
+  }
+}
+
+let stopOrientation: (() => void) | undefined
+
 onMounted(() => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  stopOrientation = startOrientation()
 
   let queue = buildSequence()
   let current: Move | 'pause' | undefined
@@ -164,12 +236,13 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopped = true
   cancelAnimationFrame(frame)
+  stopOrientation?.()
 })
 </script>
 
 <template>
-  <div class="scene" :style="{ '--s': `${size}px` }" role="img" aria-label="Animated Rubik's cube">
-    <div class="cube">
+  <div ref="sceneEl" class="scene" :style="{ '--s': `${size}px` }" role="img" aria-label="Animated Rubik's cube">
+    <div ref="cubeEl" class="cube">
       <div
         v-for="(cubie, i) in cubies"
         :key="i"
@@ -189,8 +262,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .scene {
-  width: calc(var(--s) * 3);
-  height: calc(var(--s) * 3);
+  /* A 3x3x3 cube spinning in 3D reaches ~2.6 cubies from its centre, so reserve that much room */
+  width: calc(var(--s) * 5.2);
+  height: calc(var(--s) * 5.2);
   perspective: calc(var(--s) * 14);
   display: grid;
   place-items: center;
@@ -201,7 +275,8 @@ onBeforeUnmount(() => {
   width: 0;
   height: 0;
   transform-style: preserve-3d;
-  animation: spin 24s linear infinite;
+  /* Resting pose before JS takes over (and for reduced motion) */
+  transform: rotateX(-28deg) rotateY(-35deg);
 }
 
 .cubie {
@@ -237,15 +312,4 @@ onBeforeUnmount(() => {
 .top { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); }
 .bottom { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); }
 
-@keyframes spin {
-  from { transform: rotateX(-28deg) rotateY(0deg); }
-  to { transform: rotateX(-28deg) rotateY(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cube {
-    animation: none;
-    transform: rotateX(-28deg) rotateY(-35deg);
-  }
-}
 </style>
