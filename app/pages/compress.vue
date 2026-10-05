@@ -11,7 +11,8 @@ interface Item {
   previewUrl: string
   width: number
   height: number
-  status: 'working' | 'done' | 'error'
+  status: 'loading' | 'compressing' | 'done' | 'error'
+  progress: number // 0–1, drives the progress bar for the current stage
   output?: Blob
   outputUrl?: string
   outWidth?: number
@@ -32,6 +33,50 @@ const items = ref<Item[]>([])
 const dragging = ref(false)
 let nextId = 0
 
+const busy = computed(() => items.value.filter(i => i.status === 'loading' || i.status === 'compressing').length)
+
+// One "complete" sound when a whole batch finishes, instead of one per image
+watch(busy, (now, before) => {
+  if (!before || now || !items.value.some(i => i.status === 'done')) return
+  play('complete')
+  const t = totals.value
+  toast.success(`${t.count} ${t.count === 1 ? 'image' : 'images'} ready`, {
+    description: t.saved >= 0 ? `${Math.round(t.saved * 100)}% smaller in total` : `${Math.abs(Math.round(t.saved * 100))}% larger in total. Try a lower quality.`
+  })
+})
+
+// ---------- Before/after comparison ----------
+const compareId = ref<number>()
+const comparePos = ref(50) // % of the width showing the original
+const compareItem = computed(() => {
+  const done = items.value.filter(i => i.status === 'done' && i.outputUrl)
+  return done.find(i => i.id === compareId.value) ?? done[0]
+})
+
+// Press and drag anywhere on the image to move the divider
+let comparing = false
+function comparePointer(e: PointerEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  comparePos.value = Math.min(Math.max(((e.clientX - rect.left) / rect.width) * 100, 0), 100)
+}
+function onCompareDown(e: PointerEvent) {
+  comparing = true
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  comparePointer(e)
+}
+function onCompareMove(e: PointerEvent) {
+  if (comparing) comparePointer(e)
+}
+function onCompareUp() {
+  comparing = false
+}
+
+function compare(item: Item) {
+  if (item.status !== 'done') return
+  compareId.value = item.id
+  play('select')
+}
+
 const totals = computed(() => {
   const done = items.value.filter(i => i.output)
   const before = done.reduce((n, i) => n + i.file.size, 0)
@@ -50,38 +95,90 @@ function savedLabel(item: Item) {
   return ratio >= 0 ? `−${Math.round(ratio * 100)}%` : `+${Math.round(-ratio * 100)}%`
 }
 
-async function compress(item: Item) {
-  const run = ++item.run
-  item.status = 'working'
-  try {
-    const bitmap = await createImageBitmap(item.file)
-    const scale = maxWidth.value && bitmap.width > maxWidth.value ? maxWidth.value / bitmap.width : 1
-    const w = Math.round(bitmap.width * scale)
-    const h = Math.round(bitmap.height * scale)
+// ---------- Staged progress ----------
+// The real work takes milliseconds, so each stage runs for a short minimum time with a progress bar.
+// The compress bar holds at 90% until encoding actually finishes, so it never claims to be done early.
 
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')!
-    // JPEG has no transparency: paint white instead of letting it turn black
-    if (format.value === 'image/jpeg') {
-      ctx.fillStyle = '#fff'
-      ctx.fillRect(0, 0, w, h)
+const LOAD_MIN_MS = 500
+const LOAD_MAX_MS = 1600
+const LOAD_BYTES_PER_MS = 4000 // ~4 MB/s, so bigger files take visibly longer
+const COMPRESS_MS = 900
+const RECOMPRESS_MS = 450
+
+let reducedMotion = false
+onMounted(() => {
+  reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+})
+
+// Animate item.progress to `to`; stops early if a newer run has taken over the item
+function tween(item: Item, run: number, to: number, ms: number) {
+  return new Promise<void>((resolve) => {
+    if (reducedMotion) {
+      item.progress = to
+      return resolve()
     }
-    ctx.drawImage(bitmap, 0, 0, w, h)
-    bitmap.close()
+    const from = item.progress
+    const start = performance.now()
+    const step = (now: number) => {
+      if (run !== item.run) return resolve()
+      const t = Math.min((now - start) / ms, 1)
+      item.progress = from + (to - from) * (1 - (1 - t) ** 3)
+      if (t < 1) requestAnimationFrame(step)
+      else resolve()
+    }
+    requestAnimationFrame(step)
+  })
+}
 
-    const blob = await new Promise<Blob | null>(resolve =>
-      canvas.toBlob(resolve, format.value, quality.value / 100)
-    )
-    if (!blob) throw new Error('Encoding failed')
+async function encode(item: Item) {
+  const bitmap = await createImageBitmap(item.file)
+  const scale = maxWidth.value && bitmap.width > maxWidth.value ? maxWidth.value / bitmap.width : 1
+  const w = Math.round(bitmap.width * scale)
+  const h = Math.round(bitmap.height * scale)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  // JPEG has no transparency: paint white instead of letting it turn black
+  if (format.value === 'image/jpeg') {
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, w, h)
+  }
+  ctx.drawImage(bitmap, 0, 0, w, h)
+  bitmap.close()
+
+  const blob = await new Promise<Blob | null>(resolve =>
+  canvas.toBlob(resolve, format.value, quality.value / 100)
+  )
+  if (!blob) throw new Error('Encoding failed')
+  return { blob, w, h }
+}
+
+async function compress(item: Item, { initial = false } = {}) {
+  const run = ++item.run
+  try {
+    if (initial) {
+      item.status = 'loading'
+      item.progress = 0
+      const ms = Math.min(LOAD_MIN_MS + item.file.size / LOAD_BYTES_PER_MS, LOAD_MAX_MS)
+      await tween(item, run, 1, ms)
+      if (run !== item.run) return
+    }
+
+    item.status = 'compressing'
+    item.progress = 0
+    const work = encode(item)
+    const [out] = await Promise.all([work, tween(item, run, 0.9, initial ? COMPRESS_MS : RECOMPRESS_MS)])
     if (run !== item.run) return // settings changed mid-way; a newer run owns this item
+    await tween(item, run, 1, 150)
+    if (run !== item.run) return
 
     if (item.outputUrl) URL.revokeObjectURL(item.outputUrl)
-    item.output = blob
-    item.outputUrl = URL.createObjectURL(blob)
-    item.outWidth = w
-    item.outHeight = h
+    item.output = out.blob
+    item.outputUrl = URL.createObjectURL(out.blob)
+    item.outWidth = out.w
+    item.outHeight = out.h
     item.status = 'done'
   } catch {
     if (run === item.run) item.status = 'error'
@@ -103,7 +200,8 @@ async function addFiles(files: FileList | File[]) {
       previewUrl: URL.createObjectURL(file),
       width: 0,
       height: 0,
-      status: 'working',
+      status: 'loading',
+      progress: 0,
       run: 0
     })
     const img = new Image()
@@ -113,7 +211,7 @@ async function addFiles(files: FileList | File[]) {
     }
     img.src = item.previewUrl
     items.value.push(item)
-    compress(item)
+    compress(item, { initial: true })
   }
 }
 
@@ -121,7 +219,7 @@ async function addFiles(files: FileList | File[]) {
 let timer: ReturnType<typeof setTimeout> | undefined
 watch([quality, format, maxWidth], () => {
   clearTimeout(timer)
-  timer = setTimeout(() => items.value.forEach(compress), 200)
+  timer = setTimeout(() => items.value.forEach(item => compress(item)), 200)
 })
 
 function onDrop(e: DragEvent) {
@@ -239,8 +337,38 @@ onBeforeUnmount(clearAll)
     <Step :n="3" title="Download" class="results">
     <p v-if="!items.length" class="waiting">Your compressed images show up here, ready to download.</p>
     <template v-else>
+      <!-- Drag the handle to compare the original (left) with the compressed image (right) -->
+      <figure v-if="compareItem" class="compare">
+        <div
+          class="compare-frame"
+          @pointerdown="onCompareDown"
+          @pointermove="onCompareMove"
+          @pointerup="onCompareUp"
+          @pointercancel="onCompareUp"
+          :style="{ '--pos': `${comparePos}%`, aspectRatio: compareItem.width && compareItem.height ? `${compareItem.width} / ${compareItem.height}` : '4 / 3' }">
+          <img :src="compareItem.outputUrl" alt="" class="after" draggable="false">
+          <img :src="compareItem.previewUrl" alt="" class="before" draggable="false">
+          <span class="divider" aria-hidden="true"><span class="handle" /></span>
+          <span class="tag-left">Original · {{ formatBytes(compareItem.file.size) }}</span>
+          <span class="tag-right">Compressed · {{ formatBytes(compareItem.output!.size) }}</span>
+          <input
+            v-model.number="comparePos"
+            type="range"
+            min="0"
+            max="100"
+            step="0.5"
+            class="compare-range"
+            :aria-label="`Compare original and compressed ${compareItem.file.name}`"
+          >
+        </div>
+        <figcaption>{{ compareItem.file.name }} — drag to compare. Click any image below to compare it.</figcaption>
+      </figure>
+
       <div class="summary">
-        <p v-if="totals.count">
+        <p v-if="busy" class="busy" role="status">
+          Compressing… {{ items.length - busy }} of {{ items.length }} done
+        </p>
+        <p v-else-if="totals.count">
           <strong>{{ formatBytes(totals.before) }} to {{ formatBytes(totals.after) }}</strong>
           <span :class="totals.saved >= 0 ? 'good' : 'warn'">
             {{ totals.saved >= 0 ? `${Math.round(totals.saved * 100)}% smaller` : `${Math.abs(Math.round(totals.saved * 100))}% larger` }}
@@ -254,7 +382,32 @@ onBeforeUnmount(clearAll)
 
       <ul class="list">
         <li v-for="item in items" :key="item.id" class="item">
-          <img :src="item.outputUrl ?? item.previewUrl" :alt="item.file.name">
+          <div
+            class="thumb"
+            :class="[item.status, { comparing: compareItem?.id === item.id }]"
+            :role="item.status === 'done' ? 'button' : undefined"
+            :tabindex="item.status === 'done' ? 0 : undefined"
+            :aria-label="item.status === 'done' ? `Compare ${item.file.name}` : undefined"
+            @click="compare(item)"
+            @keydown.enter="compare(item)"
+          >
+            <img :src="item.outputUrl ?? item.previewUrl" :alt="item.file.name">
+            <Transition name="fade">
+              <div v-if="item.status === 'loading' || item.status === 'compressing'" class="stage">
+                <span class="stage-label">{{ item.status === 'loading' ? 'Loading' : 'Compressing' }}</span>
+                <div
+                  class="bar"
+                  role="progressbar"
+                  :aria-label="`${item.status === 'loading' ? 'Loading' : 'Compressing'} ${item.file.name}`"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  :aria-valuenow="Math.round(item.progress * 100)"
+                >
+                  <span :style="{ transform: `scaleX(${item.progress})` }" />
+                </div>
+              </div>
+            </Transition>
+          </div>
           <div class="info">
             <p class="name" :title="item.file.name">{{ item.file.name }}</p>
             <p class="meta">
@@ -263,7 +416,8 @@ onBeforeUnmount(clearAll)
                 to <strong>{{ formatBytes(item.output!.size) }}</strong>
                 <span :class="item.output!.size <= item.file.size ? 'good' : 'warn'">{{ savedLabel(item) }}</span>
               </template>
-              <span v-else-if="item.status === 'working'" class="muted">Compressing…</span>
+              <span v-else-if="item.status === 'loading'" class="muted">Loading {{ Math.round(item.progress * 100) }}%</span>
+              <span v-else-if="item.status === 'compressing'" class="muted">Compressing {{ Math.round(item.progress * 100) }}%</span>
               <span v-else class="warn">This file couldn’t be read as an image</span>
             </p>
             <p v-if="item.outWidth" class="meta muted">
@@ -430,14 +584,198 @@ onBeforeUnmount(clearAll)
   border-radius: 18px;
 }
 
-.item img {
+/* Before/after: the original sits on top, clipped to the left of the handle */
+.compare {
+  margin: 0 0 1.5rem;
+}
+
+.compare-frame {
+  position: relative;
+  max-height: 70vh;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 18px;
+  background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 16px 16px;
+  box-shadow: 0 10px 30px -12px rgb(var(--shadow) / 0.35);
+  user-select: none;
+}
+
+.compare-frame img {
+  /* Not draggable: the browser's own image drag would cancel the divider drag */
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.before {
+  clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+}
+
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--pos);
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.15);
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.3);
+}
+
+/* Two small arrows inside the handle */
+.handle::before,
+.handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -5px;
+  border: 5px solid transparent;
+}
+
+.handle::before { left: 7px; border-right-color: var(--accent); }
+.handle::after { right: 7px; border-left-color: var(--accent); }
+
+.tag-left,
+.tag-right {
+  position: absolute;
+  top: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgb(0 0 0 / 0.55);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag-left { left: 0.75rem; }
+.tag-right { right: 0.75rem; background: color-mix(in srgb, var(--accent) 85%, #000); }
+
+/* Hidden range input: gives keyboard and screen-reader control; pointer dragging is handled on the frame */
+.compare-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.compare-frame {
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+
+.compare-frame:has(.compare-range:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 3px;
+}
+
+.compare figcaption {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.thumb.done {
+  cursor: zoom-in;
+}
+
+.thumb.comparing {
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+.thumb {
+  position: relative;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  transition: filter 0.3s, opacity 0.3s;
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: 11px;
   outline: 1px solid rgb(var(--shadow) / 0.1);
   outline-offset: -1px;
   background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 12px 12px;
+}
+
+/* Dim and soften the picture while it's being worked on */
+.thumb.loading img,
+.thumb.compressing img {
+  filter: blur(2px) saturate(0.6);
+  opacity: 0.55;
+}
+
+.stage {
+  position: absolute;
+  inset: auto 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.7rem;
+  background: rgb(var(--shadow) / 0.55);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+}
+
+.stage-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.bar {
+  height: 0.35rem;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.25);
+  border-radius: 999px;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+  transform-origin: left;
+}
+
+.fade-leave-active {
+  transition: opacity 0.25s;
+}
+
+.fade-leave-to {
+  opacity: 0;
+}
+
+.busy {
+  color: var(--ink-2);
+  font-weight: 600;
 }
 
 .info {

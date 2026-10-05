@@ -67,6 +67,72 @@ defineProps<{ name: ToolIconName }>()
       </g>
     </template>
 
+    <!-- Todos: a checklist -->
+    <template v-else-if="name === 'list'">
+      <path d="M4 6.5l1.5 1.5L8.5 5" />
+      <path d="M4 12.5l1.5 1.5 3-3" />
+      <path d="M11.5 6.5H20" />
+      <path d="M11.5 12.5H20" />
+      <path d="M11.5 18.5H20" />
+      <circle cx="6" cy="18.5" r="1.6" />
+    </template>
+
+    <!-- Password saver: a shield with a keyhole -->
+    <template v-else-if="name === 'vault'">
+      <path d="M12 2.5l7.5 3v5.8c0 4.6-3.1 8.2-7.5 10.2-4.4-2-7.5-5.6-7.5-10.2V5.5z" />
+      <circle cx="12" cy="10.5" r="1.8" />
+      <path d="M12 12.3V16" />
+    </template>
+
+    <!-- KHR/USD exchange: two arrows trading places -->
+    <template v-else-if="name === 'exchange'">
+      <path d="M4 8h14.5" />
+      <path d="M15 4.5L18.5 8 15 11.5" />
+      <path d="M20 16H5.5" />
+      <path d="M9 12.5L5.5 16 9 19.5" />
+    </template>
+
+    <!-- Things I own: a box -->
+    <template v-else-if="name === 'things'">
+      <path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z" />
+      <path d="M3.5 7.5L12 12l8.5-4.5" />
+      <path d="M12 12v9" />
+    </template>
+
+    <!-- What should I eat: fork and knife -->
+    <template v-else-if="name === 'eat'">
+      <path d="M6 3v5a2.5 2.5 0 0 0 5 0V3" />
+      <path d="M8.5 3v18" />
+      <path d="M17.5 21V3c-2.2 1.4-3.5 4-3.5 7.5V14h3.5" />
+    </template>
+
+    <!-- Weight: bathroom scale -->
+    <template v-else-if="name === 'weight'">
+      <rect x="3" y="3.5" width="18" height="17" rx="4" />
+      <path d="M8 10a4.5 4.5 0 0 1 8 0" />
+      <path d="M12 11.5l1.6-2.6" />
+    </template>
+
+    <!-- Countdown: hourglass -->
+    <template v-else-if="name === 'countdown'">
+      <path d="M6.5 3h11M6.5 21h11" />
+      <path d="M7.5 3v3.2L12 12l-4.5 5.8V21M16.5 3v3.2L12 12l4.5 5.8V21" />
+    </template>
+
+    <!-- Renewals: calendar with a repeat arrow -->
+    <template v-else-if="name === 'renewals'">
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+      <path d="M14.6 13.2a3 3 0 1 0 .3 2.8" />
+      <path d="M15 11.3v2.2h-2.2" />
+    </template>
+
+    <!-- Phrase bank: two speech bubbles -->
+    <template v-else-if="name === 'phrases'">
+      <path d="M3.5 4.5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H8.5l-3.5 3v-3H3.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z" />
+      <path d="M18 9h2.5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H19v3l-3.5-3h-4a2 2 0 0 1-2-2v-.5" />
+    </template>
+
     <!-- Settings (sound): a speaker with two sound waves -->
     <template v-else-if="name === 'sound'">
       <path d="M3.5 9.5h3l5-4v13l-5-4h-3z" />

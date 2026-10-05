@@ -16,6 +16,14 @@
   --orange: #ef7d16;
   --green: #179a54;
   --yellow: #f7c324;
+  /* Beyond the cube's six, for the newer tools; all keep white text readable */
+  --teal: #0f9488;
+  --brown: #8d5f33;
+  --pink: #d43d78;
+  --lime: #4f8a12;
+  --purple: #7448d1;
+  --indigo: #3949ab;
+  --sky: #1479b0;
 
   /* The black plastic of the cube: sticker rims, the menu button, toasts. Stays dark in both themes. */
   --plastic: #1b1f2a;
@@ -30,12 +38,14 @@
   --digit-ink: #1f5bd8;
   --symbol-ink: #c25e00;
 
+  --chart-line: #4f8a12; /* weight chart; validated against each theme's surface */
+
   --shadow: 27 31 42; /* rgb channels, used as rgb(var(--shadow) / alpha) */
   --checker-a: #eceff3;
   --checker-b: #ffffff;
 
   --accent: var(--green);
-  --font: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font: 'Bricolage Grotesque', 'Noto Sans Khmer', ui-sans-serif, system-ui, sans-serif;
 
   color-scheme: light;
 }
@@ -61,6 +71,8 @@
   --warn-ink: #ffb366;
   --digit-ink: #7aa7ff;
   --symbol-ink: #ffa04d;
+
+  --chart-line: #64a426;
 
   --shadow: 0 0 0;
   --checker-a: #20252e;
@@ -141,7 +153,7 @@ a {
 }
 
 .btn:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .btn:disabled {

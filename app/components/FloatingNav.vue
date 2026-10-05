@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { toast } from 'vue-sonner'
+
 const LINKS = [
   { to: '/', name: 'Home', icon: undefined, color: 'var(--plastic)' },
   ...TOOLS,
   SETTINGS
 ]
 // Shortcut key for each page: 0 is Home, then 1, 2, 3… in menu order
-const keyFor = (i: number) => String(i)
+// Only ten digit keys exist, so pages after the tenth have no number shortcut
+const keyFor = (i: number) => (i <= 9 ? String(i) : undefined)
 
 const open = ref(false)
 const { play } = useSound()
@@ -40,11 +43,20 @@ function goTo(index: number) {
   else router.push(link.to)
 }
 
+// Back to the previous page in this app; if the visitor landed here directly, go home instead
+function goBack() {
+  if (window.history.state?.back) router.back()
+  else if (route.path !== '/') router.push('/')
+}
+
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
+    // Something on the page (e.g. a chart) already handled it
+    if (e.defaultPrevented) return
     if (open.value) open.value = false
     // Leave a text field so the shortcuts work again
     else if (isTyping(e.target)) (e.target as HTMLElement).blur()
+    else goBack()
     return
   }
 
@@ -59,6 +71,7 @@ function onKeydown(e: KeyboardEvent) {
   else if (e.key === 'd' || e.key === 'D') {
     toggleTheme()
     play('toggle-on')
+    toast(document.documentElement.dataset.theme === 'dark' ? 'Dark mode on' : 'Light mode on', { description: 'Press D again to switch back.' })
   }
   else if (e.key === '?') {
     if (!open.value) toggleMenu()
@@ -82,23 +95,23 @@ onBeforeUnmount(() => {
 <template>
   <nav ref="root" class="fab" :class="{ open }" aria-label="Site navigation">
     <ul id="fab-menu" class="menu" :inert="!open">
-      <li class="hint" :style="{ '--i': LINKS.length + 1 }">
-        <kbd>[</kbd> <kbd>]</kbd> previous and next page, <kbd>M</kbd> menu, <kbd>D</kbd> dark mode
-      </li>
-      <li v-for="(link, i) in LINKS" :key="link.to" :style="{ '--i': LINKS.length - i }">
+      <li v-for="(link, i) in LINKS" :key="link.to" :style="{ '--i': i }">
         <NuxtLink
           :to="link.to"
           class="item"
           :aria-current="route.path === link.to ? 'page' : undefined"
           :aria-keyshortcuts="keyFor(i)"
         >
-          <kbd>{{ keyFor(i) }}</kbd>
+          <kbd v-if="keyFor(i)">{{ keyFor(i) }}</kbd>
           <span class="label">{{ link.name }}</span>
           <span class="icon" aria-hidden="true" :style="{ '--c': link.color, '--on-c': 'onColor' in link ? link.onColor : '#fff' }">
             <ToolIcon v-if="link.icon" :name="link.icon" />
             <AppLogo v-else class="logo" />
           </span>
         </NuxtLink>
+      </li>
+      <li class="hint" :style="{ '--i': LINKS.length }">
+        <kbd>Esc</kbd> back, <kbd>[</kbd> <kbd>]</kbd> previous and next page, <kbd>M</kbd> menu, <kbd>D</kbd> dark mode
       </li>
     </ul>
 
@@ -120,11 +133,12 @@ onBeforeUnmount(() => {
 <style scoped>
 .fab {
   position: fixed;
+  /* Top-right corner; the menu drops down below the button */
+  top: max(1rem, env(safe-area-inset-top));
   right: max(1.25rem, env(safe-area-inset-right));
-  bottom: max(1.25rem, env(safe-area-inset-bottom));
   z-index: 100;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   align-items: flex-end;
   gap: 0.75rem;
   /* The hidden menu still takes up space; don't let that invisible box block clicks on the page */
@@ -136,9 +150,13 @@ onBeforeUnmount(() => {
 }
 
 .menu {
+  /* Scroll when the list is taller than the screen */
+  max-height: calc(100dvh - 6rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem 0.5rem 0.75rem 1rem;
+  margin: 0 -0.5rem 0 0;
   list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -147,11 +165,15 @@ onBeforeUnmount(() => {
 
 .menu li {
   opacity: 0;
-  transform: translateY(10px) scale(0.92);
+  transform: translateY(-10px) scale(0.92);
   transform-origin: right center;
   transition: opacity 0.18s, transform 0.25s cubic-bezier(0.3, 1.4, 0.6, 1);
   transition-delay: calc(var(--i) * 30ms);
   pointer-events: none;
+}
+
+.open .menu {
+  pointer-events: auto; /* so the open list can be scrolled */
 }
 
 .open .menu li {
@@ -259,7 +281,7 @@ kbd {
 }
 
 .toggle:hover { background: var(--plastic-hover); }
-.toggle:active { transform: scale(0.94); }
+.toggle:active { transform: scale(0.96); }
 
 .toggle:focus-visible,
 .item:focus-visible {

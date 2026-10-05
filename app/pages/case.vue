@@ -8,6 +8,13 @@ const mode = ref<CaseMode>('sentence')
 const copied = ref(false)
 
 const output = computed(() => convertCase(input.value, mode.value))
+
+// Each case button previews the start of the visitor's own text in that case
+const SAMPLE = 'the quick brown fox. jumps over the lazy dog'
+const specimen = (m: CaseMode) => {
+  const source = input.value.trim().split('\n')[0]!.slice(0, 40) || SAMPLE
+  return convertCase(source, m)
+}
 const stats = computed(() => textStats(input.value))
 
 const STAT_LABELS = [
@@ -85,7 +92,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
                 :checked="mode === m.value"
                 @change="pickMode(m.value)"
               >
-              {{ m.label }}
+              <span class="mode-name">{{ m.label }}</span>
+              <span class="specimen">{{ specimen(m.value) }}</span>
             </label>
           </div>
         </Step>
@@ -207,15 +215,38 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 /* Each option is shown in its own case, so the buttons preview the result */
 .mode {
   position: relative;
-  padding: 0.85rem 1rem;
-  font-size: 1.05rem;
-  font-weight: 600;
-  text-align: center;
+  min-width: 0;
+  padding: 0.85rem 1rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
   cursor: pointer;
   transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+
+/* Small label, then the user's text set large in that case, like a type specimen */
+.mode-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.specimen {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mode.active .mode-name {
+  color: var(--ink);
 }
 
 .mode:hover {
@@ -245,9 +276,11 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   min-height: 12rem;
   max-height: 28rem;
   overflow: auto;
-  padding: 1.25rem 1.4rem;
-  font-size: 1.05rem;
-  line-height: 1.6;
+  padding: 1.4rem 1.5rem;
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

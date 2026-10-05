@@ -1,28 +1,36 @@
 <script setup lang="ts">
+const GROUPS = [
+  { name: 'Tools', tools: TOOLS.filter(t => (t.group ?? 'Tools') === 'Tools') },
+  { name: 'Life', tools: TOOLS.filter(t => t.group === 'Life') }
+]
+
 useHead({ title: 'Ousa App', titleTemplate: '%s' })
 </script>
 
 <template>
   <main class="home">
     <div class="hero">
-      <RubikCube :size="60" follow-pointer class="hero-cube" />
+      <RubikCube :size="60" follow-pointer interactive :links="TOOLS" class="hero-cube" />
       <h1>Ousa App</h1>
-      <p>Small tools for everyday jobs: QR codes, Cambodian phone numbers, images, text and passwords.</p>
+      <p>Small tools for everyday jobs, and simple trackers for the things in your life. Click an icon on the cube to open it, or anywhere else to shuffle.</p>
     </div>
 
-    <nav class="tools" aria-label="Tools">
-      <NuxtLink
-        v-for="tool in TOOLS"
-        :key="tool.to"
-        :to="tool.to"
-        class="tile"
-        :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff' }"
-      >
-        <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
-        <strong>{{ tool.name }}</strong>
-        <span class="summary">{{ tool.summary }}</span>
-      </NuxtLink>
-    </nav>
+    <section v-for="group in GROUPS" :key="group.name" class="group" :aria-labelledby="`group-${group.name}`">
+      <h2 :id="`group-${group.name}`">{{ group.name }}</h2>
+      <nav class="tools" :aria-label="group.name">
+        <NuxtLink
+          v-for="tool in group.tools"
+          :key="tool.to"
+          :to="tool.to"
+          class="tile"
+          :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff' }"
+        >
+          <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
+          <strong>{{ tool.name }}</strong>
+          <span class="summary">{{ tool.summary }}</span>
+        </NuxtLink>
+      </nav>
+    </section>
   </main>
 </template>
 
@@ -62,6 +70,21 @@ h1 {
   max-width: 28rem;
   font-size: 1.15rem;
   color: var(--ink-2);
+}
+
+.group {
+  width: 100%;
+  max-width: 1320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.group h2 {
+  font-size: 1.1rem;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
 }
 
 .tools {

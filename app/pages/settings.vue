@@ -1,9 +1,34 @@
 <script setup lang="ts">
+import { toast } from 'vue-sonner'
 import { getPack, packNames, type CueName, type PackName } from 'uisfx'
 
 const sound = useSound()
 const { state } = sound
 const { theme, setTheme } = useTheme()
+
+// ---------- Sync with Supabase ----------
+// Signing in uses the Passwords account; trackers then sync to the shared user_items table
+const { vault, signOut } = useVault()
+const signedIn = computed(() => ['locked', 'unlocked', 'needs-setup'].includes(vault.status))
+const table = ref<'checking' | 'ready' | 'missing' | 'error'>('checking')
+
+async function checkTable() {
+  if (!signedIn.value) return
+  table.value = 'checking'
+  const { error } = await useSupabase().from(SYNC_TABLE).select('id').limit(1)
+  table.value = !error ? 'ready' : error.code === 'PGRST205' ? 'missing' : 'error'
+}
+watch(signedIn, checkTable, { immediate: true })
+
+async function copySyncSql() {
+  try {
+    await navigator.clipboard.writeText(SYNC_SETUP_SQL)
+    toast.success('SQL copied', { description: 'Paste it into the Supabase SQL editor and run it.' })
+    sound.play('copy')
+  } catch {
+    toast.error('Could not copy')
+  }
+}
 
 const THEMES: { value: ThemePreference, label: string }[] = [
   { value: 'system', label: 'System' },
@@ -14,6 +39,7 @@ const THEMES: { value: ThemePreference, label: string }[] = [
 function chooseTheme(value: ThemePreference) {
   setTheme(value)
   sound.play('select')
+  toast(value === 'system' ? 'Following your device’s theme' : `${value === 'dark' ? 'Dark' : 'Light'} theme on`)
 }
 
 const PACKS = packNames.map(name => getPack(name))
@@ -33,6 +59,7 @@ function toggle() {
   sound.setEnabled(next)
   // Confirm turning sound on with a sound; turning off stays silent
   if (next) sound.play('toggle-on')
+  toast(next ? 'Sound effects on' : 'Sound effects off')
 }
 
 function choosePack(pack: PackName) {
@@ -102,10 +129,36 @@ const volume = computed({
             >
           </label>
         </Step>
+
+        <Step id="sync" :n="3" title="Sync with Supabase" hint="Keep your trackers in your Supabase account and see them on every device." class="sync-step">
+          <div class="panel sync">
+            <template v-if="!signedIn">
+              <p>You’re not signed in, so Things I own, Renewals, Countdown and the other trackers are saved on this device only.</p>
+              <NuxtLink to="/password?tab=saved" class="btn btn-sm">Sign in or create an account</NuxtLink>
+              <p class="small">It’s the same account as the password saver.</p>
+            </template>
+            <template v-else>
+              <p>Signed in as <strong>{{ vault.email }}</strong>.</p>
+              <p v-if="table === 'checking'" class="small">Checking Supabase…</p>
+              <p v-else-if="table === 'ready'" class="ok">Your trackers sync to Supabase.</p>
+              <p v-else-if="table === 'error'" class="small">Couldn’t reach Supabase right now. Your data is safe on this device.</p>
+              <template v-else>
+                <p class="small">One-time setup: run this SQL in Supabase to create the table your trackers sync to. Each account can only see its own rows.</p>
+                <pre><code>{{ SYNC_SETUP_SQL }}</code></pre>
+                <div class="row-actions">
+                  <button type="button" class="btn btn-sm" @click="copySyncSql">Copy SQL</button>
+                  <a class="btn btn-quiet btn-sm" :href="SUPABASE_SQL_EDITOR" target="_blank" rel="noopener">Open the SQL editor</a>
+                  <button type="button" class="btn btn-quiet btn-sm" @click="checkTable">Check again</button>
+                </div>
+              </template>
+              <button type="button" class="link" @click="signOut">Sign out</button>
+            </template>
+          </div>
+        </Step>
         </div>
 
         <div class="main" :class="{ muted: !state.enabled }" :inert="!state.enabled">
-          <Step :n="3" title="Choose a style" hint="Each style plays a sample when you pick it.">
+          <Step :n="4" title="Choose a style" hint="Each style plays a sample when you pick it.">
             <div class="packs" role="radiogroup" aria-label="Sound style">
               <label
                 v-for="pack in PACKS"
@@ -128,7 +181,7 @@ const volume = computed({
             </div>
           </Step>
 
-          <Step :n="4" title="Try it" hint="Hear the sounds you’ll get around the app." class="try">
+          <Step :n="5" title="Try it" hint="Hear the sounds you’ll get around the app." class="try">
             <div class="samples">
               <button
                 v-for="s in SAMPLES"
@@ -161,7 +214,7 @@ const volume = computed({
 
 .side {
   position: sticky;
-  top: 1.5rem;
+  top: 5.5rem; /* clear of the menu button in the top-right corner */
 }
 
 .appearance {
@@ -182,6 +235,62 @@ const volume = computed({
   background: var(--surface-2);
   border-radius: 5px;
   box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--line);
+}
+
+.sync-step {
+  margin-top: 2rem;
+  scroll-margin-top: 6rem;
+}
+
+.sync {
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.sync p {
+  margin: 0;
+}
+
+.sync .small {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+.sync .ok {
+  font-weight: 600;
+  color: var(--good-ink);
+}
+
+.sync pre {
+  width: 100%;
+  max-height: 14rem;
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  background: var(--surface-2);
+  border-radius: 10px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.sync .link {
+  padding: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .sound-step {

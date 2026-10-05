@@ -1,8 +1,11 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{ width?: string }>(), { width: '1320px' })
+import type { Tool } from '~/utils/tools'
+
+// Pages listed in TOOLS are found by route; other pages (like /todos) pass their own `tool`
+const props = withDefaults(defineProps<{ width?: string, tool?: Tool }>(), { width: '1320px', tool: undefined })
 
 const route = useRoute()
-const tool = computed(() => toolFor(route.path)!)
+const tool = computed(() => props.tool ?? toolFor(route.path)!)
 
 useHead({ title: () => tool.value.name })
 </script>
@@ -33,7 +36,7 @@ useHead({ title: () => tool.value.name })
 }
 
 .home {
-  align-self: center;
+  align-self: flex-start;
   display: flex;
   align-items: center;
   gap: 0.5rem;

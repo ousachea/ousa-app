@@ -1,12 +1,22 @@
 <script setup lang="ts">
+import type { ToolIconName } from '~/utils/tools'
+
 type Vec3 = [number, number, number]
 type Mat3 = [Vec3, Vec3, Vec3]
 type Face = 'front' | 'back' | 'right' | 'left' | 'top' | 'bottom'
+
+interface CubeLink {
+  to: string
+  name: string
+  icon: ToolIconName
+}
 
 interface Cubie {
   pos: Vec3
   rot: Mat3
   stickers: Partial<Record<Face, string>>
+  // App links printed on some stickers; they travel with the piece when the cube turns
+  links: Partial<Record<Face, CubeLink>>
 }
 
 interface Move {
@@ -20,12 +30,18 @@ const props = withDefaults(defineProps<{
   moveDuration?: number
   /** Turn the whole cube to face the mouse pointer */
   followPointer?: boolean
+  /** Click (or Enter/Space) to shuffle; every click adds more turns */
+  interactive?: boolean
+  /** Up to 12 links shown as icons on the stickers of the top, front and right faces */
+  links?: CubeLink[]
   scrambleLength?: number
 }>(), {
   size: 64,
   moveDuration: 380,
   scrambleLength: 18,
-  followPointer: false
+  followPointer: false,
+  interactive: false,
+  links: () => []
 })
 
 // CSS uses a y-down coordinate system: -y is the top face.
@@ -74,12 +90,28 @@ function createCubies(): Cubie[] {
         if (y === 1) stickers.bottom = COLORS.bottom
         if (z === 1) stickers.front = COLORS.front
         if (z === -1) stickers.back = COLORS.back
-        cubies.push({ pos: [x, y, z], rot: IDENTITY, stickers })
+        cubies.push({ pos: [x, y, z], rot: IDENTITY, stickers, links: {} })
       }
     }
   }
+
+  // Four links per visible face: the centre plus three edges, so they read clearly at rest
+  const SLOTS: [Vec3, Face][] = [
+    [[0, -1, 0], 'top'], [[0, -1, 1], 'top'], [[1, -1, 0], 'top'], [[-1, -1, 0], 'top'],
+    [[0, 0, 1], 'front'], [[-1, 0, 1], 'front'], [[1, 0, 1], 'front'], [[0, 1, 1], 'front'],
+    [[1, 0, 0], 'right'], [[1, 1, 0], 'right'], [[1, 0, -1], 'right'], [[1, -1, 0], 'right']
+  ]
+  props.links.slice(0, SLOTS.length).forEach((link, i) => {
+    const [pos, face] = SLOTS[i]!
+    const cubie = cubies.find(c => c.pos.every((v, k) => v === pos[k]))
+    if (cubie) cubie.links[face] = link
+  })
   return cubies
 }
+
+// Dark ink on the light stickers (white, yellow, orange), white on the rest
+const LIGHT_STICKERS = new Set([COLORS.top, COLORS.bottom, COLORS.left])
+const inkOn = (color?: string) => (color && LIGHT_STICKERS.has(color) ? '#1b1f2a' : '#ffffff')
 
 const cubies = createCubies()
 
@@ -121,12 +153,97 @@ function randomMove(prev?: Move): Move {
 
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
-// Scramble with random moves, pause, then play them back in reverse to solve.
-function buildSequence(): (Move | 'pause')[] {
-  const scramble: Move[] = []
-  for (let i = 0; i < props.scrambleLength; i++) scramble.push(randomMove(scramble[i - 1]))
-  const solve = scramble.slice().reverse().map(m => ({ ...m, dir: -m.dir as Move['dir'] }))
-  return [...scramble, 'pause', ...solve, 'pause']
+// ---------- Turn sequencing ----------
+// `history` holds every turn applied so far. Solving undoes it in reverse, so any mix of automatic
+// and clicked scrambles always returns to a solved cube.
+
+type Step =
+  | { kind: 'turn', move: Move, solving: boolean, fast: boolean }
+  | { kind: 'pause', ms: number }
+
+const SHUFFLE_TURNS = 6
+const FAST_MOVE_MS = 150
+const SOLVE_AFTER_MS = 2200 // wait after the last click before solving
+
+const history: Move[] = []
+let queue: Step[] = []
+let reducedMotion = false
+
+const inverse = (m: Move): Move => ({ ...m, dir: -m.dir as Move['dir'] })
+
+function lastPlannedMove() {
+  for (let i = queue.length - 1; i >= 0; i--) {
+    const step = queue[i]!
+    if (step.kind === 'turn' && !step.solving) return step.move
+  }
+  return history[history.length - 1]
+}
+
+function scrambleSteps(count: number, fast: boolean): Step[] {
+  const steps: Step[] = []
+  let prev = lastPlannedMove()
+  for (let i = 0; i < count; i++) {
+    prev = randomMove(prev)
+    steps.push({ kind: 'turn', move: prev, solving: false, fast })
+  }
+  return steps
+}
+
+// While the pointer is over the cube it holds still (solved) so the app icons are easy to click
+let hold = false
+let solveNow = false
+let skipPause = false
+
+function onHoverStart() {
+  if (!props.links.length || reducedMotion) return
+  hold = true
+  solveNow = true
+  skipPause = true
+  // Planned turns aren't applied yet, so they can be dropped; the cube then solves straight away
+  queue = queue.filter(step => step.kind === 'turn' && step.fast && !step.solving)
+}
+
+function onHoverEnd() {
+  hold = false
+}
+
+// What to do when nothing is queued: solve if scrambled, otherwise start a slow scramble (or rest while held)
+function idleSteps(): Step[] {
+  if (history.length) {
+    const pause: Step[] = hold && solveNow ? [] : [{ kind: 'pause', ms: SOLVE_AFTER_MS }]
+    solveNow = false
+    return [
+      ...pause,
+      ...history.slice().reverse().map(m => ({ kind: 'turn', move: inverse(m), solving: true, fast: hold }) as Step)
+    ]
+  }
+  if (hold) return []
+  return [{ kind: 'pause', ms: 1200 }, ...scrambleSteps(props.scrambleLength, false)]
+}
+
+function shuffle() {
+  if (reducedMotion) {
+    // No animation: apply the turns instantly
+    for (const step of scrambleSteps(SHUFFLE_TURNS, true)) {
+      if (step.kind !== 'turn') continue
+      commit(step.move)
+      history.push(step.move)
+    }
+    render()
+    return
+  }
+  // Interrupt any pause, solve or slow scramble. Planned turns aren't applied yet, so dropping them is safe;
+  // only earlier click bursts are kept so rapid clicks stack up.
+  queue = queue.filter(step => step.kind === 'turn' && step.fast)
+  queue.push(...scrambleSteps(SHUFFLE_TURNS, true))
+}
+
+const { play } = useSound()
+
+function onShuffle() {
+  if (!props.interactive) return
+  shuffle()
+  play('press')
 }
 
 let frame = 0
@@ -138,6 +255,7 @@ const BASE_TILT = -28 // degrees; shows the top face
 const LOOK_X = 32 // how far the cube tilts up/down toward the pointer
 const LOOK_Y = 55 // how far it turns left/right toward the pointer
 const IDLE_AFTER = 2500 // ms without pointer movement before the idle spin resumes
+const HOME_SPIN = -35 // resting angle: top, front and right faces in view
 
 const sceneEl = ref<HTMLElement>()
 const cubeEl = ref<HTMLElement>()
@@ -174,7 +292,11 @@ function startOrientation() {
     const dt = Math.min((now - prev) / 16.67, 4)
     prev = now
 
-    if (now - lastMove > IDLE_AFTER) {
+    if (hold) {
+      // Held for clicking: turn back to the home angle that shows the top, front and right faces
+      const home = HOME_SPIN + 360 * Math.round((spin - HOME_SPIN) / 360)
+      spin += (home - spin) * (1 - Math.pow(1 - 0.1, dt))
+    } else if (now - lastMove > IDLE_AFTER) {
       lookX *= Math.pow(0.97, dt)
       lookY *= Math.pow(0.97, dt)
       spin += 0.25 * dt
@@ -201,29 +323,44 @@ function startOrientation() {
 let stopOrientation: (() => void) | undefined
 
 onMounted(() => {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reducedMotion) return
   stopOrientation = startOrientation()
 
-  let queue = buildSequence()
-  let current: Move | 'pause' | undefined
+  let current: Step | undefined
   let start = 0
 
   const tick = (now: number) => {
     if (stopped) return
+    // A click may have cleared a pause; drop it so the burst starts right away
+    if (current?.kind === 'pause' && queue[0]?.kind === 'turn' && queue[0].fast) current = undefined
+    // Hovering ends any pause right away so the cube can settle for clicking
+    if (skipPause) {
+      if (current?.kind === 'pause') current = undefined
+      skipPause = false
+    }
     if (!current) {
-      if (!queue.length) queue = buildSequence()
+      if (!queue.length) queue = idleSteps()
       current = queue.shift()
       start = now
     }
-    const step = current!
-    const duration = step === 'pause' ? 1200 : props.moveDuration
+    if (!current) {
+      // Held and solved: nothing to animate
+      frame = requestAnimationFrame(tick)
+      return
+    }
+
+    const step = current
+    const duration = step.kind === 'pause' ? step.ms : step.fast ? FAST_MOVE_MS : props.moveDuration
     const t = Math.min((now - start) / duration, 1)
 
-    if (step !== 'pause') {
+    if (step.kind === 'turn') {
       if (t < 1) {
-        render(step, step.dir * ease(t) * Math.PI / 2)
+        render(step.move, step.move.dir * ease(t) * Math.PI / 2)
       } else {
-        commit(step)
+        commit(step.move)
+        if (step.solving) history.pop()
+        else history.push(step.move)
         render()
       }
     }
@@ -241,7 +378,21 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="sceneEl" class="scene" :style="{ '--s': `${size}px` }" role="img" aria-label="Animated Rubik's cube">
+  <div
+    ref="sceneEl"
+    class="scene"
+    :class="{ interactive }"
+    :style="{ '--s': `${size}px` }"
+    :role="interactive ? 'button' : 'img'"
+    :tabindex="interactive ? 0 : undefined"
+    :aria-label="interactive ? 'Shuffle the Rubik’s cube' : 'Animated Rubik’s cube'"
+    :title="interactive ? 'Click to shuffle' : undefined"
+    @click="onShuffle"
+    @pointerenter="onHoverStart"
+    @pointerleave="onHoverEnd"
+    @keydown.enter.prevent="onShuffle"
+    @keydown.space.prevent="onShuffle"
+  >
     <div ref="cubeEl" class="cube">
       <div
         v-for="(cubie, i) in cubies"
@@ -253,8 +404,21 @@ onBeforeUnmount(() => {
           v-for="face in FACES"
           :key="face"
           :class="['face', face]"
-          :style="cubie.stickers[face] ? { '--c': cubie.stickers[face] } : undefined"
-        />
+          :style="cubie.stickers[face] ? { '--c': cubie.stickers[face], '--ink': inkOn(cubie.stickers[face]) } : undefined"
+        >
+          <!-- Clicking an icon opens that app; clicking a plain sticker still shuffles -->
+          <NuxtLink
+            v-if="cubie.links[face]"
+            :to="cubie.links[face]!.to"
+            class="face-link"
+            :title="cubie.links[face]!.name"
+            :aria-label="cubie.links[face]!.name"
+            tabindex="-1"
+            @click.stop
+          >
+            <ToolIcon :name="cubie.links[face]!.icon" />
+          </NuxtLink>
+        </div>
       </div>
     </div>
   </div>
@@ -268,6 +432,23 @@ onBeforeUnmount(() => {
   perspective: calc(var(--s) * 14);
   display: grid;
   place-items: center;
+}
+
+.scene.interactive {
+  cursor: pointer;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s cubic-bezier(0.3, 1.5, 0.6, 1);
+}
+
+/* transform (not scale) so the press combines with any size set by the parent */
+.scene.interactive:active {
+  transform: scale(0.96);
+}
+
+.scene.interactive:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  outline-offset: -1.5rem;
 }
 
 .cube {
@@ -294,6 +475,29 @@ onBeforeUnmount(() => {
   background: #121212;
   border-radius: calc(var(--s) * 0.08);
   backface-visibility: hidden;
+}
+
+/* Icon sticker: sits above the coloured sticker layer */
+.face-link {
+  position: absolute;
+  inset: calc(var(--s) * 0.06);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--s) * 0.46);
+  color: var(--ink);
+  border-radius: calc(var(--s) * 0.12);
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), background-color 0.15s;
+}
+
+.face-link:hover {
+  transform: scale(1.08);
+  background: rgb(255 255 255 / 0.18);
+}
+
+.face-link:active {
+  transform: scale(0.96);
 }
 
 .face::after {

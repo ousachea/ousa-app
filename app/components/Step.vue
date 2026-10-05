@@ -10,10 +10,12 @@ defineProps<{
   <section class="step" :aria-label="`Step ${n}: ${title}`">
     <header class="step-head">
       <span class="num" aria-hidden="true">{{ n }}</span>
-      <div>
+      <div class="step-text">
         <h2>{{ title }}</h2>
         <p v-if="hint">{{ hint }}</p>
       </div>
+      <!-- Optional extra on the right of the heading, e.g. a data-source badge -->
+      <div v-if="$slots.aside" class="aside"><slot name="aside" /></div>
     </header>
     <slot />
   </section>
@@ -53,6 +55,15 @@ h2 {
   font-size: 1.15rem;
   line-height: 1.75rem;
   letter-spacing: -0.015em;
+}
+
+.step-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.aside {
+  flex: none;
 }
 
 .step-head p {

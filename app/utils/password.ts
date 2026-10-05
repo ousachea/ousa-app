@@ -88,6 +88,20 @@ const BIG_YEARS: [number, string][] = [
   [1e3, 'thousand']
 ]
 
+export const crackSeconds = (bits: number, guessesPerSecond = GUESSES_PER_SECOND) => 2 ** Math.max(bits - 1, 0) / guessesPerSecond
+
+// Position on a log scale running from 1 second to the age of the universe, 0–1
+const YEAR_S = 31_557_600
+export const UNIVERSE_S = UNIVERSE_AGE_YEARS * YEAR_S
+export const crackScale = (seconds: number) => Math.min(Math.max(Math.log10(Math.max(seconds, 1)) / Math.log10(UNIVERSE_S), 0), 1)
+export const CRACK_TICKS = [
+  { label: 'Hour', seconds: 3600 },
+  { label: 'Day', seconds: 86_400 },
+  { label: 'Year', seconds: YEAR_S },
+  { label: '1,000 years', seconds: 1000 * YEAR_S },
+  { label: '1M years', seconds: 1e6 * YEAR_S }
+].map(t => ({ ...t, at: crackScale(t.seconds) }))
+
 // Average time to guess a random password with this many bits: half of all 2^bits possibilities
 export function crackTime(bits: number, guessesPerSecond = GUESSES_PER_SECOND) {
   let value = 2 ** Math.max(bits - 1, 0) / guessesPerSecond

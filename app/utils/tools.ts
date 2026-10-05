@@ -1,4 +1,8 @@
-export type ToolIconName = 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'sound'
+export type ToolIconName =
+  | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'list'
+  | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'phrases'
+
+export type ToolGroup = 'Tools' | 'Life'
 
 // Single source of truth for the tools: used by the home grid, the floating nav and each page header.
 export interface Tool {
@@ -9,6 +13,7 @@ export interface Tool {
   /** Text colour on top of `color`; light stickers like yellow need dark text */
   onColor?: string
   icon: ToolIconName
+  group?: ToolGroup
 }
 
 export const TOOLS: Tool[] = [
@@ -43,10 +48,65 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/password',
-    name: 'Password generator',
-    summary: 'Make a strong random password. It never leaves your browser.',
+    name: 'Passwords',
+    summary: 'Make strong passwords and save them, encrypted on this device.',
     color: 'var(--green)',
     icon: 'password'
+  },
+  {
+    to: '/exchange',
+    name: 'KHR/USD exchange',
+    summary: 'See if an exchange rate makes you gain or lose money.',
+    color: 'var(--teal)',
+    icon: 'exchange'
+  },
+  {
+    to: '/things',
+    name: 'Things I own',
+    summary: 'Keep track of what you own, what you paid and what it’s all worth.',
+    color: 'var(--brown)',
+    icon: 'things',
+    group: 'Life'
+  },
+  {
+    to: '/eat',
+    name: 'What should I eat?',
+    summary: 'Swipe through your saved foods and places until one sounds good.',
+    color: 'var(--pink)',
+    icon: 'eat',
+    group: 'Life'
+  },
+  {
+    to: '/weight',
+    name: 'Weight',
+    summary: 'Log your weight and see the trend.',
+    color: 'var(--lime)',
+    icon: 'weight',
+    group: 'Life'
+  },
+  {
+    to: '/countdown',
+    name: 'Countdown',
+    summary: 'Count down to the dates that matter.',
+    color: 'var(--purple)',
+    icon: 'countdown',
+    group: 'Life'
+  },
+  {
+    to: '/renewals',
+    name: 'Renewals',
+    summary: 'See what your subscriptions cost and when they renew.',
+    color: 'var(--indigo)',
+    icon: 'renewals',
+    group: 'Life'
+  },
+  {
+    to: '/phrases',
+    name: 'Phrase bank',
+    summary: 'Save useful English and Khmer phrases for work.',
+    color: 'var(--sky)',
+    icon: 'phrases',
+    group: 'Life'
   }
 ]
 

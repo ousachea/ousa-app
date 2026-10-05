@@ -6,6 +6,12 @@ const { play } = useSound()
 const input = ref('')
 const result = computed(() => checkCambodiaPhone(input.value))
 const valid = computed(() => (result.value.valid ? result.value : undefined))
+
+// White text on dark network colours, dark text on light ones (Cellcard's orange fails white-text contrast)
+const simInk = computed(() => {
+  const color = valid.value?.operator?.color
+  return color && contrastRatio(color, '#ffffff') < 3 ? '#1b1f2a' : '#ffffff'
+})
 // A known prefix while the number is still incomplete, e.g. just "96"
 const partial = computed(() => {
   const r = result.value
@@ -65,9 +71,15 @@ async function copy(value: string) {
           Valid {{ valid.type === 'mobile' ? 'mobile' : 'landline' }} number
         </div>
 
-        <div class="owner" :style="{ '--op': valid.operator?.color ?? 'var(--blue)' }">
-          <strong>{{ valid.operator?.name ?? valid.region }}</strong>
-          <span>{{ valid.type === 'mobile' ? 'Mobile network, based on the prefix' : 'Province, based on the area code' }}</span>
+        <!-- A SIM card in the network's colour: cut corner, contact chip, the number printed on it -->
+        <div class="sim" :style="{ '--op': valid.operator?.color ?? 'var(--blue)', '--sim-ink': simInk }">
+          <div class="sim-top">
+            <span class="chip" aria-hidden="true"><i /><i /><i /></span>
+            <span class="sim-kind">{{ valid.type === 'mobile' ? 'Mobile' : 'Landline' }}</span>
+          </div>
+          <strong class="sim-name">{{ valid.operator?.name ?? valid.region }}</strong>
+          <span class="sim-number">{{ valid.international }}</span>
+          <span class="sim-note">{{ valid.type === 'mobile' ? 'Network based on the prefix' : 'Province based on the area code' }}</span>
         </div>
 
         <dl class="formats">
@@ -205,6 +217,76 @@ async function copy(value: string) {
 .result {
   padding: 1.25rem;
   animation: settle 0.2s ease-out;
+}
+
+/* SIM card: rounded rectangle with the classic cut corner */
+.sim {
+  position: relative;
+  aspect-ratio: 1.6;
+  max-width: 340px;
+  margin: 1.1rem 0 1.4rem;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  color: var(--sim-ink);
+  background:
+    radial-gradient(circle at 85% 0%, rgb(255 255 255 / 0.28), transparent 55%),
+    linear-gradient(135deg, var(--op), color-mix(in srgb, var(--op) 70%, #000));
+  border-radius: 16px;
+  clip-path: polygon(0 0, calc(100% - 2.2rem) 0, 100% 2.2rem, 100% 100%, 0 100%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15);
+}
+
+.sim-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Gold contact pad with its etched lines */
+.chip {
+  width: 2.6rem;
+  height: 2rem;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  padding: 4px;
+  background: linear-gradient(135deg, #f5d97b, #c9a43e);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
+}
+
+.chip i {
+  border-top: 1px solid rgb(0 0 0 / 0.25);
+}
+
+.sim-kind {
+  margin-right: 1.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.sim-name {
+  margin-top: auto;
+  font-size: 1.7rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.sim-number {
+  margin-top: 0.2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+
+}
+
+.sim-note {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
 }
 
 .partial .owner {
