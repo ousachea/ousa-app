@@ -39,6 +39,29 @@ const seo = useAppSeo(() => ({
 }))
 void seo
 
+// Tab icon: the app's own icon as a cube sticker (its colour on black plastic). Built from the
+// icon already drawn in the header, so it always matches; the home page keeps its cube.
+const stickerEl = ref<HTMLElement | { $el: HTMLElement }>()
+// app.vue owns the favicon tag; pages hand it their icon through this shared state
+const appFavicon = useState<string | null>('app-favicon', () => null)
+onBeforeUnmount(() => (appFavicon.value = null))
+onMounted(() => {
+  const el = stickerEl.value && '$el' in stickerEl.value ? stickerEl.value.$el : stickerEl.value
+  const icon = el?.querySelector('svg')
+  if (!icon) return
+  const css = getComputedStyle(document.documentElement)
+  // Tool colours are CSS variables like var(--teal); a favicon needs the real value
+  const resolve = (c: string) => c.replace(/var\((--[\w-]+)\)/g, (_, name: string) => css.getPropertyValue(name).trim())
+  const fill = resolve(tool.value.color)
+  const ink = resolve(tool.value.onColor ?? '#ffffff')
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">`
+    + `<rect width="32" height="32" rx="8" fill="#1b1f2a"/>`
+    + `<rect x="2" y="2" width="28" height="28" rx="6.5" fill="${fill}"/>`
+    + `<g transform="translate(5.2 5.2) scale(0.9)" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:${ink}">${icon.innerHTML}</g>`
+    + `</svg>`
+  appFavicon.value = `data:image/svg+xml,${encodeURIComponent(svg)}`
+})
+
 // Demo: on pages that have one, the app icon switches sample data on and off
 const demo = useDemoState(route.path)
 const { play } = useSound()
@@ -69,6 +92,7 @@ function goBack(e: MouseEvent) {
     <header class="head">
       <button
         v-if="demo.supported.value"
+        ref="stickerEl"
         type="button"
         class="sticker demo-toggle"
         :class="{ on: demo.active.value }"
@@ -80,7 +104,7 @@ function goBack(e: MouseEvent) {
         <ToolIcon :name="tool.icon" />
         <span class="demo-tag" aria-hidden="true">{{ demo.active.value ? 'Demo on' : 'Demo' }}</span>
       </button>
-      <span v-else class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
+      <span v-else ref="stickerEl" class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
       <div class="head-text">
         <h1>{{ tool.name }}</h1>
         <p>{{ tool.summary }}</p>
