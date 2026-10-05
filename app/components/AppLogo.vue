@@ -9,7 +9,7 @@ const STICKERS = [
 
 <template>
   <svg class="app-logo" viewBox="0 0 32 32" aria-hidden="true">
-    <rect width="32" height="32" rx="7" fill="var(--ink)" />
+    <rect width="32" height="32" rx="7" fill="var(--plastic)" />
     <template v-for="(row, y) in STICKERS" :key="y">
       <rect
         v-for="(color, x) in row"

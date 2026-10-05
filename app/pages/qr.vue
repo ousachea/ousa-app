@@ -184,7 +184,7 @@ async function copyImage() {
   place-items: center;
   padding: 1rem;
   border-radius: 12px;
-  box-shadow: inset 0 0 0 1px rgb(27 31 42 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(var(--shadow) / 0.08);
 }
 
 .frame img {
@@ -246,7 +246,7 @@ async function copyImage() {
 
 .swatch input::-webkit-color-swatch-wrapper { padding: 0; }
 .swatch input::-webkit-color-swatch {
-  border: 1px solid rgb(27 31 42 / 0.15);
+  border: 1px solid var(--line);
   border-radius: 8px;
 }
 

@@ -45,7 +45,7 @@ defineProps<{
   background: var(--accent);
   border-radius: 7px;
   box-shadow:
-    0 0 0 2px var(--ink),
+    0 0 0 2px var(--plastic),
     inset 0 -3px 0 rgb(0 0 0 / 0.12);
 }
 

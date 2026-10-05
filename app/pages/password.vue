@@ -306,8 +306,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 .upper,
 .lower { color: var(--ink); }
-.digits { color: var(--blue); }
-.symbols { color: #c25e00; }
+.digits { color: var(--digit-ink); }
+.symbols { color: var(--symbol-ink); }
 
 .meter {
   margin-top: 1.25rem;

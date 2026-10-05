@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const LINKS = [
-  { to: '/', name: 'Home', icon: undefined, color: 'var(--ink)' },
+  { to: '/', name: 'Home', icon: undefined, color: 'var(--plastic)' },
   ...TOOLS,
   SETTINGS
 ]
@@ -12,6 +12,7 @@ const { play } = useSound()
 const root = ref<HTMLElement>()
 const route = useRoute()
 const router = useRouter()
+const { toggle: toggleTheme } = useTheme()
 
 watch(() => route.path, () => (open.value = false))
 
@@ -55,6 +56,10 @@ function onKeydown(e: KeyboardEvent) {
   else if (e.key === ']') goTo(current + 1)
   else if (e.key === '[') goTo(current - 1)
   else if (e.key === 'm' || e.key === 'M') toggleMenu()
+  else if (e.key === 'd' || e.key === 'D') {
+    toggleTheme()
+    play('toggle-on')
+  }
   else if (e.key === '?') {
     if (!open.value) toggleMenu()
   }
@@ -78,7 +83,7 @@ onBeforeUnmount(() => {
   <nav ref="root" class="fab" :class="{ open }" aria-label="Site navigation">
     <ul id="fab-menu" class="menu" :inert="!open">
       <li class="hint" :style="{ '--i': LINKS.length + 1 }">
-        <kbd>[</kbd> <kbd>]</kbd> previous and next page, <kbd>M</kbd> menu
+        <kbd>[</kbd> <kbd>]</kbd> previous and next page, <kbd>M</kbd> menu, <kbd>D</kbd> dark mode
       </li>
       <li v-for="(link, i) in LINKS" :key="link.to" :style="{ '--i': LINKS.length - i }">
         <NuxtLink
@@ -165,7 +170,7 @@ onBeforeUnmount(() => {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
-  box-shadow: 0 6px 18px rgb(27 31 42 / 0.12);
+  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.12);
   transition: border-color 0.15s;
 }
 
@@ -236,7 +241,7 @@ kbd {
 
 .item[aria-current='page'] {
   border-color: var(--ink);
-  box-shadow: 0 0 0 1px var(--ink), 0 6px 18px rgb(27 31 42 / 0.12);
+  box-shadow: 0 0 0 1px var(--ink), 0 6px 18px rgb(var(--shadow) / 0.12);
 }
 
 .toggle {
@@ -245,15 +250,15 @@ kbd {
   display: grid;
   place-items: center;
   color: #fff;
-  background: var(--ink);
+  background: var(--plastic);
   border: 0;
   border-radius: 18px;
-  box-shadow: 0 8px 22px rgb(27 31 42 / 0.3);
+  box-shadow: inset 0 0 0 1px var(--plastic-edge), 0 8px 22px rgb(var(--shadow) / 0.3);
   cursor: pointer;
   transition: transform 0.2s, background-color 0.15s;
 }
 
-.toggle:hover { background: #2d3344; }
+.toggle:hover { background: var(--plastic-hover); }
 .toggle:active { transform: scale(0.94); }
 
 .toggle:focus-visible,

@@ -75,7 +75,8 @@ useHead({ title: () => tool.value.name })
   border-radius: 14px;
   /* Glossy sticker on black plastic, like the cube */
   box-shadow:
-    0 0 0 4px var(--ink),
+    0 0 0 4px var(--plastic),
+    0 0 0 5px var(--plastic-edge),
     inset 0 -6px 0 rgb(0 0 0 / 0.12),
     inset 0 6px 10px rgb(255 255 255 / 0.25);
 }

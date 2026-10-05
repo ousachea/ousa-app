@@ -53,8 +53,8 @@ export const TOOLS: Tool[] = [
 export const SETTINGS: Tool = {
   to: '/settings',
   name: 'Settings',
-  summary: 'Choose how the app sounds, or turn sound off.',
-  color: 'var(--ink)',
+  summary: 'Choose how the app looks and sounds.',
+  color: 'var(--settings)',
   icon: 'sound'
 }
 

@@ -18,13 +18,13 @@ import 'vue-sonner/style.css'
 /* Gooey look: pill-shaped toasts that squash and stretch like a blob when they appear.
    Uses the standalone `scale` property so it doesn't fight Sonner's own `transform`. */
 [data-sonner-toast].goey[data-styled='true'] {
-  --normal-bg: var(--ink);
-  --normal-border: var(--ink);
+  --normal-bg: var(--plastic);
+  --normal-border: var(--plastic);
   --normal-text: #fff;
   border-radius: 999px;
   padding: 12px 18px;
   font-family: var(--font);
-  box-shadow: 0 10px 30px rgb(27 31 42 / 0.3);
+  box-shadow: 0 10px 30px rgb(var(--shadow) / 0.3);
 }
 
 [data-sonner-toast].goey[data-mounted='true'] {

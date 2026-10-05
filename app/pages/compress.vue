@@ -435,9 +435,9 @@ onBeforeUnmount(clearAll)
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: 11px;
-  outline: 1px solid rgb(27 31 42 / 0.1);
+  outline: 1px solid rgb(var(--shadow) / 0.1);
   outline-offset: -1px;
-  background: repeating-conic-gradient(#eceff3 0 25%, #fff 0 50%) 0 0 / 12px 12px;
+  background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 12px 12px;
 }
 
 .info {
@@ -468,8 +468,8 @@ onBeforeUnmount(clearAll)
 }
 
 .muted { color: var(--ink-3); }
-.good { color: var(--green); font-weight: 600; }
-.warn { color: #b85a00; font-weight: 600; }
+.good { color: var(--good-ink); font-weight: 600; }
+.warn { color: var(--warn-ink); font-weight: 600; }
 
 .item-actions {
   display: flex;

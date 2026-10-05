@@ -3,6 +3,18 @@ import { getPack, packNames, type CueName, type PackName } from 'uisfx'
 
 const sound = useSound()
 const { state } = sound
+const { theme, setTheme } = useTheme()
+
+const THEMES: { value: ThemePreference, label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' }
+]
+
+function chooseTheme(value: ThemePreference) {
+  setTheme(value)
+  sound.play('select')
+}
 
 const PACKS = packNames.map(name => getPack(name))
 
@@ -38,7 +50,28 @@ const volume = computed({
   <ToolPage>
     <ClientOnly>
       <div class="layout">
-        <Step :n="1" title="Turn sound on" class="side">
+        <div class="side">
+        <Step :n="1" title="Pick a theme" hint="System follows your device’s light or dark setting.">
+          <div class="panel appearance">
+            <div class="segmented" role="radiogroup" aria-label="Theme">
+              <label v-for="t in THEMES" :key="t.value" :class="{ active: theme.preference === t.value }">
+                <input
+                  type="radio"
+                  name="theme"
+                  :value="t.value"
+                  :checked="theme.preference === t.value"
+                  @change="chooseTheme(t.value)"
+                >
+                {{ t.label }}
+              </label>
+            </div>
+            <p class="theme-note">
+              Showing {{ theme.resolved }} mode. Press <kbd>D</kbd> anywhere to switch.
+            </p>
+          </div>
+        </Step>
+
+        <Step :n="2" title="Turn sound on" class="sound-step">
           <section class="panel master">
             <div>
               <h3 id="sound-label">Sound effects</h3>
@@ -69,9 +102,10 @@ const volume = computed({
             >
           </label>
         </Step>
+        </div>
 
         <div class="main" :class="{ muted: !state.enabled }" :inert="!state.enabled">
-          <Step :n="2" title="Choose a style" hint="Each style plays a sample when you pick it.">
+          <Step :n="3" title="Choose a style" hint="Each style plays a sample when you pick it.">
             <div class="packs" role="radiogroup" aria-label="Sound style">
               <label
                 v-for="pack in PACKS"
@@ -94,7 +128,7 @@ const volume = computed({
             </div>
           </Step>
 
-          <Step :n="3" title="Try it" hint="Hear the sounds you’ll get around the app." class="try">
+          <Step :n="4" title="Try it" hint="Hear the sounds you’ll get around the app." class="try">
             <div class="samples">
               <button
                 v-for="s in SAMPLES"
@@ -128,6 +162,30 @@ const volume = computed({
 .side {
   position: sticky;
   top: 1.5rem;
+}
+
+.appearance {
+  padding: 1rem 1.1rem;
+}
+
+.theme-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+.theme-note kbd {
+  padding: 0.05rem 0.4rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--surface-2);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--line);
+}
+
+.sound-step {
+  margin-top: 2rem;
 }
 
 .master {
@@ -178,7 +236,7 @@ const volume = computed({
   height: 1.625rem;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgb(27 31 42 / 0.25);
+  box-shadow: 0 1px 3px rgb(var(--shadow) / 0.25);
   transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.6, 1);
 }
 
@@ -245,7 +303,7 @@ const volume = computed({
   margin-bottom: 0.4rem;
   background: var(--pack);
   border-radius: 5px;
-  box-shadow: 0 0 0 2px var(--ink), inset 0 -3px 0 rgb(0 0 0 / 0.12);
+  box-shadow: 0 0 0 2px var(--plastic), inset 0 -3px 0 rgb(0 0 0 / 0.12);
   transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.6, 1);
 }
 

@@ -17,10 +17,56 @@
   --green: #179a54;
   --yellow: #f7c324;
 
+  /* The black plastic of the cube: sticker rims, the menu button, toasts. Stays dark in both themes. */
+  --plastic: #1b1f2a;
+  --plastic-hover: #2d3344;
+  --plastic-edge: transparent; /* faint outline so black plastic stays visible on a dark page */
+  --settings: #1b1f2a;
+
+  /* Text colours that need their own value per theme to stay readable */
+  --good-ink: #127a43;
+  --bad-ink: #a61b2e;
+  --warn-ink: #b85a00;
+  --digit-ink: #1f5bd8;
+  --symbol-ink: #c25e00;
+
+  --shadow: 27 31 42; /* rgb channels, used as rgb(var(--shadow) / alpha) */
+  --checker-a: #eceff3;
+  --checker-b: #ffffff;
+
   --accent: var(--green);
   --font: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
 
   color-scheme: light;
+}
+
+/* Set on <html> by the theme script in nuxt.config before the page paints */
+:root[data-theme='dark'] {
+  --bg: #0e1116;
+  --surface: #161a21;
+  --surface-2: #1d222b;
+  --line: #2b313c;
+
+  --ink: #e8ebf1;
+  --ink-2: #a3abba;
+  --ink-3: #6e7787;
+
+  --plastic: #05070b;
+  --plastic-hover: #1c212b;
+  --plastic-edge: rgb(255 255 255 / 0.12);
+  --settings: #3a4252;
+
+  --good-ink: #3ddc84;
+  --bad-ink: #ff8a96;
+  --warn-ink: #ffb366;
+  --digit-ink: #7aa7ff;
+  --symbol-ink: #ffa04d;
+
+  --shadow: 0 0 0;
+  --checker-a: #20252e;
+  --checker-b: #2a303a;
+
+  color-scheme: dark;
 }
 
 *,
@@ -38,6 +84,7 @@ body {
 
 body {
   font-family: var(--font);
+  transition: background-color 0.2s, color 0.2s;
   font-size: 1rem;
   line-height: 1.5;
   color: var(--ink);
@@ -205,7 +252,7 @@ input[type='range']:disabled {
 .segmented label.active {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(27 31 42 / 0.12), 0 0 0 1px var(--line);
+  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
 }
 
 .segmented label:has(input:focus-visible) {

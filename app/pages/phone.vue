@@ -154,7 +154,7 @@ async function copy(value: string) {
 /* Red is this tool's colour, but a red ring around an input reads as an error, so focus stays neutral */
 .number:focus-within {
   border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgb(27 31 42 / 0.12);
+  box-shadow: 0 0 0 3px rgb(var(--shadow) / 0.12);
 }
 
 .cc {
@@ -242,7 +242,7 @@ async function copy(value: string) {
   font-size: 0.85rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #fff;
+  color: var(--bg);
   background: var(--ink);
   box-shadow: none;
 }
@@ -263,7 +263,7 @@ async function copy(value: string) {
 
 p.verdict {
   padding: 0.9rem 1.1rem;
-  color: #a61b2e;
+  color: var(--bad-ink);
   background: color-mix(in srgb, var(--red) 9%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
   border-radius: 14px;

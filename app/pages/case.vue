@@ -142,7 +142,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 .editor:focus-within {
   border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgb(27 31 42 / 0.12);
+  box-shadow: 0 0 0 3px rgb(var(--shadow) / 0.12);
 }
 
 .text {

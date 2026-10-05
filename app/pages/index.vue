@@ -107,15 +107,40 @@ h1 {
   background: var(--accent);
   border-radius: 11px;
   box-shadow:
-    0 0 0 3px var(--ink),
+    0 0 0 3px var(--plastic),
+    0 0 0 4px var(--plastic-edge),
     inset 0 -5px 0 rgb(0 0 0 / 0.12),
-    inset 0 5px 8px rgb(255 255 255 / 0.25);
-  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.6, 1);
+    inset 0 5px 8px rgb(255 255 255 / 0.25),
+    0 0 0 transparent;
+  transition:
+    transform 0.2s cubic-bezier(0.3, 1.5, 0.6, 1),
+    box-shadow 0.2s ease;
 }
 
-/* The one playful moment: the sticker gives a quarter-turn, like a cube face */
-.tile:hover .sticker {
-  transform: rotate(90deg);
+.sticker svg {
+  transition: transform 0.2s cubic-bezier(0.3, 1.5, 0.6, 1);
+}
+
+/* Keycap feel: the sticker lifts and glows in its own colour on hover, then presses down on click */
+.tile:hover .sticker,
+.tile:focus-visible .sticker {
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 0 3px var(--plastic),
+    0 0 0 4px var(--plastic-edge),
+    inset 0 -5px 0 rgb(0 0 0 / 0.12),
+    inset 0 5px 8px rgb(255 255 255 / 0.25),
+    0 10px 18px -6px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.tile:hover .sticker svg,
+.tile:focus-visible .sticker svg {
+  transform: scale(1.08);
+}
+
+.tile:active .sticker {
+  transform: translateY(1px) scale(0.96);
+  transition-duration: 0.08s;
 }
 
 .tile strong {
@@ -160,7 +185,10 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tile:hover .sticker {
+  .tile:hover .sticker,
+  .tile:focus-visible .sticker,
+  .tile:active .sticker,
+  .tile:hover .sticker svg {
     transform: none;
   }
 }

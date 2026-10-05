@@ -14,6 +14,13 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Small tools: make QR codes, check Cambodian phone numbers, and compress images in your browser.' },
         { name: 'theme-color', content: '#e8ebf0' }
       ],
+      script: [
+        {
+          // Apply the saved theme before first paint so dark mode never flashes white
+          innerHTML: "(function(){try{var p=localStorage.getItem('ousa-app:theme')||'system';var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light'}catch(e){}})()",
+          tagPosition: 'head'
+        }
+      ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
