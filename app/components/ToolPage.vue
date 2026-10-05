@@ -12,7 +12,32 @@ const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: H
 const route = useRoute()
 const tool = computed(() => props.tool ?? toolFor(route.path)!)
 
-useHead({ title: () => tool.value.name })
+// Search titles are worded the way people search ("Cambodian phone number checker"); the page heading keeps the short name
+useHead({ title: () => tool.value.seoTitle ?? tool.value.name })
+
+// Pages that aren't real apps (like the /todos demo) stay out of search results
+const listed = computed(() => !!toolFor(route.path))
+const site = useSiteUrl()
+const seo = useAppSeo(() => ({
+  title: `${tool.value.seoTitle ?? tool.value.name} · Ousa App`,
+  description: tool.value.description ?? tool.value.summary,
+  path: route.path,
+  image: listed.value ? undefined : 'home',
+  noindex: !listed.value,
+  jsonLd: listed.value
+    ? {
+        '@type': 'WebApplication',
+        'name': tool.value.seoTitle ?? tool.value.name,
+        'alternateName': tool.value.name,
+        'description': tool.value.description ?? tool.value.summary,
+        'applicationCategory': tool.value.group === 'Life' ? 'LifestyleApplication' : 'UtilitiesApplication',
+        'operatingSystem': 'Any (web browser)',
+        'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
+        'isPartOf': { '@type': 'WebSite', 'name': 'Ousa App', 'url': `${site}/` }
+      }
+    : undefined
+}))
+void seo
 
 // Back to wherever you came from in the app (same as Esc); straight in from outside, it goes home
 const router = useRouter()

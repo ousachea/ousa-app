@@ -20,7 +20,25 @@ const GROUPS = [
   { name: 'Life', tools: TOOLS.filter(t => t.group === 'Life') }
 ]
 
-useHead({ title: 'Ousa App', titleTemplate: '%s' })
+useHead({ title: 'Ousa App: free tools and trackers for life in Cambodia', titleTemplate: '%s' })
+
+const site = useSiteUrl()
+useAppSeo({
+  title: 'Ousa App: free tools and trackers for life in Cambodia',
+  description: 'Free everyday tools: check Cambodian phone numbers, KHR/USD rates, gold price in chi and damlung, salary tax, QR codes, passwords and more. Nothing to install.',
+  path: '/',
+  imageAlt: 'Ousa App: a Rubik’s cube of app icons',
+  jsonLd: {
+    '@graph': [
+      { '@type': 'WebSite', 'name': 'Ousa App', 'url': `${site}/`, 'inLanguage': 'en' },
+      {
+        '@type': 'ItemList',
+        'name': 'Ousa App tools',
+        'itemListElement': TOOLS.map((t, i) => ({ '@type': 'ListItem', 'position': i + 1, 'name': t.seoTitle ?? t.name, 'url': `${site}${t.to}` }))
+      }
+    ]
+  }
+})
 </script>
 
 <template>

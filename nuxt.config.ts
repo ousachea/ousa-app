@@ -13,7 +13,10 @@ export default defineNuxtConfig({
       supabaseUrl: process.env.SUPABASE_URL ?? '',
       supabaseKey: process.env.SUPABASE_KEY ?? '',
       // Google OAuth client ID for importing contacts on /phone; set NUXT_PUBLIC_GOOGLE_CLIENT_ID
-      googleClientId: ''
+      googleClientId: '',
+      // The site's public address for canonical links and share images, e.g. https://ousa.app (NUXT_PUBLIC_SITE_URL).
+      // Empty uses whatever address the page was served from.
+      siteUrl: ''
     }
   },
   app: {
@@ -24,7 +27,9 @@ export default defineNuxtConfig({
       title: 'Ousa App',
       titleTemplate: '%s · Ousa App',
       meta: [
-        { name: 'description', content: 'Small tools: make QR codes, check Cambodian phone numbers, and compress images in your browser.' },
+        { name: 'description', content: 'Free everyday tools: check Cambodian phone numbers, KHR/USD rates, gold price in chi and damlung, salary tax, QR codes, passwords and more.' },
+        { name: 'application-name', content: 'Ousa App' },
+        { name: 'apple-mobile-web-app-title', content: 'Ousa App' },
         { name: 'theme-color', content: '#e8ebf0' }
       ],
       script: [

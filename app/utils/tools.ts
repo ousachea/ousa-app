@@ -14,6 +14,10 @@ export interface Tool {
   onColor?: string
   icon: ToolIconName
   group?: ToolGroup
+  /** Page title for search results and link previews, worded the way people search */
+  seoTitle?: string
+  /** Meta description, ~120–160 characters */
+  description?: string
 }
 
 export const TOOLS: Tool[] = [
@@ -22,21 +26,27 @@ export const TOOLS: Tool[] = [
     name: 'QR code',
     summary: 'Turn a link or text into a QR code you can download.',
     color: 'var(--blue)',
-    icon: 'qr'
+    icon: 'qr',
+    seoTitle: 'Free QR code generator with logo',
+    description: 'Make a QR code for any link or text, add your logo, colours and a frame, check it scans, then download it as PNG or SVG. Free, no sign-up.'
   },
   {
     to: '/phone',
     name: 'Phone checker',
     summary: 'Check a Cambodian number and see its network.',
     color: 'var(--red)',
-    icon: 'phone'
+    icon: 'phone',
+    seoTitle: 'Cambodian phone number checker',
+    description: 'Check any Cambodian phone number: see if it’s Smart, Cellcard, Metfone or a landline, catch missing digits, and format it for WhatsApp or Telegram.'
   },
   {
     to: '/compress',
     name: 'Image compressor',
     summary: 'Make images smaller without uploading them.',
     color: 'var(--orange)',
-    icon: 'compress'
+    icon: 'compress',
+    seoTitle: 'Image compressor: shrink photos in your browser',
+    description: 'Make JPG, PNG and WebP images smaller without uploading them. Compare before and after, pick the quality and size, and download in one click.'
   },
   {
     to: '/case',
@@ -44,21 +54,27 @@ export const TOOLS: Tool[] = [
     summary: 'Switch text between lowercase, UPPERCASE, Title Case and Sentence case.',
     color: 'var(--yellow)',
     onColor: '#1b1f2a',
-    icon: 'case'
+    icon: 'case',
+    seoTitle: 'Text case converter',
+    description: 'Change text to lowercase, UPPERCASE, Title Case or Sentence case instantly. Paste your text, pick a style and copy the result.'
   },
   {
     to: '/password',
     name: 'Passwords',
     summary: 'Make strong passwords and save them, encrypted on this device.',
     color: 'var(--green)',
-    icon: 'password'
+    icon: 'password',
+    seoTitle: 'Strong password generator and saver',
+    description: 'Generate strong passwords, see how long they’d take to crack, and save them in an encrypted vault that only you can unlock.'
   },
   {
     to: '/exchange',
     name: 'KHR/USD exchange',
     summary: 'See if an exchange rate makes you gain or lose money.',
     color: 'var(--teal)',
-    icon: 'exchange'
+    icon: 'exchange',
+    seoTitle: 'KHR to USD exchange rate calculator',
+    description: 'See today’s riel to dollar rate and find out if a money changer’s rate makes you gain or lose money on your exchange.'
   },
   {
     to: '/things',
@@ -66,7 +82,9 @@ export const TOOLS: Tool[] = [
     summary: 'Keep track of what you own, what you paid and what it’s all worth.',
     color: 'var(--brown)',
     icon: 'things',
-    group: 'Life'
+    group: 'Life',
+    seoTitle: 'Things I own: track what your stuff is worth',
+    description: 'Keep a list of your phone, laptop and everything else you own, what you paid, and an estimate of what it’s worth today.'
   },
   {
     to: '/eat',
@@ -74,7 +92,9 @@ export const TOOLS: Tool[] = [
     summary: 'Swipe through your saved foods and places until one sounds good.',
     color: 'var(--pink)',
     icon: 'eat',
-    group: 'Life'
+    group: 'Life',
+    seoTitle: 'What should I eat? Food picker',
+    description: 'Can’t decide what to eat? Swipe through your favourite foods and places until one sounds good, with your own photos.'
   },
   {
     to: '/weight',
@@ -82,7 +102,9 @@ export const TOOLS: Tool[] = [
     summary: 'Log your weight and see the trend.',
     color: 'var(--lime)',
     icon: 'weight',
-    group: 'Life'
+    group: 'Life',
+    seoTitle: 'Weight tracker with trend chart',
+    description: 'Log your weight and see the trend over weeks and months on a clear chart, with your progress toward a goal.'
   },
   {
     to: '/countdown',
@@ -90,7 +112,9 @@ export const TOOLS: Tool[] = [
     summary: 'Count down to the dates that matter.',
     color: 'var(--purple)',
     icon: 'countdown',
-    group: 'Life'
+    group: 'Life',
+    seoTitle: 'Countdown to dates and Cambodian holidays',
+    description: 'Count down to birthdays, trips and deadlines, see every Cambodian public holiday coming up, and the live time in Phnom Penh.'
   },
   {
     to: '/renewals',
@@ -98,7 +122,9 @@ export const TOOLS: Tool[] = [
     summary: 'See what your subscriptions cost and when they renew.',
     color: 'var(--indigo)',
     icon: 'renewals',
-    group: 'Life'
+    group: 'Life',
+    seoTitle: 'Subscription and renewal tracker',
+    description: 'See what your subscriptions cost each month and year, and what renews in the next 30 days, so nothing charges you by surprise.'
   },
   {
     to: '/phrases',
@@ -106,7 +132,9 @@ export const TOOLS: Tool[] = [
     summary: 'Save useful English and Khmer phrases for work.',
     color: 'var(--sky)',
     icon: 'phrases',
-    group: 'Life'
+    group: 'Life',
+    seoTitle: 'English–Khmer phrase bank for work',
+    description: 'Save useful English and Khmer phrases for work and practise them with flashcards until they stick.'
   },
   {
     to: '/bookmarks',
@@ -114,21 +142,27 @@ export const TOOLS: Tool[] = [
     summary: 'Save links with tags and notes, and pin the ones you open every day.',
     color: 'var(--rust)',
     icon: 'bookmarks',
-    group: 'Life'
+    group: 'Life',
+    seoTitle: 'Bookmark manager with tags',
+    description: 'Save links with tags and notes, pin the sites you open every day, and import or export your browser bookmarks.'
   },
   {
     to: '/battery',
     name: 'Phone battery',
     summary: 'See how much of your phone battery is really left compared with when it was new.',
     color: 'var(--cyan)',
-    icon: 'battery'
+    icon: 'battery',
+    seoTitle: 'Phone battery health calculator',
+    description: 'See how much of your phone battery is really left: capacity in mAh, wear, and hours of screen time, for iPhone, Samsung, Pixel and more.'
   },
   {
     to: '/salary',
     name: 'Salary & raise',
     summary: 'Work out what a raise is really worth after Cambodian salary tax.',
     color: 'var(--slate)',
-    icon: 'salary'
+    icon: 'salary',
+    seoTitle: 'Cambodia salary tax and raise calculator',
+    description: 'Work out your take-home pay under Cambodian Tax on Salary, and how much of a raise you really keep after tax, overtime and deductions.'
   },
   {
     to: '/gold',
@@ -137,7 +171,9 @@ export const TOOLS: Tool[] = [
     color: 'var(--gold)',
     onColor: '#1b1f2a',
     icon: 'gold',
-    group: 'Life'
+    group: 'Life',
+    seoTitle: 'Gold price in chi and damlung today',
+    description: 'Live gold price per chi, damlung and gram for Cambodia, a gold unit converter, and what your gold purchases are worth now.'
   }
 ]
 
@@ -145,6 +181,7 @@ export const SETTINGS: Tool = {
   to: '/settings',
   name: 'Settings',
   summary: 'Choose how the app looks and sounds.',
+  description: 'Choose light or dark mode, lighter effects for older computers, sound effects, and sync your data with Supabase.',
   color: 'var(--settings)',
   icon: 'sound'
 }
