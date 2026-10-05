@@ -133,6 +133,12 @@ defineProps<{ name: ToolIconName }>()
       <path d="M18 9h2.5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H19v3l-3.5-3h-4a2 2 0 0 1-2-2v-.5" />
     </template>
 
+    <!-- Bookmarks: a ribbon bookmark with a notch -->
+    <template v-else-if="name === 'bookmarks'">
+      <path d="M6.5 3.5h11a1 1 0 0 1 1 1v16l-6.5-4.5-6.5 4.5v-16a1 1 0 0 1 1-1z" />
+      <path d="M9.5 8h5" />
+    </template>
+
     <!-- Settings (sound): a speaker with two sound waves -->
     <template v-else-if="name === 'sound'">
       <path d="M3.5 9.5h3l5-4v13l-5-4h-3z" />

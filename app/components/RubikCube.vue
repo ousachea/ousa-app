@@ -104,7 +104,8 @@ function createCubies(): Cubie[] {
   const SLOTS: [Vec3, Face][] = [
     [[0, -1, 0], 'top'], [[0, -1, 1], 'top'], [[1, -1, 0], 'top'], [[-1, -1, 0], 'top'],
     [[0, 0, 1], 'front'], [[-1, 0, 1], 'front'], [[1, 0, 1], 'front'], [[0, 1, 1], 'front'],
-    [[1, 0, 0], 'right'], [[1, 1, 0], 'right'], [[1, 0, -1], 'right'], [[1, -1, 0], 'right']
+    [[1, 0, 0], 'right'], [[1, 1, 0], 'right'], [[1, 0, -1], 'right'], [[1, -1, 0], 'right'],
+    [[-1, -1, 1], 'top']
   ]
   props.links.slice(0, SLOTS.length).forEach((link, i) => {
     const [pos, face] = SLOTS[i]!

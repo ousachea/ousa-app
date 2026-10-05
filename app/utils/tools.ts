@@ -1,6 +1,6 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'list'
-  | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'phrases'
+  | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'phrases' | 'bookmarks'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -106,6 +106,14 @@ export const TOOLS: Tool[] = [
     summary: 'Save useful English and Khmer phrases for work.',
     color: 'var(--sky)',
     icon: 'phrases',
+    group: 'Life'
+  },
+  {
+    to: '/bookmarks',
+    name: 'Bookmarks',
+    summary: 'Save links with tags and notes, and pin the ones you open every day.',
+    color: 'var(--rust)',
+    icon: 'bookmarks',
     group: 'Life'
   }
 ]

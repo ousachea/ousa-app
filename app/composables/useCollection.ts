@@ -154,6 +154,14 @@ export function useCollection<T extends StoredItem>(name: string, seed: () => T[
       sync(() => push([record]))
       return record
     },
+    // For imports: one cache write and one Supabase request however many records there are
+    addMany(list: Omit<T, 'id'>[]) {
+      const records = list.map(item => ({ ...item, id: crypto.randomUUID() }) as T)
+      items.value = [...items.value, ...records]
+      cache()
+      sync(() => push(records))
+      return records
+    },
     update(id: string, patch: Partial<T>) {
       items.value = items.value.map(i => (i.id === id ? { ...i, ...patch } : i))
       cache()
