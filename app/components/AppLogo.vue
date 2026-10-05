@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// The Ousa App mark: one face of a scrambled cube, using the same sticker colours as the tools.
+// The Ousa’s Apps mark: one face of a scrambled cube, using the same sticker colours as the tools.
 const STICKERS = [
   ['var(--blue)', 'var(--red)', 'var(--yellow)'],
   ['var(--green)', '#ffffff', 'var(--orange)'],

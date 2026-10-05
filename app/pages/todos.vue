@@ -29,7 +29,7 @@ create policy "Anyone can read todos"
   using (true);
 
 insert into public.todos (name)
-values ('Try Ousa App'), ('Connect Supabase');`
+values ('Try Ousa’s Apps'), ('Connect Supabase');`
 
 const { play } = useSound()
 const { data: todos, error, status, refresh } = await useFetch<Todo[]>('/api/todos')

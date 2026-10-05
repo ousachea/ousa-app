@@ -19,7 +19,7 @@ useHead({ title: () => tool.value.seoTitle ?? tool.value.name })
 const listed = computed(() => !!toolFor(route.path))
 const site = useSiteUrl()
 const seo = useAppSeo(() => ({
-  title: `${tool.value.seoTitle ?? tool.value.name} · Ousa App`,
+  title: `${tool.value.seoTitle ?? tool.value.name} · Ousa’s Apps`,
   description: tool.value.description ?? tool.value.summary,
   path: route.path,
   image: listed.value ? undefined : 'home',
@@ -33,7 +33,7 @@ const seo = useAppSeo(() => ({
         'applicationCategory': tool.value.group === 'Life' ? 'LifestyleApplication' : 'UtilitiesApplication',
         'operatingSystem': 'Any (web browser)',
         'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-        'isPartOf': { '@type': 'WebSite', 'name': 'Ousa App', 'url': `${site}/` }
+        'isPartOf': { '@type': 'WebSite', 'name': 'Ousa’s Apps', 'url': `${site}/` }
       }
     : undefined
 }))
@@ -53,9 +53,9 @@ function goBack(e: MouseEvent) {
 
 <template>
   <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
-    <NuxtLink to="/" class="home" aria-label="Back, Ousa App" title="Back (Esc)" @click="goBack">
+    <NuxtLink to="/" class="home" aria-label="Back, Ousa’s Apps" title="Back (Esc)" @click="goBack">
       <svg class="back" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
-      <AppLogo class="home-logo" />Ousa App
+      <AppLogo class="home-logo" />Ousa’s Apps
     </NuxtLink>
 
     <header class="head">

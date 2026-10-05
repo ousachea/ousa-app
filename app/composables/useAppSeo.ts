@@ -13,7 +13,7 @@ interface AppSeo {
   jsonLd?: Record<string, unknown>
 }
 
-export const SITE_NAME = 'Ousa App'
+export const SITE_NAME = 'Ousa’s Apps'
 
 // Absolute URLs are required for og:image and canonical links. NUXT_PUBLIC_SITE_URL pins the domain;
 // without it, the address the page was served from is used.

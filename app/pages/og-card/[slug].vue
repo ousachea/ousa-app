@@ -5,7 +5,7 @@ const route = useRoute()
 const slug = computed(() => String(route.params.slug))
 const tool = computed(() => [...TOOLS, SETTINGS].find(t => ogSlug(t.to) === slug.value))
 
-useHead({ title: () => tool.value?.name ?? 'Ousa App', titleTemplate: '%s' })
+useHead({ title: () => tool.value?.name ?? 'Ousa’s Apps', titleTemplate: '%s' })
 useSeoMeta({ robots: 'noindex, nofollow' })
 
 // Light text on dark colours, dark text on light ones (yellow, gold)
@@ -16,7 +16,7 @@ const ink = computed(() => tool.value?.onColor ?? '#ffffff')
   <!-- Home: the cube of app icons on black plastic -->
   <div v-if="slug === 'home'" class="card home">
     <div class="home-text">
-      <p class="brand"><AppLogo class="brand-logo" />Ousa App</p>
+      <p class="brand"><AppLogo class="brand-logo" />Ousa’s Apps</p>
       <h1>Free tools and trackers for life in Cambodia</h1>
       <p class="list">Phone checker · KHR/USD · Gold in chi &amp; damlung · Salary tax · QR codes · Passwords · and more</p>
     </div>
@@ -30,7 +30,7 @@ const ink = computed(() => tool.value?.onColor ?? '#ffffff')
     <div class="grid" aria-hidden="true">
       <i v-for="n in 9" :key="n" />
     </div>
-    <p class="brand"><AppLogo class="brand-logo" />Ousa App</p>
+    <p class="brand"><AppLogo class="brand-logo" />Ousa’s Apps</p>
     <div class="body">
       <span class="sticker"><ToolIcon :name="tool.icon" /></span>
       <h1>{{ tool.name }}</h1>

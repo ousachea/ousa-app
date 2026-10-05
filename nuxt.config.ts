@@ -24,12 +24,12 @@ export default defineNuxtConfig({
     pageTransition: { name: 'slide-forward', mode: 'out-in' },
     head: {
       htmlAttrs: { lang: 'en' },
-      title: 'Ousa App',
-      titleTemplate: '%s · Ousa App',
+      title: 'Ousa’s Apps',
+      titleTemplate: '%s · Ousa’s Apps',
       meta: [
         { name: 'description', content: 'Free everyday tools: check Cambodian phone numbers, KHR/USD rates, gold price in chi and damlung, salary tax, QR codes, passwords and more.' },
-        { name: 'application-name', content: 'Ousa App' },
-        { name: 'apple-mobile-web-app-title', content: 'Ousa App' },
+        { name: 'application-name', content: 'Ousa’s Apps' },
+        { name: 'apple-mobile-web-app-title', content: 'Ousa’s Apps' },
         { name: 'theme-color', content: '#e8ebf0' }
       ],
       script: [

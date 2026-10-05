@@ -55,7 +55,7 @@ export const QR_ICONS: QrIcon[] = [
   { id: 'star', label: 'Star', viewBox: '0 0 24 24', markup: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/>' },
   {
     id: 'cube',
-    label: 'Ousa App',
+    label: 'Ousa’s Apps',
     viewBox: '0 0 32 32',
     colored: true,
     markup: '<rect width="32" height="32" rx="7" fill="#1b1f2a"/>'
