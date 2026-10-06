@@ -25,3 +25,6 @@ logs
 
 # Separate repository kept inside this folder
 Ousa-App/
+
+# Local HTTPS certificate for npm run dev:lan
+.certs

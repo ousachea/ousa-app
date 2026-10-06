@@ -133,7 +133,8 @@ const volume = computed({
 
         <Step :n="2" title="Turn sound on" class="sound-step">
           <section class="panel master">
-            <div>
+            <span class="master-icon" :class="{ on: state.enabled }"><SoundIcon :name="state.enabled ? 'on' : 'off'" /></span>
+            <div class="master-text">
               <h3 id="sound-label">Sound effects</h3>
               <p v-if="state.enabled">Short sounds when you navigate, copy, download and get results.</p>
               <p v-else>Sound is off. Turn it on to choose a style.</p>
@@ -152,14 +153,18 @@ const volume = computed({
 
           <label class="panel field volume" :class="{ muted: !state.enabled }" :inert="!state.enabled">
             <span class="field-head">Volume <output>{{ volume }}%</output></span>
-            <input
-              v-model.number="volume"
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              @change="sound.play('volume-change')"
-            >
+            <span class="slider">
+              <SoundIcon name="quiet" />
+              <input
+                v-model.number="volume"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                @change="sound.play('volume-change')"
+              >
+              <SoundIcon name="loud" />
+            </span>
           </label>
         </Step>
 
@@ -167,8 +172,8 @@ const volume = computed({
           <div class="panel sync">
             <template v-if="!signedIn">
               <p>You’re not signed in, so Things I own, Renewals, Countdown and the other trackers are saved on this device only.</p>
-              <NuxtLink to="/password?tab=saved" class="btn btn-sm">Sign in or create an account</NuxtLink>
               <p class="small">It’s the same account as the password saver.</p>
+              <VaultAuth purpose="account" class="sign-in" />
             </template>
             <template v-else>
               <p>Signed in as <strong>{{ vault.email }}</strong>.</p>
@@ -207,7 +212,7 @@ const volume = computed({
                   :checked="state.pack === pack.name"
                   @change="choosePack(pack.name)"
                 >
-                <span class="swatch" aria-hidden="true" />
+                <span class="swatch" aria-hidden="true"><SoundIcon :name="pack.name" /></span>
                 <strong>{{ pack.label }}</strong>
                 <span class="desc">{{ pack.description }}</span>
               </label>
@@ -223,6 +228,7 @@ const volume = computed({
                 class="btn btn-quiet btn-sm"
                 @click="sound.play(s.cue)"
               >
+                <SoundIcon :name="s.cue" />
                 {{ s.label }}
               </button>
             </div>
@@ -298,6 +304,11 @@ const volume = computed({
   color: var(--ink-2);
 }
 
+.sign-in {
+  align-self: stretch;
+  margin-top: 0.4rem;
+}
+
 .sync .ok {
   font-weight: 600;
   color: var(--good-ink);
@@ -339,9 +350,30 @@ const volume = computed({
 .master {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1rem;
   padding: 1.25rem 1.4rem;
+}
+
+.master-text {
+  flex: 1;
+}
+
+.master-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.3rem;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-radius: 12px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.master-icon.on {
+  color: #fff;
+  background: var(--green);
 }
 
 .master h3 {
@@ -402,6 +434,13 @@ const volume = computed({
   padding: 1.1rem 1.4rem;
 }
 
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--ink-2);
+}
+
 .try {
   margin-top: 2.5rem;
 }
@@ -446,17 +485,21 @@ const volume = computed({
 }
 
 .swatch {
-  width: 1.25rem;
-  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
   margin-bottom: 0.4rem;
+  font-size: 1.05rem;
+  color: #fff;
   background: var(--pack);
-  border-radius: 5px;
+  border-radius: 8px;
   box-shadow: 0 0 0 2px var(--plastic), inset 0 -3px 0 rgb(0 0 0 / 0.12);
   transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.6, 1);
 }
 
 .pack.active .swatch {
-  transform: rotate(90deg);
+  transform: scale(1.12) rotate(-6deg);
 }
 
 .pack strong {

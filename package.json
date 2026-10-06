@@ -5,6 +5,7 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:lan": "test -f .certs/dev-cert.pem || sh scripts/dev-cert.sh; nuxt dev --public --https --https.cert=.certs/dev-cert.pem --https.key=.certs/dev-key.pem",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",

@@ -28,6 +28,8 @@ export interface VaultKeys {
 }
 
 export async function deriveVaultKeys(email: string, masterPassword: string): Promise<VaultKeys> {
+  // Browsers only expose crypto.subtle on https:// and localhost, so plain http on a LAN address can't sign in
+  if (!crypto.subtle) throw new Error('Signing in needs a secure connection. Open this page over https:// (or on localhost).')
   const subtle = crypto.subtle
   const passwordKey = await subtle.importKey('raw', enc.encode(masterPassword), 'PBKDF2', false, ['deriveBits'])
   const masterBits = await subtle.deriveBits(

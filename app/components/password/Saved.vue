@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
     <ClientOnly>
       <section v-if="vault.status === 'loading'" class="panel loading" aria-busy="true">Opening your vault…</section>
 
-      <VaultAuth v-else-if="vault.status === 'signed-out' || vault.status === 'locked'" />
+      <VaultAuth v-else-if="vault.status === 'signed-out' || vault.status === 'locked' || vault.status === 'recovery'" />
 
       <section v-else-if="vault.status === 'needs-setup'" class="setup">
         <Step :n="1" title="Create the vault table" hint="You’re signed in, but this Supabase project doesn’t have the vault table yet. It stores only encrypted data.">
