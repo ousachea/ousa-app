@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   routeRules: {
     // The password saver now lives in the Passwords tool
-    '/vault': { redirect: { to: '/password?tab=saved', statusCode: 301 } }
+    '/vault': { redirect: { to: '/password?tab=saved', status: 301 } }
   },
   runtimeConfig: {
     public: {

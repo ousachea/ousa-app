@@ -1,5 +1,5 @@
 // Search and social-share tags for a page: title, description, canonical link, Open Graph,
-// Twitter card and JSON-LD. The share image is a 1200×630 PNG in public/og (scripts/og-images.cjs).
+// X card type and JSON-LD. The share image is a 1200×630 PNG in public/og (scripts/og-images.cjs).
 interface AppSeo {
   title: string
   description: string
@@ -43,10 +43,8 @@ export function useAppSeo(seo: AppSeo | (() => AppSeo)) {
     ogImageType: 'image/png',
     ogImageAlt: () => value.value.imageAlt ?? `${value.value.title} — ${SITE_NAME}`,
     ogLocale: 'en_US',
+    // X reads title, description and image from the Open Graph tags; only the card type is its own
     twitterCard: 'summary_large_image',
-    twitterTitle: () => value.value.title,
-    twitterDescription: () => value.value.description,
-    twitterImage: () => image.value,
     robots: () => (value.value.noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large')
   })
 
