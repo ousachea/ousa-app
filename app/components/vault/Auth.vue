@@ -9,7 +9,7 @@ const forAccount = computed(() => props.purpose === 'account')
 const { vault, signIn, signUp, unlock, signOut, requestReset, setNewMasterPassword } = useVault()
 const { play } = useSound()
 
-const MIN_LENGTH = 12
+const MIN_LENGTH = 6
 
 const mode = ref<'sign-in' | 'create' | 'forgot'>('sign-in')
 const email = ref('')
