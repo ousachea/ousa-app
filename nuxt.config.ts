@@ -14,6 +14,8 @@ export default defineNuxtConfig({
       supabaseKey: process.env.SUPABASE_KEY ?? '',
       // Google OAuth client ID for importing contacts on /phone; set NUXT_PUBLIC_GOOGLE_CLIENT_ID
       googleClientId: '',
+      // The one account this app signs in to; the sign-in form then only asks for the password (NUXT_PUBLIC_OWNER_EMAIL)
+      ownerEmail: '',
       // The site's public address for canonical links and share images, e.g. https://ousa.app (NUXT_PUBLIC_SITE_URL).
       // Empty uses whatever address the page was served from.
       siteUrl: ''

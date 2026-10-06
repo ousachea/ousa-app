@@ -86,29 +86,41 @@ async function loadItems() {
 async function start() {
   if (started || import.meta.server) return
   started = true
+  const router = useRouter()
+  // Read before the Supabase client exchanges the code and tidies the URL. `reset` marks our reset links.
+  const params = new URLSearchParams(location.search + '&' + location.hash.slice(1))
+  const fromResetLink = params.has('reset')
   const supabase = useSupabase()
-  // Subscribe before reading the session so the reset link's PASSWORD_RECOVERY event isn't missed
+
+  // A reset link signs the browser in; ask for the new master password on Settings before anything else
+  function enterRecovery(email: string) {
+    key = undefined
+    state.items = []
+    state.email = email
+    state.status = 'recovery'
+    if (location.pathname !== '/settings' || fromResetLink) router.replace({ path: '/settings', hash: '#sync' })
+  }
+
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT' || !session) {
       key = undefined
       state.items = []
       state.email = ''
       state.status = 'signed-out'
-    } else if (event === 'PASSWORD_RECOVERY') {
-      key = undefined
-      state.email = session.user.email ?? ''
-      state.status = 'recovery'
+    } else if (event === 'PASSWORD_RECOVERY' && state.status !== 'recovery') {
+      enterRecovery(session.user.email ?? '')
     }
   })
 
   const { data } = await supabase.auth.getSession()
-  if (state.status !== 'recovery') {
+  if (data.session && (fromResetLink || passwordRecovery.value)) {
+    if (state.status !== 'recovery') enterRecovery(data.session.user.email ?? '')
+  } else if (state.status !== 'recovery') {
     state.email = data.session?.user.email ?? ''
     state.status = data.session ? 'locked' : 'signed-out'
   }
 
   // A reset link that couldn't sign in: Supabase sends error details, or the code had no matching verifier
-  const params = new URLSearchParams(location.search + '&' + location.hash.slice(1))
   if (!data.session && location.pathname === '/settings' && (params.has('error_description') || params.has('code'))) {
     state.resetError = params.get('error_code') === 'otp_expired'
       ? 'That reset link has expired. Ask for a new one.'
@@ -156,7 +168,7 @@ export function useVault() {
   async function requestReset(email: string) {
     state.resetError = ''
     const { error } = await useSupabase().auth.resetPasswordForEmail(normalizeEmail(email), {
-      redirectTo: `${location.origin}/settings`
+      redirectTo: `${location.origin}/settings?reset=1`
     })
     if (error) throw new Error(error.message)
   }

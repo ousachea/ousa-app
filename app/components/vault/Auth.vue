@@ -12,7 +12,9 @@ const { play } = useSound()
 const MIN_LENGTH = 6
 
 const mode = ref<'sign-in' | 'create' | 'forgot'>('sign-in')
-const email = ref('')
+// Single-owner mode: with NUXT_PUBLIC_OWNER_EMAIL set, the form only asks for the master password
+const ownerEmail = (useRuntimeConfig().public.ownerEmail as string | undefined)?.trim() ?? ''
+const email = ref(ownerEmail)
 const password = ref('')
 const confirm = ref('')
 const show = ref(false)
@@ -129,10 +131,12 @@ async function submit() {
 
     <form class="form" @submit.prevent="submit">
       <p v-if="resetSent" class="notice" role="status">
-        If there’s an account for {{ email }}, a reset link is on its way. Open it in this browser.
+        If there’s an account for {{ ownerEmail ? 'this app' : email }}, a reset link is on its way. Open it in this browser.
       </p>
 
-      <label v-if="!locked && !recovering" class="field">
+      <!-- Hidden username keeps password managers pairing the password with the right account -->
+      <input v-if="ownerEmail" :value="ownerEmail" type="email" autocomplete="username" hidden>
+      <label v-else-if="!locked && !recovering" class="field">
         <span class="field-head">Email</span>
         <input v-model="email" class="input" type="email" autocomplete="username" required>
       </label>
