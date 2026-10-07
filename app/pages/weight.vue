@@ -169,7 +169,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
           <div class="row">
             <label class="field">
               <span class="field-head">Date</span>
-              <input v-model="form.date" class="input" type="date" :max="isoToday()" required>
+              <DatePicker v-model="form.date" aria-label="Date" :max="isoToday()" required />
             </label>
             <label class="field">
               <span class="field-head">Weight</span>
@@ -289,7 +289,6 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
-  max-width: 1080px;
   margin: 0 auto;
 }
 

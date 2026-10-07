@@ -71,8 +71,8 @@ useAppSeo({
           class="tile"
           :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff' }"
         >
-          <span v-if="tool.demo" class="demo-badge" title="Try it with sample data: click the app’s icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>Demo
+          <span v-if="tool.demo" class="demo-badge" title="Open it and click the app’s icon to see it with example data">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>Try it
           </span>
           <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
           <strong>{{ tool.name }}</strong>
@@ -149,7 +149,7 @@ h1 {
 
 .group {
   width: 100%;
-  max-width: 1320px;
+  max-width: var(--page-width);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -164,7 +164,7 @@ h1 {
 
 .tools {
   width: 100%;
-  max-width: 1320px;
+  max-width: var(--page-width);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -172,7 +172,7 @@ h1 {
 }
 
 .tools > * {
-  flex: 1 1 220px;
+  flex: 1 1 210px;
   max-width: 260px;
 }
 

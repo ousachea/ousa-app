@@ -180,6 +180,26 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   margin: 0 auto;
 }
 
+/* Wide screens: the password and its settings side by side, so changes show up right next to them */
+@media (min-width: 1400px) {
+  .workspace {
+    max-width: none;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-areas: 'result settings';
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .result-step {
+    position: sticky;
+    top: 5.5rem; /* clear of the menu button */
+  }
+
+  .settings {
+    grid-template-columns: 1fr;
+  }
+}
+
 .result-step { grid-area: result; }
 
 .settings {

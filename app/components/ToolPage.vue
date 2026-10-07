@@ -7,7 +7,7 @@ import type { Tool } from '~/utils/tools'
 // band: full-width coloured band (collections)
 type Header = 'hero' | 'bar' | 'band'
 
-const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header }>(), { width: '1320px', tool: undefined, header: 'hero' })
+const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header }>(), { width: 'var(--page-width)', tool: undefined, header: 'hero' })
 
 const route = useRoute()
 const tool = computed(() => props.tool ?? toolFor(route.path)!)
@@ -70,7 +70,16 @@ function toggleDemo() {
   play(demo.active.value ? 'toggle-on' : 'toggle-off')
 }
 
-// Back to wherever you came from in the app (same as Esc); straight in from outside, it goes home
+// Back to wherever you came from in the app (same as Esc); straight in from outside, it goes home.
+// It stays pinned to the top-left like the menu button; once the page scrolls it gets a backing so it reads over content.
+const scrolled = ref(false)
+const onScroll = () => (scrolled.value = window.scrollY > 8)
+onMounted(() => {
+  onScroll()
+  window.addEventListener('scroll', onScroll, { passive: true })
+})
+onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
+
 const router = useRouter()
 function goBack(e: MouseEvent) {
   // Let cmd/ctrl-click open home in a new tab as a normal link would
@@ -84,7 +93,7 @@ function goBack(e: MouseEvent) {
 
 <template>
   <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
-    <NuxtLink to="/" class="home" aria-label="Back, Ousa’s Apps" title="Back (Esc)" @click="goBack">
+    <NuxtLink to="/" class="home" :class="{ scrolled }" aria-label="Back, Ousa’s Apps" title="Back (Esc)" @click="goBack">
       <svg class="back" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       <AppLogo class="home-logo" />Ousa’s Apps
     </NuxtLink>
@@ -97,12 +106,12 @@ function goBack(e: MouseEvent) {
         class="sticker demo-toggle"
         :class="{ on: demo.active.value }"
         :aria-pressed="demo.active.value"
-        :aria-label="demo.active.value ? 'Turn off the demo' : `Try ${tool.name} with demo data`"
-        :title="demo.active.value ? 'Turn off the demo' : 'Try it with demo data'"
+        :aria-label="demo.active.value ? 'Go back to your own data' : `Show ${tool.name} with example data`"
+        :title="demo.active.value ? 'Go back to your own data' : 'See how it looks with example data'"
         @click="toggleDemo"
       >
         <ToolIcon :name="tool.icon" />
-        <span class="demo-tag" aria-hidden="true">{{ demo.active.value ? 'Demo on' : 'Demo' }}</span>
+        <span class="demo-tag" aria-hidden="true">{{ demo.active.value ? 'Example on' : 'See example' }}</span>
       </button>
       <span v-else ref="stickerEl" class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
       <div class="head-text">
@@ -114,8 +123,8 @@ function goBack(e: MouseEvent) {
 
     <div class="body">
       <p v-if="demo.active.value" class="demo-banner" role="status">
-        <span><strong>You’re looking at demo data.</strong> Try anything: nothing you change is saved.</span>
-        <button type="button" class="btn btn-sm" @click="toggleDemo">Exit demo</button>
+        <span><strong>This is example data.</strong> Explore freely: changes here aren’t saved, and your own data is untouched.</span>
+        <button type="button" class="btn btn-sm" @click="toggleDemo">Back to my data</button>
       </p>
       <slot />
     </div>
@@ -133,6 +142,10 @@ function goBack(e: MouseEvent) {
 }
 
 .home {
+  /* Sticky rather than fixed so it keeps its place above the header; lines up with the menu button */
+  position: sticky;
+  top: calc(max(1rem, env(safe-area-inset-top)) + 0.5rem);
+  z-index: 99;
   align-self: flex-start;
   display: flex;
   align-items: center;
@@ -144,7 +157,20 @@ function goBack(e: MouseEvent) {
   color: var(--ink-2);
   text-decoration: none;
   border-radius: 999px;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.2s;
+}
+
+.home.scrolled {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 0 0 1px var(--line), 0 8px 22px rgb(var(--shadow) / 0.18);
+  backdrop-filter: blur(12px);
+}
+
+/* Lite effects: no blur behind it, just a solid backing */
+:root[data-effects='lite'] .home.scrolled {
+  background: var(--surface);
+  backdrop-filter: none;
 }
 
 .home-logo {

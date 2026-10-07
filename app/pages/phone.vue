@@ -56,7 +56,6 @@ const fileInput = ref<HTMLInputElement>()
 const contactQuery = ref('')
 const networkFilter = ref('All')
 const showCount = ref(100)
-const isDev = import.meta.dev
 
 // The Contact Picker API exists on Android Chrome; feature-checked after mount so SSR matches
 const canPick = ref(false)
@@ -127,7 +126,7 @@ watch(demoOn, (on) => {
     savedInput = input.value
     savedContacts = { list: contacts.value, source: contactSource.value }
     input.value = '096 777 8888'
-    loadContacts(DEMO_CONTACTS, 'demo contacts', { quiet: true })
+    loadContacts(DEMO_CONTACTS, 'example contacts', { quiet: true })
   } else {
     input.value = savedInput
     contacts.value = savedContacts?.list ?? []
@@ -310,7 +309,7 @@ function checkContact(c: CheckedContact) {
         <div class="sources">
           <button v-if="googleReady" type="button" class="btn source google" :disabled="!!importing" @click="fromGoogle">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2-1.9 3.2-4.7 3.2-8z" /><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z" /><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z" /><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.2 1.6l3.1-3.1A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z" /></svg>
-            {{ importing === 'google' ? 'Reading contacts…' : 'Sign in with Google' }}
+            {{ importing === 'google' ? 'Reading contacts…' : 'Import from Google' }}
           </button>
           <button type="button" class="btn source" :class="{ 'btn-quiet': googleReady }" :disabled="!!importing" @click="fileInput?.click()">
             {{ importing === 'file' ? 'Reading file…' : 'Import a contacts file' }}
@@ -320,9 +319,6 @@ function checkContact(c: CheckedContact) {
         </div>
         <p class="how">
           In <a href="https://contacts.google.com" target="_blank" rel="noopener">Google Contacts</a>, choose Export, then <b>Google CSV</b>. A <b>.vcf</b> file from your phone works too.
-        </p>
-        <p v-if="!googleReady && isDev" class="how dev">
-          To sign in with Google directly, set <code>NUXT_PUBLIC_GOOGLE_CLIENT_ID</code> in <code>.env</code>.
         </p>
         <p class="private">Contacts stay on this page. They’re never saved or uploaded.</p>
       </div>
@@ -389,13 +385,39 @@ function checkContact(c: CheckedContact) {
 </template>
 
 <style scoped>
-/* One narrow column, like a phone screen: dial, see the SIM, reference tucked below */
+/* One narrow column, like a phone screen: dial, see the SIM, reference tucked below.
+   On wide screens the checker stays phone-sized on the left and the contacts fill the rest. */
 .workspace {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
   max-width: 520px;
   margin: 0 auto;
+}
+
+@media (min-width: 1100px) {
+  .workspace {
+    max-width: none;
+    grid-template-columns: minmax(380px, 520px) minmax(0, 1fr);
+    grid-template-areas: 'check contacts' 'reference contacts';
+    grid-template-rows: auto 1fr;
+    gap: 1.5rem 2.5rem;
+    align-items: start;
+  }
+
+  .check { grid-area: check; }
+  .contacts-step { grid-area: contacts; }
+  .reference { grid-area: reference; }
+
+  /* A long address book reads across in columns instead of one tall list */
+  .people {
+    columns: 22rem;
+    column-gap: 2rem;
+  }
+
+  .people li {
+    break-inside: avoid;
+  }
 }
 
 .number {
@@ -785,11 +807,6 @@ h2 {
 
 .how a {
   color: inherit;
-}
-
-.how.dev {
-  margin-top: 0.4rem;
-  color: var(--ink-3);
 }
 
 .private {

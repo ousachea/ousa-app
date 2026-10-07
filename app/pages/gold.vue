@@ -35,6 +35,8 @@ const DEMO = (): Omit<Purchase, 'id'>[] => [
   { weight: 0.5, unit: 'chi', price: 262, date: isoDaysAgo(20) }
 ]
 const { items: purchases, ready, sync, add, addMany, update, remove, restore } = useCollection<Purchase>('gold', undefined, { demo: DEMO })
+// Signed out: offer Google sign-in right here, so purchases sync without a trip to Settings
+const signedOut = computed(() => sync.state.value === 'device')
 
 // ---------- Words (English / Khmer) ----------
 const WORDS = {
@@ -45,7 +47,9 @@ const WORDS = {
     invested: 'Paid', worth: 'Worth now', gainLoss: 'Gain or loss', weight: 'Weight', paid: 'Paid', date: 'Date',
     step1: 'Check today’s price', step1Hint: 'Live from the world market. Switch to “My price” to use a shop’s quote.',
     step2: 'Choose your gold’s purity', step2Hint: 'Jewellery is often 22K or 18K, so it’s worth less than pure 24K gold.',
-    step3: 'Add the gold you own', step3Hint: 'Enter what you bought and paid to see what it’s worth today.'
+    step3: 'Add the gold you own', step3Hint: 'Enter what you bought and paid to see what it’s worth today.',
+    boughtFor: 'You paid', gain: 'Gain', loss: 'Loss', each: 'each',
+    signInTitle: 'Keep your gold safe', signInBody: 'Sign in to back up your purchases and see them on your phone and computer.'
   },
   km: {
     li: 'លី', hun: 'ហុន', chi: 'ជី', gram: 'ក្រាម', damlung: 'ដំឡឹង', troyOz: 'អោន',
@@ -54,7 +58,9 @@ const WORDS = {
     invested: 'បានបង់', worth: 'តម្លៃឥឡូវ', gainLoss: 'ចំណេញ ឬខាត', weight: 'ទម្ងន់', paid: 'បានបង់', date: 'កាលបរិច្ឆេទ',
     step1: 'មើលតម្លៃថ្ងៃនេះ', step1Hint: 'តម្លៃផ្ទាល់ពីទីផ្សារពិភពលោក។ ប្តូរទៅ «តម្លៃខ្ញុំ» ដើម្បីប្រើតម្លៃហាង។',
     step2: 'ជ្រើសរើសភាពសុទ្ធនៃមាស', step2Hint: 'គ្រឿងអលង្ការជាញឹកញាប់ 22K ឬ 18K ដូច្នេះតម្លៃទាបជាងមាសសុទ្ធ 24K។',
-    step3: 'បន្ថែមមាសដែលអ្នកមាន', step3Hint: 'បញ្ចូលអ្វីដែលអ្នកបានទិញ និងតម្លៃដែលបានបង់ ដើម្បីដឹងតម្លៃថ្ងៃនេះ។'
+    step3: 'បន្ថែមមាសដែលអ្នកមាន', step3Hint: 'បញ្ចូលអ្វីដែលអ្នកបានទិញ និងតម្លៃដែលបានបង់ ដើម្បីដឹងតម្លៃថ្ងៃនេះ។',
+    boughtFor: 'អ្នកបានបង់', gain: 'ចំណេញ', loss: 'ខាត', each: 'ក្នុងមួយ',
+    signInTitle: 'រក្សាទុកមាសរបស់អ្នកឱ្យមានសុវត្ថិភាព', signInBody: 'ចូលគណនី ដើម្បីបម្រុងទុកការទិញរបស់អ្នក និងមើលវានៅលើទូរស័ព្ទ និងកុំព្យូទ័ររបស់អ្នក។'
   }
 } as const
 
@@ -70,7 +76,15 @@ const autoRefresh = ref(0) // seconds, 0 = off
 const purity = ref<Purity>(1)
 const customPurity = ref(99.99)
 const range = ref<Range>('1D')
-const sort = ref<'date-desc' | 'date-asc' | 'gl-desc' | 'gl-asc' | 'weight-desc'>('date-desc')
+const SORTS = [
+  { value: 'date-desc', label: 'Newest first' },
+  { value: 'date-asc', label: 'Oldest first' },
+  { value: 'gl-desc', label: 'Biggest gain' },
+  { value: 'gl-asc', label: 'Biggest loss' },
+  { value: 'weight-desc', label: 'Heaviest' }
+] as const
+const sort = ref<(typeof SORTS)[number]['value']>('date-desc')
+const unitOptions = computed(() => UNITS.map(u => ({ value: u, label: w.value[u] })))
 
 const w = computed(() => WORDS[lang.value])
 
@@ -210,6 +224,37 @@ const fmtQty = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits:
 // ---------- Ledger ----------
 const valueOf = (p: Purchase) => perGram.value * grams(p.weight, p.unit)
 const gainOf = (p: Purchase) => valueOf(p) - p.price
+
+// ---------- The price card catches the light ----------
+// The shine follows the pointer and the card tilts a little towards it, like a gold bar turned in the hand.
+// Mouse and pen only; touch, reduced motion and Lite effects keep the card still.
+const quoteEl = ref<HTMLElement>()
+let tiltFrame = 0
+function onQuoteMove(e: PointerEvent) {
+  if (e.pointerType === 'touch' || !quoteEl.value) return
+  const el = quoteEl.value
+  cancelAnimationFrame(tiltFrame)
+  tiltFrame = requestAnimationFrame(() => {
+    const r = el.getBoundingClientRect()
+    const x = (e.clientX - r.left) / r.width
+    const y = (e.clientY - r.top) / r.height
+    el.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`)
+    el.style.setProperty('--my', `${(y * 100).toFixed(1)}%`)
+    el.style.setProperty('--rx', `${((x - 0.5) * 10).toFixed(2)}deg`)
+    el.style.setProperty('--ry', `${((0.5 - y) * 8).toFixed(2)}deg`)
+    el.classList.add('lit')
+  })
+}
+function onQuoteLeave() {
+  cancelAnimationFrame(tiltFrame)
+  const el = quoteEl.value
+  if (!el) return
+  el.classList.remove('lit')
+  for (const v of ['--rx', '--ry']) el.style.setProperty(v, '0deg')
+}
+const gainPct = (p: Purchase) => (p.price ? (gainOf(p) / p.price) * 100 : 0)
+// What one unit cost then and costs now, so different-sized purchases compare at a glance
+const paidPerUnit = (p: Purchase) => (p.weight ? p.price / p.weight : 0)
 const totals = computed(() => {
   const paid = purchases.value.reduce((s, p) => s + p.price, 0)
   const worth = purchases.value.reduce((s, p) => s + valueOf(p), 0)
@@ -301,9 +346,24 @@ async function importCSV(e: Event) {
     play('error')
     return
   }
-  addMany(rows)
+  // Re-importing an export (say, on a second device or after signing in) shouldn't double the list:
+  // skip rows that match a purchase already here on weight, unit, price and date
+  const key = (p: Omit<Purchase, 'id'>) => `${p.weight}|${p.unit}|${p.price.toFixed(2)}|${p.date}`
+  const existing = new Set(purchases.value.map(key))
+  const fresh = rows.filter(r => !existing.has(key(r)))
+  const skipped = rows.length - fresh.length
+  const skippedNote = skipped ? `${skipped} already in your list ${skipped === 1 ? 'was' : 'were'} skipped.` : undefined
+  formOpen.value = false
+  if (!fresh.length) {
+    toast('Nothing new to import', { description: skippedNote })
+    return
+  }
+  addMany(fresh)
   play('success')
-  toast.success(`${rows.length} ${rows.length === 1 ? 'purchase' : 'purchases'} imported`)
+  const synced = sync.signedIn.value ? ' Saving to your account too.' : ''
+  toast.success(`${fresh.length} ${fresh.length === 1 ? 'purchase' : 'purchases'} imported`, {
+    description: [skippedNote, synced.trim()].filter(Boolean).join(' ') || undefined
+  })
 }
 
 function exportCSV() {
@@ -423,7 +483,7 @@ const PURITIES: { value: Purity, label: string }[] = [
         <div class="market">
           <!-- The quote: one gold bar of a card -->
           <Step :n="1" :title="w.step1" :hint="w.step1Hint">
-            <section class="panel quote" aria-live="polite">
+            <section ref="quoteEl" class="panel quote" aria-live="polite" @pointermove="onQuoteMove" @pointerleave="onQuoteLeave">
               <div class="quote-top">
                 <span class="label">{{ w.spot }}</span>
                 <span class="status" :data-status="status"><i aria-hidden="true" />{{ STATUS_LABEL[status] }}</span>
@@ -541,12 +601,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             <div class="settings-body">
               <label class="field">
                 <span class="field-head">Refresh automatically</span>
-                <select v-model.number="autoRefresh" class="input">
-                  <option :value="0">Off</option>
-                  <option :value="30">Every 30 seconds</option>
-                  <option :value="60">Every minute</option>
-                  <option :value="300">Every 5 minutes</option>
-                </select>
+                <AppSelect v-model="autoRefresh" aria-label="Refresh automatically" :options="[{ value: 0, label: 'Off' }, { value: 30, label: 'Every 30 seconds' }, { value: 60, label: 'Every minute' }, { value: 300, label: 'Every 5 minutes' }]" />
               </label>
               <label class="field">
                 <span class="field-head">goldapi.io key <span class="optional">Optional backup</span></span>
@@ -579,27 +634,56 @@ const PURITIES: { value: Purity, label: string }[] = [
 
             <div class="ledger-bar">
               <button type="button" class="btn" @click="openAdd">{{ w.add }}</button>
-              <select v-if="purchases.length > 1" v-model="sort" class="input sort" aria-label="Sort purchases">
-                <option value="date-desc">Newest first</option>
-                <option value="date-asc">Oldest first</option>
-                <option value="gl-desc">Biggest gain</option>
-                <option value="gl-asc">Biggest loss</option>
-                <option value="weight-desc">Heaviest</option>
-              </select>
+              <AppSelect v-if="purchases.length > 1" v-model="sort" class="sort" aria-label="Sort purchases" :options="SORTS" />
             </div>
 
+            <ClientOnly>
+              <div v-if="signedOut" class="panel sign-in">
+                <div>
+                  <h3>{{ w.signInTitle }}</h3>
+                  <p>{{ w.signInBody }}</p>
+                </div>
+                <VaultAuth purpose="account" />
+              </div>
+            </ClientOnly>
+
+            <!-- One card per purchase: what you paid → what it's worth now → the gain or loss -->
             <ul v-if="purchases.length" class="purchases">
-              <li v-for="p in sorted" :key="p.id" class="purchase">
-                <span class="p-weight"><strong>{{ p.weight }}</strong> {{ w[p.unit] }}</span>
-                <span class="p-meta">{{ formatDate(p.date) }} · {{ w.paid }} {{ money(p.price) }}</span>
-                <span class="p-now">{{ spot ? money(valueOf(p)) : '—' }}</span>
-                <span v-if="spot" class="p-gain" :class="gainOf(p) >= 0 ? 'up' : 'down'">
-                  {{ signed(gainOf(p)) }} · {{ p.price ? ((gainOf(p) / p.price) * 100).toFixed(1) : '0' }}%
-                </span>
-                <span class="p-actions">
-                  <button type="button" class="link" @click="openEdit(p)">Edit</button>
-                  <button type="button" class="link danger" @click="del(p)">Delete</button>
-                </span>
+              <li v-for="p in sorted" :key="p.id" class="purchase" :class="spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : ''">
+                <header class="p-head">
+                  <span class="p-weight"><strong>{{ fmtQty(p.weight) }}</strong> {{ w[p.unit] }}</span>
+                  <span class="p-date">{{ formatDate(p.date) }}</span>
+                </header>
+
+                <div class="p-compare">
+                  <div class="p-col">
+                    <span class="p-label">{{ w.boughtFor }}</span>
+                    <strong>{{ money(p.price) }}</strong>
+                    <!-- Per-unit prices only add something when more than one unit was bought -->
+                    <small v-if="p.weight !== 1">{{ money(paidPerUnit(p)) }} {{ w.each }} {{ w[p.unit] }}</small>
+                  </div>
+                  <svg class="p-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+                  <div class="p-col">
+                    <span class="p-label">{{ w.worth }}</span>
+                    <strong>{{ spot ? money(valueOf(p)) : '—' }}</strong>
+                    <small v-if="spot && p.weight !== 1">{{ money(priceOf(p.unit)) }} {{ w.each }} {{ w[p.unit] }}</small>
+                  </div>
+                </div>
+
+                <footer class="p-foot">
+                  <span v-if="spot" class="p-result">
+                    <span class="p-badge">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="gainOf(p) >= 0 ? 'M12 19V5M6 11l6-6 6 6' : 'M12 5v14M6 13l6 6 6-6'" /></svg>
+                      {{ gainOf(p) >= 0 ? w.gain : w.loss }}
+                    </span>
+                    <strong>{{ signed(gainOf(p)) }}</strong>
+                    <span class="p-pct">{{ gainPct(p) >= 0 ? '+' : '−' }}{{ Math.abs(gainPct(p)).toFixed(1) }}%</span>
+                  </span>
+                  <span class="p-actions">
+                    <button type="button" class="link" @click="openEdit(p)">Edit</button>
+                    <button type="button" class="link danger" @click="del(p)">Delete</button>
+                  </span>
+                </footer>
               </li>
             </ul>
 
@@ -630,9 +714,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             <div class="panel pad convert">
               <div class="convert-row">
                 <input v-model.number="convAmount" class="input" type="number" min="0" step="any" inputmode="decimal" aria-label="Amount to convert">
-                <select v-model="convUnit" class="input" aria-label="Unit">
-                  <option v-for="u in UNITS" :key="u" :value="u">{{ w[u] }}</option>
-                </select>
+                <AppSelect v-model="convUnit" aria-label="Unit" :options="unitOptions" />
               </div>
               <dl class="convert-out">
                 <div v-for="u in UNITS.filter(x => x !== convUnit)" :key="u">
@@ -657,9 +739,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             </label>
             <label class="field">
               <span class="field-head">Unit</span>
-              <select v-model="form.unit" class="input">
-                <option v-for="u in UNITS" :key="u" :value="u">{{ w[u] }}</option>
-              </select>
+              <AppSelect v-model="form.unit" aria-label="Unit" :options="unitOptions" />
             </label>
           </div>
           <div class="form-row">
@@ -669,7 +749,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             </label>
             <label class="field">
               <span class="field-head">{{ w.date }}</span>
-              <input v-model="form.date" class="input" type="date">
+              <DatePicker v-model="form.date" aria-label="Date" />
             </label>
           </div>
           <p v-if="spot && form.weight" class="form-note">
@@ -680,6 +760,11 @@ const PURITIES: { value: Purity, label: string }[] = [
             <button type="submit" class="btn" :disabled="!canSave">{{ editingId ? 'Save changes' : 'Add purchase' }}</button>
             <button type="button" class="btn btn-quiet" @click="formOpen = false">Cancel</button>
           </div>
+          <p v-if="!editingId" class="form-note import-note">
+            Have a list already?
+            <button type="button" class="link" @click="fileInput?.click()">Import a CSV file</button>
+            with Weight, Unit, Paid and Date columns, like the one Export CSV makes.
+          </p>
         </form>
       </Modal>
 
@@ -743,6 +828,10 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 /* ---------- The quote: a gold bar of a card ---------- */
 .quote {
+  --mx: 30%;
+  --my: 20%;
+  --rx: 0deg;
+  --ry: 0deg;
   position: relative;
   overflow: hidden;
   padding: 1.5rem;
@@ -752,7 +841,50 @@ const PURITIES: { value: Purity, label: string }[] = [
     linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.35) 45%, transparent 60%),
     linear-gradient(160deg, #f2cf6a, var(--gold) 55%, #a87a12);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), 0 14px 30px -14px rgb(120 84 6 / 0.55);
+  transform: perspective(900px) rotateX(var(--ry)) rotateY(var(--rx));
+  transition: transform 0.6s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.4s;
 }
+
+/* Two layers of light: a soft glow right under the pointer, and a bright streak that slides across with it */
+.quote::before,
+.quote::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.quote::before {
+  background: radial-gradient(circle at var(--mx) var(--my), rgb(255 250 225 / 0.75), rgb(255 240 190 / 0.25) 22%, transparent 50%);
+  mix-blend-mode: soft-light;
+}
+
+.quote::after {
+  background: linear-gradient(115deg, transparent 0%, rgb(255 255 255 / 0) calc(var(--mx) - 18%), rgb(255 255 255 / 0.45) var(--mx), rgb(255 255 255 / 0) calc(var(--mx) + 18%), transparent 100%);
+  mix-blend-mode: overlay;
+}
+
+.quote.lit {
+  transition: transform 0.12s ease-out, box-shadow 0.4s;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6), 0 22px 44px -16px rgb(120 84 6 / 0.65);
+}
+
+.quote.lit::before,
+.quote.lit::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quote { transform: none; transition: none; }
+  .quote::before, .quote::after { display: none; }
+}
+
+:root[data-effects='lite'] .quote { transform: none; }
+:root[data-effects='lite'] .quote::before,
+:root[data-effects='lite'] .quote::after { display: none; }
 
 .quote-top {
   display: flex;
@@ -1159,57 +1291,152 @@ const PURITIES: { value: Purity, label: string }[] = [
   list-style: none;
   margin: 1rem 0 0;
   padding: 0;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 0.75rem;
 }
 
 .purchase {
-  padding: 0.85rem 1.1rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.15rem 1rem;
-  align-items: baseline;
+  --tone: var(--ink-3);
+  --tone-ink: var(--ink-2);
+  padding: 1rem 1.1rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--tone);
+  border-radius: 16px;
 }
 
-.purchase + .purchase {
-  border-top: 1px solid var(--line);
+.purchase.is-up { --tone: var(--green); --tone-ink: var(--good-ink); }
+.purchase.is-down { --tone: var(--red); --tone-ink: var(--bad-ink); }
+
+.p-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.p-weight {
+  font-weight: 600;
 }
 
 .p-weight strong {
-  font-size: 1.2rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 
-.p-meta {
-  grid-column: 1;
-  font-size: 0.85rem;
+.p-date {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Paid → worth now, side by side */
+.p-compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--surface-2);
+  border-radius: 12px;
+}
+
+.p-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.p-col:last-child {
+  text-align: right;
+}
+
+.p-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.p-col strong {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.p-col small {
+  font-size: 0.75rem;
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
 
-.p-now {
-  grid-column: 2;
-  grid-row: 1;
-  text-align: right;
-  font-weight: 700;
+.p-arrow {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.p-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* The result reads as one line: [▲ Gain] +$12.00 +2.4% */
+.p-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--tone-ink);
   font-variant-numeric: tabular-nums;
 }
 
-.p-gain {
-  grid-column: 2;
-  grid-row: 2;
-  text-align: right;
+.p-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.5rem 0.15rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  border-radius: 999px;
+}
+
+.p-badge svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.p-result strong {
+  font-size: 1.05rem;
+}
+
+.p-pct {
   font-size: 0.85rem;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .p-actions {
-  grid-column: 1 / -1;
   display: flex;
   gap: 0.9rem;
-  margin-top: 0.3rem;
 }
 
 .link {
@@ -1226,6 +1453,48 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .link:hover { color: var(--ink); }
 .link.danger { color: var(--bad-ink); }
+
+.sign-in {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+}
+
+.sign-in h3 {
+  font-size: 1rem;
+}
+
+.sign-in p {
+  margin: 0.2rem 0 0;
+  max-width: 34rem;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+.sign-in > div {
+  flex: 1 1 18rem;
+}
+
+/* The sign-in component brings its own spacing for full forms; here it's just the button,
+   styled as a plain Google button so it doesn't compete with "Add purchase" */
+.sign-in :deep(.auth) {
+  flex: none;
+  margin: 0;
+}
+
+.sign-in :deep(.form) {
+  margin-top: 0;
+}
+
+.sign-in :deep(.google) {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(var(--shadow) / 0.12);
+}
 
 .empty {
   margin-top: 1rem;
@@ -1266,6 +1535,12 @@ const PURITIES: { value: Purity, label: string }[] = [
   margin: 0;
   font-size: 0.9rem;
   color: var(--ink-2);
+}
+
+.import-note {
+  padding-top: 0.9rem;
+  font-size: 0.85rem;
+  border-top: 1px solid var(--line);
 }
 
 .form-actions {

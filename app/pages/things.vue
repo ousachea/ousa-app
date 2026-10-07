@@ -205,7 +205,7 @@ function del(t: Thing) {
         </div>
         <label class="field">
           <span class="field-head">Bought on</span>
-          <input v-model="form.purchaseDate" class="input" type="date" :max="today()" required>
+          <DatePicker v-model="form.purchaseDate" aria-label="Bought on" :max="today()" required />
         </label>
         <div class="field">
           <span class="field-head">Price paid</span>
@@ -269,9 +269,7 @@ function del(t: Thing) {
             <div class="toolbar">
               <DataSource :sync="sync" />
               <input v-model="query" class="input" type="search" placeholder="Search your things" aria-label="Search your things">
-              <select v-model="sort" class="input sort" aria-label="Sort by">
-                <option v-for="s in SORTS" :key="s.value" :value="s.value">{{ s.label }}</option>
-              </select>
+              <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             </div>
 
             <!-- Each item is a price tag: punched hole and string on the left, price as the headline -->

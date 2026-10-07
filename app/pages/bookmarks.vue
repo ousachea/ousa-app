@@ -338,11 +338,7 @@ function exportFile() {
               <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
-            <select v-model="sort" class="input sort" aria-label="Sort by">
-              <option value="newest">Newest</option>
-              <option value="opened">Most opened</option>
-              <option value="az">A–Z</option>
-            </select>
+            <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="[{ value: 'newest', label: 'Newest' }, { value: 'opened', label: 'Most opened' }, { value: 'az', label: 'A–Z' }]" />
           </div>
 
           <ul v-if="shown.length" class="marks">

@@ -26,7 +26,6 @@ const MENU_KEYS: Record<string, string> = {
   '/weight': 'k', // kg
   '/countdown': 'c',
   '/renewals': 'r',
-  '/phrases': 'f', // Phrase sounds like F
   '/bookmarks': 'b',
   '/battery': 'a', // bAttery
   '/salary': 's',

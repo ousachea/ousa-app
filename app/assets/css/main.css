@@ -1,4 +1,7 @@
 :root {
+  /* Widest an app's content gets; wide screens use the room instead of leaving big margins */
+  --page-width: 1840px;
+
   /* Surfaces */
   --bg: #e8ebf0;
   --surface: #ffffff;

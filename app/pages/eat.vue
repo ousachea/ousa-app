@@ -265,7 +265,8 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 <template>
   <ToolPage>
-    <!-- Centre stage: the deck. Managing the list lives underneath. -->
+    <!-- Centre stage: the deck. Managing the list lives underneath (beside it on wide screens). -->
+    <div class="eat-layout">
     <section class="stage-area" aria-label="Swipe to decide">
       <div class="stage-top">
         <div class="segmented filter" role="radiogroup" aria-label="Show">
@@ -405,6 +406,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
         </ClientOnly>
       </div>
     </section>
+    </div>
   </ToolPage>
 </template>
 
@@ -430,6 +432,25 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .manage {
   max-width: 1080px;
   margin: 4rem auto 0;
+}
+
+@media (min-width: 1400px) {
+  .eat-layout {
+    display: grid;
+    grid-template-columns: minmax(380px, 520px) minmax(0, 1fr);
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .stage-area {
+    position: sticky;
+    top: 5.5rem; /* clear of the menu button */
+  }
+
+  .manage {
+    max-width: none;
+    margin: 0;
+  }
 }
 
 .manage > h2 {

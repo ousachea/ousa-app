@@ -189,13 +189,11 @@ function del(r: Renewal) {
         <div class="row">
           <label class="field">
             <span class="field-head">Billed</span>
-            <select v-model="form.cycle" class="input">
-              <option v-for="c in CYCLES" :key="c.value" :value="c.value">{{ c.label }}</option>
-            </select>
+            <AppSelect v-model="form.cycle" aria-label="Billed" :options="CYCLES" />
           </label>
           <label class="field">
             <span class="field-head">Next renewal</span>
-            <input v-model="form.nextDate" class="input" type="date" required>
+            <DatePicker v-model="form.nextDate" aria-label="Next renewal" required />
           </label>
         </div>
         <div class="actions">
@@ -279,6 +277,18 @@ function del(r: Renewal) {
 .statement {
   max-width: 880px;
   margin: 0 auto;
+}
+
+/* Wide screens: the timeline gets the full width and the subscriptions sit side by side */
+@media (min-width: 1200px) {
+  .statement {
+    max-width: none;
+  }
+
+  .renewals {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  }
 }
 
 .form {

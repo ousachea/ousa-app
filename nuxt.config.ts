@@ -5,7 +5,9 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   routeRules: {
     // The password saver now lives in the Passwords tool
-    '/vault': { redirect: { to: '/password?tab=saved', status: 301 } }
+    '/vault': { redirect: { to: '/password?tab=saved', status: 301 } },
+    // The Phrase bank app was retired
+    '/phrases': { redirect: { to: '/', status: 301 } }
   },
   runtimeConfig: {
     public: {
@@ -16,8 +18,6 @@ export default defineNuxtConfig({
         projectId: '',
         appId: ''
       },
-      // Google OAuth client ID for importing contacts on /phone; set NUXT_PUBLIC_GOOGLE_CLIENT_ID
-      googleClientId: '',
       // The one Google account this app signs in to; Google offers it first (NUXT_PUBLIC_OWNER_EMAIL)
       ownerEmail: '',
       // The site's public address for canonical links and share images, e.g. https://ousa.app (NUXT_PUBLIC_SITE_URL).

@@ -15,7 +15,7 @@ const COPY: Record<SyncState, { label: string, detail: string }> = {
   'synced': { label: 'Synced with Firebase', detail: 'Stored in your Firebase account and also kept on this device, so it works offline.' },
   'offline': { label: 'Saved on this device', detail: 'Couldn’t reach Firebase, so your changes are saved in this browser for now.' },
   'needs-setup': { label: 'On this device', detail: 'You’re signed in, but Firebase needs a one-time setup before it can store this data.' },
-  'demo': { label: 'Demo data', detail: 'Sample data to try the app. Nothing you change here is saved. Click the app icon again to go back to your own data.' }
+  'demo': { label: 'Example data', detail: 'Example data to show how the app works. Changes here aren’t saved. Click the app icon again to go back to your own data.' }
 }
 
 function onOutside(e: PointerEvent) {

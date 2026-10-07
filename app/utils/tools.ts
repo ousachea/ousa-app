@@ -1,6 +1,6 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'list'
-  | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'phrases' | 'bookmarks' | 'battery' | 'salary' | 'gold'
+  | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -134,16 +134,6 @@ export const TOOLS: Tool[] = [
     seoTitle: 'Subscription and renewal tracker',
     description: 'See what your subscriptions cost each month and year, and what renews in the next 30 days, so nothing charges you by surprise.',
     demo: true
-  },
-  {
-    to: '/phrases',
-    name: 'Phrase bank',
-    summary: 'Save useful English and Khmer phrases for work.',
-    color: 'var(--sky)',
-    icon: 'phrases',
-    group: 'Life',
-    seoTitle: 'English–Khmer phrase bank for work',
-    description: 'Save useful English and Khmer phrases for work and practise them with flashcards until they stick.'
   },
   {
     to: '/bookmarks',

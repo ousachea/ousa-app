@@ -284,13 +284,28 @@ async function reloadRate() {
   box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
 }
 
-/* A calculator: one narrow column, amount → rate → market → the receipt prints out underneath */
+/* A calculator: one narrow column, amount → rate → market → the receipt prints out underneath.
+   On wide screens the receipt sits beside the inputs and stays in view while you change them. */
 .workspace {
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
   max-width: 560px;
   margin: 0 auto;
+}
+
+@media (min-width: 1000px) {
+  .workspace {
+    max-width: 1280px;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .result-step {
+    position: sticky;
+    top: 5.5rem; /* clear of the menu button */
+  }
 }
 
 .gap { margin-top: 2rem; }

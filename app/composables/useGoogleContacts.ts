@@ -1,51 +1,44 @@
+import { GoogleAuthProvider, reauthenticateWithPopup, signInWithPopup, type UserCredential } from 'firebase/auth'
 import type { RawContact } from '~/utils/contactImport'
 
-// Reads the signed-in user's Google Contacts with the People API, straight from the browser.
-// Sign-in uses Google Identity Services' token flow: no backend, the token lives only in memory.
-const GIS_SRC = 'https://accounts.google.com/gsi/client'
+// Reads the user's Google Contacts with the People API, straight from the browser.
+// Uses the app's Firebase Google sign-in, asking for read-only contacts access only when importing.
+// The access token lives only in memory and is reused until it's about to expire.
 const SCOPE = 'https://www.googleapis.com/auth/contacts.readonly'
+// Google access tokens last an hour; stop reusing one a little before that
+const TOKEN_LIFETIME_MS = 55 * 60 * 1000
 
-interface TokenResponse { access_token?: string, error?: string, error_description?: string }
-interface TokenClient { requestAccessToken: (opts?: { prompt?: string }) => void }
-interface GoogleOAuth {
-  initTokenClient: (cfg: {
-    client_id: string
-    scope: string
-    callback: (r: TokenResponse) => void
-    error_callback?: (e: { type?: string, message?: string }) => void
-  }) => TokenClient
-}
-declare global {
-  interface Window { google?: { accounts?: { oauth2?: GoogleOAuth } } }
-}
+let cached: { token: string, uid: string, expires: number } | undefined
 
-let scriptLoad: Promise<void> | undefined
-function loadGis() {
-  if (window.google?.accounts?.oauth2) return Promise.resolve()
-  scriptLoad ??= new Promise<void>((resolve, reject) => {
-    const s = document.createElement('script')
-    s.src = GIS_SRC
-    s.async = true
-    s.onload = () => resolve()
-    s.onerror = () => {
-      scriptLoad = undefined
-      reject(new Error('Couldn’t load Google sign-in. Check your connection or ad blocker.'))
+async function getToken() {
+  const { auth } = useFirebase()
+  const user = auth.currentUser
+  if (cached && user?.uid === cached.uid && Date.now() < cached.expires) return cached.token
+
+  const provider = new GoogleAuthProvider()
+  provider.addScope(SCOPE)
+  let result: UserCredential
+  try {
+    // Signed in: confirm the same account with the extra permission. Signed out: this also signs in, so trackers sync too.
+    if (user) {
+      provider.setCustomParameters({ login_hint: user.email ?? '' })
+      result = await reauthenticateWithPopup(user, provider)
+    } else {
+      provider.setCustomParameters({ prompt: 'select_account' })
+      result = await signInWithPopup(auth, provider)
     }
-    document.head.append(s)
-  })
-  return scriptLoad
-}
+  } catch (e) {
+    const code = (e as { code?: string }).code
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') throw new Error('Sign-in window was closed')
+    if (code === 'auth/user-mismatch') throw new Error('Choose the Google account you’re signed in with.')
+    if (code === 'auth/popup-blocked') throw new Error('Your browser blocked the Google window. Allow pop-ups for this site and try again.')
+    throw e
+  }
 
-function getToken(clientId: string) {
-  return new Promise<string>((resolve, reject) => {
-    const client = window.google!.accounts!.oauth2!.initTokenClient({
-      client_id: clientId,
-      scope: SCOPE,
-      callback: r => (r.access_token ? resolve(r.access_token) : reject(new Error(r.error_description || r.error || 'Google sign-in failed'))),
-      error_callback: e => reject(new Error(e.type === 'popup_closed' ? 'Sign-in window was closed' : e.message || 'Google sign-in failed'))
-    })
-    client.requestAccessToken()
-  })
+  const token = GoogleAuthProvider.credentialFromResult(result)?.accessToken
+  if (!token) throw new Error('Google didn’t share your contacts. Tick the contacts box when asked.')
+  cached = { token, uid: result.user.uid, expires: Date.now() + TOKEN_LIFETIME_MS }
+  return token
 }
 
 interface Person {
@@ -64,7 +57,11 @@ async function fetchConnections(token: string) {
     url.searchParams.set('pageSize', '1000')
     if (pageToken) url.searchParams.set('pageToken', pageToken)
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    if (!res.ok) throw new Error(res.status === 403 ? 'The People API isn’t enabled for this Google project' : `Google Contacts returned ${res.status}`)
+    if (!res.ok) {
+      // A token Google no longer accepts (revoked or expired early): forget it so the next try asks again
+      if (res.status === 401) cached = undefined
+      throw new Error(res.status === 403 ? 'The People API isn’t enabled for this Google project' : `Google Contacts returned ${res.status}`)
+    }
     const data = await res.json() as { connections?: Person[], nextPageToken?: string }
     for (const p of data.connections ?? []) {
       const numbers = (p.phoneNumbers ?? []).map(n => n.canonicalForm || n.value || '').filter(Boolean)
@@ -77,14 +74,11 @@ async function fetchConnections(token: string) {
 }
 
 export function useGoogleContacts() {
-  const clientId = useRuntimeConfig().public.googleClientId as string
-  const available = computed(() => !!clientId)
+  const available = computed(() => firebaseConfigured())
 
   async function importFromGoogle() {
-    if (!clientId) throw new Error('Google sign-in isn’t set up')
-    await loadGis()
-    const token = await getToken(clientId)
-    return fetchConnections(token)
+    if (!firebaseConfigured()) throw new Error('Google sign-in isn’t set up')
+    return fetchConnections(await getToken())
   }
 
   return { available, importFromGoogle }

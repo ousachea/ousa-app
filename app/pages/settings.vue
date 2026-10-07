@@ -144,44 +144,7 @@ const volume = computed({
           </div>
         </Step>
 
-        <Step :n="2" title="Turn sound on" class="sound-step">
-          <section class="panel master">
-            <span class="master-icon" :class="{ on: state.enabled }"><SoundIcon :name="state.enabled ? 'on' : 'off'" /></span>
-            <div class="master-text">
-              <h3 id="sound-label">Sound effects</h3>
-              <p v-if="state.enabled">Short sounds when you navigate, copy, download and get results.</p>
-              <p v-else>Sound is off. Turn it on to choose a style.</p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              class="switch"
-              :aria-checked="state.enabled"
-              aria-labelledby="sound-label"
-              @click="toggle"
-            >
-              <span class="knob" />
-            </button>
-          </section>
-
-          <label class="panel field volume" :class="{ muted: !state.enabled }" :inert="!state.enabled">
-            <span class="field-head">Volume <output>{{ volume }}%</output></span>
-            <span class="slider">
-              <SoundIcon name="quiet" />
-              <input
-                v-model.number="volume"
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                @change="sound.play('volume-change')"
-              >
-              <SoundIcon name="loud" />
-            </span>
-          </label>
-        </Step>
-
-        <Step id="sync" :n="3" title="Sync with Firebase" hint="Keep your trackers in your Firebase account and see them on every device." class="sync-step">
+        <Step id="sync" :n="2" title="Sync with Firebase" hint="Keep your trackers in your Firebase account and see them on every device." class="sync-step">
           <div class="panel sync">
             <template v-if="!signedIn">
               <p>You’re not signed in, so Things I own, Renewals, Countdown and the other trackers are saved on this device only.</p>
@@ -208,7 +171,45 @@ const volume = computed({
         </Step>
         </div>
 
-        <div class="main" :class="{ muted: !state.enabled }" :inert="!state.enabled">
+        <div class="main">
+          <Step :n="3" title="Sound" hint="Turn it on, set the volume, then pick a style and try it.">
+            <section class="panel master">
+              <span class="master-icon" :class="{ on: state.enabled }"><SoundIcon :name="state.enabled ? 'on' : 'off'" /></span>
+              <div class="master-text">
+                <h3 id="sound-label">Sound effects</h3>
+                <p v-if="state.enabled">Short sounds when you navigate, copy, download and get results.</p>
+                <p v-else>Sound is off. Turn it on to choose a style.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                class="switch"
+                :aria-checked="state.enabled"
+                aria-labelledby="sound-label"
+                @click="toggle"
+              >
+                <span class="knob" />
+              </button>
+            </section>
+
+            <label class="panel field volume" :class="{ muted: !state.enabled }" :inert="!state.enabled">
+              <span class="field-head">Volume <output>{{ volume }}%</output></span>
+              <span class="slider">
+                <SoundIcon name="quiet" />
+                <input
+                  v-model.number="volume"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  @change="sound.play('volume-change')"
+                >
+                <SoundIcon name="loud" />
+              </span>
+            </label>
+          </Step>
+
+          <div class="sound-options" :class="{ muted: !state.enabled }" :inert="!state.enabled">
           <Step :n="4" title="Choose a style" hint="Each style plays a sample when you pick it.">
             <div class="packs" role="radiogroup" aria-label="Sound style">
               <label
@@ -246,6 +247,7 @@ const volume = computed({
               </button>
             </div>
           </Step>
+          </div>
         </div>
       </div>
 
@@ -356,8 +358,9 @@ const volume = computed({
   cursor: pointer;
 }
 
-.sound-step {
-  margin-top: 2rem;
+/* Style and samples sit under the sound switch and fade out while sound is off */
+.sound-options {
+  margin-top: 2.5rem;
 }
 
 .master {

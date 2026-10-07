@@ -306,7 +306,7 @@ async function tryDemo() {
   try {
     await addFiles(await makeDemoFiles())
   } catch {
-    toast.error('Couldn’t make the demo files')
+    toast.error('Couldn’t make the example files')
     play('error')
   } finally {
     loadingDemo.value = false
@@ -387,7 +387,7 @@ onBeforeUnmount(clearAll)
     </label>
     <!-- Outside the label so it isn't read as part of the file picker, but shown inside the drop box -->
     <button type="button" class="btn btn-quiet btn-sm demo" :disabled="loadingDemo" @click="tryDemo">
-      {{ loadingDemo ? 'Making demo files…' : 'No files handy? Try 3 demo files' }}
+      {{ loadingDemo ? 'Making example files…' : 'No files handy? Try 3 example files' }}
     </button>
     </div>
     </Step>
@@ -411,14 +411,7 @@ onBeforeUnmount(clearAll)
 
       <label class="field">
         <span class="field-head">Max width</span>
-        <select v-model.number="maxWidth" class="input">
-          <option :value="0">Keep original size</option>
-          <option :value="3840">3840 px (4K)</option>
-          <option :value="2560">2560 px</option>
-          <option :value="1920">1920 px (Full HD)</option>
-          <option :value="1280">1280 px</option>
-          <option :value="800">800 px</option>
-        </select>
+        <AppSelect v-model="maxWidth" aria-label="Max width" :options="[{ value: 0, label: 'Keep original size' }, { value: 3840, label: '3840 px (4K)' }, { value: 2560, label: '2560 px' }, { value: 1920, label: '1920 px (Full HD)' }, { value: 1280, label: '1280 px' }, { value: 800, label: '800 px' }]" />
       </label>
 
       <p v-if="format === 'image/png' && hasImage" class="hint">PNG keeps every pixel, so images only get smaller if you lower the max width.</p>
@@ -438,22 +431,11 @@ onBeforeUnmount(clearAll)
         </div>
         <label v-if="pdfMode === 'keep-text'" class="field">
           <span class="field-head">Photos inside, longest side</span>
-          <select v-model.number="pdfMaxPx" class="input">
-            <option :value="0">Keep original size</option>
-            <option :value="2400">2400 px (print)</option>
-            <option :value="2000">2000 px</option>
-            <option :value="1500">1500 px (screen)</option>
-            <option :value="1000">1000 px (smallest)</option>
-          </select>
+          <AppSelect v-model="pdfMaxPx" aria-label="Photos inside, longest side" :options="[{ value: 0, label: 'Keep original size' }, { value: 2400, label: '2400 px (print)' }, { value: 2000, label: '2000 px' }, { value: 1500, label: '1500 px (screen)' }, { value: 1000, label: '1000 px (smallest)' }]" />
         </label>
         <label v-else class="field">
           <span class="field-head">Page sharpness</span>
-          <select v-model.number="pdfDpi" class="input">
-            <option :value="200">Sharp · 200 dpi</option>
-            <option :value="150">Clear · 150 dpi</option>
-            <option :value="110">Smaller · 110 dpi</option>
-            <option :value="80">Smallest · 80 dpi</option>
-          </select>
+          <AppSelect v-model="pdfDpi" aria-label="Page sharpness" :options="[{ value: 200, label: 'Sharp · 200 dpi' }, { value: 150, label: 'Clear · 150 dpi' }, { value: 110, label: 'Smaller · 110 dpi' }, { value: 80, label: 'Smallest · 80 dpi' }]" />
         </label>
         <p class="hint">
           <template v-if="pdfMode === 'keep-text'">Text stays sharp and selectable; only the photos inside get smaller. Best for documents.</template>

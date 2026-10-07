@@ -15,6 +15,14 @@ const { items, ready, sync, add, update, remove, restore } = useCollection<Count
 const isoToday = () => new Date().toISOString().slice(0, 10)
 const blank = () => ({ title: '', date: '', time: '' })
 const form = reactive(blank())
+
+// Times every 15 minutes, plus whatever odd time an existing countdown already has
+const timeOptions = computed(() => {
+  const label = (t: string) => new Date(`2000-01-01T${t}`).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const times = Array.from({ length: 96 }, (_, i) => `${String(Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`)
+  if (form.time && !times.includes(form.time)) times.push(form.time)
+  return [{ value: '', label: 'Any time' }, ...times.sort().map(t => ({ value: t, label: label(t) }))]
+})
 const editingId = ref<string>()
 
 // Tick once a second so the featured countdown is live
@@ -195,11 +203,11 @@ function del(e: CountdownEvent) {
           <div class="row">
             <label class="field">
               <span class="field-head">Date</span>
-              <input v-model="form.date" class="input" type="date" :min="editingId ? undefined : isoToday()" required>
+              <DatePicker v-model="form.date" aria-label="Date" :min="editingId ? undefined : isoToday()" required />
             </label>
             <label class="field">
               <span class="field-head">Time <span class="optional">Optional</span></span>
-              <input v-model="form.time" class="input" type="time">
+              <AppSelect v-model="form.time" aria-label="Time" :options="timeOptions" placeholder="Any time" />
             </label>
           </div>
           <div class="actions">

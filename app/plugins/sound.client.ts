@@ -4,7 +4,7 @@ export default defineNuxtPlugin(() => {
   // Prepare the common sounds while the browser is idle, so the first click doesn't stall
   // while they're built (noticeable on old computers)
   const idle = window.requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 1500))
-  idle(() => preload(['press', 'select', 'start', 'forward', 'back', 'success', 'toggle-on', 'toggle-off', 'open', 'copy', 'delete']))
+  idle(() => preload(['press', 'select', 'complete', 'forward', 'back', 'success', 'toggle-on', 'toggle-off', 'open', 'copy', 'delete']))
 
   // Browsers only allow audio after a real click or key press
   const onFirstInteraction = () => {
@@ -20,7 +20,7 @@ export default defineNuxtPlugin(() => {
   const router = useRouter()
   router.afterEach((to, from, failure) => {
     if (failure || !from.name || to.path === from.path) return
-    if (TOOLS.some(t => t.to === to.path)) play('start')
+    if (TOOLS.some(t => t.to === to.path)) play('complete')
     else play(pageRank(to.path) >= pageRank(from.path) ? 'forward' : 'back')
   })
 })
