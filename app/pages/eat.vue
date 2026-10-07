@@ -342,6 +342,40 @@ watch(demoActive, () => {
 const byId = (id?: string) => items.value.find(s => s.id === id)
 const shortlist = computed(() => liked.value.map(id => byId(id)).filter((s): s is Spot => !!s))
 const current = computed(() => byId(deck.value[0]))
+
+// ---------- Focus mode: just the cards, filling the screen ----------
+const focus = ref(false)
+const stageEl = ref<HTMLElement>()
+
+function setFocus(on: boolean) {
+  if (focus.value === on || import.meta.server) return
+  focus.value = on
+  play(on ? 'expand' : 'collapse')
+  // The page behind stays put while you swipe
+  document.documentElement.style.overflow = on ? 'hidden' : ''
+  if (on) nextTick(() => stageEl.value?.focus({ preventScroll: true }))
+}
+
+function onFocusKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && focus.value && !document.querySelector('dialog[open]')) {
+    e.preventDefault()
+    setFocus(false)
+  }
+}
+onMounted(() => window.addEventListener('keydown', onFocusKey))
+
+// Opening the app goes straight into focus mode, once there's something to swipe.
+// With nothing saved yet it stays on the page, where foods and places are added.
+let autoFocused = false
+watch([ready, () => items.value.length], ([r, count]) => {
+  if (!r || autoFocused) return
+  autoFocused = true
+  if (count) setFocus(true)
+}, { immediate: true })
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onFocusKey)
+  document.documentElement.style.overflow = ''
+})
 const next = computed(() => byId(deck.value[1]))
 const third = computed(() => byId(deck.value[2]))
 
@@ -381,7 +415,16 @@ function decide(dir: 'left' | 'right') {
     deck.value = deck.value.slice(1)
     flying.value = undefined
     dx.value = 0
+    if (!deck.value.length) finishDeck()
   }, reducedMotion ? 0 : 260)
+}
+
+// The last card is decided: go straight on to choosing. Two or more liked starts the head-to-head,
+// one liked is the pick; none leaves the "That's everything" panel to shuffle again.
+function finishDeck() {
+  if (chosen.value || duel.value) return
+  if (shortlist.value.length > 1) setTimeout(narrow, reducedMotion ? 0 : 250)
+  else if (shortlist.value.length === 1) pickOne()
 }
 
 function onKey(e: KeyboardEvent) {
@@ -429,19 +472,28 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   <ToolPage>
     <!-- Centre stage: the deck. Managing the list lives underneath (beside it on wide screens). -->
     <div class="eat-layout">
-    <section v-sticky-fit class="stage-area" aria-label="Swipe to decide">
+    <section v-sticky-fit class="stage-area" :class="{ focus }" :role="focus ? 'dialog' : undefined" :aria-modal="focus || undefined" aria-label="Swipe to decide">
+      <!-- Focus mode: how many cards are left, and the way out -->
+      <div v-if="focus" class="focus-bar">
+        <span class="focus-count">{{ deck.length ? `${deck.length} ${deck.length === 1 ? 'card' : 'cards'} left` : 'All done' }}</span>
+        <button type="button" class="btn btn-sm focus-done" @click="setFocus(false)">Done</button>
+      </div>
       <div class="stage-top">
         <div class="segmented filter" role="radiogroup" aria-label="Show">
           <label v-for="f in FILTERS" :key="f.value" :class="{ active: filter === f.value }">
             <input v-model="filter" type="radio" name="filter" :value="f.value">{{ f.label }}
           </label>
         </div>
-        <ClientOnly><DataSource :sync="sync" /></ClientOnly>
+        <ClientOnly><DataSource v-if="!focus" :sync="sync" /></ClientOnly>
+        <button v-if="!focus" type="button" class="btn btn-quiet btn-sm focus-btn" title="Swipe full screen" @click="setFocus(true)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+          Focus
+        </button>
       </div>
-      <p class="how">Swipe right to add to your shortlist, left to skip. Arrow keys work too.</p>
+      <p class="how">Swipe right to add to your shortlist, left to skip. Arrow keys work too.<template v-if="focus"> Esc to leave.</template></p>
 
       <ClientOnly>
-        <div class="stage" tabindex="0" aria-label="Food cards. Use the left and right arrow keys to decide." @keydown="onKey">
+        <div ref="stageEl" class="stage" tabindex="0" aria-label="Food cards. Use the left and right arrow keys to decide." @keydown="onKey">
           <!-- Narrowing down: tap the one you'd rather have -->
           <div v-if="duelPair && duel" class="duel" role="group" aria-label="Which one would you rather have?">
             <div class="duel-head">
@@ -541,7 +593,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               <button v-if="!duel" type="button" class="chip-x" :aria-label="`Remove ${s.name} from shortlist`" @click="unlike(s.id)">×</button>
             </li>
           </TransitionGroup>
-          <button v-if="shortlist.length > 1 && !chosen && !duel && current" type="button" class="btn btn-sm" @click="narrow">Narrow it down</button>
+          <button v-if="shortlist.length > 1 && !chosen && !duel && current" type="button" class="btn narrow-btn" @click="narrow">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z" /></svg>
+            Narrow it down
+          </button>
         </section>
       </ClientOnly>
     </section>
@@ -953,6 +1008,74 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   border-radius: 24px;
 }
 
+/* ---------- Focus mode ---------- */
+.focus-btn {
+  gap: 0.35rem;
+}
+
+.focus-btn svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Over everything, including the menu and back buttons; !important beats the sticky column's inline top */
+.stage-area.focus {
+  position: fixed;
+  inset: 0 !important;
+  z-index: 300;
+  /* Room at the top for the count and Done button */
+  padding: calc(max(1rem, env(safe-area-inset-top)) + 3rem) 1rem max(1.25rem, env(safe-area-inset-bottom));
+  justify-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 16%, var(--bg)), var(--bg) 70%);
+  animation: focus-in 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* The card grows to fill the screen, but leaves room for the buttons and shortlist */
+.stage-area.focus .stage {
+  width: min(560px, 92vw, calc(100dvh - 17rem));
+}
+
+.stage-area.focus .stage-top {
+  margin-top: 0.5rem;
+}
+
+.stage-area.focus .how {
+  margin-bottom: 1rem;
+}
+
+.focus-bar {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top));
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.focus-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes focus-in {
+  from { opacity: 0; scale: 0.98; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-area.focus { animation: none; }
+}
+
 .stage:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 6px;
@@ -1051,6 +1174,26 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
+}
+
+/* Its own centred row under the shortlist, a full-size button */
+.narrow-btn {
+  flex-basis: 100%;
+  max-width: 18rem;
+  min-height: 3rem;
+  margin-top: 0.4rem;
+  gap: 0.5rem;
+  font-size: 1.05rem;
+  border-radius: 14px;
+}
+
+.narrow-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linejoin: round;
 }
 
 .shortlist-label {
