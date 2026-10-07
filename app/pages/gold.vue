@@ -225,32 +225,32 @@ const fmtQty = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits:
 const valueOf = (p: Purchase) => perGram.value * grams(p.weight, p.unit)
 const gainOf = (p: Purchase) => valueOf(p) - p.price
 
-// ---------- The price card catches the light ----------
-// The shine follows the pointer and the card tilts a little towards it, like a gold bar turned in the hand.
-// Mouse and pen only; touch, reduced motion and Lite effects keep the card still.
-const quoteEl = ref<HTMLElement>()
-let tiltFrame = 0
-function onQuoteMove(e: PointerEvent) {
-  if (e.pointerType === 'touch' || !quoteEl.value) return
-  const el = quoteEl.value
-  cancelAnimationFrame(tiltFrame)
-  tiltFrame = requestAnimationFrame(() => {
+// ---------- Cards catch the light ----------
+// On the price card and each purchase, a shine follows the pointer and the card tilts a little towards it,
+// like a gold bar turned in the hand. CSS turns --px/--py (-0.5 to 0.5) into the tilt, so each card picks
+// its own strength. Mouse and pen only; touch, reduced motion and Lite effects keep the cards still.
+let shineFrame = 0
+function onShineMove(e: PointerEvent) {
+  const el = e.currentTarget as HTMLElement
+  if (e.pointerType === 'touch' || !el) return
+  cancelAnimationFrame(shineFrame)
+  shineFrame = requestAnimationFrame(() => {
     const r = el.getBoundingClientRect()
     const x = (e.clientX - r.left) / r.width
     const y = (e.clientY - r.top) / r.height
     el.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`)
     el.style.setProperty('--my', `${(y * 100).toFixed(1)}%`)
-    el.style.setProperty('--rx', `${((x - 0.5) * 10).toFixed(2)}deg`)
-    el.style.setProperty('--ry', `${((0.5 - y) * 8).toFixed(2)}deg`)
+    el.style.setProperty('--px', (x - 0.5).toFixed(3))
+    el.style.setProperty('--py', (0.5 - y).toFixed(3))
     el.classList.add('lit')
   })
 }
-function onQuoteLeave() {
-  cancelAnimationFrame(tiltFrame)
-  const el = quoteEl.value
-  if (!el) return
+function onShineLeave(e: PointerEvent) {
+  cancelAnimationFrame(shineFrame)
+  const el = e.currentTarget as HTMLElement
   el.classList.remove('lit')
-  for (const v of ['--rx', '--ry']) el.style.setProperty(v, '0deg')
+  el.style.setProperty('--px', '0')
+  el.style.setProperty('--py', '0')
 }
 const gainPct = (p: Purchase) => (p.price ? (gainOf(p) / p.price) * 100 : 0)
 // What one unit cost then and costs now, so different-sized purchases compare at a glance
@@ -483,7 +483,7 @@ const PURITIES: { value: Purity, label: string }[] = [
         <div class="market">
           <!-- The quote: one gold bar of a card -->
           <Step :n="1" :title="w.step1" :hint="w.step1Hint">
-            <section ref="quoteEl" class="panel quote" aria-live="polite" @pointermove="onQuoteMove" @pointerleave="onQuoteLeave">
+            <section class="panel quote shine" aria-live="polite" @pointermove="onShineMove" @pointerleave="onShineLeave">
               <div class="quote-top">
                 <span class="label">{{ w.spot }}</span>
                 <span class="status" :data-status="status"><i aria-hidden="true" />{{ STATUS_LABEL[status] }}</span>
@@ -649,7 +649,14 @@ const PURITIES: { value: Purity, label: string }[] = [
 
             <!-- One card per purchase: what you paid → what it's worth now → the gain or loss -->
             <ul v-if="purchases.length" class="purchases">
-              <li v-for="p in sorted" :key="p.id" class="purchase" :class="spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : ''">
+              <li
+                v-for="p in sorted"
+                :key="p.id"
+                class="purchase shine"
+                :class="spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : ''"
+                @pointermove="onShineMove"
+                @pointerleave="onShineLeave"
+              >
                 <header class="p-head">
                   <span class="p-weight"><strong>{{ fmtQty(p.weight) }}</strong> {{ w[p.unit] }}</span>
                   <span class="p-date">{{ formatDate(p.date) }}</span>
@@ -828,10 +835,10 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 /* ---------- The quote: a gold bar of a card ---------- */
 .quote {
-  --mx: 30%;
-  --my: 20%;
-  --rx: 0deg;
-  --ry: 0deg;
+  --tilt: 10deg;
+  --glow: rgb(255 250 225 / 0.75);
+  --glow-soft: rgb(255 240 190 / 0.25);
+  --streak: rgb(255 255 255 / 0.45);
   position: relative;
   overflow: hidden;
   padding: 1.5rem;
@@ -841,13 +848,26 @@ const PURITIES: { value: Purity, label: string }[] = [
     linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.35) 45%, transparent 60%),
     linear-gradient(160deg, #f2cf6a, var(--gold) 55%, #a87a12);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), 0 14px 30px -14px rgb(120 84 6 / 0.55);
-  transform: perspective(900px) rotateX(var(--ry)) rotateY(var(--rx));
+}
+
+.quote.lit {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6), 0 22px 44px -16px rgb(120 84 6 / 0.65);
+}
+
+/* ---------- Shine: the price card and each purchase catch the light ---------- */
+.shine {
+  --mx: 30%;
+  --my: 20%;
+  --px: 0;
+  --py: 0;
+  position: relative;
+  transform: perspective(900px) rotateX(calc(var(--py) * var(--tilt) * 0.8)) rotateY(calc(var(--px) * var(--tilt)));
   transition: transform 0.6s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.4s;
 }
 
 /* Two layers of light: a soft glow right under the pointer, and a bright streak that slides across with it */
-.quote::before,
-.quote::after {
+.shine::before,
+.shine::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -857,34 +877,33 @@ const PURITIES: { value: Purity, label: string }[] = [
   transition: opacity 0.4s;
 }
 
-.quote::before {
-  background: radial-gradient(circle at var(--mx) var(--my), rgb(255 250 225 / 0.75), rgb(255 240 190 / 0.25) 22%, transparent 50%);
+.shine::before {
+  background: radial-gradient(circle at var(--mx) var(--my), var(--glow), var(--glow-soft) 22%, transparent 50%);
   mix-blend-mode: soft-light;
 }
 
-.quote::after {
-  background: linear-gradient(115deg, transparent 0%, rgb(255 255 255 / 0) calc(var(--mx) - 18%), rgb(255 255 255 / 0.45) var(--mx), rgb(255 255 255 / 0) calc(var(--mx) + 18%), transparent 100%);
+.shine::after {
+  background: linear-gradient(115deg, transparent 0%, transparent calc(var(--mx) - 18%), var(--streak) var(--mx), transparent calc(var(--mx) + 18%), transparent 100%);
   mix-blend-mode: overlay;
 }
 
-.quote.lit {
+.shine.lit {
   transition: transform 0.12s ease-out, box-shadow 0.4s;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6), 0 22px 44px -16px rgb(120 84 6 / 0.65);
 }
 
-.quote.lit::before,
-.quote.lit::after {
+.shine.lit::before,
+.shine.lit::after {
   opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .quote { transform: none; transition: none; }
-  .quote::before, .quote::after { display: none; }
+  .shine { transform: none; transition: none; }
+  .shine::before, .shine::after { display: none; }
 }
 
-:root[data-effects='lite'] .quote { transform: none; }
-:root[data-effects='lite'] .quote::before,
-:root[data-effects='lite'] .quote::after { display: none; }
+:root[data-effects='lite'] .shine { transform: none; }
+:root[data-effects='lite'] .shine::before,
+:root[data-effects='lite'] .shine::after { display: none; }
 
 .quote-top {
   display: flex;
@@ -1299,6 +1318,9 @@ const PURITIES: { value: Purity, label: string }[] = [
 .purchase {
   --tone: var(--ink-3);
   --tone-ink: var(--ink-2);
+  /* A gentler shine than the gold price card, tinted with the gain or loss colour */
+  --tilt: 6deg;
+  overflow: hidden;
   padding: 1rem 1.1rem 0.85rem;
   display: flex;
   flex-direction: column;
@@ -1311,6 +1333,24 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .purchase.is-up { --tone: var(--green); --tone-ink: var(--good-ink); }
 .purchase.is-down { --tone: var(--red); --tone-ink: var(--bad-ink); }
+
+.purchase.lit {
+  box-shadow: 0 16px 32px -18px rgb(var(--shadow) / 0.45);
+}
+
+/* On white, soft-light barely shows; let the glow pick up the card's gain/loss tint instead */
+.purchase::before {
+  background: radial-gradient(circle at var(--mx) var(--my), color-mix(in srgb, var(--tone) 16%, transparent), transparent 55%);
+  mix-blend-mode: normal;
+  z-index: -1; /* behind the text; the tilt transform keeps it inside the card's own layer */
+}
+
+/* The streak sits behind the text too, tinted rather than white, so it never washes out the numbers or the edge */
+.purchase::after {
+  background: linear-gradient(115deg, transparent calc(var(--mx) - 22%), color-mix(in srgb, var(--tone) 9%, transparent) var(--mx), transparent calc(var(--mx) + 22%));
+  mix-blend-mode: normal;
+  z-index: -1;
+}
 
 .p-head {
   display: flex;
