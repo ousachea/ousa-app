@@ -62,6 +62,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Keep track of what you own, what you paid and what it’s worth now.'] }
   ],
   '/eat': [
+    { version: '1.3.0', date: '2026-10-07', changes: ['Use a link to any image on the web as a photo, when adding or editing. It works on every device and syncs with the item.', 'Remove a photo from the edit popup.'] },
     { version: '1.2.0', date: '2026-10-07', changes: ['Narrow it down: compare your shortlist two at a time until one is left.', 'Edit your foods and places in a popup.', 'On wide screens the cards sit beside your list.', SYNC, TWO_CLICK, 'Fixed: example data now deals a full deck of cards.'] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Add photos to your foods and places.', EXAMPLE] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Swipe through your saved foods and places until one sounds good.'] }

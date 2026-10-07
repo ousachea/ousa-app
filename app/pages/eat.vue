@@ -9,7 +9,7 @@ interface Spot {
   kind: Kind
   note: string
   price: 1 | 2 | 3
-  image?: string // path inside public/, e.g. /eat/3f2a….webp
+  image?: string // a path inside public/ (e.g. /eat/3f2a….webp), or a link to an image on the web
 }
 
 const SEED = (): Spot[] => [
@@ -43,14 +43,35 @@ const DEMO = (): Omit<Spot, 'id'>[] => [
 const { items, ready, sync, add, update, remove, restore } = useCollection<Spot>('eat', SEED, { demo: DEMO })
 
 // ---------- Adding ----------
-const form = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'] })
+const form = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'], imageUrl: '' })
 const photo = ref<{ blob: Blob, preview: string }>()
+
+// A photo can also be a link to an image anywhere on the web. It's stored as is, so it works on the live
+// site and syncs with the item, unlike picked files, which are saved into the project folder.
+const photoLink = (text: string) => {
+  const t = text.trim()
+  return /^https?:\/\/\S+$/i.test(t) ? t : ''
+}
+const isWebImage = (path?: string) => !!path && /^https?:\/\//i.test(path)
+// Set when a pasted link doesn't load as an image, so the form can say so
+const addLinkBroken = ref(false)
+const editLinkBroken = ref(false)
 const saving = ref(false)
 // Editing happens in a popup with its own copy of the fields
 const editingId = ref<string>()
-const editForm = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'] })
+const editForm = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'], imageUrl: '', removeImage: false })
+watch(() => form.imageUrl, () => (addLinkBroken.value = false))
+watch(() => editForm.imageUrl, () => (editLinkBroken.value = false))
 const editPhoto = ref<{ blob: Blob, preview: string }>()
 const editingSpot = computed(() => items.value.find(s => s.id === editingId.value))
+// What the edit popup's photo box shows: a pasted link, else the current photo (unless removed)
+const editPreview = computed(() => {
+  const link = photoLink(editForm.imageUrl)
+  if (link) return editLinkBroken.value ? '' : link
+  if (editForm.removeImage) return ''
+  const current = editingSpot.value?.image
+  return isWebImage(current) ? '' : current ?? '' // a cleared link field means no link photo
+})
 const PHOTO_SIZE = 800
 
 // Crop to a centred square and shrink to 800×800 WebP in the browser, so files stay small
@@ -102,7 +123,7 @@ async function uploadPhoto(blob: Blob) {
 
 function edit(s: Spot) {
   editingId.value = s.id
-  Object.assign(editForm, { name: s.name, kind: s.kind, note: s.note ?? '', price: s.price })
+  Object.assign(editForm, { name: s.name, kind: s.kind, note: s.note ?? '', price: s.price, imageUrl: isWebImage(s.image) ? s.image : '', removeImage: false })
   clearEditPhoto()
   play('open')
 }
@@ -140,7 +161,12 @@ async function saveEdit() {
   const id = editingId.value
   if (!id || !editForm.name.trim() || saving.value) return
   saving.value = true
-  let image: string | undefined
+  // Which photo to keep: a newly picked file, else a pasted link, else the current one (unless removed)
+  const current = editingSpot.value?.image
+  let image = editForm.removeImage ? undefined : current
+  const link = photoLink(editForm.imageUrl)
+  if (link) image = link
+  else if (isWebImage(current) && !editForm.imageUrl.trim()) image = undefined // the link field was cleared
   try {
     if (editPhoto.value) image = await uploadPhoto(editPhoto.value.blob)
   } catch (e) {
@@ -148,7 +174,7 @@ async function saveEdit() {
     toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed. Your other changes were saved.' })
   }
   // Changes show straight away on its card, in the deck and on the shortlist
-  update(id, { name: editForm.name.trim(), kind: editForm.kind, note: editForm.note.trim(), price: editForm.price, ...(image ? { image } : {}) })
+  update(id, { name: editForm.name.trim(), kind: editForm.kind, note: editForm.note.trim(), price: editForm.price, image })
   toast.success(`${editForm.name.trim()} updated`)
   play('success')
   saving.value = false
@@ -158,18 +184,23 @@ async function saveEdit() {
 async function save() {
   if (!form.name.trim() || saving.value) return
   saving.value = true
-  let image: string | undefined
+  // A picked file wins over a pasted link
+  let image: string | undefined = photoLink(form.imageUrl) || undefined
+  let uploaded = false
   try {
-    if (photo.value) image = await uploadPhoto(photo.value.blob)
+    if (photo.value) {
+      image = await uploadPhoto(photo.value.blob)
+      uploaded = true
+    }
   } catch (e) {
     const message = (e as { data?: { message?: string } }).data?.message
     toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed. The item was added without it.' })
   }
   const spot = add({ name: form.name.trim(), kind: form.kind, note: form.note.trim(), price: form.price, ...(image ? { image } : {}) })
   deck.value.push(spot.id) // new cards join the end of the current deck
-  toast.success(`${spot.name} added`, image ? { description: `Photo saved to public${image}. Commit it to keep it.` } : undefined)
+  toast.success(`${spot.name} added`, uploaded ? { description: `Photo saved to public${image}. Commit it to keep it.` } : undefined)
   play('success')
-  Object.assign(form, { name: '', note: '' })
+  Object.assign(form, { name: '', note: '', imageUrl: '' })
   clearPhoto()
   saving.value = false
 }
@@ -391,7 +422,7 @@ const cardStyle = computed(() => {
 
 const priceText = (p: number) => '$'.repeat(p)
 // A card's photo as a CSS variable; the card styles add a gradient so text stays readable
-const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image}")` } : undefined)
+const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image.replace(/["\\\n]/g, encodeURIComponent)}")` } : undefined)
 </script>
 
 <template>
@@ -525,9 +556,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             <label :class="{ active: form.kind === 'place' }"><input v-model="form.kind" type="radio" value="place">A place</label>
           </div>
           <div class="form-row">
-            <label class="photo-pick" :class="{ filled: photo }">
+            <label class="photo-pick" :class="{ filled: photo || (photoLink(form.imageUrl) && !addLinkBroken) }">
               <input type="file" accept="image/*" aria-label="Add a photo" @change="onPhotoPick">
               <img v-if="photo" :src="photo.preview" alt="Photo preview">
+              <img v-else-if="photoLink(form.imageUrl) && !addLinkBroken" :src="photoLink(form.imageUrl)" alt="Photo from the link" referrerpolicy="no-referrer" @error="addLinkBroken = true">
               <span v-else>+ Photo</span>
             </label>
             <div class="form-fields">
@@ -542,6 +574,13 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             </div>
           </div>
           <button v-if="photo" type="button" class="link remove-photo" @click="clearPhoto">Remove photo</button>
+          <label class="field">
+            <span class="field-head">Photo link <span class="optional">Optional</span></span>
+            <input v-model="form.imageUrl" class="input" type="url" inputmode="url" spellcheck="false" placeholder="https://… paste an image address">
+            <small v-if="form.imageUrl.trim() && !photoLink(form.imageUrl)" class="hint warn">Use a link that starts with https://</small>
+            <small v-else-if="addLinkBroken" class="hint warn">Couldn’t load a picture from that link. Use a direct link to an image (right-click it, then Copy image address).</small>
+            <small v-else-if="photo && photoLink(form.imageUrl)" class="hint">The photo you picked is used instead of the link.</small>
+          </label>
           <div class="field">
             <span class="field-head">Price</span>
             <div class="segmented" role="radiogroup" aria-label="Price">
@@ -551,7 +590,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             </div>
           </div>
           <button type="submit" class="btn" :disabled="!form.name.trim() || saving">{{ saving && !editingId ? 'Saving photo…' : 'Save' }}</button>
-          <p class="hint">Photos are cropped square and saved to <code>public/eat/</code> in this project, so you can commit them. That only works while running the app locally.</p>
+          <p class="hint">A photo link works anywhere and syncs with the item. Picked photos are cropped square and saved to <code>public/eat/</code> in this project so you can commit them, which only works while running the app locally.</p>
         </form>
 
         <ClientOnly>
@@ -581,10 +620,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           <label :class="{ active: editForm.kind === 'place' }"><input v-model="editForm.kind" type="radio" value="place">A place</label>
         </div>
         <div class="form-row">
-          <label class="photo-pick" :class="{ filled: editPhoto || editingSpot?.image }">
+          <label class="photo-pick" :class="{ filled: editPhoto || editPreview }">
             <input type="file" accept="image/*" aria-label="Choose a new photo" @change="onEditPhotoPick">
             <img v-if="editPhoto" :src="editPhoto.preview" alt="New photo preview">
-            <img v-else-if="editingSpot?.image" :src="editingSpot.image" alt="Current photo">
+            <img v-else-if="editPreview" :src="editPreview" alt="Photo" referrerpolicy="no-referrer" @error="editLinkBroken = true">
             <span v-else>+ Photo</span>
           </label>
           <div class="form-fields">
@@ -599,6 +638,13 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           </div>
         </div>
         <button v-if="editPhoto" type="button" class="link remove-photo" @click="clearEditPhoto">Keep the old photo</button>
+        <button v-else-if="editPreview" type="button" class="link remove-photo" @click="editForm.imageUrl = ''; editForm.removeImage = true">Remove photo</button>
+        <label class="field">
+          <span class="field-head">Photo link <span class="optional">Optional</span></span>
+          <input v-model="editForm.imageUrl" class="input" type="url" inputmode="url" spellcheck="false" placeholder="https://… paste an image address" @input="editForm.removeImage = false">
+          <small v-if="editForm.imageUrl.trim() && !photoLink(editForm.imageUrl)" class="hint warn">Use a link that starts with https://</small>
+          <small v-else-if="editLinkBroken && photoLink(editForm.imageUrl)" class="hint warn">Couldn’t load a picture from that link. Use a direct link to an image (right-click it, then Copy image address).</small>
+        </label>
         <div class="field">
           <span class="field-head">Price</span>
           <div class="segmented" role="radiogroup" aria-label="Price">
@@ -751,6 +797,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   margin: 0;
   font-size: 0.78rem;
   color: var(--ink-3);
+}
+
+.hint.warn {
+  color: var(--bad-ink);
+  font-weight: 600;
 }
 
 .hint code {
