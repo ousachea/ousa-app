@@ -319,6 +319,14 @@ function openAdd() {
   play('open')
 }
 
+// Enter or Space on a focused purchase card edits it (not when the key comes from a button inside)
+function onCardKey(e: KeyboardEvent, p: Purchase) {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+    e.preventDefault()
+    openEdit(p)
+  }
+}
+
 function openEdit(p: Purchase) {
   editingId.value = p.id
   Object.assign(form, { weight: p.weight, unit: p.unit, price: p.price, date: p.date })
@@ -687,6 +695,11 @@ const PURITIES: { value: Purity, label: string }[] = [
                 :key="p.id"
                 class="purchase shine"
                 :class="spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : ''"
+                tabindex="0"
+                title="Click to edit"
+                :aria-label="`${fmtQty(p.weight)} ${w[p.unit]} bought ${formatDate(p.date)}. Press Enter to edit.`"
+                @click="openEdit(p)"
+                @keydown="onCardKey($event, p)"
                 @pointermove="onShineMove"
                 @pointerleave="onShineLeave"
               >
@@ -720,7 +733,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                     <span class="p-pct">{{ gainPct(p) >= 0 ? '+' : '−' }}{{ Math.abs(gainPct(p)).toFixed(1) }}%</span>
                   </span>
                   <span class="p-actions">
-                    <button type="button" class="link" @click="openEdit(p)">Edit</button>
+                    <button type="button" class="link" @click.stop="openEdit(p)">Edit</button>
                     <ConfirmDelete class="link danger" name="this purchase" @confirm="del(p)" />
                   </span>
                 </footer>
@@ -1365,6 +1378,16 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .purchase.is-up { --tone: var(--green); --tone-ink: var(--good-ink); }
+
+/* The whole card opens the edit popup */
+.purchase {
+  cursor: pointer;
+}
+
+.purchase:focus-visible {
+  outline: 2px solid var(--tone);
+  outline-offset: 3px;
+}
 .purchase.is-down { --tone: var(--red); --tone-ink: var(--bad-ink); }
 
 .purchase.lit {
