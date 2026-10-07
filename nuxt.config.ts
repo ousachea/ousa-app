@@ -9,12 +9,16 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      // Set NUXT_PUBLIC_SUPABASE_URL / NUXT_PUBLIC_SUPABASE_KEY, or SUPABASE_URL / SUPABASE_KEY as in Supabase's quickstart
-      supabaseUrl: process.env.SUPABASE_URL ?? '',
-      supabaseKey: process.env.SUPABASE_KEY ?? '',
+      // Firebase web app config: NUXT_PUBLIC_FIREBASE_API_KEY, _AUTH_DOMAIN, _PROJECT_ID and _APP_ID
+      firebase: {
+        apiKey: '',
+        authDomain: '',
+        projectId: '',
+        appId: ''
+      },
       // Google OAuth client ID for importing contacts on /phone; set NUXT_PUBLIC_GOOGLE_CLIENT_ID
       googleClientId: '',
-      // The one account this app signs in to; the sign-in form then only asks for the password (NUXT_PUBLIC_OWNER_EMAIL)
+      // The one Google account this app signs in to; Google offers it first (NUXT_PUBLIC_OWNER_EMAIL)
       ownerEmail: '',
       // The site's public address for canonical links and share images, e.g. https://ousa.app (NUXT_PUBLIC_SITE_URL).
       // Empty uses whatever address the page was served from.

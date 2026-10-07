@@ -1,8 +1,6 @@
-// Client-side encryption for the password vault. Nothing here ever leaves the browser except
-// `authSecret` (used as the Supabase login password) and ciphertext.
+// Client-side encryption for the password vault. Nothing here ever leaves the browser except ciphertext.
 //
 // master password ──PBKDF2 (600k, salted with the email)──▶ master key
-// master key ──HKDF "auth"──▶ authSecret   (sent to Supabase instead of the real password)
 // master key ──HKDF "enc"───▶ AES-256-GCM key (non-extractable, stays in memory)
 
 const PBKDF2_ITERATIONS = 600_000 // OWASP 2023 recommendation for PBKDF2-SHA256
@@ -23,13 +21,12 @@ function fromBase64(text: string) {
 }
 
 export interface VaultKeys {
-  authSecret: string
   key: CryptoKey
 }
 
 export async function deriveVaultKeys(email: string, masterPassword: string): Promise<VaultKeys> {
   // Browsers only expose crypto.subtle on https:// and localhost, so plain http on a LAN address can't sign in
-  if (!crypto.subtle) throw new Error('Signing in needs a secure connection. Open this page over https:// (or on localhost).')
+  if (!crypto.subtle) throw new Error('The vault needs a secure connection. Open this page over https:// (or on localhost).')
   const subtle = crypto.subtle
   const passwordKey = await subtle.importKey('raw', enc.encode(masterPassword), 'PBKDF2', false, ['deriveBits'])
   const masterBits = await subtle.deriveBits(
@@ -40,10 +37,9 @@ export async function deriveVaultKeys(email: string, masterPassword: string): Pr
   const masterKey = await subtle.importKey('raw', masterBits, 'HKDF', false, ['deriveBits', 'deriveKey'])
   const hkdf = (info: string) => ({ name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: enc.encode(info) })
 
-  const authBits = await subtle.deriveBits(hkdf('ousa-vault:auth'), masterKey, 256)
   const key = await subtle.deriveKey(hkdf('ousa-vault:enc'), masterKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
 
-  return { authSecret: toBase64(authBits), key }
+  return { key }
 }
 
 export interface EncryptedBlob {

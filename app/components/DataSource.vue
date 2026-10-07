@@ -10,11 +10,11 @@ const root = ref<HTMLElement>()
 
 const COPY: Record<SyncState, { label: string, detail: string }> = {
   'loading': { label: 'Checking…', detail: 'Looking for your saved data.' },
-  'device': { label: 'On this device', detail: 'Saved in this browser only. Sign in to keep it in Supabase and see it on your other devices.' },
-  'saving': { label: 'Saving…', detail: 'Sending your latest change to Supabase.' },
-  'synced': { label: 'Synced with Supabase', detail: 'Stored in your Supabase account and also kept on this device, so it works offline.' },
-  'offline': { label: 'Saved on this device', detail: 'Couldn’t reach Supabase, so your changes are saved in this browser for now.' },
-  'needs-setup': { label: 'On this device', detail: 'You’re signed in, but Supabase needs a one-time setup before it can store this data.' },
+  'device': { label: 'On this device', detail: 'Saved in this browser only. Sign in to keep it in Firebase and see it on your other devices.' },
+  'saving': { label: 'Saving…', detail: 'Sending your latest change to Firebase.' },
+  'synced': { label: 'Synced with Firebase', detail: 'Stored in your Firebase account and also kept on this device, so it works offline.' },
+  'offline': { label: 'Saved on this device', detail: 'Couldn’t reach Firebase, so your changes are saved in this browser for now.' },
+  'needs-setup': { label: 'On this device', detail: 'You’re signed in, but Firebase needs a one-time setup before it can store this data.' },
   'demo': { label: 'Demo data', detail: 'Sample data to try the app. Nothing you change here is saved. Click the app icon again to go back to your own data.' }
 }
 
@@ -28,7 +28,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 <template>
   <div ref="root" class="source" :data-state="state">
     <button type="button" class="badge" :aria-expanded="open" @click="open = !open">
-      <!-- Cloud when the data lives in Supabase, a device otherwise -->
+      <!-- Cloud when the data lives in Firebase, a device otherwise -->
       <svg v-if="state === 'synced' || state === 'saving'" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .4-8A6 6 0 0 0 6.3 9.6 4.5 4.5 0 0 0 7 18.5z" /></svg>
       <svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11.5" rx="2" /><path d="M8.5 20h7M12 16v4" /></svg>
       <span>{{ COPY[state].label }}</span>
@@ -37,7 +37,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
     <div v-if="open" class="pop" role="status">
       <p>{{ COPY[state].detail }}</p>
       <NuxtLink v-if="state === 'device'" to="/settings#sync" class="btn btn-sm">Sign in to sync</NuxtLink>
-      <NuxtLink v-else-if="state === 'needs-setup'" to="/settings#sync" class="btn btn-sm">Set up Supabase</NuxtLink>
+      <NuxtLink v-else-if="state === 'needs-setup'" to="/settings#sync" class="btn btn-sm">Set up Firebase</NuxtLink>
       <button v-else-if="state === 'offline'" type="button" class="btn btn-sm" @click="sync.retry(); open = false">Try again</button>
     </div>
   </div>

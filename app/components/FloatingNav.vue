@@ -61,10 +61,10 @@ const route = useRoute()
 const router = useRouter()
 const { toggle: toggleTheme } = useTheme()
 
-// Account lives at the top of this menu: one sign-in syncs every app to Supabase.
-// It's the same account as the password vault (email + master password).
+// Account lives at the top of this menu: one sign-in syncs every app to Firebase.
+// It's the same Google account as the password vault.
 const { vault, signOut } = useVault()
-const signedIn = computed(() => vault.status === 'locked' || vault.status === 'unlocked' || vault.status === 'needs-setup')
+const signedIn = computed(() => !['loading', 'signed-out'].includes(vault.status))
 const signInOpen = ref(false)
 
 function openSignIn() {
@@ -231,7 +231,7 @@ onBeforeUnmount(() => {
       <span class="bars" aria-hidden="true" />
       <!-- Signed in and syncing: the whole button turns live green and pulses -->
       <ClientOnly>
-        <span v-if="signedIn" class="visually-hidden">, synced with Supabase</span>
+        <span v-if="signedIn" class="visually-hidden">, synced with Firebase</span>
       </ClientOnly>
     </button>
 
@@ -322,8 +322,8 @@ onBeforeUnmount(() => {
   <!-- Outside the nav: the nav ignores pointer events so the page underneath stays clickable -->
   <Modal :open="signInOpen" title="Sign in to sync" @close="signInOpen = false">
     <p class="intro">
-      Save everything you add (things, bookmarks, countdowns, gold…) to Supabase and see it on all your devices.
-      It’s the same account as your password vault.
+      Save everything you add (things, bookmarks, countdowns, gold…) to Firebase and see it on all your devices.
+      Sign in with your Google account; it’s the same one your password vault uses.
     </p>
     <VaultAuth purpose="account" @done="signInOpen = false" />
   </Modal>

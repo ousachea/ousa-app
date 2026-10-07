@@ -1,33 +1,27 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 
-// `account` is the sign-in popup from the top bar: same account, worded for syncing data
+// `account` is the sign-in popup from the top bar: same Google account, worded for syncing data
 const props = withDefaults(defineProps<{ purpose?: 'vault' | 'account' }>(), { purpose: 'vault' })
 const emit = defineEmits<{ done: [] }>()
 const forAccount = computed(() => props.purpose === 'account')
 
-const { vault, signIn, signUp, unlock, signOut, requestReset, setNewMasterPassword } = useVault()
+const { vault, signIn, unlock, setMasterPassword, signOut } = useVault()
 const { play } = useSound()
 
 const MIN_LENGTH = 6
 
-const mode = ref<'sign-in' | 'create' | 'forgot'>('sign-in')
-// Single-owner mode: with NUXT_PUBLIC_OWNER_EMAIL set, the form only asks for the master password
-const ownerEmail = (useRuntimeConfig().public.ownerEmail as string | undefined)?.trim() ?? ''
-const email = ref(ownerEmail)
+// `reset`: forgot the master password and choosing a new one
+const mode = ref<'unlock' | 'reset'>('unlock')
 const password = ref('')
 const confirm = ref('')
 const show = ref(false)
 const busy = ref(false)
 const error = ref('')
-const awaitingEmail = ref(false)
-const resetSent = ref(false)
 
-const locked = computed(() => vault.status === 'locked')
-// Arrived from a reset email: choose a new master password
-const recovering = computed(() => vault.status === 'recovery')
+const signedOut = computed(() => vault.status === 'signed-out')
 // Forms that set a new master password need it typed twice and long enough
-const choosing = computed(() => recovering.value || (!locked.value && mode.value === 'create'))
+const choosing = computed(() => vault.status === 'new' || mode.value === 'reset')
 
 const problem = computed(() => {
   if (!choosing.value) return ''
@@ -37,55 +31,45 @@ const problem = computed(() => {
 })
 
 const canSubmit = computed(() => {
-  if (busy.value) return false
-  if (mode.value === 'forgot' && !locked.value && !recovering.value) return email.value.includes('@')
-  if (!password.value) return false
+  if (busy.value || !password.value) return false
   if (choosing.value) return password.value.length >= MIN_LENGTH && confirm.value === password.value
-  if (locked.value) return true
-  return email.value.includes('@')
+  return true
 })
 
-function switchMode(next: 'sign-in' | 'create' | 'forgot') {
+function switchMode(next: 'unlock' | 'reset') {
   mode.value = next
   error.value = ''
+  password.value = ''
   confirm.value = ''
-  resetSent.value = false
 }
 
-async function cancelRecovery() {
-  await signOut()
-  switchMode('sign-in')
+async function google() {
+  busy.value = true
+  error.value = ''
+  try {
+    if (!(await signIn())) return
+    play('unlock')
+    toast.success('Signed in', { description: forAccount.value ? 'Your apps now save to Firebase and sync across devices.' : undefined })
+    if (forAccount.value) emit('done')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Something went wrong. Try again.'
+    play('error')
+  } finally {
+    busy.value = false
+  }
 }
 
 async function submit() {
   if (!canSubmit.value) return
   busy.value = true
   error.value = ''
-  const changing = recovering.value
+  const resetting = mode.value === 'reset'
   try {
-    if (recovering.value) {
-      await setNewMasterPassword(password.value)
-    } else if (locked.value) {
-      await unlock(password.value)
-    } else if (mode.value === 'forgot') {
-      await requestReset(email.value)
-      resetSent.value = true
-      play('success')
-      return
-    } else if (mode.value === 'create') {
-      const { needsConfirmation } = await signUp(email.value, password.value)
-      if (needsConfirmation) {
-        awaitingEmail.value = true
-        mode.value = 'sign-in'
-        return
-      }
-    } else {
-      await signIn(email.value, password.value)
-    }
+    if (choosing.value) await setMasterPassword(password.value)
+    else await unlock(password.value)
     play('unlock')
-    if (changing) toast.success('Master password changed', { description: 'You’re signed in with the new one.' })
-    else if (forAccount.value) toast.success('Signed in', { description: 'Your apps now save to Supabase and sync across devices.' })
-    else toast.success('Vault unlocked')
+    toast.success(resetting ? 'Master password changed' : 'Vault unlocked')
+    mode.value = 'unlock'
     emit('done')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Something went wrong. Try again.'
@@ -100,92 +84,80 @@ async function submit() {
 
 <template>
   <section class="panel auth" :class="{ bare: forAccount }">
-    <template v-if="recovering">
-      <h2>Choose a new master password</h2>
-      <p class="lead">For <strong>{{ vault.email }}</strong>. You’ll use it to sign in from now on.</p>
-    </template>
-    <template v-else-if="locked">
-      <h2>Vault locked</h2>
-      <p class="lead">Signed in as <strong>{{ vault.email }}</strong>. Enter your master password to unlock.</p>
-    </template>
-    <template v-else-if="mode === 'forgot'">
-      <h2>Forgot your master password?</h2>
-      <p class="lead">We’ll email you a link to choose a new one. Open it in this browser.</p>
-    </template>
-    <template v-else>
-      <div class="segmented" role="tablist" aria-label="Account">
-        <label :class="{ active: mode === 'sign-in' }">
-          <input type="radio" name="auth-mode" :checked="mode === 'sign-in'" @change="switchMode('sign-in')">
-          Sign in
-        </label>
-        <label :class="{ active: mode === 'create' }">
-          <input type="radio" name="auth-mode" :checked="mode === 'create'" @change="switchMode('create')">
-          {{ forAccount ? 'Create an account' : 'Create a vault' }}
-        </label>
+    <template v-if="signedOut">
+      <template v-if="!forAccount">
+        <h2>Sign in to use the vault</h2>
+        <p class="lead">Use your Google account. You’ll then set a master password that only you know.</p>
+      </template>
+      <div class="form">
+        <button type="button" class="btn google" :disabled="busy" @click="google">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z" /><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.8 0-5.2-1.9-6.1-4.5H2.2v2.9A11 11 0 0 0 12 23z" /><path fill="#FBBC05" d="M5.9 14.1a6.6 6.6 0 0 1 0-4.2V7H2.2a11 11 0 0 0 0 10z" /><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.1 1.6l3.1-3.1A11 11 0 0 0 2.2 7l3.7 2.9C6.8 7.3 9.2 5.4 12 5.4z" /></svg>
+          {{ busy ? 'Signing in…' : 'Continue with Google' }}
+        </button>
+        <p v-if="error" class="error" role="alert">{{ error }}</p>
       </div>
-      <p v-if="awaitingEmail" class="notice" role="status">
-        Check your email and click the confirmation link, then sign in here with the same master password.
-      </p>
-      <p v-if="vault.resetError" class="error" role="alert">{{ vault.resetError }}</p>
     </template>
 
-    <form class="form" @submit.prevent="submit">
-      <p v-if="resetSent" class="notice" role="status">
-        If there’s an account for {{ ownerEmail ? 'this app' : email }}, a reset link is on its way. Open it in this browser.
+    <template v-else>
+      <template v-if="vault.status === 'new'">
+        <h2>Choose a master password</h2>
+        <p class="lead">For <strong>{{ vault.email }}</strong>. It encrypts your saved passwords on this device.</p>
+      </template>
+      <template v-else-if="mode === 'reset'">
+        <h2>Choose a new master password</h2>
+        <p class="lead">For <strong>{{ vault.email }}</strong>.</p>
+      </template>
+      <template v-else>
+        <h2>Vault locked</h2>
+        <p class="lead">Signed in as <strong>{{ vault.email }}</strong>. Enter your master password to unlock.</p>
+      </template>
+
+      <form class="form" @submit.prevent="submit">
+        <!-- Hidden username keeps password managers pairing the password with the right account -->
+        <input :value="vault.email" type="email" autocomplete="username" hidden>
+
+        <label class="field">
+          <span class="field-head">{{ choosing ? 'New master password' : 'Master password' }}</span>
+          <span class="secret">
+            <input
+              v-model="password"
+              class="input"
+              :type="show ? 'text' : 'password'"
+              :autocomplete="choosing ? 'new-password' : 'current-password'"
+              required
+            >
+            <button type="button" class="btn btn-quiet btn-sm" :aria-pressed="show" @click="show = !show">{{ show ? 'Hide' : 'Show' }}</button>
+          </span>
+        </label>
+
+        <label v-if="choosing" class="field">
+          <span class="field-head">Type it again</span>
+          <input v-model="confirm" class="input" :type="show ? 'text' : 'password'" autocomplete="new-password" required>
+        </label>
+
+        <p v-if="problem" class="hint">{{ problem }}</p>
+        <p v-if="error" class="error" role="alert">{{ error }}</p>
+
+        <button type="submit" class="btn" :disabled="!canSubmit">
+          <template v-if="busy">Working…</template>
+          <template v-else-if="choosing">Save master password</template>
+          <template v-else>Unlock</template>
+        </button>
+      </form>
+
+      <p v-if="vault.status === 'new'" class="warning">
+        Your master password never leaves this device, so nobody can see or recover it.
+        If you forget it you can choose a new one, but passwords saved in the vault are lost for good.
+      </p>
+      <p v-else-if="mode === 'reset'" class="warning">
+        Passwords saved in the vault were locked with the old master password, so they can’t be opened
+        with the new one. Your trackers aren’t affected.
       </p>
 
-      <!-- Hidden username keeps password managers pairing the password with the right account -->
-      <input v-if="ownerEmail" :value="ownerEmail" type="email" autocomplete="username" hidden>
-      <label v-else-if="!locked && !recovering" class="field">
-        <span class="field-head">Email</span>
-        <input v-model="email" class="input" type="email" autocomplete="username" required>
-      </label>
-
-      <label v-if="recovering || locked || mode !== 'forgot'" class="field">
-        <span class="field-head">{{ recovering ? 'New master password' : 'Master password' }}</span>
-        <span class="secret">
-          <input
-            v-model="password"
-            class="input"
-            :type="show ? 'text' : 'password'"
-            :autocomplete="choosing ? 'new-password' : 'current-password'"
-            required
-          >
-          <button type="button" class="btn btn-quiet btn-sm" :aria-pressed="show" @click="show = !show">{{ show ? 'Hide' : 'Show' }}</button>
-        </span>
-      </label>
-
-      <label v-if="choosing" class="field">
-        <span class="field-head">Type it again</span>
-        <input v-model="confirm" class="input" :type="show ? 'text' : 'password'" autocomplete="new-password" required>
-      </label>
-
-      <p v-if="problem" class="hint">{{ problem }}</p>
-      <p v-if="error" class="error" role="alert">{{ error }}</p>
-
-      <button type="submit" class="btn" :disabled="!canSubmit">
-        <template v-if="busy">Working…</template>
-        <template v-else-if="recovering">Save new master password</template>
-        <template v-else-if="locked">Unlock</template>
-        <template v-else-if="mode === 'forgot'">{{ resetSent ? 'Send again' : 'Email me a reset link' }}</template>
-        <template v-else-if="mode === 'create'">{{ forAccount ? 'Create account' : 'Create vault' }}</template>
-        <template v-else>{{ forAccount ? 'Sign in' : 'Sign in and unlock' }}</template>
-      </button>
-    </form>
-
-    <p v-if="mode === 'create' && !locked && !recovering" class="warning">
-      Your master password never leaves this device, so nobody can see or recover it.
-      If you forget it you can reset it by email, but passwords saved in the vault are lost for good.
-    </p>
-    <p v-else-if="recovering || (mode === 'forgot' && !locked)" class="warning">
-      Your trackers keep syncing after a reset. Passwords saved in the vault were locked with the old
-      master password, so they can’t be opened with the new one.
-    </p>
-
-    <button v-if="recovering" type="button" class="link" @click="cancelRecovery">Cancel and sign out</button>
-    <button v-else-if="locked" type="button" class="link" @click="signOut">Sign out</button>
-    <button v-else-if="mode === 'sign-in'" type="button" class="link" @click="switchMode('forgot')">Forgot master password?</button>
-    <button v-else-if="mode === 'forgot'" type="button" class="link" @click="switchMode('sign-in')">Back to sign in</button>
+      <button v-if="mode === 'reset'" type="button" class="link" @click="switchMode('unlock')">Back to unlock</button>
+      <button v-else-if="vault.status === 'locked'" type="button" class="link" @click="switchMode('reset')">Forgot master password?</button>
+      <button type="button" class="link" @click="signOut">Sign out</button>
+    </template>
   </section>
 </template>
 
@@ -212,14 +184,6 @@ h2 {
 .lead {
   margin: 0.4rem 0 0;
   color: var(--ink-2);
-}
-
-.notice {
-  margin: 1rem 0 0;
-  padding: 0.75rem 0.9rem;
-  font-size: 0.9rem;
-  background: color-mix(in srgb, var(--blue) 12%, var(--surface));
-  border-radius: 12px;
 }
 
 .form {
@@ -254,8 +218,18 @@ h2 {
   border-radius: 4px 10px 10px 4px;
 }
 
+.google {
+  gap: 0.6rem;
+}
+
+.google svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 .link {
   margin-top: 1rem;
+  margin-right: 1rem;
   padding: 0;
   font: inherit;
   font-size: 0.9rem;

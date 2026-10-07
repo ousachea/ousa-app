@@ -192,7 +192,7 @@ export const SETTINGS: Tool = {
   to: '/settings',
   name: 'Settings',
   summary: 'Choose how the app looks and sounds.',
-  description: 'Choose light or dark mode, lighter effects for older computers, sound effects, and sync your data with Supabase.',
+  description: 'Choose light or dark mode, lighter effects for older computers, sound effects, and sync your data with Firebase.',
   color: 'var(--settings)',
   icon: 'sound'
 }

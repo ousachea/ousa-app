@@ -1,4 +1,5 @@
-import type { PostgrestError } from '@supabase/supabase-js'
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, type User } from 'firebase/auth'
+import { addDoc, collection, deleteDoc, doc, getDocFromServer, getDocsFromServer, orderBy, query, setDoc, updateDoc } from 'firebase/firestore'
 
 // What's stored inside each encrypted blob. The database only ever sees ciphertext.
 export interface VaultEntry {
@@ -14,26 +15,27 @@ export interface VaultItem extends VaultEntry {
   updatedAt: string
 }
 
-interface VaultRow {
-  id: string
+interface VaultDoc {
   ciphertext: string
   iv: string
-  updated_at: string
+  updatedAt: string
 }
 
-// `recovery`: opened from a reset email, signed in but waiting for a new master password
-export type VaultStatus = 'loading' | 'signed-out' | 'locked' | 'unlocked' | 'needs-setup' | 'recovery'
+// Signing in (with Google) syncs the trackers. The vault also needs a master password, which never
+// leaves this device: it encrypts every entry, and a small encrypted check value tells a wrong one apart.
+// `new`: signed in, but no master password chosen yet
+export type VaultStatus = 'loading' | 'signed-out' | 'locked' | 'new' | 'unlocked' | 'needs-setup'
 
 const AUTO_LOCK_MS = 5 * 60 * 1000
+// Encrypted with the vault key and stored next to the entries; decrypting it proves the master password
+const CHECK_VALUE = 'ousa-vault'
 
 const state = reactive({
   status: 'loading' as VaultStatus,
   email: '',
   items: [] as VaultItem[],
-  // Rows that didn't decrypt with this key (e.g. corrupted); counted, never shown
-  unreadable: 0,
-  // Set when a reset link failed (expired, used, or opened in another browser)
-  resetError: ''
+  // Rows that didn't decrypt with this key (e.g. saved under an old master password); counted, never shown
+  unreadable: 0
 })
 
 // The AES key lives only in memory; reloading the page locks the vault
@@ -41,7 +43,23 @@ let key: CryptoKey | undefined
 let lockTimer: ReturnType<typeof setTimeout> | undefined
 let started = false
 
-const isMissingTable = (error: PostgrestError | null) => error?.code === 'PGRST205' || error?.code === '42P01'
+function currentUser() {
+  const user = useFirebase().auth.currentUser
+  if (!user) throw new Error('You’re signed out. Sign in again.')
+  return user
+}
+
+const vaultRef = () => collection(useFirebase().db, 'users', currentUser().uid, 'vault')
+const checkRef = () => doc(useFirebase().db, 'users', currentUser().uid, 'meta', 'vault')
+
+function authMessage(e: unknown) {
+  const code = (e as { code?: string } | null)?.code ?? ''
+  if (code === 'auth/popup-blocked') return 'Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.'
+  if (code === 'auth/unauthorized-domain') return 'This address isn’t allowed to sign in yet. Add it under Authorized domains in Firebase.'
+  if (code === 'auth/operation-not-allowed') return 'Google sign-in isn’t turned on for this Firebase project yet.'
+  if (code === 'auth/network-request-failed') return 'Couldn’t reach Google. Check your connection.'
+  return e instanceof Error ? e.message : 'Something went wrong. Try again.'
+}
 
 function resetLockTimer() {
   clearTimeout(lockTimer)
@@ -56,25 +74,39 @@ function lock() {
   if (state.status === 'unlocked') state.status = 'locked'
 }
 
-async function loadItems() {
-  if (!key) return
-  const { data, error } = await useSupabase()
-    .from('vault_items')
-    .select('id, ciphertext, iv, updated_at')
-    .order('updated_at', { ascending: false })
-
-  if (isMissingTable(error)) {
+// Signed in but locked: has a master password been chosen yet?
+async function checkSetup() {
+  try {
+    const snap = await getDocFromServer(checkRef())
+    state.status = snap.exists() ? 'locked' : 'new'
+  } catch (e) {
+    if (!needsFirestoreSetup(e)) throw e
     state.status = 'needs-setup'
-    return
   }
-  if (error) throw new Error(error.message)
+}
+
+async function loadItems() {
+  if (!key) return checkSetup()
+  let docs
+  try {
+    docs = (await getDocsFromServer(query(vaultRef(), orderBy('updatedAt', 'desc')))).docs
+  } catch (e) {
+    if (needsFirestoreSetup(e)) {
+      state.status = 'needs-setup'
+      return
+    }
+    throw e
+  }
+  // Rules published since the setup screen showed up
+  if (state.status === 'needs-setup') state.status = 'unlocked'
 
   const items: VaultItem[] = []
   let unreadable = 0
-  for (const row of (data ?? []) as VaultRow[]) {
+  for (const snap of docs) {
+    const row = snap.data() as VaultDoc
     try {
       const entry = await decryptJson<VaultEntry>(key, row)
-      items.push({ ...entry, id: row.id, updatedAt: row.updated_at })
+      items.push({ ...entry, id: snap.id, updatedAt: row.updatedAt })
     } catch {
       unreadable++
     }
@@ -83,49 +115,40 @@ async function loadItems() {
   state.unreadable = unreadable
 }
 
+async function signedInAs(user: User) {
+  state.email = user.email ?? ''
+  try {
+    await checkSetup()
+  } catch {
+    // Offline: assume a vault exists; unlocking will say if Firestore can't be reached
+    state.status = 'locked'
+  }
+}
+
 async function start() {
   if (started || import.meta.server) return
   started = true
-  const router = useRouter()
-  // Read before the Supabase client exchanges the code and tidies the URL. `reset` marks our reset links.
-  const params = new URLSearchParams(location.search + '&' + location.hash.slice(1))
-  const fromResetLink = params.has('reset')
-  const supabase = useSupabase()
-
-  // A reset link signs the browser in; ask for the new master password on Settings before anything else
-  function enterRecovery(email: string) {
-    key = undefined
-    state.items = []
-    state.email = email
-    state.status = 'recovery'
-    if (location.pathname !== '/settings' || fromResetLink) router.replace({ path: '/settings', hash: '#sync' })
+  if (!firebaseConfigured()) {
+    state.status = 'signed-out'
+    return
   }
+  const { auth } = useFirebase()
 
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_OUT' || !session) {
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
       key = undefined
       state.items = []
       state.email = ''
       state.status = 'signed-out'
-    } else if (event === 'PASSWORD_RECOVERY' && state.status !== 'recovery') {
-      enterRecovery(session.user.email ?? '')
+    } else if (state.status === 'signed-out') {
+      // Signed in on another tab
+      signedInAs(user)
     }
   })
 
-  const { data } = await supabase.auth.getSession()
-  if (data.session && (fromResetLink || passwordRecovery.value)) {
-    if (state.status !== 'recovery') enterRecovery(data.session.user.email ?? '')
-  } else if (state.status !== 'recovery') {
-    state.email = data.session?.user.email ?? ''
-    state.status = data.session ? 'locked' : 'signed-out'
-  }
-
-  // A reset link that couldn't sign in: Supabase sends error details, or the code had no matching verifier
-  if (!data.session && location.pathname === '/settings' && (params.has('error_description') || params.has('code'))) {
-    state.resetError = params.get('error_code') === 'otp_expired'
-      ? 'That reset link has expired. Ask for a new one.'
-      : 'That reset link didn’t work here. Open it in the same browser where you asked for it, or ask for a new one.'
-  }
+  await auth.authStateReady()
+  if (auth.currentUser) await signedInAs(auth.currentUser)
+  else state.status = 'signed-out'
 
   for (const type of ['pointerdown', 'keydown'] as const) window.addEventListener(type, resetLockTimer, { passive: true })
 }
@@ -133,92 +156,78 @@ async function start() {
 export function useVault() {
   start()
 
-  // Derive keys in the browser, then sign in with the derived auth secret (never the master password)
-  async function signIn(email: string, masterPassword: string) {
-    const keys = await deriveVaultKeys(email, masterPassword)
-    const { error } = await useSupabase().auth.signInWithPassword({ email: normalizeEmail(email), password: keys.authSecret })
-    if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Wrong email or master password.' : error.message)
-    key = keys.key
-    state.email = normalizeEmail(email)
+  // Single-owner mode: with NUXT_PUBLIC_OWNER_EMAIL set, Google suggests that account first
+  async function signIn() {
+    const provider = new GoogleAuthProvider()
+    const ownerEmail = (useRuntimeConfig().public.ownerEmail as string | undefined)?.trim()
+    provider.setCustomParameters(ownerEmail ? { login_hint: ownerEmail } : { prompt: 'select_account' })
+    try {
+      const { user } = await signInWithPopup(useFirebase().auth, provider)
+      await signedInAs(user)
+    } catch (e) {
+      if ((e as { code?: string }).code === 'auth/popup-closed-by-user') return false
+      throw new Error(authMessage(e))
+    }
+    return true
+  }
+
+  async function unlocked(newKey: CryptoKey) {
+    key = newKey
     state.status = 'unlocked'
     await loadItems()
     resetLockTimer()
   }
 
-  async function signUp(email: string, masterPassword: string) {
-    const keys = await deriveVaultKeys(email, masterPassword)
-    const { data, error } = await useSupabase().auth.signUp({
-      email: normalizeEmail(email),
-      password: keys.authSecret,
-      // Send the confirmation link back to the address this page is on, not only Supabase's Site URL
-      options: { emailRedirectTo: `${location.origin}/settings` }
-    })
-    if (error) throw new Error(error.message)
-    // Projects with "Confirm email" on return no session until the link in the email is clicked
-    if (!data.session) return { needsConfirmation: true }
-    key = keys.key
-    state.email = normalizeEmail(email)
-    state.status = 'unlocked'
-    await loadItems()
-    resetLockTimer()
-    return { needsConfirmation: false }
+  // Derive the key in the browser and test it against the stored check value
+  async function unlock(masterPassword: string) {
+    const { key: candidate } = await deriveVaultKeys(state.email, masterPassword)
+    const snap = await getDocFromServer(checkRef())
+    if (!snap.exists()) {
+      state.status = 'new'
+      throw new Error('This vault has no master password yet. Choose one.')
+    }
+    try {
+      await decryptJson(candidate, snap.data() as VaultDoc)
+    } catch {
+      throw new Error('Wrong master password.')
+    }
+    await unlocked(candidate)
   }
 
-  // Emails a link back to Settings; the PKCE code only works in this browser
-  async function requestReset(email: string) {
-    state.resetError = ''
-    const { error } = await useSupabase().auth.resetPasswordForEmail(normalizeEmail(email), {
-      redirectTo: `${location.origin}/settings?reset=1`
-    })
-    if (error) throw new Error(error.message)
+  // First time, or after forgetting it. Entries saved under an old master password
+  // can't be decrypted with the new one and are counted as unreadable.
+  async function setMasterPassword(masterPassword: string) {
+    const { key: newKey } = await deriveVaultKeys(state.email, masterPassword)
+    const check: VaultDoc = { ...(await encryptJson(newKey, CHECK_VALUE)), updatedAt: new Date().toISOString() }
+    await withTimeout(setDoc(checkRef(), check))
+    await unlocked(newKey)
   }
-
-  // After a reset link: the new master password replaces the derived Supabase password.
-  // Vault entries saved under the old one can't be decrypted any more and are counted as unreadable.
-  async function setNewMasterPassword(masterPassword: string) {
-    const keys = await deriveVaultKeys(state.email, masterPassword)
-    const { error } = await useSupabase().auth.updateUser({ password: keys.authSecret })
-    if (error) throw new Error(error.message)
-    key = keys.key
-    state.status = 'unlocked'
-    await loadItems()
-    resetLockTimer()
-  }
-
-  // Unlocking re-checks the master password with Supabase, so a wrong one is rejected
-  const unlock = (masterPassword: string) => signIn(state.email, masterPassword)
 
   async function signOut() {
     lock()
-    await useSupabase().auth.signOut()
+    await firebaseSignOut(useFirebase().auth)
   }
 
   async function save(entry: VaultEntry, id?: string) {
     if (!key) throw new Error('The vault is locked.')
-    const blob = await encryptJson(key, entry)
-    const supabase = useSupabase()
-    const { error } = id
-      ? await supabase.from('vault_items').update({ ...blob, updated_at: new Date().toISOString() }).eq('id', id)
-      : await supabase.from('vault_items').insert(blob)
-    if (error) throw new Error(error.message)
+    const row: VaultDoc = { ...(await encryptJson(key, entry)), updatedAt: new Date().toISOString() }
+    if (id) await withTimeout(updateDoc(doc(vaultRef(), id), { ...row }))
+    else await withTimeout(addDoc(vaultRef(), row))
     await loadItems()
   }
 
   async function remove(id: string) {
-    const { error } = await useSupabase().from('vault_items').delete().eq('id', id)
-    if (error) throw new Error(error.message)
+    await withTimeout(deleteDoc(doc(vaultRef(), id)))
     state.items = state.items.filter(item => item.id !== id)
   }
 
   return {
     vault: readonly(state),
     signIn,
-    signUp,
     unlock,
+    setMasterPassword,
     lock,
     signOut,
-    requestReset,
-    setNewMasterPassword,
     save,
     remove,
     reload: loadItems

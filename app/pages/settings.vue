@@ -2,29 +2,36 @@
 import { toast } from 'vue-sonner'
 import type { EffectsPreference } from '~/composables/useEffects'
 import { getPack, packNames, type CueName, type PackName } from 'uisfx'
+import { getDocsFromServer, limit, query } from 'firebase/firestore'
 
 const sound = useSound()
 const { state } = sound
 const { theme, setTheme } = useTheme()
 
-// ---------- Sync with Supabase ----------
-// Signing in uses the Passwords account; trackers then sync to the shared user_items table
+// ---------- Sync with Firebase ----------
+// Signing in uses the Passwords account; trackers then sync to Firestore under users/{uid}
 const { vault, signOut } = useVault()
-const signedIn = computed(() => ['locked', 'unlocked', 'needs-setup'].includes(vault.status))
+const signedIn = computed(() => !['loading', 'signed-out'].includes(vault.status))
 const table = ref<'checking' | 'ready' | 'missing' | 'error'>('checking')
 
 async function checkTable() {
   if (!signedIn.value) return
   table.value = 'checking'
-  const { error } = await useSupabase().from(SYNC_TABLE).select('id').limit(1)
-  table.value = !error ? 'ready' : error.code === 'PGRST205' ? 'missing' : 'error'
+  const uid = useFirebase().auth.currentUser?.uid
+  if (!uid) return
+  try {
+    await getDocsFromServer(query(itemsRef(uid), limit(1)))
+    table.value = 'ready'
+  } catch (e) {
+    table.value = needsFirestoreSetup(e) ? 'missing' : 'error'
+  }
 }
 watch(signedIn, checkTable, { immediate: true })
 
-async function copySyncSql() {
+async function copyRules() {
   try {
-    await navigator.clipboard.writeText(SYNC_SETUP_SQL)
-    toast.success('SQL copied', { description: 'Paste it into the Supabase SQL editor and run it.' })
+    await navigator.clipboard.writeText(FIRESTORE_RULES)
+    toast.success('Rules copied', { description: 'Paste them into the Firestore rules editor and publish.' })
     sound.play('copy')
   } catch {
     toast.error('Could not copy')
@@ -59,15 +66,21 @@ function chooseEffects(value: EffectsPreference) {
 
 const PACKS = packNames.map(name => getPack(name))
 
-const SAMPLES: { cue: CueName, label: string }[] = [
-  { cue: 'press', label: 'Tap' },
-  { cue: 'toggle-on', label: 'Switch' },
-  { cue: 'copy', label: 'Copy' },
-  { cue: 'success', label: 'Success' },
-  { cue: 'error', label: 'Error' },
-  { cue: 'notification', label: 'Notification' },
-  { cue: 'level-up', label: 'Level up' }
+// Each sample also pops the toast that goes with that sound around the app
+const SAMPLES: { cue: CueName, label: string, show: () => void }[] = [
+  { cue: 'press', label: 'Tap', show: () => toast('Tapped') },
+  { cue: 'toggle-on', label: 'Switch', show: () => toast('Switched on') },
+  { cue: 'copy', label: 'Copy', show: () => toast.success('Copied', { description: 'Ready to paste anywhere.' }) },
+  { cue: 'success', label: 'Success', show: () => toast.success('Saved', { description: 'Everything went to plan.' }) },
+  { cue: 'error', label: 'Error', show: () => toast.error('Something went wrong', { description: 'This is only a test.' }) },
+  { cue: 'notification', label: 'Notification', show: () => toast.info('New notification', { description: 'You have a message waiting.' }) },
+  { cue: 'level-up', label: 'Level up', show: () => toast.success('Level up!', { description: 'You unlocked something new.' }) }
 ]
+
+function trySample(sample: typeof SAMPLES[number]) {
+  sound.play(sample.cue)
+  sample.show()
+}
 
 function toggle() {
   const next = !state.enabled
@@ -168,7 +181,7 @@ const volume = computed({
           </label>
         </Step>
 
-        <Step id="sync" :n="3" title="Sync with Supabase" hint="Keep your trackers in your Supabase account and see them on every device." class="sync-step">
+        <Step id="sync" :n="3" title="Sync with Firebase" hint="Keep your trackers in your Firebase account and see them on every device." class="sync-step">
           <div class="panel sync">
             <template v-if="!signedIn">
               <p>You’re not signed in, so Things I own, Renewals, Countdown and the other trackers are saved on this device only.</p>
@@ -177,15 +190,15 @@ const volume = computed({
             </template>
             <template v-else>
               <p>Signed in as <strong>{{ vault.email }}</strong>.</p>
-              <p v-if="table === 'checking'" class="small">Checking Supabase…</p>
-              <p v-else-if="table === 'ready'" class="ok">Your trackers sync to Supabase.</p>
-              <p v-else-if="table === 'error'" class="small">Couldn’t reach Supabase right now. Your data is safe on this device.</p>
+              <p v-if="table === 'checking'" class="small">Checking Firebase…</p>
+              <p v-else-if="table === 'ready'" class="ok">Your trackers sync to Firebase.</p>
+              <p v-else-if="table === 'error'" class="small">Couldn’t reach Firebase right now. Your data is safe on this device.</p>
               <template v-else>
-                <p class="small">One-time setup: run this SQL in Supabase to create the table your trackers sync to. Each account can only see its own rows.</p>
-                <pre><code>{{ SYNC_SETUP_SQL }}</code></pre>
+                <p class="small">One-time setup: create a Firestore database in the Firebase console, then publish these rules. Each account can only see its own data.</p>
+                <pre><code>{{ FIRESTORE_RULES }}</code></pre>
                 <div class="row-actions">
-                  <button type="button" class="btn btn-sm" @click="copySyncSql">Copy SQL</button>
-                  <a class="btn btn-quiet btn-sm" :href="SUPABASE_SQL_EDITOR" target="_blank" rel="noopener">Open the SQL editor</a>
+                  <button type="button" class="btn btn-sm" @click="copyRules">Copy rules</button>
+                  <a class="btn btn-quiet btn-sm" :href="firestoreRulesUrl()" target="_blank" rel="noopener">Open Firestore rules</a>
                   <button type="button" class="btn btn-quiet btn-sm" @click="checkTable">Check again</button>
                 </div>
               </template>
@@ -219,14 +232,14 @@ const volume = computed({
             </div>
           </Step>
 
-          <Step :n="5" title="Try it" hint="Hear the sounds you’ll get around the app." class="try">
+          <Step :n="5" title="Try it" hint="Hear the sounds and see the pop-ups you’ll get around the app." class="try">
             <div class="samples">
               <button
                 v-for="s in SAMPLES"
                 :key="s.cue"
                 type="button"
                 class="btn btn-quiet btn-sm"
-                @click="sound.play(s.cue)"
+                @click="trySample(s)"
               >
                 <SoundIcon :name="s.cue" />
                 {{ s.label }}

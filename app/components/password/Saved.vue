@@ -117,10 +117,10 @@ async function askDelete(item: VaultItem) {
   }
 }
 
-async function copySetupSql() {
+async function copyRules() {
   try {
-    await navigator.clipboard.writeText(VAULT_SETUP_SQL)
-    toast.success('SQL copied', { description: 'Paste it into the Supabase SQL editor and run it.' })
+    await navigator.clipboard.writeText(FIRESTORE_RULES)
+    toast.success('Rules copied', { description: 'Paste them into the Firestore rules editor and publish.' })
     play('copy')
   } catch {
     toast.error('Could not copy')
@@ -130,7 +130,7 @@ async function copySetupSql() {
 async function retrySetup() {
   try {
     await reload()
-    if (vault.status === 'needs-setup') toast.error('The vault table still isn’t there', { description: 'Run the SQL in Supabase first.' })
+    if (vault.status === 'needs-setup') toast.error('Firestore still isn’t set up', { description: 'Create the database and publish the rules first.' })
   } catch (e) {
     toast.error('Couldn’t load the vault', { description: e instanceof Error ? e.message : undefined })
   }
@@ -153,19 +153,19 @@ onBeforeUnmount(() => {
     <ClientOnly>
       <section v-if="vault.status === 'loading'" class="panel loading" aria-busy="true">Opening your vault…</section>
 
-      <VaultAuth v-else-if="vault.status === 'signed-out' || vault.status === 'locked' || vault.status === 'recovery'" />
+      <VaultAuth v-else-if="vault.status === 'signed-out' || vault.status === 'locked' || vault.status === 'new'" />
 
       <section v-else-if="vault.status === 'needs-setup'" class="setup">
-        <Step :n="1" title="Create the vault table" hint="You’re signed in, but this Supabase project doesn’t have the vault table yet. It stores only encrypted data.">
+        <Step :n="1" title="Set up Firestore" hint="You’re signed in, but this Firebase project needs a Firestore database with these rules. It stores only encrypted data.">
           <div class="panel code">
-            <pre><code>{{ VAULT_SETUP_SQL }}</code></pre>
+            <pre><code>{{ FIRESTORE_RULES }}</code></pre>
             <div class="code-actions">
-              <button type="button" class="btn btn-sm" @click="copySetupSql">Copy SQL</button>
-              <a class="btn btn-quiet btn-sm" :href="SUPABASE_SQL_EDITOR" target="_blank" rel="noopener">Open the SQL editor</a>
+              <button type="button" class="btn btn-sm" @click="copyRules">Copy rules</button>
+              <a class="btn btn-quiet btn-sm" :href="firestoreRulesUrl()" target="_blank" rel="noopener">Open Firestore rules</a>
             </div>
           </div>
         </Step>
-        <Step :n="2" title="Open your vault" hint="Run the SQL in Supabase, then come back here." class="step-gap">
+        <Step :n="2" title="Open your vault" hint="Publish the rules in Firebase, then come back here." class="step-gap">
           <button type="button" class="btn" @click="retrySetup">Open vault</button>
         </Step>
       </section>
@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
           <div v-else class="panel how">
             <h2>How your passwords are protected</h2>
             <ul>
-              <li>Each entry is encrypted with AES-256 in this browser before it’s sent. Supabase only stores scrambled data.</li>
+              <li>Each entry is encrypted with AES-256 in this browser before it’s sent. Firebase only stores scrambled data.</li>
               <li>Your master password never leaves this device. The key that unlocks the vault exists only in this tab.</li>
               <li>The vault locks itself after 5 minutes without activity, and whenever the page reloads.</li>
               <li>Copied passwords are cleared from the clipboard after 30 seconds.</li>

@@ -1,9 +1,10 @@
-import type { PostgrestError } from '@supabase/supabase-js'
 import { toast } from 'vue-sonner'
+import { onAuthStateChanged } from 'firebase/auth'
+import { collection, deleteDoc, doc, getDocsFromServer, query, where, writeBatch } from 'firebase/firestore'
 
 // A list of records for the personal trackers (Things I own, Renewals, Countdown…).
-// Always cached in this browser; when signed in to Supabase it also syncs to the user_items table,
-// so the same data appears on every device.
+// Always cached in this browser; when signed in to Firebase it also syncs to Firestore
+// (users/{uid}/items, one document per record), so the same data appears on every device.
 
 export interface StoredItem {
   id: string
@@ -12,15 +13,17 @@ export interface StoredItem {
 export type SyncState =
   | 'loading' // reading storage
   | 'device' // signed out: this device only
-  | 'saving' // writing to Supabase
-  | 'synced' // matches Supabase
-  | 'offline' // signed in, but Supabase couldn't be reached; changes kept on this device
-  | 'needs-setup' // signed in, but the user_items table doesn't exist yet
+  | 'saving' // writing to Firestore
+  | 'synced' // matches Firestore
+  | 'offline' // signed in, but Firestore couldn't be reached; changes kept on this device
+  | 'needs-setup' // signed in, but the Firestore database or its rules aren't set up yet
   | 'demo' // showing sample data; nothing is saved
 
-export const SYNC_TABLE = 'user_items'
+// Firestore allows at most 500 writes in one batch
+const BATCH_LIMIT = 500
 
-const isMissingTable = (e: PostgrestError | null) => e?.code === 'PGRST205' || e?.code === '42P01'
+// Where a signed-in user's tracker records live
+export const itemsRef = (uid: string) => collection(useFirebase().db, 'users', uid, 'items')
 
 function readCache<T>(key: string): T[] | undefined {
   try {
@@ -44,7 +47,7 @@ export function useCollection<T extends StoredItem>(
   const state = ref<SyncState>('loading')
   const signedIn = ref(false)
 
-  // Demo mode: sample items live only in memory. Nothing reaches this device's storage or Supabase,
+  // Demo mode: sample items live only in memory. Nothing reaches this device's storage or Firestore,
   // and switching it off brings the real list back exactly as it was.
   const demoOn = options.demo ? useDemo().active : ref(false)
   let realItems: T[] = []
@@ -67,42 +70,51 @@ export function useCollection<T extends StoredItem>(
     } catch {}
   }
 
-  // ---------- Supabase ----------
+  // ---------- Firestore ----------
+  let uid: string | undefined
+
   async function pull(): Promise<T[] | undefined> {
-    const { data, error } = await useSupabase().from(SYNC_TABLE).select('data').eq('collection', name)
-    if (isMissingTable(error)) {
+    try {
+      // From the server, not Firestore's cache, so being offline shows as offline rather than an empty list
+      const snap = await getDocsFromServer(query(itemsRef(uid!), where('collection', '==', name)))
+      return snap.docs.map(d => d.data().data as T)
+    } catch (e) {
+      if (!needsFirestoreSetup(e)) throw e
       state.value = 'needs-setup'
       return undefined
     }
-    if (error) throw error
-    return (data ?? []).map(row => row.data as T)
   }
 
   async function push(records: T[]) {
-    if (!records.length) return
-    const { error } = await useSupabase().from(SYNC_TABLE).upsert(records.map(r => ({ id: r.id, collection: name, data: r, updated_at: new Date().toISOString() })))
-    if (error) throw error
+    const updatedAt = new Date().toISOString()
+    for (let i = 0; i < records.length; i += BATCH_LIMIT) {
+      const batch = writeBatch(useFirebase().db)
+      for (const r of records.slice(i, i + BATCH_LIMIT)) batch.set(doc(itemsRef(uid!), r.id), { collection: name, data: r, updatedAt })
+      await withTimeout(batch.commit())
+    }
   }
 
-  // Run a write against Supabase in the background and reflect the outcome in the badge
-  async function sync(task: () => PromiseLike<{ error: PostgrestError | null }> | Promise<void>) {
+  // Run a write against Firestore in the background and reflect the outcome in the badge
+  async function sync(task: () => Promise<void>) {
     if (demoOn.value || !signedIn.value || state.value === 'needs-setup') return
     state.value = 'saving'
     try {
-      const result = await task()
-      if (result && 'error' in result && result.error) throw result.error
+      await task()
       state.value = 'synced'
     } catch (e) {
-      state.value = isMissingTable(e as PostgrestError) ? 'needs-setup' : 'offline'
+      state.value = needsFirestoreSetup(e) ? 'needs-setup' : 'offline'
     }
   }
 
   async function load() {
     if (demoOn.value) return
-    const supabase = useSupabase()
     const local = readCache<T>(key)
-    const { data } = await supabase.auth.getSession()
-    signedIn.value = !!data.session
+    if (firebaseConfigured()) {
+      const { auth } = useFirebase()
+      await auth.authStateReady()
+      uid = auth.currentUser?.uid
+    }
+    signedIn.value = !!uid
 
     if (!signedIn.value) {
       state.value = 'device'
@@ -111,7 +123,7 @@ export function useCollection<T extends StoredItem>(
 
     try {
       const remote = await pull()
-      if (!remote) return // table missing; keep using the device copy
+      if (!remote) return // not set up yet; keep using the device copy
       // Union by id: the cloud wins for records it has; device-only records get uploaded
       const remoteIds = new Set(remote.map(r => r.id))
       const deviceOnly = (local ?? items.value).filter(r => !remoteIds.has(r.id))
@@ -120,7 +132,7 @@ export function useCollection<T extends StoredItem>(
       state.value = 'saving'
       await push(deviceOnly)
       state.value = 'synced'
-      if (deviceOnly.length) toast.success('Synced with Supabase', { description: `${deviceOnly.length} ${deviceOnly.length === 1 ? 'item' : 'items'} from this device uploaded.` })
+      if (deviceOnly.length) toast.success('Synced with Firebase', { description: `${deviceOnly.length} ${deviceOnly.length === 1 ? 'item' : 'items'} from this device uploaded.` })
     } catch {
       state.value = 'offline'
     }
@@ -130,14 +142,14 @@ export function useCollection<T extends StoredItem>(
 
   onMounted(async () => {
     const local = readCache<T>(key)
-    // With a cached copy, show it straight away; a first visit waits for Supabase and any examples
+    // With a cached copy, show it straight away; a first visit waits for Firestore and any examples
     if (local) {
       items.value = local
       ready.value = true
     }
     await load()
 
-    // Example data only for a brand-new user: nothing on this device and nothing in Supabase.
+    // Example data only for a brand-new user: nothing on this device and nothing in Firestore.
     // Checked after loading so a second device doesn't add duplicate examples.
     if (!local && !items.value.length && localStorage.getItem(`${key}:seeded`) === null) {
       items.value = seed()
@@ -151,12 +163,12 @@ export function useCollection<T extends StoredItem>(
     ready.value = true
 
     // Signing in or out on another page (or tab) switches this list's source
-    const { data } = useSupabase().auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') load()
-    })
-    unsubscribe = () => data.subscription.unsubscribe()
+    if (firebaseConfigured()) {
+      unsubscribe = onAuthStateChanged(useFirebase().auth, (user) => {
+        if (user?.uid !== uid) load()
+      })
+    }
   })
-
   const onStorage = (e: StorageEvent) => {
     if (e.key === key && !demoOn.value) items.value = readCache<T>(key) ?? []
   }
@@ -177,7 +189,7 @@ export function useCollection<T extends StoredItem>(
       sync(() => push([record]))
       return record
     },
-    // For imports: one cache write and one Supabase request however many records there are
+    // For imports: one cache write and one Firestore batch however many records there are
     addMany(list: Omit<T, 'id'>[]) {
       const records = list.map(item => ({ ...item, id: crypto.randomUUID() }) as T)
       items.value = [...items.value, ...records]
@@ -195,7 +207,7 @@ export function useCollection<T extends StoredItem>(
       const removed = items.value.find(i => i.id === id)
       items.value = items.value.filter(i => i.id !== id)
       cache()
-      sync(() => useSupabase().from(SYNC_TABLE).delete().eq('id', id))
+      sync(() => withTimeout(deleteDoc(doc(itemsRef(uid!), id))))
       return removed
     },
     // Put a removed item back (for Undo)
@@ -207,32 +219,3 @@ export function useCollection<T extends StoredItem>(
     }
   }
 }
-
-export const SYNC_SETUP_SQL = `create table public.user_items (
-  id uuid primary key,
-  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  collection text not null,
-  data jsonb not null,
-  updated_at timestamptz not null default now()
-);
-
-create index user_items_owner_collection on public.user_items (user_id, collection);
-
-alter table public.user_items enable row level security;
-
-create policy "Owners can read their items"
-  on public.user_items for select to authenticated
-  using ((select auth.uid()) = user_id);
-
-create policy "Owners can add items"
-  on public.user_items for insert to authenticated
-  with check ((select auth.uid()) = user_id);
-
-create policy "Owners can update their items"
-  on public.user_items for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
-
-create policy "Owners can delete their items"
-  on public.user_items for delete to authenticated
-  using ((select auth.uid()) = user_id);`

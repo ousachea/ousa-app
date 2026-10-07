@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3'
 import { SETTINGS, TOOLS } from '../../app/utils/tools'
 
-// Every public page; the /todos demo and the /og-card preview pages are left out on purpose
+// Every public page; the /og-card preview pages are left out on purpose
 export default defineEventHandler((event) => {
   const site = siteUrl(event)
   const pages = [

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Tool } from '~/utils/tools'
 
-// Pages listed in TOOLS are found by route; other pages (like /todos) pass their own `tool`
+// Pages listed in TOOLS are found by route; other pages pass their own `tool`
 // hero: big centred header (single-purpose tools)
 // bar: compact left-aligned header so the workspace starts high (editors, studios)
 // band: full-width coloured band (collections)
@@ -15,7 +15,7 @@ const tool = computed(() => props.tool ?? toolFor(route.path)!)
 // Search titles are worded the way people search ("Cambodian phone number checker"); the page heading keeps the short name
 useHead({ title: () => tool.value.seoTitle ?? tool.value.name })
 
-// Pages that aren't real apps (like the /todos demo) stay out of search results
+// Pages that aren't real apps stay out of search results
 const listed = computed(() => !!toolFor(route.path))
 const site = useSiteUrl()
 const seo = useAppSeo(() => ({

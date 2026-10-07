@@ -2,7 +2,7 @@
 import { toast } from 'vue-sonner'
 
 /* Gold tracker: live XAU spot in Cambodian units (chi, damlung, hun, li) and a purchase ledger.
-   Purchases are a normal synced collection: on this device, and in Supabase when signed in. */
+   Purchases are a normal synced collection: on this device, and in Firebase when signed in. */
 
 interface Purchase {
   id: string
