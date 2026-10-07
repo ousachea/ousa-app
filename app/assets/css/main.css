@@ -237,6 +237,44 @@ textarea.input {
   line-height: 1.45;
 }
 
+/* ---------- Touch screens: comfortable tap targets ----------
+   Small text buttons (Edit, Delete, Calendar, Add…) get an invisible, larger hit area that sticks out around
+   them, so they're easy to tap without anything on screen moving. The doubled :root outranks each app's
+   own scoped button styles. */
+@media (pointer: coarse) {
+  :root:root .link,
+  :root:root .calendar-add .trigger {
+    position: relative;
+  }
+
+  :root:root .link::before,
+  :root:root .calendar-add .trigger::before {
+    content: '';
+    position: absolute;
+    inset: -0.6rem -0.3rem;
+  }
+
+  :root:root .version {
+    min-height: 2.25rem;
+  }
+
+  /* On/off switches: the same invisible margin around them */
+  :root:root .switch::before {
+    content: '';
+    position: absolute;
+    inset: -0.5rem -0.25rem;
+  }
+
+  :root:root .chip,
+  :root:root .life-seg button {
+    min-height: 2.25rem;
+  }
+
+  :root:root summary {
+    padding-block: 0.6rem;
+  }
+}
+
 /* Search, sort and filter bars on long lists stay pinned under the back and menu buttons
    (v-sticky-bar, plugins/sticky.ts). Once pinned they get a frosted backing so the list can pass beneath. */
 .sticky-bar {

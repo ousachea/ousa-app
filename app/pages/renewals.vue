@@ -238,7 +238,7 @@ function del(r: Renewal) {
                   :style="{ left: `${(m.day / WINDOW) * 100}%`, '--lane': m.lane }"
                   :title="`${m.name}: ${m.price}, ${m.day === 0 ? 'today' : `in ${m.day} days`}`"
                 >
-                  <span class="mark-label"><b>{{ m.name }}</b> {{ m.price }}</span>
+                  <span class="mark-label"><b>{{ m.name }}</b> <span class="mark-price">{{ m.price }}</span></span>
                 </span>
               </div>
               <p v-if="!timeline.length" class="quiet">Nothing renews in the next 30 days.</p>
@@ -255,6 +255,14 @@ function del(r: Renewal) {
                   <span class="meta">{{ formatMoney(r.price, r.currency) }} {{ cycleLabel(r.cycle) }} · next {{ formatDate(r.next) }}</span>
                 </div>
                 <span class="links">
+                  <!-- A repeating event from the next renewal, so every future charge is in the calendar -->
+                  <CalendarAdd
+                    :title="`${r.name} renews`"
+                    :date="r.next"
+                    :repeat="r.cycle"
+                    :details="`${formatMoney(r.price, r.currency)} ${cycleLabel(r.cycle)}. From Renewals in Ousa’s Apps.`"
+                    label="Calendar"
+                  />
                   <button type="button" class="link" @click="edit(r)">Edit</button>
                   <ConfirmDelete class="link danger" :name="r.name" @confirm="del(r)" />
                 </span>
@@ -425,6 +433,20 @@ function del(r: Renewal) {
   right: 0;
 }
 
+/* Phones: names only, kept short, so neighbouring labels don't run into each other.
+   Prices are in the list right below. */
+@media (max-width: 560px) {
+  .mark-price {
+    display: none;
+  }
+
+  .mark-label {
+    max-width: 5.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .mark-label b {
   color: var(--ink);
 }
@@ -504,7 +526,9 @@ function del(r: Renewal) {
 .links {
   flex: none;
   display: flex;
+  align-items: center;
   gap: 0.75rem;
+  color: var(--ink-2);
 }
 
 .link {

@@ -535,7 +535,7 @@ const volume = computed({
 }
 
 @media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
   .side { position: static; }
 }
 

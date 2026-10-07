@@ -392,7 +392,7 @@ function checkContact(c: CheckedContact) {
    On wide screens the checker stays phone-sized on the left and the contacts fill the rest. */
 .workspace {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr); /* never wider than the screen */
   gap: 1.5rem;
   max-width: 520px;
   margin: 0 auto;
@@ -990,13 +990,13 @@ h2 {
 }
 
 @media (max-width: 900px) {
-  .workspace { grid-template-columns: 1fr; }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 480px) {
   .formats div { grid-template-columns: 1fr auto; }
   dt { grid-column: 1 / -1; margin-bottom: -0.5rem; }
-  .ops li { grid-template-columns: 1fr; gap: 0.25rem; }
+  .ops li { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

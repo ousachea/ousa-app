@@ -658,7 +658,7 @@ function del(t: Thing) {
 
 @media (max-width: 760px) {
   .summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

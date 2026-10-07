@@ -572,7 +572,7 @@ onBeforeUnmount(() => {
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1rem; /* 16px or more, so phones don't zoom in when it's tapped */
   color: var(--ink);
   background: none;
   border: 0;
@@ -786,7 +786,7 @@ kbd {
 /* Narrow phones: one column of tiles is easier to tap */
 @media (max-width: 380px) {
   .group ul {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

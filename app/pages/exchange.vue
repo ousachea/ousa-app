@@ -288,7 +288,7 @@ async function reloadRate() {
    On wide screens the receipt sits beside the inputs and stays in view while you change them. */
 .workspace {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr); /* never wider than the screen */
   gap: 2rem;
   max-width: 560px;
   margin: 0 auto;
@@ -532,7 +532,7 @@ dd {
 }
 
 @media (max-width: 900px) {
-  .workspace { grid-template-columns: 1fr; }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
   .result-step { position: static; }
 }
 </style>

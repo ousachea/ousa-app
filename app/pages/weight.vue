@@ -286,8 +286,9 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 <style scoped>
 /* Chart-first: a single quick-log row on top, the trend gets the full width */
 .workspace {
+  width: 100%;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2rem;
   margin: 0 auto;
 }
@@ -302,8 +303,10 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 
 .row {
   flex: 1 1 360px;
+  min-width: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, …) lets both fields shrink on a phone instead of pushing past the panel */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 

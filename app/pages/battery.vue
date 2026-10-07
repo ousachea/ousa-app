@@ -1209,7 +1209,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 1000px) {
-  .layout { grid-template-columns: 1fr; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
   .results { position: static; }
 }
 
@@ -1425,7 +1425,7 @@ onMounted(async () => {
   border: 0;
   padding: 0.75rem 0;
   background: transparent;
-  font: 400 0.9375rem var(--font-sans);
+  font: 400 1rem var(--font-sans); /* 16px or more, so phones don't zoom in when it's tapped */
   color: var(--black);
   outline: none;
 }

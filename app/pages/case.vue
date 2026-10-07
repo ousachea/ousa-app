@@ -328,7 +328,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 @media (max-width: 900px) {
   .workspace {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'modes' 'input' 'output';
   }
 

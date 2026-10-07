@@ -2,7 +2,9 @@
 // "Add to calendar" for a countdown: open it in Google Calendar, or download an .ics file that
 // Apple Calendar, Outlook and most phones open directly. A date with no time becomes an all-day event;
 // with a time it's a one-hour event at that time, in whatever time zone the calendar is set to.
-const props = defineProps<{ title: string, date: string, time?: string, details?: string, label?: string }>()
+// `repeat` makes it a repeating event (subscriptions that renew every week, month, 3 months or year).
+type Repeat = 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+const props = defineProps<{ title: string, date: string, time?: string, details?: string, label?: string, repeat?: Repeat }>()
 
 const trigger = ref<HTMLButtonElement>()
 const menu = ref<HTMLDivElement>()
@@ -23,12 +25,28 @@ const range = computed(() => {
   return { start: compact(start, timed), end: compact(end, timed), timed }
 })
 
+// The repeat rule. Billing on the 29th–31st falls on the month's last day in shorter months
+// (31 Jan → 28 Feb), so those use "the latest of these days that exists" rather than skipping the month.
+const rrule = computed(() => {
+  if (!props.repeat) return ''
+  const [, m, d] = props.date.split('-').map(Number) as [number, number, number]
+  if (props.repeat === 'weekly') return 'RRULE:FREQ=WEEKLY'
+  if (props.repeat === 'yearly') {
+    return m === 2 && d === 29 ? 'RRULE:FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=28,29;BYSETPOS=-1' : 'RRULE:FREQ=YEARLY'
+  }
+  const base = props.repeat === 'monthly' ? 'RRULE:FREQ=MONTHLY' : 'RRULE:FREQ=MONTHLY;INTERVAL=3'
+  if (d <= 28) return base
+  const days = Array.from({ length: d - 27 }, (_, i) => 28 + i).join(',')
+  return `${base};BYMONTHDAY=${days};BYSETPOS=-1`
+})
+
 const googleUrl = computed(() => {
   const url = new URL('https://calendar.google.com/calendar/render')
   url.searchParams.set('action', 'TEMPLATE')
   url.searchParams.set('text', props.title)
   url.searchParams.set('dates', `${range.value.start}/${range.value.end}`)
   if (props.details) url.searchParams.set('details', props.details)
+  if (rrule.value) url.searchParams.set('recur', rrule.value)
   return url.toString()
 })
 
@@ -48,6 +66,7 @@ function downloadIcs() {
     `DTSTAMP:${stamp}`,
     timed ? `DTSTART:${start}` : `DTSTART;VALUE=DATE:${start}`,
     timed ? `DTEND:${end}` : `DTEND;VALUE=DATE:${end}`,
+    ...(rrule.value ? [rrule.value] : []),
     `SUMMARY:${icsText(props.title)}`,
     ...(props.details ? [`DESCRIPTION:${icsText(props.details)}`] : []),
     // A reminder the day before

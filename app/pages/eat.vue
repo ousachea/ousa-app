@@ -670,9 +670,12 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .stage-top {
+  max-width: 100%;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
 }
 
 .how {
@@ -940,6 +943,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .filter {
   width: 340px;
   max-width: 100%;
+  min-width: 0;
 }
 
 .stage {
@@ -1357,6 +1361,19 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 @media (max-width: 860px) {
-  .manage-grid { grid-template-columns: 1fr; }
+  .manage-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Phones: three smaller thumbnails across instead of two big ones */
+@media (max-width: 520px) {
+  .thumbs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem 0.6rem;
+  }
+
+  .thumb-links {
+    gap: 0.5rem;
+    font-size: 0.8rem;
+  }
 }
 </style>

@@ -899,7 +899,7 @@ function switchCurrency(next) {
 }
 
 .money.slim input {
-  font-size: 0.95rem;
+  font-size: 1rem; /* 16px or more, so phones don't zoom in when it's tapped */
 }
 
 .money.rate {
@@ -1349,6 +1349,25 @@ function switchCurrency(next) {
   text-align: right;
 }
 
+/* Phones: drop the yearly total and the growth bar so the table fits without scrolling sideways */
+@media (max-width: 560px) {
+  .proj {
+    min-width: 0;
+    font-size: 0.85rem;
+  }
+
+  .proj th:nth-child(5),
+  .proj td:nth-child(5),
+  .proj .growth {
+    display: none;
+  }
+
+  .proj th,
+  .proj td {
+    padding-right: 0.5rem;
+  }
+}
+
 .proj .growth {
   width: 18%;
   padding-right: 0;
@@ -1379,15 +1398,15 @@ function switchCurrency(next) {
 }
 
 @media (max-width: 1000px) {
-  .workspace { grid-template-columns: 1fr; }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
   .results { position: static; }
 }
 
 @media (max-width: 560px) {
-  .grid2 { grid-template-columns: 1fr; }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
   .inputs .segmented label { white-space: normal; line-height: 1.25; }
-  .keep { grid-template-columns: 1fr; justify-items: center; }
+  .keep { grid-template-columns: minmax(0, 1fr); justify-items: center; }
   .lift { width: 100%; }
-  .worked { grid-template-columns: 1fr; }
+  .worked { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

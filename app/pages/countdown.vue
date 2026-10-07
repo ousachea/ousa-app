@@ -380,7 +380,7 @@ function del(e: CountdownEvent) {
 <style scoped>
 .workspace {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2.25rem;
 }
 
@@ -432,7 +432,7 @@ function del(e: CountdownEvent) {
 }
 
 @media (max-width: 480px) {
-  .edit-row { grid-template-columns: 1fr; }
+  .edit-row { grid-template-columns: minmax(0, 1fr); }
 }
 
 .actions {

@@ -1660,7 +1660,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 .fade-leave-to { opacity: 0; }
 
 @media (max-width: 1000px) {
-  .workspace { grid-template-columns: 1fr; }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Side by side, the shorter column stays in view while the other scrolls (v-sticky-fit handles tall ones) */
@@ -1675,7 +1675,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 @media (max-width: 560px) {
   .units { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .summary { grid-template-columns: 1fr 1fr; }
-  .form-row { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: minmax(0, 1fr); }
   .convert-row { grid-template-columns: 1fr 7.5rem; }
 }
 

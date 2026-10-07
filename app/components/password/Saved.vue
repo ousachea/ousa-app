@@ -508,7 +508,7 @@ dd.secret {
 
 @media (max-width: 960px) {
   .workspace {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .editor-side {

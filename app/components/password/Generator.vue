@@ -171,7 +171,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 /* The password leads, full width; length and characters sit side by side underneath */
 .workspace {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     'result'
     'settings';
@@ -196,7 +196,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   }
 
   .settings {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -529,13 +529,13 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 @media (max-width: 900px) {
   .settings {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 480px) {
   .sets {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .result {

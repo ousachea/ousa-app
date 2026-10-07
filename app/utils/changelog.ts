@@ -24,6 +24,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Turn a link or text into a QR code you can download.', 'Sound effects and smooth page transitions.'] }
   ],
   '/phone': [
+    { version: '1.2.1', date: '2026-10-07', changes: ['The page no longer runs wider than a phone screen.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.2.0', date: '2026-10-07', changes: ['Import your contacts straight from Google with your Google sign-in.', 'On wide screens the checker sits beside your contacts, which read across in columns.', 'Network filters and search stay pinned while a long address book scrolls.'] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Check a whole contacts file at once and catch numbers missing a digit.', EXAMPLE] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Check a Cambodian number and see its network.', 'Dark mode.'] }
@@ -45,14 +46,17 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Generate strong passwords and see how long they’d take to crack.', 'Dark mode.'] }
   ],
   '/exchange': [
+    { version: '1.1.1', date: '2026-10-07', changes: ['The page no longer runs wider than small phone screens.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.1.0', date: '2026-10-07', changes: ['On wide screens the gain-or-loss receipt sits beside the inputs and stays in view.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['See if an exchange rate makes you gain or lose money, or track an exchange you made.'] }
   ],
   '/battery': [
+    { version: '1.1.1', date: '2026-10-07', changes: ['The phone model search no longer makes iPhones zoom in when you tap it.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.1.0', date: '2026-10-07', changes: [WIDE, 'The results stay in view, and fully reachable, while you scroll.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['See how much of your phone battery is really left compared with when it was new.'] }
   ],
   '/salary': [
+    { version: '1.1.1', date: '2026-10-07', changes: ['The raise-every-year table fits a phone screen without scrolling sideways.', 'The tax band boxes no longer make iPhones zoom in, and the switches are easier to tap.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.1.0', date: '2026-10-07', changes: [WIDE, 'The pay statement stays in view, and fully reachable, while you scroll.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Work out what a raise is really worth after Cambodian salary tax.'] }
   ],
@@ -62,12 +66,14 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Keep track of what you own, what you paid and what it’s worth now.'] }
   ],
   '/eat': [
+    { version: '1.3.1', date: '2026-10-07', changes: ['The Everything / Foods / Places filter fits on a phone, and your foods show three across.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.3.0', date: '2026-10-07', changes: ['Use a link to any image on the web as a photo, when adding or editing. It works on every device and syncs with the item.', 'Remove a photo from the edit popup.'] },
     { version: '1.2.0', date: '2026-10-07', changes: ['Narrow it down: compare your shortlist two at a time until one is left.', 'Edit your foods and places in a popup.', 'On wide screens the cards sit beside your list.', SYNC, TWO_CLICK, 'Fixed: example data now deals a full deck of cards.'] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Add photos to your foods and places.', EXAMPLE] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Swipe through your saved foods and places until one sounds good.'] }
   ],
   '/weight': [
+    { version: '1.2.1', date: '2026-10-07', changes: ['The log form and trend use the whole phone screen, and the weight box no longer spills out.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.2.0', date: '2026-10-07', changes: [PICKERS, 'The trend chart uses the full width.', SYNC, TWO_CLICK] },
     { version: '1.1.0', date: '2026-10-05', changes: [EXAMPLE] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Log your weight and see the trend.'] }
@@ -78,6 +84,8 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Count down to the dates that matter.'] }
   ],
   '/renewals': [
+    { version: '1.3.1', date: '2026-10-07', changes: ['The 30-day timeline stays readable on a phone: short names, no overlapping prices.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
+    { version: '1.3.0', date: '2026-10-07', changes: ['Add a subscription to your calendar as a repeating event: Google Calendar, or Apple, Outlook and phones with an .ics file.', 'Billing on the 29th–31st lands on the last day of shorter months, just like real billing.'] },
     { version: '1.2.0', date: '2026-10-07', changes: ['On wide screens the 30-day timeline spans the page and subscriptions sit side by side.', PICKERS, SYNC, TWO_CLICK] },
     { version: '1.1.0', date: '2026-10-05', changes: [EXAMPLE] },
     { version: '1.0.0', date: '2026-10-05', changes: ['See what your subscriptions cost each month and year, and what renews soon.'] }

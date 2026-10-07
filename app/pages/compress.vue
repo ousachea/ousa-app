@@ -1001,7 +1001,7 @@ onBeforeUnmount(clearAll)
 }
 
 @media (max-width: 820px) {
-  .top { grid-template-columns: 1fr; }
+  .top { grid-template-columns: minmax(0, 1fr); }
   .drop { min-height: 0; }
 }
 </style>

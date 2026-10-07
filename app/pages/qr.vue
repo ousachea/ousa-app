@@ -747,7 +747,7 @@ async function copyImage() {
 
 @media (max-width: 900px) {
   .workspace {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'text' 'style' 'decorate' 'preview';
   }
 
@@ -761,7 +761,7 @@ async function copyImage() {
 }
 
 @media (max-width: 480px) {
-  .row { grid-template-columns: 1fr; }
+  .row { grid-template-columns: minmax(0, 1fr); }
   .actions { flex-wrap: wrap; }
   .actions .btn:first-child { flex-basis: 100%; }
   .actions .btn-quiet { flex: 1; }
