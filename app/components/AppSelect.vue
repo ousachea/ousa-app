@@ -118,7 +118,7 @@ function onListKey(e: KeyboardEvent) {
       ref="list"
       popover="manual"
       class="menu"
-      :class="`from-${placement}`"
+      :class="[`from-${placement}`, { 'is-open': open }]"
       role="listbox"
       tabindex="-1"
       :aria-label="ariaLabel"

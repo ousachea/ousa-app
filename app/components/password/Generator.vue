@@ -107,7 +107,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
         </Step>
       </div>
 
-      <Step title="Your password" class="result-step">
+      <Step title="Your password" v-sticky-fit class="result-step">
         <div class="panel result">
           <ClientOnly>
             <output class="password" aria-live="polite" aria-label="Generated password">

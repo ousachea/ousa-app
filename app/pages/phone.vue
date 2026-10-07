@@ -217,7 +217,7 @@ function checkContact(c: CheckedContact) {
 <template>
   <ToolPage>
     <div class="workspace">
-    <div class="check">
+    <div v-sticky-fit class="check">
     <Step :n="1" title="Type a number" hint="The first 2 digits are enough to see the network. The 0 is optional.">
     <label class="number input">
       <span class="cc" aria-hidden="true">🇰🇭 +855</span>
@@ -326,6 +326,8 @@ function checkContact(c: CheckedContact) {
       <div v-else class="panel book">
         <p class="book-source">{{ contacts.length }} Cambodian {{ contacts.length === 1 ? 'number' : 'numbers' }} from {{ contactSource }}</p>
 
+        <!-- Filters and search stay pinned while the list scrolls -->
+        <div v-sticky-bar class="contact-tools">
         <div class="nets" role="group" aria-label="Filter by network">
           <button
             v-for="n in networks"
@@ -343,6 +345,7 @@ function checkContact(c: CheckedContact) {
         </div>
 
         <input v-model="contactQuery" class="input search" type="search" placeholder="Search by name or number" aria-label="Search contacts">
+        </div>
 
         <ul v-if="filteredContacts.length" class="people">
           <li v-for="c in filteredContacts.slice(0, showCount)" :key="c.id">
@@ -405,7 +408,8 @@ function checkContact(c: CheckedContact) {
     align-items: start;
   }
 
-  .check { grid-area: check; }
+  /* The checker stays in view while a long address book scrolls */
+  .check { grid-area: check; position: sticky; top: 5.5rem; }
   .contacts-step { grid-area: contacts; }
   .reference { grid-area: reference; }
 
@@ -884,6 +888,11 @@ h2 {
 .search {
   width: 100%;
   margin-top: 0.75rem;
+}
+
+/* Pinned inside the white panel, so its backing is the panel's white, not the page grey */
+.contact-tools.is-stuck {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
 }
 
 .people {

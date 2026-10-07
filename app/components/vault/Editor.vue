@@ -2,7 +2,8 @@
 import { toast } from 'vue-sonner'
 import type { VaultEntry, VaultItem } from '~/composables/useVault'
 
-const props = defineProps<{ item?: VaultItem, prefillPassword?: string }>()
+// `bare`: shown inside a popup, which already has the title and the panel
+const props = defineProps<{ item?: VaultItem, prefillPassword?: string, bare?: boolean }>()
 const emit = defineEmits<{ done: [] }>()
 
 const { save } = useVault()
@@ -43,8 +44,8 @@ async function submit() {
 </script>
 
 <template>
-  <form class="panel editor" @submit.prevent="submit">
-    <h2>{{ item ? `Edit ${item.site}` : 'Add a password' }}</h2>
+  <form class="editor" :class="bare ? 'bare' : 'panel'" @submit.prevent="submit">
+    <h2 v-if="!bare">{{ item ? `Edit ${item.site}` : 'Add a password' }}</h2>
 
     <label class="field">
       <span class="field-head">Site or app</span>
@@ -90,6 +91,10 @@ async function submit() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.editor.bare {
+  padding: 0;
 }
 
 h2 {

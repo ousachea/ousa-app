@@ -176,7 +176,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
       ref="panel"
       popover="manual"
       class="calendar"
-      :class="`from-${placement}`"
+      :class="[`from-${placement}`, { 'is-open': open }]"
       role="dialog"
       :aria-label="ariaLabel ?? 'Choose a date'"
       @keydown="onKey"

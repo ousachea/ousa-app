@@ -75,6 +75,9 @@ const sort = ref<(typeof SORTS)[number]['value']>('value')
 const isEstimate = (t: Thing) => t.currentValue == null
 const worth = (t: Thing) => t.currentValue ?? estimateValue(t.price, t.category, t.purchaseDate)
 const change = (t: Thing) => (t.price ? worth(t) / t.price - 1 : 0)
+// Share of the price an item still holds, for the bar on each card (over 100% when it went up in value)
+const kept = (t: Thing) => (t.price ? worth(t) / t.price : 0)
+const pct = (n: number) => `${n < 0 ? '−' : '+'}${Math.abs(Math.round(n * 100))}%`
 
 // Compare different currencies by their dollar value
 const usd = (amount: number, currency: Currency) => (currency === 'USD' ? amount : amount / (rate.value ?? 4000))
@@ -241,62 +244,91 @@ function del(t: Thing) {
         <ClientOnly>
           <template v-if="ready && items.length">
             <section class="panel summary">
-              <div class="hero">
+              <div class="totals">
                 <span class="label">Worth now</span>
-                <strong>{{ rate ? formatMoney(totals.now, 'USD') : '…' }}</strong>
-                <span class="sub">
-                  Paid {{ formatMoney(totals.paid, 'USD') }}
-                  <span class="delta" :class="totals.change < 0 ? 'down' : 'up'">{{ totals.change < 0 ? '−' : '+' }}{{ Math.abs(Math.round(totals.change * 100)) }}%</span>
-                  across {{ items.length }} {{ items.length === 1 ? 'item' : 'items' }}
-                </span>
-                <span v-if="totals.estimates" class="sub quiet">
+                <strong class="worth">{{ rate ? formatMoney(totals.now, 'USD') : '…' }}</strong>
+                <dl class="stats">
+                  <div><dt>Paid</dt><dd>{{ formatMoney(totals.paid, 'USD') }}</dd></div>
+                  <div>
+                    <dt>{{ totals.now >= totals.paid ? 'Gained' : 'Lost to age' }}</dt>
+                    <dd :class="totals.change < 0 ? 'down' : 'up'">
+                      {{ totals.now >= totals.paid ? '+' : '−' }}{{ formatMoney(Math.abs(totals.now - totals.paid), 'USD') }}
+                      <small>{{ pct(totals.change) }}</small>
+                    </dd>
+                  </div>
+                  <div><dt>Items</dt><dd>{{ items.length }}</dd></div>
+                </dl>
+                <p v-if="totals.estimates" class="note">
                   {{ totals.estimates === items.length ? 'All values are estimates' : `${totals.estimates} of ${items.length} values are estimates` }} from age and category. Edit an item to enter its real value.
-                </span>
+                </p>
               </div>
-              <table class="cats">
-                <caption class="sr-only">Value now by category</caption>
-                <thead class="sr-only"><tr><th>Category</th><th>Items</th><th>Value</th></tr></thead>
-                <tbody>
-                  <tr v-for="c in byCategory" :key="c.category" :style="categoryStyle(c.category)">
-                    <th scope="row"><span class="cat-dot" aria-hidden="true"><CategoryIcon :name="c.category" /></span>{{ c.category }}</th>
-                    <td class="count">{{ c.count }}</td>
-                    <td class="val">{{ formatMoney(c.usd, 'USD') }}</td>
-                  </tr>
-                </tbody>
-              </table>
+
+              <!-- Where the value is: one bar split by category, then each category with its share -->
+              <div class="breakdown">
+                <span class="label">Where the value is</span>
+                <div class="stack" role="img" :aria-label="byCategory.map(c => `${c.category} ${Math.round((c.usd / (totals.now || 1)) * 100)}%`).join(', ')">
+                  <span
+                    v-for="c in byCategory"
+                    :key="c.category"
+                    :style="{ ...categoryStyle(c.category), flexGrow: c.usd || 0.0001 }"
+                    :title="`${c.category}: ${formatMoney(c.usd, 'USD')}`"
+                  />
+                </div>
+                <ul class="cats">
+                  <li v-for="c in byCategory" :key="c.category" :style="categoryStyle(c.category)">
+                    <span class="cat-dot" aria-hidden="true"><CategoryIcon :name="c.category" /></span>
+                    <span class="cat-name">{{ c.category }}<small>{{ c.count }} {{ c.count === 1 ? 'item' : 'items' }}</small></span>
+                    <span class="cat-share">{{ Math.round((c.usd / (totals.now || 1)) * 100) }}%</span>
+                    <b>{{ formatMoney(c.usd, 'USD') }}</b>
+                  </li>
+                </ul>
+              </div>
             </section>
 
-            <div class="toolbar">
+            <div v-sticky-bar class="toolbar">
               <DataSource :sync="sync" />
-              <input v-model="query" class="input" type="search" placeholder="Search your things" aria-label="Search your things">
+              <input v-model="query" class="input search" type="search" placeholder="Search your things" aria-label="Search your things">
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             </div>
 
-            <!-- Each item is a price tag: punched hole and string on the left, price as the headline -->
-            <ul class="tags">
-              <li v-for="t in visible" :key="t.id" class="tag" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
-                <span class="hole" aria-hidden="true" />
-                <div class="tag-body">
-                  <span class="tag-top">
-                    <span class="tag-cat">{{ t.category }}</span>
-                    <span class="tag-icon" aria-hidden="true"><CategoryIcon :name="t.category" /></span>
+            <!-- One card per thing: what it is, what you paid → what it's worth now, and how much of its price it keeps -->
+            <ul class="things">
+              <li v-for="t in visible" :key="t.id" class="thing" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
+                <header class="thing-head">
+                  <span class="thing-icon" aria-hidden="true"><CategoryIcon :name="t.category" /></span>
+                  <span class="thing-title">
+                    <strong>{{ t.name }}</strong>
+                    <span>{{ t.category }} · {{ owned(t.purchaseDate) }}</span>
                   </span>
-                  <strong class="tag-price">
-                    {{ formatMoney(worth(t), t.currency) }}
-                    <span v-if="isEstimate(t)" class="est" title="Estimated from age and category">est.</span>
-                  </strong>
-                  <span class="tag-paid">
-                    Paid {{ formatMoney(t.price, t.currency) }}
-                    <span class="delta" :class="change(t) < 0 ? 'down' : 'up'">{{ change(t) < 0 ? '−' : '+' }}{{ Math.abs(Math.round(change(t) * 100)) }}%</span>
-                  </span>
-                  <span class="tag-name">{{ t.name }}</span>
-                  <span class="tag-meta">Bought {{ formatDate(t.purchaseDate) }} · {{ owned(t.purchaseDate) }}</span>
-                  <span v-if="t.notes" class="tag-notes">{{ t.notes }}</span>
-                  <span class="links">
-                    <button type="button" class="link" @click="edit(t)">Edit</button>
-                    <button type="button" class="link danger" @click="del(t)">Delete</button>
-                  </span>
+                </header>
+
+                <div class="compare">
+                  <div class="col">
+                    <span class="k">Paid</span>
+                    <b>{{ formatMoney(t.price, t.currency) }}</b>
+                    <small>{{ formatDate(t.purchaseDate) }}</small>
+                  </div>
+                  <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+                  <div class="col end">
+                    <span class="k">Worth now<span v-if="isEstimate(t)" class="est" title="Estimated from age and category">est.</span></span>
+                    <b>{{ formatMoney(worth(t), t.currency) }}</b>
+                    <small class="delta" :class="change(t) < 0 ? 'down' : 'up'">{{ pct(change(t)) }}</small>
+                  </div>
                 </div>
+
+                <div class="kept">
+                  <span class="kept-bar" role="img" :aria-label="`Keeps ${Math.round(kept(t) * 100)}% of what you paid`">
+                    <span :style="{ width: `${Math.min(kept(t), 1) * 100}%` }" />
+                  </span>
+                  <span class="kept-text">Keeps {{ Math.round(kept(t) * 100) }}%</span>
+                </div>
+
+                <p v-if="t.notes" class="thing-notes">{{ t.notes }}</p>
+
+                <footer class="links">
+                  <button type="button" class="link" @click="edit(t)">Edit</button>
+                  <ConfirmDelete class="link danger" :name="t.name" @confirm="del(t)" />
+                </footer>
               </li>
             </ul>
             <p v-if="!visible.length" class="empty-search">Nothing matches “{{ query }}”.</p>
@@ -312,6 +344,340 @@ function del(t: Thing) {
 </template>
 
 <style scoped>
+/* ---------- Summary: totals on the left, where the value is on the right ---------- */
+.summary {
+  padding: 1.4rem 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 1.5rem 2.5rem;
+  align-items: start;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.worth {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: clamp(2.2rem, 4.5vw, 3rem);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats {
+  margin: 1.1rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  gap: 0.5rem 2rem;
+}
+
+.stats dt {
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+
+.stats dd {
+  margin: 0.1rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats dd small {
+  margin-left: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.stats .down { color: var(--bad-ink); }
+.stats .up { color: var(--good-ink); }
+
+.note {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+}
+
+.stack {
+  margin-top: 0.6rem;
+  height: 0.85rem;
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.stack span {
+  min-width: 4px;
+  background: var(--cat);
+}
+
+.cats {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 0.15rem 1.5rem;
+}
+
+.cats li {
+  padding: 0.4rem 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.cat-dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  color: var(--cat-ink);
+  background: var(--cat);
+  border-radius: 7px;
+}
+
+.cat-name {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cat-name small {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.cat-share {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.cats b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Toolbar ---------- */
+.toolbar {
+  margin: 0.75rem -0.5rem 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toolbar .search {
+  flex: 1;
+}
+
+.sort {
+  flex: none;
+  width: 12.5rem;
+}
+
+/* ---------- Cards ---------- */
+.things {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr));
+  gap: 0.9rem;
+}
+
+.thing {
+  position: relative;
+  padding: 1rem 1.1rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  /* A thin band of the category colour along the top */
+  box-shadow: inset 0 4px 0 var(--cat);
+  transition: translate 0.15s, box-shadow 0.15s;
+}
+
+.thing:hover {
+  translate: 0 -2px;
+  box-shadow: inset 0 4px 0 var(--cat), 0 14px 28px -18px rgb(var(--shadow) / 0.45);
+}
+
+.thing.editing {
+  outline: 2px solid var(--cat);
+  outline-offset: 3px;
+}
+
+.thing-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.thing-icon {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  color: var(--cat-ink);
+  background: var(--cat);
+  border-radius: 12px;
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.12);
+}
+
+.thing-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.thing-title strong {
+  font-size: 1.05rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.thing-title span {
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+
+/* Paid → worth now, side by side */
+.compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface-2);
+  border-radius: 12px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.col.end {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.k {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.col b {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.col small {
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.col .delta {
+  margin: 0;
+  font-weight: 700;
+}
+
+.arrow {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kept {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.kept-bar {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.kept-bar span {
+  display: block;
+  height: 100%;
+  background: var(--cat);
+  border-radius: inherit;
+}
+
+.kept-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.thing-notes {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+
+.thing .links {
+  margin-top: auto;
+}
+
+@media (max-width: 760px) {
+  .summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar .search {
+    flex-basis: 100%;
+    order: -1;
+  }
+
+  .sort {
+    flex: 1;
+    width: auto;
+  }
+}
+
 .add-btn {
   color: var(--accent);
   background: var(--surface);
@@ -383,12 +749,6 @@ function del(t: Thing) {
   border-radius: 6px;
 }
 
-.tag-paid {
-  font-size: 0.8rem;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-}
-
 .optional {
   font-weight: 400;
   color: var(--ink-3);
@@ -403,196 +763,12 @@ function del(t: Thing) {
   flex: 1;
 }
 
-.summary {
-  padding: 1.4rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-}
-
-.hero {
-  display: flex;
-  flex-direction: column;
-}
-
-.label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--ink-2);
-}
-
-.hero strong {
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
-.sub {
-  margin-top: 0.3rem;
-  font-size: 0.875rem;
-  color: var(--ink-2);
-}
-
-.cats {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.cats th,
-.cats td {
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-  font-weight: 500;
-}
-
-.cats .count {
-  color: var(--ink-3);
-  text-align: right;
-  padding-right: 1rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.cats .val {
-  text-align: right;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
 .sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
-}
-
-.toolbar {
-  margin: 1.25rem 0 0.75rem;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.toolbar .input:first-child {
-  flex: 1;
-}
-
-.sort {
-  width: auto;
-}
-
-.tags {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
-  gap: 1rem 0.9rem;
-}
-
-/* Price tag: angled left end, a punched hole, and a short string */
-.tag {
-  position: relative;
-  display: flex;
-  min-height: 11rem;
-  padding-left: 2.6rem;
-  /* Tinted card stock in the category colour */
-  background: color-mix(in srgb, var(--cat, var(--accent)) 11%, var(--surface));
-  clip-path: polygon(1.6rem 0, 100% 0, 100% 100%, 1.6rem 100%, 0 50%);
-  border-radius: 4px 16px 16px 4px;
-  filter: drop-shadow(0 1px 1px rgb(var(--shadow) / 0.12)) drop-shadow(0 6px 14px rgb(var(--shadow) / 0.08));
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
-}
-
-.tag:hover {
-  transform: rotate(-0.6deg) translateY(-2px);
-}
-
-.tag.editing {
-  background: color-mix(in srgb, var(--cat, var(--accent)) 24%, var(--surface));
-}
-
-.hole {
-  position: absolute;
-  top: 50%;
-  left: 1.05rem;
-  width: 0.75rem;
-  height: 0.75rem;
-  margin-top: -0.375rem;
-  border-radius: 50%;
-  background: var(--bg);
-  box-shadow: inset 0 1px 2px rgb(var(--shadow) / 0.35);
-}
-
-/* The string, tucked behind the tag and looping out of the hole */
-.hole::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: 50%;
-  width: 1.4rem;
-  height: 1px;
-  background: var(--cat, var(--accent));
-  transform: rotate(-24deg);
-  transform-origin: right center;
-}
-
-.tag-body {
-  flex: 1;
-  min-width: 0;
-  padding: 1rem 1.1rem 0.9rem 0.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  border-left: 1px dashed color-mix(in srgb, var(--cat, var(--accent)) 35%, var(--line));
-  padding-left: 0.9rem;
-}
-
-.tag-cat {
-  align-self: flex-start;
-  padding: 0.1rem 0.5rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--cat-ink, #fff);
-  background: var(--cat, var(--accent));
-  border-radius: 999px;
-}
-
-.cat-dot {
-  display: inline-grid;
-  place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  margin-right: 0.55rem;
-  vertical-align: middle;
-  font-size: 0.95rem;
-  color: var(--cat-ink);
-  background: var(--cat);
-  border-radius: 7px;
-}
-
-/* Category label on the left, its icon badge on the right */
-.tag-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.tag-icon {
-  flex: none;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: grid;
-  place-items: center;
-  font-size: 1.35rem;
-  color: var(--cat-ink);
-  background: var(--cat);
-  border-radius: 50%;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cat) 18%, transparent);
 }
 
 /* Icon picker in the popup: five per row */
@@ -657,37 +833,9 @@ function del(t: Thing) {
   background: var(--cat);
 }
 
-.tag-price {
-  margin-top: 0.2rem;
-  font-size: 1.6rem;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
-.tag-name {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.tag-meta,
-.tag-notes {
-  font-size: 0.8rem;
-  color: var(--ink-2);
-}
-
-.tag-notes {
-  color: var(--ink-3);
-}
-
 .links {
   display: flex;
   gap: 0.75rem;
-}
-
-.tag .links {
-  margin-top: auto;
-  padding-top: 0.6rem;
 }
 
 .link {
@@ -730,12 +878,7 @@ function del(t: Thing) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tag:hover { transform: none; }
-}
-
-
-
-@media (max-width: 560px) {
-  .summary { grid-template-columns: 1fr; }
+  .thing,
+  .thing:hover { translate: none; transition: none; }
 }
 </style>

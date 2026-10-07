@@ -438,7 +438,7 @@ async function copyImage() {
         </div>
       </Step>
 
-      <Step title="Preview" class="preview">
+      <Step title="Preview" v-sticky-fit class="preview">
         <div class="panel preview-panel">
           <!-- The code on a sheet of paper with printer's crop marks -->
           <div class="paper">

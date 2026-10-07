@@ -512,7 +512,7 @@ const PURITIES: { value: Purity, label: string }[] = [
     <ClientOnly>
       <div class="workspace">
         <!-- ===== Market ===== -->
-        <div class="market">
+        <div v-sticky-fit class="market">
           <!-- The quote: one gold bar of a card -->
           <Step :n="1" :title="w.step1" :hint="w.step1Hint">
             <section class="panel quote shine" aria-live="polite" @pointermove="onShineMove" @pointerleave="onShineLeave">
@@ -650,7 +650,7 @@ const PURITIES: { value: Purity, label: string }[] = [
         </div>
 
         <!-- ===== Units and ledger ===== -->
-        <div class="side">
+        <div v-sticky-fit class="side">
           <Step :n="3" :title="w.step3" :hint="w.step3Hint" class="ledger-step">
             <template #aside><DataSource :sync="sync" /></template>
 
@@ -721,7 +721,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                   </span>
                   <span class="p-actions">
                     <button type="button" class="link" @click="openEdit(p)">Edit</button>
-                    <button type="button" class="link danger" @click="del(p)">Delete</button>
+                    <ConfirmDelete class="link danger" name="this purchase" @confirm="del(p)" />
                   </span>
                 </footer>
               </li>
@@ -1661,6 +1661,15 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 @media (max-width: 1000px) {
   .workspace { grid-template-columns: 1fr; }
+}
+
+/* Side by side, the shorter column stays in view while the other scrolls (v-sticky-fit handles tall ones) */
+@media (min-width: 1001px) {
+  .market,
+  .side {
+    position: sticky;
+    top: 5.5rem;
+  }
 }
 
 @media (max-width: 560px) {

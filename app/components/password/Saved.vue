@@ -54,7 +54,6 @@ const iconUrl = (url?: string) => iconReady.value.get(faviconFor(url) ?? '')
 watch(() => vault.items.map(item => faviconFor(item.url)), (srcs) => {
   for (const src of srcs) if (src) preloadIcon(src)
 }, { immediate: true })
-const confirmingDelete = ref<string>()
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -96,16 +95,8 @@ async function copy(value: string, what: 'password' | 'username') {
   }
 }
 
-let confirmTimer: ReturnType<typeof setTimeout> | undefined
-async function askDelete(item: VaultItem) {
-  if (confirmingDelete.value !== item.id) {
-    // First click arms the button; a second click within 4 seconds deletes
-    confirmingDelete.value = item.id
-    clearTimeout(confirmTimer)
-    confirmTimer = setTimeout(() => (confirmingDelete.value = undefined), 4000)
-    return
-  }
-  confirmingDelete.value = undefined
+// The delete button asks for a second click before this runs
+async function deleteItem(item: VaultItem) {
   try {
     await remove(item.id)
     if (editing.value && editing.value.id === item.id) editing.value = undefined
@@ -142,10 +133,7 @@ function lockNow() {
   play('lock')
 }
 
-onBeforeUnmount(() => {
-  clearTimeout(clipboardTimer)
-  clearTimeout(confirmTimer)
-})
+onBeforeUnmount(() => clearTimeout(clipboardTimer))
 </script>
 
 <template>
@@ -172,7 +160,7 @@ onBeforeUnmount(() => {
 
       <div v-else class="workspace">
         <section class="list-side">
-          <div class="toolbar">
+          <div v-sticky-bar class="toolbar">
             <input
               v-model="query"
               class="input search"
@@ -236,17 +224,14 @@ onBeforeUnmount(() => {
 
               <div class="item-actions">
                 <button type="button" class="link" @click="editing = item">Edit</button>
-                <button type="button" class="link danger" @click="askDelete(item)">
-                  {{ confirmingDelete === item.id ? 'Click again to delete' : 'Delete' }}
-                </button>
+                <ConfirmDelete class="link danger" :name="item.site" @confirm="deleteItem(item)" />
               </div>
             </li>
           </ul>
         </section>
 
-        <aside class="editor-side">
-          <VaultEditor v-if="editing !== undefined" :item="editing ?? undefined" :prefill-password="editing ? undefined : prefill" @done="editorDone" />
-          <div v-else class="panel how">
+        <aside v-sticky-fit class="editor-side">
+          <div class="panel how">
             <h2>How your passwords are protected</h2>
             <ul>
               <li>Each entry is encrypted with AES-256 in this browser before it’s sent. Firebase only stores scrambled data.</li>
@@ -258,6 +243,11 @@ onBeforeUnmount(() => {
           </div>
         </aside>
       </div>
+
+      <!-- Adding and editing happen in a popup -->
+      <Modal :open="editing !== undefined" :title="editing ? `Edit ${editing.site}` : 'Add a password'" @close="editorDone">
+        <VaultEditor v-if="editing !== undefined" bare :item="editing ?? undefined" :prefill-password="editing ? undefined : prefill" @done="editorDone" />
+      </Modal>
 
       <template #fallback>
         <section class="panel loading" aria-busy="true">Opening your vault…</section>

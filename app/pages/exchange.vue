@@ -207,7 +207,7 @@ async function reloadRate() {
         </section>
       </div>
 
-      <Step :n="3" :title="mode === 'check' ? 'Do you gain or lose?' : 'Gain or loss if you convert back today'" class="result-step">
+      <Step :n="3" :title="mode === 'check' ? 'Do you gain or lose?' : 'Gain or loss if you convert back today'" v-sticky-fit class="result-step">
         <!-- Printed like a money changer's receipt: header, dashed rules, a bold total, a torn edge -->
         <div v-if="result" class="result receipt" :data-verdict="result.verdict" aria-live="polite">
           <header class="receipt-head">

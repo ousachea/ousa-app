@@ -256,7 +256,7 @@ function del(r: Renewal) {
                 </div>
                 <span class="links">
                   <button type="button" class="link" @click="edit(r)">Edit</button>
-                  <button type="button" class="link danger" @click="del(r)">Delete</button>
+                  <ConfirmDelete class="link danger" :name="r.name" @confirm="del(r)" />
                 </span>
               </li>
             </ul>

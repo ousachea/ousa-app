@@ -237,6 +237,29 @@ textarea.input {
   line-height: 1.45;
 }
 
+/* Search, sort and filter bars on long lists stay pinned under the back and menu buttons
+   (v-sticky-bar, plugins/sticky.ts). Once pinned they get a frosted backing so the list can pass beneath. */
+.sticky-bar {
+  position: sticky;
+  top: 5rem;
+  z-index: 30;
+  margin-inline: -0.5rem;
+  padding: 0.5rem;
+  border-radius: 16px;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.sticky-bar.is-stuck {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  box-shadow: 0 10px 24px -14px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
+  backdrop-filter: blur(14px);
+}
+
+:root[data-effects='lite'] .sticky-bar.is-stuck {
+  background: var(--bg);
+  backdrop-filter: none;
+}
+
 input[type='range'] {
   width: 100%;
   margin: 0;

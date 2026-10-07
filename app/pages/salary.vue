@@ -688,7 +688,7 @@ function switchCurrency(next) {
         </div>
 
         <!-- ===== Results ===== -->
-        <aside class="results">
+        <aside v-sticky-fit class="results">
           <!-- How much of the raise survives tax -->
           <section class="panel keep">
             <div

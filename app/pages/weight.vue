@@ -266,7 +266,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
                   <tr v-for="e in [...sorted].reverse()" :key="e.id">
                     <td>{{ formatDate(e.date, true) }}</td>
                     <td class="num">{{ fmt(e.kg) }}</td>
-                    <td class="act"><button type="button" class="link danger" @click="del(e)">Delete</button></td>
+                    <td class="act"><ConfirmDelete class="link danger" name="this entry" @confirm="del(e)" /></td>
                   </tr>
                 </tbody>
               </table>

@@ -17,12 +17,13 @@ const blank = () => ({ title: '', date: '', time: '' })
 const form = reactive(blank())
 
 // Times every 15 minutes, plus whatever odd time an existing countdown already has
-const timeOptions = computed(() => {
+function timeOptionsFor(current: string) {
   const label = (t: string) => new Date(`2000-01-01T${t}`).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true })
   const times = Array.from({ length: 96 }, (_, i) => `${String(Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`)
-  if (form.time && !times.includes(form.time)) times.push(form.time)
+  if (current && !times.includes(current)) times.push(current)
   return [{ value: '', label: 'Any time' }, ...times.sort().map(t => ({ value: t, label: label(t) }))]
-})
+}
+const timeOptions = computed(() => timeOptionsFor(form.time))
 const editingId = ref<string>()
 
 // Tick once a second so the featured countdown is live
@@ -118,6 +119,8 @@ const events = computed(() => items.value
 const upcoming = computed(() => events.value.filter(e => e.left > 0))
 const past = computed(() => events.value.filter(e => e.left <= 0).reverse())
 const featured = computed(() => upcoming.value[0])
+// The cards below the banner, so the next date isn't shown twice
+const later = computed(() => upcoming.value.slice(1))
 
 function parts(ms: number) {
   const s = Math.max(Math.floor(ms / 1000), 0)
@@ -149,26 +152,33 @@ const canSave = computed(() => form.title.trim() && form.date)
 
 function save() {
   if (!canSave.value) return
-  if (editingId.value) {
-    update(editingId.value, { title: form.title.trim(), date: form.date, time: form.time })
-    toast.success('Changes saved')
-  } else {
-    add({ title: form.title.trim(), date: form.date, time: form.time, createdAt: new Date().toISOString() })
-    toast.success(`Counting down to ${form.title.trim()}`)
-  }
+  add({ title: form.title.trim(), date: form.date, time: form.time, createdAt: new Date().toISOString() })
+  toast.success(`Counting down to ${form.title.trim()}`)
+  play('success')
+  Object.assign(form, blank())
+}
+
+// ---------- Editing, in a popup ----------
+const editForm = reactive(blank())
+const canSaveEdit = computed(() => editForm.title.trim() && editForm.date)
+const editTimeOptions = computed(() => timeOptionsFor(editForm.time))
+
+function edit(e: CountdownEvent) {
+  editingId.value = e.id
+  Object.assign(editForm, { title: e.title, date: e.date, time: e.time })
+  play('open')
+}
+
+function saveEdit() {
+  if (!editingId.value || !canSaveEdit.value) return
+  update(editingId.value, { title: editForm.title.trim(), date: editForm.date, time: editForm.time })
+  toast.success('Changes saved')
   play('success')
   cancel()
 }
 
-function edit(e: CountdownEvent) {
-  editingId.value = e.id
-  Object.assign(form, { title: e.title, date: e.date, time: e.time })
-  play('select')
-}
-
 function cancel() {
   editingId.value = undefined
-  Object.assign(form, blank())
 }
 
 function del(e: CountdownEvent) {
@@ -195,7 +205,7 @@ function del(e: CountdownEvent) {
     <div class="workspace">
       <!-- One-row add bar resting on the band -->
       <div class="form-step">
-        <form class="panel form" :aria-label="editingId ? 'Edit date' : 'Add a date'" @submit.prevent="save">
+        <form class="panel form" aria-label="Add a date" @submit.prevent="save">
           <label class="field">
             <span class="field-head">What’s happening?</span>
             <input v-model="form.title" class="input" placeholder="Khmer New Year, trip to Siem Reap…" required>
@@ -203,7 +213,7 @@ function del(e: CountdownEvent) {
           <div class="row">
             <label class="field">
               <span class="field-head">Date</span>
-              <DatePicker v-model="form.date" aria-label="Date" :min="editingId ? undefined : isoToday()" required />
+              <DatePicker v-model="form.date" aria-label="Date" :min="isoToday()" required />
             </label>
             <label class="field">
               <span class="field-head">Time <span class="optional">Optional</span></span>
@@ -211,20 +221,33 @@ function del(e: CountdownEvent) {
             </label>
           </div>
           <div class="actions">
-            <button type="submit" class="btn" :disabled="!canSave">{{ editingId ? 'Save changes' : 'Start countdown' }}</button>
-            <button v-if="editingId" type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
+            <button type="submit" class="btn" :disabled="!canSave">Start countdown</button>
           </div>
         </form>
       </div>
 
-      <Step title="Coming up" class="list-step">
+      <Step title="Coming up" v-sticky-fit class="list-step">
         <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
-            <section v-if="featured" class="panel featured" aria-live="off">
-              <span class="label">Next up</span>
-              <h2>{{ featured.title }}</h2>
-              <p class="when-text">{{ formatWhen(featured) }}</p>
+            <!-- The next date gets the spotlight: name and date on the left, a live flip clock on the right -->
+            <section v-if="featured" class="panel featured" :class="{ editing: editingId === featured.id }" aria-live="off">
+              <div class="featured-text">
+                <span class="label">Next up</span>
+                <h2>{{ featured.title }}</h2>
+                <p class="when-text">{{ formatWhen(featured) }}</p>
+                <div class="featured-progress">
+                  <span class="bar" role="img" :aria-label="`${Math.round(featured.progress * 100)}% of the wait has passed`">
+                    <span :style="{ transform: `scaleX(${featured.progress})` }" />
+                  </span>
+                  <span class="bar-text">{{ Math.round(featured.progress * 100) }}% of the wait done</span>
+                </div>
+                <span class="links">
+                  <CalendarAdd :title="featured.title" :date="featured.date" :time="featured.time" details="Counting down in Ousa’s Apps" />
+                  <button type="button" class="link" @click="edit(featured)">Edit</button>
+                  <ConfirmDelete class="link" :name="featured.title" @confirm="del(featured)" />
+                </span>
+              </div>
               <div class="clock" role="timer" :aria-label="`${parts(featured.left).days} days left`">
                 <div v-for="(v, k) in parts(featured.left)" :key="k" class="unit">
                   <strong>{{ String(v).padStart(k === 'days' ? 1 : 2, '0') }}</strong>
@@ -233,9 +256,10 @@ function del(e: CountdownEvent) {
               </div>
             </section>
 
-            <!-- Each date is a page torn from a desk calendar -->
-            <ul v-if="upcoming.length" class="pages">
-              <li v-for="e in upcoming" :key="e.id" class="page" :class="{ editing: editingId === e.id }">
+            <!-- Each later date is a page torn from a desk calendar -->
+            <h3 v-if="later.length" class="later-head">After that</h3>
+            <ul v-if="later.length" class="pages">
+              <li v-for="e in later" :key="e.id" class="page" :class="{ editing: editingId === e.id }">
                 <span class="rings" aria-hidden="true"><i /><i /></span>
                 <span class="month">{{ monthOf(e) }}</span>
                 <strong class="day">{{ dayOf(e) }}</strong>
@@ -248,12 +272,13 @@ function del(e: CountdownEvent) {
                   <span :style="{ transform: `scaleX(${e.progress})` }" />
                 </span>
                 <span class="links">
+                  <CalendarAdd :title="e.title" :date="e.date" :time="e.time" details="Counting down in Ousa’s Apps" label="Calendar" />
                   <button type="button" class="link" @click="edit(e)">Edit</button>
-                  <button type="button" class="link danger" @click="del(e)">Delete</button>
+                  <ConfirmDelete class="link danger" :name="e.title" @confirm="del(e)" />
                 </span>
               </li>
             </ul>
-            <p v-else class="panel all-past">Everything has already happened. Add a new date to count down to.</p>
+            <p v-else-if="!featured" class="panel all-past">Everything has already happened. Add a new date to count down to.</p>
 
             <section v-if="past.length" class="past">
               <h3>Already happened</h3>
@@ -261,7 +286,7 @@ function del(e: CountdownEvent) {
                 <li v-for="e in past" :key="e.id">
                   <span>{{ e.title }}</span>
                   <span class="meta">{{ agoText(e.left) }}</span>
-                  <button type="button" class="link danger" @click="del(e)">Delete</button>
+                  <ConfirmDelete class="link danger" :name="e.title" @confirm="del(e)" />
                 </li>
               </ul>
             </section>
@@ -274,7 +299,7 @@ function del(e: CountdownEvent) {
         </ClientOnly>
       </Step>
 
-      <Step title="Cambodian public holidays" hint="Official days off. Lunar dates move every year, so they’re fetched fresh." class="holiday-step">
+      <Step title="Cambodian public holidays" hint="Official days off. Lunar dates move every year, so they’re fetched fresh." v-sticky-fit class="holiday-step">
         <ClientOnly>
           <div v-if="holidayStatus === 'error'" class="panel holiday-msg">
             <p>Couldn’t load the holiday list.</p>
@@ -309,7 +334,7 @@ function del(e: CountdownEvent) {
                 </span>
                 <span class="h-text">
                   <span class="h-name">{{ h.name }}</span>
-                  <span class="h-km km" lang="km">{{ h.localName }}</span>
+                  <span class="h-km km" lang="km" :title="h.localName">{{ h.localName }}</span>
                   <span class="h-meta">{{ holidayRange(h) }}<template v-if="h.days > 1"> · {{ h.days }} days</template></span>
                 </span>
                 <span class="h-side">
@@ -327,6 +352,28 @@ function del(e: CountdownEvent) {
         </ClientOnly>
       </Step>
     </div>
+    <Modal :open="!!editingId" title="Edit countdown" @close="cancel">
+      <form class="edit-form" @submit.prevent="saveEdit">
+        <label class="field">
+          <span class="field-head">What’s happening?</span>
+          <input v-model="editForm.title" class="input" required>
+        </label>
+        <div class="edit-row">
+          <label class="field">
+            <span class="field-head">Date</span>
+            <DatePicker v-model="editForm.date" aria-label="Date" required />
+          </label>
+          <label class="field">
+            <span class="field-head">Time <span class="optional">Optional</span></span>
+            <AppSelect v-model="editForm.time" aria-label="Time" :options="editTimeOptions" placeholder="Any time" />
+          </label>
+        </div>
+        <div class="edit-actions">
+          <button type="submit" class="btn" :disabled="!canSaveEdit">Save changes</button>
+          <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
+        </div>
+      </form>
+    </Modal>
   </ToolPage>
 </template>
 
@@ -363,6 +410,31 @@ function del(e: CountdownEvent) {
   color: var(--ink-3);
 }
 
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-actions .btn:first-child {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .edit-row { grid-template-columns: 1fr; }
+}
+
 .actions {
   flex: 0 0 auto;
   display: flex;
@@ -374,10 +446,91 @@ function del(e: CountdownEvent) {
 }
 
 .featured {
+  position: relative;
+  overflow: hidden;
   padding: 1.6rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem 2rem;
+  align-items: center;
   color: #fff;
-  background: var(--accent);
+  /* A soft light from the top-left corner so the banner isn't a flat slab of colour */
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(255 255 255 / 0.18), transparent 55%),
+    linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #1b1f2a));
   border: 0;
+  box-shadow: 0 18px 40px -22px color-mix(in srgb, var(--accent) 80%, black);
+}
+
+.featured.editing {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.featured-text {
+  min-width: 0;
+}
+
+.featured-progress {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 26rem;
+}
+
+.featured-progress .bar {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.22);
+}
+
+.featured-progress .bar span {
+  display: block;
+  height: 100%;
+  background: #fff;
+  border-radius: inherit;
+  transform-origin: left;
+}
+
+.bar-text {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.featured .links {
+  margin-top: 0.9rem;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.featured .link {
+  color: rgb(255 255 255 / 0.85);
+}
+
+.featured .link:hover {
+  color: #fff;
+}
+
+/* Wide enough: the clock moves beside the name */
+@media (min-width: 1200px) {
+  .featured {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    padding: 1.8rem 2rem;
+  }
+
+  .featured .clock {
+    margin-top: 0;
+  }
+}
+
+.later-head {
+  margin: 1.75rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ink-2);
 }
 
 .featured .label {
@@ -440,10 +593,11 @@ function del(e: CountdownEvent) {
 
 .pages {
   list-style: none;
-  margin: 1.5rem 0 0;
+  margin: 1.1rem 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  /* Two pages side by side even on a phone */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
   gap: 1.25rem 1rem;
 }
 
@@ -549,6 +703,9 @@ function del(e: CountdownEvent) {
 
 .page .links {
   margin-top: 0.7rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: var(--ink-2);
 }
 
 .links {
@@ -687,6 +844,13 @@ function del(e: CountdownEvent) {
 
   .form-step {
     grid-column: 1 / -1;
+  }
+
+  /* The shorter column stays in view while the other scrolls (v-sticky-fit handles tall ones) */
+  .list-step,
+  .holiday-step {
+    position: sticky;
+    top: 5.5rem;
   }
 }
 
@@ -834,6 +998,10 @@ function del(e: CountdownEvent) {
 .h-km {
   font-size: 0.85rem;
   color: var(--ink-2);
+  /* Long Khmer names stay on one line; the full name is in the English title above */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .h-meta {

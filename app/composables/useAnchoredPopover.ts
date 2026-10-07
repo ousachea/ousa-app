@@ -1,6 +1,7 @@
 // A panel that opens next to a trigger: dropdown lists, the date picker.
 // Uses the Popover API so the panel renders in the top layer, above page content and inside
 // native <dialog> popups alike, then places it under the trigger (or above when there's no room).
+// Components bind `is-open` (for the entrance animation) and `from-above`/`from-below` from `open` and `placement`.
 export function useAnchoredPopover(
   anchor: Ref<HTMLElement | undefined>,
   panel: Ref<HTMLElement | undefined>,
@@ -37,7 +38,6 @@ export function useAnchoredPopover(
     if (!p || open.value) return
     open.value = true
     p.showPopover?.()
-    p.classList.add('is-open')
     position()
     window.addEventListener('resize', position)
     window.addEventListener('scroll', position, { capture: true, passive: true })
@@ -48,10 +48,7 @@ export function useAnchoredPopover(
     if (!open.value) return
     open.value = false
     const p = panel.value
-    if (p) {
-      p.classList.remove('is-open')
-      if (p.matches?.(':popover-open')) p.hidePopover?.()
-    }
+    if (p?.matches?.(':popover-open')) p.hidePopover?.()
     window.removeEventListener('resize', position)
     window.removeEventListener('scroll', position, { capture: true })
     document.removeEventListener('pointerdown', onOutside, true)

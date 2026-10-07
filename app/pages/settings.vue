@@ -105,7 +105,7 @@ const volume = computed({
   <ToolPage>
     <ClientOnly>
       <div class="layout">
-        <div class="side">
+        <div v-sticky-fit class="side">
         <Step :n="1" title="Pick a theme" hint="System follows your device’s light or dark setting.">
           <div class="panel appearance">
             <div class="segmented" role="radiogroup" aria-label="Theme">

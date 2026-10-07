@@ -46,6 +46,11 @@ const { items, ready, sync, add, update, remove, restore } = useCollection<Spot>
 const form = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'] })
 const photo = ref<{ blob: Blob, preview: string }>()
 const saving = ref(false)
+// Editing happens in a popup with its own copy of the fields
+const editingId = ref<string>()
+const editForm = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'] })
+const editPhoto = ref<{ blob: Blob, preview: string }>()
+const editingSpot = computed(() => items.value.find(s => s.id === editingId.value))
 const PHOTO_SIZE = 800
 
 // Crop to a centred square and shrink to 800×800 WebP in the browser, so files stay small
@@ -95,6 +100,61 @@ async function uploadPhoto(blob: Blob) {
   return res.path
 }
 
+function edit(s: Spot) {
+  editingId.value = s.id
+  Object.assign(editForm, { name: s.name, kind: s.kind, note: s.note ?? '', price: s.price })
+  clearEditPhoto()
+  play('open')
+}
+
+function clearEditPhoto() {
+  if (editPhoto.value) URL.revokeObjectURL(editPhoto.value.preview)
+  editPhoto.value = undefined
+}
+
+function cancelEdit() {
+  editingId.value = undefined
+  clearEditPhoto()
+}
+
+async function onEditPhotoPick(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    toast.error('That file isn’t an image')
+    return
+  }
+  try {
+    const blob = await squarePhoto(file)
+    clearEditPhoto()
+    editPhoto.value = { blob, preview: URL.createObjectURL(blob) }
+    play('drop')
+  } catch {
+    toast.error('Couldn’t read that image')
+  }
+}
+
+async function saveEdit() {
+  const id = editingId.value
+  if (!id || !editForm.name.trim() || saving.value) return
+  saving.value = true
+  let image: string | undefined
+  try {
+    if (editPhoto.value) image = await uploadPhoto(editPhoto.value.blob)
+  } catch (e) {
+    const message = (e as { data?: { message?: string } }).data?.message
+    toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed. Your other changes were saved.' })
+  }
+  // Changes show straight away on its card, in the deck and on the shortlist
+  update(id, { name: editForm.name.trim(), kind: editForm.kind, note: editForm.note.trim(), price: editForm.price, ...(image ? { image } : {}) })
+  toast.success(`${editForm.name.trim()} updated`)
+  play('success')
+  saving.value = false
+  cancelEdit()
+}
+
 async function save() {
   if (!form.name.trim() || saving.value) return
   saving.value = true
@@ -114,7 +174,10 @@ async function save() {
   saving.value = false
 }
 
-onBeforeUnmount(clearPhoto)
+onBeforeUnmount(() => {
+  clearPhoto()
+  clearEditPhoto()
+})
 
 // Add or replace the photo of something already in the list
 async function setPhoto(spot: Spot, e: Event) {
@@ -137,6 +200,10 @@ async function setPhoto(spot: Spot, e: Event) {
 function del(s: Spot) {
   const removed = remove(s.id)
   deck.value = deck.value.filter(id => id !== s.id)
+  liked.value = liked.value.filter(id => id !== s.id)
+  if (editingId.value === s.id) cancelEdit()
+  // A head-to-head that included it starts over with what's left
+  if (duel.value && (duel.value.champ === s.id || duel.value.queue.includes(s.id))) duel.value = undefined
   play('delete')
   toast(`${s.name} deleted`, { action: { label: 'Undo', onClick: () => { if (removed) { restore(removed); deck.value.push(removed.id) } } } })
 }
@@ -157,9 +224,11 @@ function shuffle() {
   }
   deck.value = ids
   chosen.value = undefined
+  duel.value = undefined
 }
 
 function startOver() {
+  duel.value = undefined
   liked.value = []
   shuffle()
   play('retry')
@@ -168,6 +237,52 @@ function startOver() {
 function unlike(id: string) {
   liked.value = liked.value.filter(x => x !== id)
   play('remove-from-cart')
+}
+
+// ---------- Narrow it down: two at a time until one is left ----------
+// The one you'd rather have stays and meets the next; the other leaves the shortlist.
+const duel = ref<{ champ: string, queue: string[], round: number, total: number }>()
+const duelPair = computed(() => {
+  if (!duel.value) return undefined
+  const a = byId(duel.value.champ)
+  const b = byId(duel.value.queue[0])
+  return a && b ? [a, b] as const : undefined
+})
+
+function narrow() {
+  const ids = [...liked.value]
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[ids[i], ids[j]] = [ids[j]!, ids[i]!]
+  }
+  if (ids.length < 2) return pickOne()
+  chosen.value = undefined
+  duel.value = { champ: ids[0]!, queue: ids.slice(1), round: 1, total: ids.length - 1 }
+  play('start')
+}
+
+function keep(side: 0 | 1) {
+  const d = duel.value
+  const pair = duelPair.value
+  if (!d || !pair) return
+  const winner = pair[side]
+  const loser = pair[side === 0 ? 1 : 0]
+  liked.value = liked.value.filter(id => id !== loser.id)
+  const rest = d.queue.slice(1)
+  if (rest.length) {
+    duel.value = { ...d, champ: winner.id, queue: rest, round: d.round + 1 }
+    play('select')
+    return
+  }
+  duel.value = undefined
+  chosen.value = winner
+  play('level-up')
+  toast.success(`${winner.name} it is`, { description: 'Your favourite, fair and square. Enjoy!' })
+}
+
+function randomFromDuel() {
+  duel.value = undefined
+  pickOne()
 }
 
 // Choose at random among the liked ones, avoiding the current pick when there's another option
@@ -183,6 +298,15 @@ function pickOne() {
 watch([ready, filter], ([r]) => {
   if (r) shuffle()
 })
+
+// Switching the example data on or off swaps every card, so deal a fresh deck from the new list.
+// flush 'post' waits until the collection has swapped its items.
+const demoActive = useDemoState(useRoute().path).active
+watch(demoActive, () => {
+  liked.value = []
+  editingId.value = undefined
+  shuffle()
+}, { flush: 'post' })
 
 const byId = (id?: string) => items.value.find(s => s.id === id)
 const shortlist = computed(() => liked.value.map(id => byId(id)).filter((s): s is Spot => !!s))
@@ -230,6 +354,13 @@ function decide(dir: 'left' | 'right') {
 }
 
 function onKey(e: KeyboardEvent) {
+  if (duelPair.value) {
+    if (e.key === 'ArrowLeft') keep(0)
+    else if (e.key === 'ArrowRight') keep(1)
+    else return
+    e.preventDefault()
+    return
+  }
   if (chosen.value || !current.value) return
   if (e.key === 'ArrowRight') decide('right')
   else if (e.key === 'ArrowLeft') decide('left')
@@ -267,7 +398,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   <ToolPage>
     <!-- Centre stage: the deck. Managing the list lives underneath (beside it on wide screens). -->
     <div class="eat-layout">
-    <section class="stage-area" aria-label="Swipe to decide">
+    <section v-sticky-fit class="stage-area" aria-label="Swipe to decide">
       <div class="stage-top">
         <div class="segmented filter" role="radiogroup" aria-label="Show">
           <label v-for="f in FILTERS" :key="f.value" :class="{ active: filter === f.value }">
@@ -280,13 +411,45 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
       <ClientOnly>
         <div class="stage" tabindex="0" aria-label="Food cards. Use the left and right arrow keys to decide." @keydown="onKey">
-          <div v-if="chosen" class="panel chosen" role="status">
+          <!-- Narrowing down: tap the one you'd rather have -->
+          <div v-if="duelPair && duel" class="duel" role="group" aria-label="Which one would you rather have?">
+            <div class="duel-head">
+              <strong>Which sounds better?</strong>
+              <span>Round {{ duel.round }} of {{ duel.total }}</span>
+            </div>
+            <div class="duel-cards">
+              <button
+                v-for="(s, i) in duelPair"
+                :key="s.id"
+                type="button"
+                class="duel-card"
+                :class="{ 'has-photo': s.image }"
+                :data-kind="s.kind"
+                :style="photoStyle(s)"
+                :aria-label="`Keep ${s.name}`"
+                @click="keep(i as 0 | 1)"
+              >
+                <span class="badge">{{ s.kind === 'food' ? 'Food' : 'Place' }}</span>
+                <strong>{{ s.name }}</strong>
+                <span v-if="s.note" class="duel-note">{{ s.note }}</span>
+                <span class="price">{{ priceText(s.price) }}</span>
+              </button>
+              <span class="vs" aria-hidden="true">or</span>
+            </div>
+            <div class="duel-progress" aria-hidden="true"><span :style="{ width: `${((duel.round - 1) / duel.total) * 100}%` }" /></div>
+            <div class="duel-foot">
+              <button type="button" class="link" @click="randomFromDuel">Can’t decide? Pick at random</button>
+              <button type="button" class="link" @click="duel = undefined">Stop</button>
+            </div>
+          </div>
+
+          <div v-else-if="chosen" class="panel chosen" role="status">
             <img v-if="chosen.image" :src="chosen.image" alt="" class="chosen-photo">
             <span class="label">You’re eating</span>
             <h2>{{ chosen.name }}</h2>
             <p v-if="chosen.note">{{ chosen.note }}</p>
             <div class="chosen-actions">
-              <button v-if="shortlist.length > 1" type="button" class="btn" @click="pickOne">Pick another</button>
+              <button v-if="shortlist.length > 1" type="button" class="btn" @click="narrow">Narrow it down</button>
               <button v-if="current" type="button" class="btn btn-quiet" @click="chosen = undefined">Keep swiping</button>
               <button type="button" class="btn btn-quiet" @click="startOver">Start over</button>
             </div>
@@ -317,9 +480,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
           <div v-else-if="ready && shortlist.length" class="panel out">
             <h2>You liked {{ shortlist.length }}</h2>
-            <p>{{ shortlist.length === 1 ? `Looks like ${shortlist[0]!.name} it is.` : 'Let the app choose one from your shortlist.' }}</p>
+            <p>{{ shortlist.length === 1 ? `Looks like ${shortlist[0]!.name} it is.` : 'Compare them two at a time until one is left, or let the app choose.' }}</p>
             <div class="chosen-actions">
-              <button type="button" class="btn" @click="pickOne">{{ shortlist.length === 1 ? `Eat ${shortlist[0]!.name}` : 'Pick one for me' }}</button>
+              <button type="button" class="btn" @click="shortlist.length === 1 ? pickOne() : narrow()">{{ shortlist.length === 1 ? `Eat ${shortlist[0]!.name}` : 'Narrow it down' }}</button>
+              <button v-if="shortlist.length > 1" type="button" class="btn btn-quiet" @click="pickOne">Pick at random</button>
               <button type="button" class="btn btn-quiet" @click="startOver">Start over</button>
             </div>
           </div>
@@ -331,7 +495,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           </div>
         </div>
 
-        <div v-if="current && !chosen" class="buttons">
+        <div v-if="current && !chosen && !duel" class="buttons">
           <button type="button" class="btn btn-quiet round" aria-label="Not today" @click="decide('left')">✕</button>
           <button type="button" class="btn round" aria-label="Add to shortlist" @click="decide('right')">♥</button>
         </div>
@@ -343,10 +507,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             <li v-for="s in shortlist" :key="s.id" class="chip" :class="{ picked: chosen?.id === s.id }">
               <span class="chip-img" :data-kind="s.kind" :style="photoStyle(s)" aria-hidden="true" />
               {{ s.name }}
-              <button type="button" class="chip-x" :aria-label="`Remove ${s.name} from shortlist`" @click="unlike(s.id)">×</button>
+              <button v-if="!duel" type="button" class="chip-x" :aria-label="`Remove ${s.name} from shortlist`" @click="unlike(s.id)">×</button>
             </li>
           </TransitionGroup>
-          <button v-if="shortlist.length > 1 && !chosen && current" type="button" class="btn btn-sm" @click="pickOne">Pick one for me</button>
+          <button v-if="shortlist.length > 1 && !chosen && !duel && current" type="button" class="btn btn-sm" @click="narrow">Narrow it down</button>
         </section>
       </ClientOnly>
     </section>
@@ -386,13 +550,13 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               </label>
             </div>
           </div>
-          <button type="submit" class="btn" :disabled="!form.name.trim() || saving">{{ saving ? 'Saving photo…' : 'Save' }}</button>
+          <button type="submit" class="btn" :disabled="!form.name.trim() || saving">{{ saving && !editingId ? 'Saving photo…' : 'Save' }}</button>
           <p class="hint">Photos are cropped square and saved to <code>public/eat/</code> in this project, so you can commit them. That only works while running the app locally.</p>
         </form>
 
         <ClientOnly>
           <ul v-if="items.length" class="thumbs">
-            <li v-for="s in items" :key="s.id" class="thumb" :data-kind="s.kind">
+            <li v-for="s in items" :key="s.id" class="thumb" :class="{ editing: editingId === s.id }" :data-kind="s.kind">
               <!-- Click a thumbnail to add or replace its photo -->
               <label class="thumb-img" :style="photoStyle(s)" :title="s.image ? 'Replace photo' : 'Add a photo'">
                 <input type="file" accept="image/*" :aria-label="s.image ? `Replace photo of ${s.name}` : `Add a photo of ${s.name}`" @change="setPhoto(s, $event)">
@@ -400,13 +564,55 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
                 <span class="thumb-hint" aria-hidden="true">{{ s.image ? 'Replace photo' : '+ Photo' }}</span>
               </label>
               <span class="thumb-name">{{ s.name }}</span>
-              <button type="button" class="link danger" :aria-label="`Delete ${s.name}`" @click="del(s)">Delete</button>
+              <span class="thumb-links">
+                <button type="button" class="link" :aria-label="`Edit ${s.name}`" @click="edit(s)">Edit</button>
+                <ConfirmDelete class="link danger" :name="s.name" @confirm="del(s)" />
+              </span>
             </li>
           </ul>
         </ClientOnly>
       </div>
     </section>
     </div>
+    <Modal :open="!!editingId" :title="editingSpot ? `Edit ${editingSpot.name}` : 'Edit'" @close="cancelEdit">
+      <form class="form edit-form" @submit.prevent="saveEdit">
+        <div class="segmented" role="radiogroup" aria-label="Type">
+          <label :class="{ active: editForm.kind === 'food' }"><input v-model="editForm.kind" type="radio" value="food">A food</label>
+          <label :class="{ active: editForm.kind === 'place' }"><input v-model="editForm.kind" type="radio" value="place">A place</label>
+        </div>
+        <div class="form-row">
+          <label class="photo-pick" :class="{ filled: editPhoto || editingSpot?.image }">
+            <input type="file" accept="image/*" aria-label="Choose a new photo" @change="onEditPhotoPick">
+            <img v-if="editPhoto" :src="editPhoto.preview" alt="New photo preview">
+            <img v-else-if="editingSpot?.image" :src="editingSpot.image" alt="Current photo">
+            <span v-else>+ Photo</span>
+          </label>
+          <div class="form-fields">
+            <label class="field">
+              <span class="field-head">Name</span>
+              <input v-model="editForm.name" class="input" required>
+            </label>
+            <label class="field">
+              <span class="field-head">Note <span class="optional">Optional</span></span>
+              <input v-model="editForm.note" class="input" placeholder="Extra spicy, good for lunch…">
+            </label>
+          </div>
+        </div>
+        <button v-if="editPhoto" type="button" class="link remove-photo" @click="clearEditPhoto">Keep the old photo</button>
+        <div class="field">
+          <span class="field-head">Price</span>
+          <div class="segmented" role="radiogroup" aria-label="Price">
+            <label v-for="p in ([1, 2, 3] as const)" :key="p" :class="{ active: editForm.price === p }">
+              <input v-model="editForm.price" type="radio" :value="p">{{ priceText(p) }}
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn" :disabled="!editForm.name.trim() || saving">{{ saving ? 'Saving photo…' : 'Save changes' }}</button>
+          <button type="button" class="btn btn-quiet" @click="cancelEdit">Cancel</button>
+        </div>
+      </form>
+    </Modal>
   </ToolPage>
 </template>
 
@@ -619,6 +825,33 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 .thumb[data-kind='place'] .thumb-img {
   background: var(--photo, none) center / cover, var(--indigo);
+}
+
+.thumb-links {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.thumb.editing .thumb-img {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Inside the popup the dialog is already the panel */
+.edit-form {
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-actions .btn:first-child {
+  flex: 1;
 }
 
 .thumb-name {
@@ -906,7 +1139,151 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .chosen-actions {
   margin-top: 1.5rem;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.5rem;
+}
+
+/* ---------- Narrow it down: two cards, tap the keeper ---------- */
+.duel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.duel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.duel-head strong {
+  font-size: 1.1rem;
+}
+
+.duel-head span {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.duel-cards {
+  position: relative;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.duel-card {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 0.3rem;
+  text-align: left;
+  font: inherit;
+  color: #fff;
+  background:
+    radial-gradient(circle at 80% 15%, rgb(255 255 255 / 0.22), transparent 45%),
+    var(--accent);
+  border: 0;
+  border-radius: 20px;
+  box-shadow: 0 0 0 3px var(--plastic), 0 14px 30px -16px rgb(var(--shadow) / 0.5);
+  cursor: pointer;
+  transition: translate 0.15s, box-shadow 0.15s, scale 0.12s;
+}
+
+.duel-card[data-kind='place'] {
+  background:
+    radial-gradient(circle at 80% 15%, rgb(255 255 255 / 0.22), transparent 45%),
+    var(--indigo);
+}
+
+.duel-card.has-photo {
+  background:
+    linear-gradient(to bottom, rgb(0 0 0 / 0) 30%, rgb(0 0 0 / 0.75)),
+    var(--photo) center / cover;
+}
+
+.duel-card:hover {
+  translate: 0 -3px;
+  box-shadow: 0 0 0 3px var(--plastic), 0 0 0 7px var(--green), 0 18px 34px -16px rgb(var(--shadow) / 0.55);
+}
+
+.duel-card:active {
+  scale: 0.97;
+}
+
+.duel-card:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 4px;
+}
+
+.duel-card strong {
+  font-size: clamp(1.15rem, 3.5vw, 1.45rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.duel-note {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* "or" sits on the seam between the two cards */
+.vs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--bg), 0 4px 10px rgb(var(--shadow) / 0.2);
+  pointer-events: none;
+}
+
+.duel-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.duel-progress span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  border-radius: inherit;
+  transition: width 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.duel-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .duel-card { transition: none; }
+  .duel-card:hover { translate: none; }
 }
 
 .out button {

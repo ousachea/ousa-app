@@ -86,6 +86,23 @@ const UNSORTED = ':unsorted'
 const query = ref('')
 const activeTag = ref<string>() // undefined = all
 const sort = ref<'newest' | 'opened' | 'az'>('newest')
+
+// List or grid of cards, remembered on this device
+const VIEW_KEY = 'ousa-app:bookmarks-view'
+const view = ref<'list' | 'grid'>('list')
+onMounted(() => {
+  try {
+    if (localStorage.getItem(VIEW_KEY) === 'grid') view.value = 'grid'
+  } catch {}
+})
+function setView(next: 'list' | 'grid') {
+  if (view.value === next) return
+  view.value = next
+  play('select')
+  try {
+    localStorage.setItem(VIEW_KEY, next)
+  } catch {}
+}
 const searchInput = ref<HTMLInputElement>()
 
 const tags = computed(() => {
@@ -301,7 +318,7 @@ function exportFile() {
 
       <div class="library">
         <!-- Tags down the side, like the spines on a shelf -->
-        <aside class="side" aria-label="Tags">
+        <aside v-sticky-fit class="side" aria-label="Tags">
           <nav class="tags">
             <button type="button" class="tag-row" :class="{ on: !activeTag }" :aria-pressed="!activeTag" @click="activeTag = undefined">
               <span>All</span><b>{{ items.length }}</b>
@@ -331,7 +348,7 @@ function exportFile() {
         </aside>
 
         <section class="main" :aria-label="listTitle">
-          <div class="toolbar">
+          <div v-sticky-bar class="toolbar">
             <h2>{{ listTitle }}</h2>
             <label class="search">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
@@ -339,16 +356,26 @@ function exportFile() {
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
             <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="[{ value: 'newest', label: 'Newest' }, { value: 'opened', label: 'Most opened' }, { value: 'az', label: 'A–Z' }]" />
+            <div class="views" role="radiogroup" aria-label="View">
+              <button type="button" role="radio" class="view-btn" :aria-checked="view === 'list'" title="List" @click="setView('list')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11" /><circle cx="4.75" cy="6.5" r="1.1" /><circle cx="4.75" cy="12" r="1.1" /><circle cx="4.75" cy="17.5" r="1.1" /></svg>
+                <span class="sr-only">List</span>
+              </button>
+              <button type="button" role="radio" class="view-btn" :aria-checked="view === 'grid'" title="Grid" @click="setView('grid')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></svg>
+                <span class="sr-only">Grid</span>
+              </button>
+            </div>
           </div>
 
-          <ul v-if="shown.length" class="marks">
+          <ul v-if="shown.length" class="marks" :class="view">
             <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" class="mark" :class="{ flash: flashId === b.id }">
               <span class="mark-icon" aria-hidden="true">
                 <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
                 <span v-else>{{ initial(b) }}</span>
               </span>
               <div class="mark-body">
-                <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}</a>
+                <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
                 <span class="mark-meta">
                   {{ hostOf(b.url) }} · added {{ ago(b.createdAt) }}<template v-if="b.visits"> · opened {{ b.visits }}×</template>
                 </span>
@@ -365,9 +392,9 @@ function exportFile() {
                 <button type="button" class="icon-btn" :aria-label="`Edit ${b.title}`" title="Edit" @click="edit(b)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
                 </button>
-                <button type="button" class="icon-btn danger" :aria-label="`Delete ${b.title}`" title="Delete" @click="del(b)">
+                <ConfirmDelete class="icon-btn danger" :name="b.title" icon @confirm="del(b)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13" /></svg>
-                </button>
+                </ConfirmDelete>
               </div>
             </li>
           </ul>
@@ -746,11 +773,83 @@ kbd {
 }
 
 .mark {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 0.9rem;
   padding: 0.95rem 1rem;
+  cursor: pointer;
   transition: background-color 0.6s;
+}
+
+/* The whole row or card opens the link: the title link stretches over it (still a real link, so
+   middle-click, right-click and the visit count all work). Buttons and tags sit above it. */
+.mark-title::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.mark-actions,
+.mark-tags {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Hover: show clearly that the bookmark itself is what opens ----------
+   Over a button or tag the highlight steps back, so it's obvious only that button will be clicked. */
+.mark {
+  --hl: 0;
+}
+
+.mark:hover:not(:has(.mark-actions:hover, .mark-tags:hover)),
+.mark:has(.mark-title:focus-visible) {
+  --hl: 1;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+/* Quick to light up; the slower fade-out belongs to the "just saved" flash */
+.mark:hover {
+  transition-duration: 0.12s;
+}
+
+/* List rows: an accent edge on the left */
+.marks.list .mark::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+  opacity: var(--hl);
+  transition: opacity 0.15s;
+}
+
+.ext {
+  width: 0.95em;
+  height: 0.95em;
+  margin-left: 0.3em;
+  vertical-align: -0.1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: var(--hl);
+  translate: calc((1 - var(--hl)) * -3px) calc((1 - var(--hl)) * 3px);
+  transition: opacity 0.15s, translate 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.mark:has(.mark-title:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.mark-title:focus-visible {
+  outline: none;
 }
 
 .mark + .mark {
@@ -783,6 +882,7 @@ kbd {
 }
 
 .mark-title {
+  position: static;
   font-weight: 700;
   line-height: 1.3;
   color: var(--ink);
@@ -790,8 +890,11 @@ kbd {
   overflow-wrap: anywhere;
 }
 
-.mark-title:hover {
+.mark:hover:not(:has(.mark-actions:hover, .mark-tags:hover)) .mark-title,
+.mark-title:focus-visible {
+  color: var(--accent);
   text-decoration: underline;
+  text-decoration-thickness: 2px;
   text-underline-offset: 3px;
 }
 
@@ -851,6 +954,133 @@ kbd {
   flex: none;
   display: flex;
   gap: 0.1rem;
+}
+
+/* ---------- View switch ---------- */
+.views {
+  flex: none;
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface-2);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.view-btn {
+  width: 2.3rem;
+  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--ink-3);
+  background: none;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.view-btn:hover {
+  color: var(--ink);
+}
+
+.view-btn[aria-checked='true'] {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.15);
+}
+
+.view-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.view-btn circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Labels for screen readers only (the view buttons show icons) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Grid view: each bookmark is a card ---------- */
+.marks.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+  gap: 0.75rem;
+  background: none;
+  box-shadow: none;
+}
+
+.marks.grid .mark {
+  position: relative;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 0;
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px var(--line);
+  transition: background-color 0.6s, translate 0.15s, box-shadow 0.15s;
+}
+
+.marks.grid .mark:hover:not(:has(.mark-actions:hover, .mark-tags:hover)),
+.marks.grid .mark:has(.mark-title:focus-visible) {
+  translate: 0 -2px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent), 0 16px 30px -18px rgb(var(--shadow) / 0.5);
+}
+
+.marks.grid .mark.flash {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.marks.grid .mark-icon {
+  width: 3rem;
+  height: 3rem;
+  margin: 0;
+  font-size: 1.3rem;
+  border-radius: 14px;
+}
+
+.marks.grid .mark-body {
+  width: 100%;
+  flex: 1;
+}
+
+.marks.grid .mark-title {
+  font-size: 1.02rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.marks.grid .mark-desc {
+  -webkit-line-clamp: 3;
+}
+
+/* Pin, edit and delete sit in the card's top-right corner, beside the icon */
+.marks.grid .mark-actions {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.55rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marks.grid .mark:hover { translate: none; }
 }
 
 /* Quiet until the row is hovered; a filled pin always shows at full strength */
@@ -1019,19 +1249,29 @@ kbd {
 
 /* Narrow phones: the buttons move under the text so titles get the full width */
 @media (max-width: 520px) {
-  .mark {
+  .marks.list .mark {
     flex-wrap: wrap;
     column-gap: 0.75rem;
     row-gap: 0.2rem;
   }
 
-  .mark-body {
+  .marks.list .mark-body {
     flex-basis: calc(100% - 3.25rem);
   }
 
-  .mark-actions {
+  .marks.list .mark-actions {
     width: 100%;
     padding-left: 2.6rem;
+  }
+
+  /* Phones: two small cards across */
+  .marks.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .marks.grid .mark-actions {
+    position: static;
+    margin-top: auto;
   }
 }
 

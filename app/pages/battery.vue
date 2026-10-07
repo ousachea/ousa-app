@@ -1010,7 +1010,7 @@ onMounted(async () => {
         </section>
 
         <!-- RESULTS -->
-        <section class="card results">
+        <section v-sticky-fit class="card results">
           <div class="status" :class="`s-${status.key}`">
             <span class="dot" />
             <strong>{{ status.label }}</strong>
