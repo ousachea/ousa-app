@@ -23,7 +23,8 @@ const UNIT_GRAMS: Record<Unit, number> = { li: 0.0375, hun: 0.375, chi: 3.75, gr
 const UNITS = Object.keys(UNIT_GRAMS) as Unit[]
 
 const SETTINGS_KEY = 'ousa-app:gold-settings'
-const HISTORY_KEY = 'ousa-app:gold-history'
+// Where price history used to live (this device only); moved into the synced collection on first load
+const LEGACY_HISTORY_KEY = 'ousa-app:gold-history'
 
 const { play } = useSound()
 // Demo: a few purchases over two years, mostly in chi, bought when gold was cheaper
@@ -164,16 +165,48 @@ const observed = computed(() => {
   return `${t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · ${age}`
 })
 
-// ---------- History chart (prices seen on this device) ----------
-interface Point { price: number, time: number }
-const history = ref<Point[]>([])
+// ---------- History chart (prices you've seen) ----------
+// A synced collection like the purchases: kept on this device, and in Firebase when signed in,
+// so every device adds to and shows the same history.
+interface Point { id: string, price: number, time: number }
+const HISTORY_MAX = 500
+// A steady price is only recorded again after a while, so auto-refresh doesn't fill the log with repeats
+const SAME_PRICE_GAP_MS = 5 * 60_000
+const { items: priceLog, sync: historySync, add: addPoint, addMany: addPoints, remove: removePoint } = useCollection<Point>('gold-prices')
+const history = computed(() => [...priceLog.value].sort((a, b) => a.time - b.time))
+
+// Prices fetched while the log is still loading wait, so the load doesn't overwrite them
+const pending: Omit<Point, 'id'>[] = []
+const historyLoading = computed(() => historySync.state.value === 'loading')
+
+function recordPoint(point: Omit<Point, 'id'>) {
+  const last = history.value.at(-1)
+  if (last && last.price === point.price && point.time - last.time < SAME_PRICE_GAP_MS) return
+  addPoint(point)
+  // Keep the newest few hundred; the oldest drop off everywhere
+  for (const old of history.value.slice(0, Math.max(0, history.value.length - HISTORY_MAX))) removePoint(old.id)
+}
 
 function pushHistory(price: number) {
-  history.value = [...history.value, { price, time: Date.now() }].slice(-500)
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.value))
-  } catch {}
+  const point = { price, time: Date.now() }
+  if (historyLoading.value) pending.push(point)
+  else recordPoint(point)
 }
+
+watch(historyLoading, (loading) => {
+  if (loading) return
+  // One-time move of the old device-only history into the synced log, skipping times already there
+  try {
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_HISTORY_KEY) || 'null') as { price: number, time: number }[] | null
+    if (Array.isArray(legacy)) {
+      const known = new Set(priceLog.value.map(p => p.time))
+      const fresh = legacy.filter(p => p.price > 0 && p.time > 0 && !known.has(p.time)).slice(-HISTORY_MAX)
+      if (fresh.length) addPoints(fresh)
+      localStorage.removeItem(LEGACY_HISTORY_KEY)
+    }
+  } catch {}
+  for (const point of pending.splice(0)) recordPoint(point)
+})
 
 const RANGE_MS: Record<Range, number> = { '1H': 3_600_000, '1D': 86_400_000, '1W': 604_800_000, '1M': 2_592_000_000 }
 const chartPoints = computed(() => {
@@ -435,7 +468,6 @@ onMounted(() => {
       range.value = s.range ?? '1D'
       sort.value = s.sort ?? 'date-desc'
     }
-    history.value = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
   } catch {}
   if (source.value === 'api') fetchQuote()
   clock = setInterval(() => (now.value = Date.now()), 30_000)
@@ -556,7 +588,8 @@ const PURITIES: { value: Purity, label: string }[] = [
             </div>
           </Step>
 
-          <Step title="Price over time" hint="Prices this device has seen.">
+          <Step title="Price over time" hint="Prices you’ve seen here. Signed in, every device adds to the same history.">
+            <template #aside><DataSource :sync="historySync" /></template>
             <div class="panel pad">
               <div class="segmented ranges" role="radiogroup" aria-label="Time range">
                 <label v-for="r in (['1H', '1D', '1W', '1M'] as const)" :key="r" :class="{ active: range === r }">
