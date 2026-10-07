@@ -62,6 +62,22 @@ onMounted(() => {
   appFavicon.value = `data:image/svg+xml,${encodeURIComponent(svg)}`
 })
 
+// ---------- Version and what's new ----------
+const releases = computed(() => releasesFor(route.path))
+const latest = computed(() => releases.value[0])
+const whatsNewOpen = ref(false)
+// "New" for a week after an app's latest release
+const NEW_FOR_MS = 7 * 86_400_000
+const isNew = ref(false)
+onMounted(() => {
+  if (latest.value) isNew.value = Date.now() - new Date(`${latest.value.date}T00:00:00`).getTime() < NEW_FOR_MS
+})
+const releaseDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+function openWhatsNew() {
+  whatsNewOpen.value = true
+  play('open')
+}
+
 // Demo: on pages that have one, the app icon switches sample data on and off
 const demo = useDemoState(route.path)
 const { play } = useSound()
@@ -117,9 +133,29 @@ function goBack(e: MouseEvent) {
       <div class="head-text">
         <h1>{{ tool.name }}</h1>
         <p>{{ tool.summary }}</p>
+        <button v-if="latest" type="button" class="version" :aria-label="`Version ${latest.version}. See what’s new`" @click="openWhatsNew">
+          <span>v{{ latest.version }}</span>
+          <ClientOnly><span v-if="isNew" class="version-new">New</span></ClientOnly>
+          <span class="version-more" aria-hidden="true">What’s new</span>
+        </button>
       </div>
       <div v-if="$slots.actions" class="head-actions"><slot name="actions" /></div>
     </header>
+
+    <Modal :open="whatsNewOpen" :title="`What’s new in ${tool.name}`" @close="whatsNewOpen = false">
+      <ol class="releases">
+        <li v-for="(r, i) in releases" :key="r.version" class="release" :class="{ current: i === 0 }">
+          <div class="release-head">
+            <strong>Version {{ r.version }}</strong>
+            <span v-if="i === 0" class="release-tag">Current</span>
+            <time :datetime="r.date">{{ releaseDate(r.date) }}</time>
+          </div>
+          <ul>
+            <li v-for="c in r.changes" :key="c">{{ c }}</li>
+          </ul>
+        </li>
+      </ol>
+    </Modal>
 
     <div class="body">
       <p v-if="demo.active.value" class="demo-banner" role="status">
@@ -404,6 +440,157 @@ h1 {
 
 .header-band .body {
   margin-top: -2.5rem;
+}
+
+/* ---------- Version: a small pill under the summary that opens what's new ---------- */
+.version {
+  align-self: inherit;
+  margin-top: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem 0.2rem 0.55rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.version:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+}
+
+.version:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* "What's new" only appears on hover, so the pill stays small */
+.version-more {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 0.25s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s;
+}
+
+.version:hover .version-more,
+.version:focus-visible .version-more {
+  max-width: 6rem;
+  opacity: 1;
+}
+
+.version-new {
+  padding: 0 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--green);
+  border-radius: 999px;
+}
+
+/* On the coloured band it takes the band's text colour */
+.header-band .version {
+  color: inherit;
+  opacity: 0.92;
+}
+
+.header-band .version:hover {
+  color: inherit;
+  opacity: 1;
+}
+
+.header-bar .version {
+  margin-top: 0.4rem;
+}
+
+/* ---------- What's new list ---------- */
+.releases {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: min(60vh, 32rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.release {
+  position: relative;
+  padding: 0 0 1.1rem 1.4rem;
+  border-left: 2px solid var(--line);
+  margin-left: 0.4rem;
+}
+
+.release:last-child {
+  padding-bottom: 0.2rem;
+  border-left-color: transparent;
+}
+
+/* A dot on the timeline for each release; the current one in the app's colour */
+.release::before {
+  content: '';
+  position: absolute;
+  left: -0.45rem;
+  top: 0.25rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--line);
+}
+
+.release.current::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.release-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.release-head strong {
+  font-size: 0.95rem;
+}
+
+.release-tag {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.release-head time {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.release ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .version-more { transition: none; }
 }
 
 @media (max-width: 640px) {
