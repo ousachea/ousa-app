@@ -318,7 +318,7 @@ const sorted = computed(() => {
   }
 })
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localIsoDate()
 const formOpen = ref(false)
 const editingId = ref<string>()
 const form = reactive({ weight: null as number | null, unit: 'chi' as Unit, price: null as number | null, date: today() })

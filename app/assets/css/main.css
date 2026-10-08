@@ -41,7 +41,7 @@
   /* Text colours that need their own value per theme to stay readable */
   --good-ink: #127a43;
   --bad-ink: #a61b2e;
-  --warn-ink: #b85a00;
+  --warn-ink: #a35000; /* 4.9:1 on the orange badge tint, 5.7:1 on white */
   --digit-ink: #1f5bd8;
   --symbol-ink: #a85200;
 

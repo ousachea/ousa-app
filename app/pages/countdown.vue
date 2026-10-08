@@ -22,7 +22,7 @@ usePullToRefresh(async () => {
   toast('Refreshed', { duration: 1800 })
 })
 
-const isoToday = () => new Date().toISOString().slice(0, 10)
+const isoToday = () => localIsoDate()
 const blank = () => ({ title: '', date: '', time: '' })
 const form = reactive(blank())
 

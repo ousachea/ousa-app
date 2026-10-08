@@ -30,6 +30,17 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.0.1',
+    date: '2026-10-09',
+    changes: [
+      'New entries are dated today even between midnight and 7 am; they used to get yesterday’s date.',
+      'Small buttons like Pin, Delete and the sync badge are easier to tap on touch screens.',
+      'If this browser can’t save (storage full or blocked) you’re told once, with what to do, instead of changes quietly not being kept.',
+      'Faster search and long bookmark lists; a list no longer shows “Nothing matches” under it.',
+      'Link previews can no longer be pointed at the server’s own network.'
+    ]
+  },
+  {
     version: '2.0.0',
     date: '2026-10-08',
     changes: [

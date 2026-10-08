@@ -13,7 +13,7 @@ export function downloadFile(name: string, content: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
-export const dated = (base: string, ext: string) => `${base}-${new Date().toISOString().slice(0, 10)}.${ext}`
+export const dated = (base: string, ext: string) => `${base}-${localIsoDate()}.${ext}`
 
 // ---------- CSV ----------
 

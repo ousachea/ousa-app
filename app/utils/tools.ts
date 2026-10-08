@@ -1,5 +1,5 @@
 export type ToolIconName =
-  | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'list'
+  | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
   | 'trash' | 'activity' | 'plus' | 'search'
 
@@ -190,9 +190,9 @@ export const SETTINGS: Tool = {
   to: '/settings',
   name: 'Settings',
   summary: 'Choose how the app looks and sounds.',
-  description: 'Choose light or dark mode, lighter effects for older computers, sound effects, and sync your data with Firebase.',
+  description: 'Theme, accent colour, density, effects, sounds and shortcuts, plus backups and syncing your data with Firebase.',
   color: 'var(--settings)',
-  icon: 'sound'
+  icon: 'settings'
 }
 
 // Pages that belong to the whole app rather than one tool; kept out of search results

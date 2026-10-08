@@ -87,7 +87,7 @@ const commandEntries = computed<Entry[]>(() => {
     {
       id: 'cmd:theme',
       title: theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode',
-      icon: 'sound',
+      icon: 'settings',
       color: 'var(--plastic)',
       hint: 'D',
       run: () => {

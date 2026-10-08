@@ -50,7 +50,7 @@ watch(unit, (u) => {
 
 const show = (kg: number) => (unit.value === 'kg' ? kg : kg * LB_PER_KG)
 const fmt = (kg: number, digits = 1) => `${show(kg).toFixed(digits)} ${unit.value}`
-const isoToday = () => new Date().toISOString().slice(0, 10)
+const isoToday = () => localIsoDate()
 const formatDate = (d: string, long = false) => new Date(`${d}T00:00`).toLocaleDateString('en-GB', long ? { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' })
 
 // ---------- Logging ----------
@@ -94,7 +94,7 @@ const visible = computed(() => {
   if (!range.value) return sorted.value
   const from = new Date()
   from.setDate(from.getDate() - range.value)
-  const cut = from.toISOString().slice(0, 10)
+  const cut = localIsoDate(from)
   return sorted.value.filter(e => e.date >= cut)
 })
 

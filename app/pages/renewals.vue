@@ -43,7 +43,7 @@ usePullToRefresh(async () => {
   toast(sync.signedIn.value ? 'Up to date with your account' : 'Refreshed', { duration: 1800 })
 })
 
-const isoToday = () => new Date().toISOString().slice(0, 10)
+const isoToday = () => localIsoDate()
 // New subscriptions start with the currency and billing cycle used last time (CHECKLIST.md #14)
 const lastCurrency = useRemembered<Renewal['currency']>('renewals-currency', 'USD', v => v === 'USD' || v === 'KHR')
 const lastCycle = useRemembered<Renewal['cycle']>('renewals-cycle', 'monthly', v => CYCLES.some(c => c.value === v))
@@ -592,6 +592,16 @@ function del(r: Renewal) {
 .periods label {
   padding-inline: 0.65rem;
   white-space: nowrap;
+}
+
+/* Phones: all six periods on two rows, rather than Year hidden off the edge */
+@media (max-width: 520px) {
+  .periods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+    overflow-x: visible;
+  }
 }
 
 .total-figure {

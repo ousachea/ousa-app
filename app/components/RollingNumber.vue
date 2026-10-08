@@ -7,7 +7,8 @@ const chars = computed(() => String(props.value).split(''))
 </script>
 
 <template>
-  <span class="rolling" :aria-label="String(value)">
+  <span class="rolling">
+    <span class="sr-only">{{ value }}</span>
     <span v-for="(c, i) in chars" :key="`${chars.length - i}`" class="slot" aria-hidden="true">
       <Transition name="roll">
         <span :key="c" class="digit">{{ c }}</span>

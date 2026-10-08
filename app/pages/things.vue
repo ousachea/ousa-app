@@ -71,7 +71,7 @@ usePullToRefresh(async () => {
   toast(sync.signedIn.value ? 'Up to date with your account' : 'Refreshed', { duration: 1800 })
 })
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localIsoDate()
 // New items start in the category and currency used last time (CHECKLIST.md #14)
 const lastCategory = useRemembered('things-category', 'Phone', v => NEW_TYPES.some(t => t.key === v))
 const lastCurrency = useRemembered<Currency>('things-currency', 'USD', v => v === 'USD' || v === 'KHR')

@@ -153,7 +153,15 @@ defineProps<{ name: ToolIconName }>()
       <path d="M9.5 4.5h5l1.6 6h-8.2z" />
     </template>
 
-    <!-- Settings (sound): a speaker with two sound waves -->
+    <!-- Settings: three sliders -->
+    <template v-else-if="name === 'settings'">
+      <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" />
+      <circle cx="15" cy="7" r="2" />
+      <circle cx="9" cy="12" r="2" />
+      <circle cx="17" cy="17" r="2" />
+    </template>
+
+    <!-- Sound effects: a speaker with two sound waves -->
     <template v-else-if="name === 'sound'">
       <path d="M3.5 9.5h3l5-4v13l-5-4h-3z" />
       <path d="M15.5 9a4.2 4.2 0 0 1 0 6" />
