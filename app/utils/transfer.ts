@@ -19,9 +19,10 @@ export const dated = (base: string, ext: string) => `${base}-${new Date().toISOS
 
 const csvCell = (v: unknown) => {
   const s = v == null ? '' : Array.isArray(v) ? v.join('; ') : String(v)
-  // Quote anything with a comma, quote or line break; a leading = + - @ is neutralised so a
-  // spreadsheet never runs it as a formula
-  const safe = /^[=+\-@]/.test(s) && !/^-?\d/.test(s) ? `'${s}` : s
+  // Quote anything with a comma, quote or line break. Text starting with = + - @ is neutralised so a
+  // spreadsheet never runs it as a formula, except plain numbers like -12.5 or +855 12 345 678
+  const formulaLike = /^[=@\t\r]/.test(s) || (/^[+\-]/.test(s) && !/^[+\-][\d\s().]+$/.test(s))
+  const safe = formulaLike ? `'${s}` : s
   return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 

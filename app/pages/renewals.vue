@@ -47,7 +47,7 @@ const lastCycle = useRemembered<Renewal['cycle']>('renewals-cycle', 'monthly', v
 const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: lastCurrency.value, cycle: lastCycle.value, nextDate: isoToday(), category: '', icon: '' })
 
 // Icon (#54): type a service to look like it, "Letter only", or paste an image link; empty = automatic
-const ICON_OPTIONS = [{ value: 'Letter only' }, ...SERVICES.map(s => ({ value: s.name, logo: `https://${s.domain}/favicon.ico` }))]
+const ICON_OPTIONS = [{ value: 'Letter only' }, ...SERVICES.map(s => ({ value: s.name, logo: siteLogo(s.domain) }))]
 const iconText = ref('')
 const iconFrom = (text: string) => {
   const t = text.trim()

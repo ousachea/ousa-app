@@ -11,7 +11,7 @@ const service = computed(() => {
 })
 const src = computed(() => {
   if (props.icon?.startsWith('http')) return props.icon
-  return service.value ? `https://${service.value.domain}/favicon.ico` : undefined
+  return service.value ? siteLogo(service.value.domain) : undefined
 })
 watch(src, () => (broken.value = false))
 

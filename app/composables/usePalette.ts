@@ -34,6 +34,7 @@ export const ADD_OPTIONS: AddOption[] = [
   { label: 'Device', app: '/things', hint: 'Something you own' },
   { label: 'Renewal', app: '/renewals', hint: 'A subscription or bill' },
   { label: 'Countdown', app: '/countdown', hint: 'A date to count down to' },
+  { label: 'Contact', app: '/phone', hint: 'A name and number' },
   { label: 'Food or place', app: '/eat', hint: 'Somewhere or something to eat' },
   { label: 'Weight', app: '/weight', hint: 'Log today’s weight' },
   { label: 'Gold purchase', app: '/gold', hint: 'Gold you bought' },

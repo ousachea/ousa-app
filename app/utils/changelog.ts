@@ -54,6 +54,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Turn a link or text into a QR code you can download.', 'Sound effects and smooth page transitions.'] }
   ],
   '/phone': [
+    { version: '2.0.0', date: '2026-10-08', changes: ['My contacts: save names, numbers, emails and notes; each number shows its network, and they sync with your account.', 'Search, edit and delete contacts, or select several to copy, export or delete together.', 'Save the numbers you just checked into My contacts in one go.', 'Export check results as CSV or JSON, or copy them to paste into a spreadsheet.', 'On wide screens the checker and prefix list scroll together and no longer slide over each other.'] },
     { version: '1.2.1', date: '2026-10-07', changes: ['The page no longer runs wider than a phone screen.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.2.0', date: '2026-10-07', changes: ['Import your contacts straight from Google with your Google sign-in.', 'On wide screens the checker sits beside your contacts, which read across in columns.', 'Network filters and search stay pinned while a long address book scrolls.'] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Check a whole contacts file at once and catch numbers missing a digit.', EXAMPLE] },
@@ -93,6 +94,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Work out what a raise is really worth after Cambodian salary tax.'] }
   ],
   '/things': [
+    { version: '3.0.1', date: '2026-10-08', changes: ['Logos now show for Sony, Samsung, Google, Honor, Redmi, RedMagic and more brands.'] },
     { version: '3.0.0', date: '2026-10-08', changes: ['Adding starts with what kind of thing it is: phone, tablet, laptop, desktop, monitor, TV, keyboard, mouse, headphones and more.', 'Company, model and generation suggest as you type, from a list of common devices; anything else can be typed in.', 'Known models suggest their release year, RAM and screen size, and the storage sizes they came in.', 'Each item shows its company’s logo and details like 2023 · 256 GB · 8 GB RAM.', 'Filter by type, company, year, storage and generation; sort by recently added, company, type or release year.', 'A compact list view alongside the cards.', 'Adding the same device twice asks first.'] },
     { version: '2.1.0', date: '2026-10-08', changes: [TRANSFER, 'Adding something with the same name as one you have asks first.', 'Worth now and notes tuck under More details until you need them.', 'New items start in the category and currency you used last.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
     { version: '2.0.0', date: '2026-10-07', changes: ['New design: a summary showing where your value is, and cards comparing what you paid with what it’s worth now.', 'Each card shows how much of its price it still keeps.', SYNC, PICKERS, 'Search and sort stay pinned while you scroll.', TWO_CLICK] },

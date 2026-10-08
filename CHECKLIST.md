@@ -61,7 +61,7 @@ Add Countdown, Open Recycle Bin, Open Settings, Export Data, Go to Bookmarks…)
 **Status:** 🟢
 `A` or `Ctrl+K → Add` shows "What do you want to add?" (Bookmark, Device, Renewal, Countdown, Contact…);
 choosing one opens that form.
-**Notes:** `A` on a page without its own Add (or Add in the menu / Add something… in the palette) opens "What do you want to add?": Bookmark, Device, Renewal, Countdown, Food or place, Weight, Gold purchase, Password. Choosing one opens that app with `?add=1` and `useAddAction` opens/focuses its form. Contact joins the list once contacts can be saved (#62). Tested desktop + mobile.
+**Notes:** `A` on a page without its own Add (or Add in the menu / Add something… in the palette) opens "What do you want to add?": Bookmark, Device, Renewal, Countdown, Contact, Food or place, Weight, Gold purchase, Password. Choosing one opens that app with `?add=1` and `useAddAction` opens/focuses its form. Tested desktop + mobile.
 
 ## #09 — Favorites / Pinning
 **Status:** 🟡
@@ -287,7 +287,7 @@ Architecture should make more categories easy to add later.
 ## #50 — Company Logos
 **Status:** 🟢
 Show manufacturer logos automatically, generic icon fallback.
-**Notes:** Company logos from each company's own site icon (no third-party logo service) on a white tile, with the type icon when it can't load; also in the Company suggestions.
+**Notes:** Logos come from `/api/logo?domain=…`: it reads the icon the brand's homepage declares (apple-touch-icon first), fetches it once with the same public-address checks as link previews (`server/utils/publicFetch.ts`), and serves it from this app with a week's cache and a sandboxing CSP. This fixed Sony (403 on /favicon.ico), Samsung, Google Store and RedMagic (404). Company list widened (Honor, Redmi, POCO, RedMagic, Nubia, ZTE, Nothing, Motorola, Nokia, Infinix, Tecno, iQOO…); a one-word company typed by hand gets one guess at <name>.com; anything else shows the type icon. Verified 8 brands load. Renewal service icons use the same route.
 
 # PART D — TEXT TOOLS APP (`/case`)
 
@@ -348,21 +348,19 @@ Subtle slide/fade/flip/scale on changing numbers.
 # PART G — PHONE CHECKER APP (`/phone`)
 
 ## #61 — Fix Sticky Sidebar
-**Status:** ⬜
+**Status:** 🟢
 Left sticky section must not overlap content (position, z-index, overflow, bounds, height); non-sticky on mobile.
-**Notes:**
+**Notes:** Cause: on wide screens the checker was sticky inside a grid column that also held the prefix reference, so it slid over the reference while scrolling (measured overlap at 1200×800 and 1440×900). Fix: checker and reference are one left column (`.left`, sticky under the back/menu buttons, pinned by its bottom via `v-sticky-fit` when taller than the window, z-index 1); under 1100 px nothing is sticky and the parts flow checker → contacts → prefix list. Verified no overlap at every scroll position at 1200, 1440, 1920 and on a phone.
 
 ## #62 — Contact Management
-**Status:** ⬜
+**Status:** 🟢
 Add, edit, delete, search, select contacts; fields: name, phone, email, notes.
-**Notes:**
+**Notes:** `SavedContacts.vue` (collection `contacts`, syncs like other trackers, example data with the app icon): add / edit (popup with validation and live network check), delete (Recycle Bin, Undo, swipe, right-click), search name/number/email/notes (a leading 0 or +855 matches from the start), select one or all with a bulk bar. Fields: name, phone, email, notes. Tap a contact to check it; A adds one (prefilled with the checked number); Quick Add has Contact again; imported check results can be saved to My contacts. Tested desktop + mobile.
 
 ## #63 — Phone Checker Export
-**Status:** ⬜
+**Status:** 🟢
 CSV, JSON, copy to clipboard; meaningful filenames.
-**Notes:**
-
----
+**Notes:** My contacts: CSV / JSON export and import (TransferDialog), and Copy / CSV / JSON for a selection (`contacts-selected-2026-10-08.csv`). Check results: Export → CSV, JSON or Copy to clipboard (tab-separated for spreadsheets), named after the source (`phone-check-example-contacts-2026-10-08.csv`), respecting the current filter. Phone numbers are no longer prefixed with an apostrophe in CSV (formula guard now lets plain numbers through).
 
 # PART H — GLOBAL DASHBOARD / HOME
 

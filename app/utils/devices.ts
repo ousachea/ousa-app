@@ -54,6 +54,10 @@ export const COMPANIES: Company[] = [
   { name: 'Apple', domain: 'apple.com' }, { name: 'Samsung', domain: 'samsung.com' }, { name: 'Google', domain: 'store.google.com' },
   { name: 'Xiaomi', domain: 'mi.com' }, { name: 'OPPO', domain: 'oppo.com' }, { name: 'vivo', domain: 'vivo.com' },
   { name: 'OnePlus', domain: 'oneplus.com' }, { name: 'realme', domain: 'realme.com' }, { name: 'Huawei', domain: 'huawei.com' },
+  { name: 'Honor', domain: 'honor.com' }, { name: 'Redmi', domain: 'mi.com' }, { name: 'POCO', domain: 'po.co' },
+  { name: 'RedMagic', domain: 'redmagic.gg' }, { name: 'Nubia', domain: 'nubia.com' }, { name: 'ZTE', domain: 'zte.com.cn' },
+  { name: 'Nothing', domain: 'nothing.tech' }, { name: 'Motorola', domain: 'motorola.com' }, { name: 'Nokia', domain: 'nokia.com' },
+  { name: 'Infinix', domain: 'infinixmobility.com' }, { name: 'Tecno', domain: 'tecno-mobile.com' }, { name: 'iQOO', domain: 'iqoo.com' },
   { name: 'Lenovo', domain: 'lenovo.com' }, { name: 'Dell', domain: 'dell.com' }, { name: 'HP', domain: 'hp.com' },
   { name: 'ASUS', domain: 'asus.com' }, { name: 'Acer', domain: 'acer.com' }, { name: 'MSI', domain: 'msi.com' },
   { name: 'LG', domain: 'lg.com' }, { name: 'Sony', domain: 'sony.com' }, { name: 'TCL', domain: 'tcl.com' },
@@ -67,9 +71,19 @@ export const COMPANIES: Company[] = [
 ]
 
 export const companyOf = (name?: string) => (name ? COMPANIES.find(c => c.name.toLowerCase() === name.trim().toLowerCase()) : undefined)
+
+/** The icon a site declares, served from this app (/api/logo finds it; works for brands without /favicon.ico) */
+export const siteLogo = (domain: string) => `/api/logo?domain=${encodeURIComponent(domain)}`
+
+/**
+ * A company's logo: from the known list, or for a one-word name typed by hand, one guess at
+ * <name>.com. When nothing loads, the page shows the type's icon instead.
+ */
 export const companyLogo = (name?: string) => {
   const c = companyOf(name)
-  return c ? `https://${c.domain}/favicon.ico` : undefined
+  if (c) return siteLogo(c.domain)
+  const word = name?.trim().toLowerCase()
+  return word && /^[a-z0-9]{2,20}$/.test(word) ? siteLogo(`${word}.com`) : undefined
 }
 
 // ---------- Catalog (#45, #46) ----------
@@ -118,7 +132,10 @@ export const CATALOG: Model[] = [
   m(P, 'Google', 'Pixel 8a', { year: 2024, storage: [128, 256], ram: 8, display: 6.1 }),
   m(P, 'Google', 'Pixel 8 Pro', { year: 2023, storage: [128, 256, 512, 1024], ram: 12, display: 6.7 }),
   m(P, 'Xiaomi', 'Xiaomi 14', { year: 2023, storage: [256, 512], ram: 12, display: 6.36 }),
-  m(P, 'Xiaomi', 'Redmi Note 13 Pro', { year: 2024, storage: [128, 256, 512], ram: 8, display: 6.67 }),
+  m(P, 'Redmi', 'Redmi Note 13 Pro', { year: 2024, storage: [128, 256, 512], ram: 8, display: 6.67 }),
+  m(P, 'Honor', 'Honor 200', { year: 2024, storage: [256, 512], ram: 12 }),
+  m(P, 'Honor', 'Honor Magic6 Pro', { year: 2024, storage: [512], ram: 12 }),
+  m(P, 'RedMagic', 'RedMagic 9 Pro', { year: 2023, storage: [256, 512, 1024], ram: 12, display: 6.8 }),
   m(P, 'OnePlus', 'OnePlus 12', { year: 2024, storage: [256, 512], ram: 12, display: 6.82 }),
   m(P, 'OPPO', 'Reno12', { year: 2024, storage: [256, 512], ram: 12 }),
   m(P, 'vivo', 'V30', { year: 2024, storage: [256, 512], ram: 12 }),

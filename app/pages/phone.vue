@@ -2,6 +2,7 @@
 import { toast } from 'vue-sonner'
 import type { PhoneResult } from '~/utils/cambodiaPhone'
 import type { RawContact } from '~/utils/contactImport'
+import type { Contact } from '~/components/SavedContacts.vue'
 
 const { play } = useSound()
 
@@ -208,16 +209,78 @@ const filteredContacts = computed(() => {
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
 
 function checkContact(c: CheckedContact) {
-  input.value = c.raw
+  checkNumber(c.raw)
+}
+
+function checkNumber(raw: string) {
+  input.value = raw
   play('select')
   window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+}
+
+// ---------- My contacts (#62) ----------
+const saved = ref<{ addMany: (list: Omit<Contact, 'id'>[]) => Contact[], items: Contact[], openAdd: (p?: Partial<Contact>) => void, remove: (id: string, opts?: { undoAdd?: boolean }) => unknown }>()
+// A adds a contact, prefilled with the number being checked if it's a valid one
+useAddAction(() => saved.value?.openAdd(valid.value ? { phone: valid.value.national } : {}))
+
+// Keep the checked numbers: valid ones not already saved
+function saveChecked() {
+  const have = new Set((saved.value?.items ?? []).map(c => checkCambodiaPhone(c.phone).e164 ?? c.phone))
+  const fresh = contacts.value.filter(c => c.result.valid && !have.has(c.result.e164!) && have.add(c.result.e164!))
+  if (!fresh.length) {
+    toast('Nothing new to save', { description: 'Every valid number here is already in My contacts.' })
+    return
+  }
+  const added = saved.value!.addMany(fresh.map(c => ({ name: c.name, phone: c.result.national!, email: '', notes: '', createdAt: new Date().toISOString() })))
+  play('success')
+  toast.success(`${added.length} saved to My contacts`, { action: { label: 'Undo', onClick: () => added.forEach(c => saved.value?.remove(c.id, { undoAdd: true })) } })
+}
+
+// ---------- Export the check results (#63): CSV, JSON or copy, named after where they came from ----------
+const resultsOpen = ref(false)
+const resultsSlug = computed(() => `phone-check-${contactSource.value.toLowerCase().replace(/\.[a-z]+$/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'contacts'}`)
+const resultRows = () => filteredContacts.value.map(c => ({
+  name: c.name,
+  number: c.raw,
+  international: c.result.valid ? c.result.international : '',
+  e164: c.result.valid ? c.result.e164 : '',
+  network: c.network,
+  problem: c.result.valid ? '' : c.result.reason ?? ''
+}))
+function exportResults(format: 'csv' | 'json') {
+  const rows = resultRows()
+  if (format === 'csv') {
+    downloadFile(dated(resultsSlug.value, 'csv'), toCSV(rows, [
+      { header: 'Name', get: r => r.name }, { header: 'Number as written', get: r => r.number }, { header: 'International', get: r => r.international },
+      { header: 'E.164', get: r => r.e164 }, { header: 'Network', get: r => r.network }, { header: 'Problem', get: r => r.problem }
+    ]), 'text/csv;charset=utf-8')
+  } else {
+    downloadFile(dated(resultsSlug.value, 'json'), JSON.stringify({ app: 'ousa-app', kind: 'phone-check', source: contactSource.value, exportedAt: new Date().toISOString(), results: rows }, null, 2), 'application/json')
+  }
+  logActivity('exported', '/phone', `${rows.length} checked numbers as ${format.toUpperCase()}`)
+  play('copy')
+  toast.success(`${rows.length} results exported`, { description: networkFilter.value === 'All' && !contactQuery.value ? undefined : 'Only the ones shown by your filter and search.' })
+  resultsOpen.value = false
+}
+async function copyResults() {
+  const rows = resultRows()
+  try {
+    await navigator.clipboard.writeText(rows.map(r => `${r.name}\t${r.international || r.number}\t${r.network}`).join('\n'))
+    play('copy')
+    toast.success(`${rows.length} results copied`, { description: 'Name, number and network, one per line; pastes into a spreadsheet.' })
+    resultsOpen.value = false
+  } catch {
+    toast.error('Couldn’t copy', { description: 'Your browser blocked the clipboard.' })
+  }
 }
 </script>
 
 <template>
   <ToolPage>
     <div class="workspace">
-    <div v-sticky-fit class="check">
+    <!-- The left column (checker + prefix reference) moves as one piece, so nothing slides over anything (#61) -->
+    <div v-sticky-fit class="left">
+    <div class="check">
     <Step :n="1" title="Type a number" hint="The first 2 digits are enough to see the network. The 0 is optional.">
     <label class="number input">
       <span class="cc" aria-hidden="true">🇰🇭 +855</span>
@@ -300,9 +363,33 @@ function checkContact(c: CheckedContact) {
     </Step>
     </div>
 
+    <details class="panel reference">
+      <summary>Mobile prefixes for every network</summary>
+      <ul class="ops">
+        <li v-for="op in OPERATORS" :key="op.name" :style="{ '--op': op.color }">
+          <strong>{{ op.name }}</strong>
+          <span class="prefixes">
+            <span v-for="(len, prefix) in op.prefixes" :key="prefix" :title="`${len} digits after the prefix`">0{{ prefix }}</span>
+          </span>
+        </li>
+      </ul>
+      <p class="note">
+        People can keep their number when they switch networks, so the network shown is a best guess from the prefix.
+      </p>
+    </details>
+    </div>
+
+    <div class="right">
+    <Step title="My contacts" hint="Numbers you keep, with email and notes. Tap one to check it." class="my-contacts-step">
+      <SavedContacts ref="saved" @check="checkNumber" />
+    </Step>
+
     <Step title="Check your contacts" hint="See which network each number is on, and catch numbers that are missing a digit." class="contacts-step">
       <template v-if="contacts.length" #aside>
-        <button type="button" class="btn btn-quiet btn-sm" @click="clearContacts">Clear</button>
+        <span class="aside-buttons">
+          <button type="button" class="btn btn-quiet btn-sm" @click="resultsOpen = true">Export</button>
+          <button type="button" class="btn btn-quiet btn-sm" @click="clearContacts">Clear</button>
+        </span>
       </template>
 
       <div v-if="!contacts.length" class="panel import">
@@ -320,11 +407,14 @@ function checkContact(c: CheckedContact) {
         <p class="how">
           In <a href="https://contacts.google.com" target="_blank" rel="noopener">Google Contacts</a>, choose Export, then <b>Google CSV</b>. A <b>.vcf</b> file from your phone works too.
         </p>
-        <p class="private">Contacts stay on this page. They’re never saved or uploaded.</p>
+        <p class="private">Checked contacts stay on this page and are never uploaded, unless you choose Save to My contacts.</p>
       </div>
 
       <div v-else class="panel book">
-        <p class="book-source">{{ contacts.length }} Cambodian {{ contacts.length === 1 ? 'number' : 'numbers' }} from {{ contactSource }}</p>
+        <p class="book-source">
+          {{ contacts.length }} Cambodian {{ contacts.length === 1 ? 'number' : 'numbers' }} from {{ contactSource }}
+          <button v-if="!demoOn" type="button" class="link" @click="saveChecked">Save to My contacts</button>
+        </p>
 
         <!-- Filters and search stay pinned while the list scrolls -->
         <div v-sticky-bar class="contact-tools">
@@ -368,26 +458,37 @@ function checkContact(c: CheckedContact) {
         </button>
       </div>
     </Step>
-
-    <details class="panel reference">
-      <summary>Mobile prefixes for every network</summary>
-      <ul class="ops">
-        <li v-for="op in OPERATORS" :key="op.name" :style="{ '--op': op.color }">
-          <strong>{{ op.name }}</strong>
-          <span class="prefixes">
-            <span v-for="(len, prefix) in op.prefixes" :key="prefix" :title="`${len} digits after the prefix`">0{{ prefix }}</span>
-          </span>
-        </li>
-      </ul>
-      <p class="note">
-        People can keep their number when they switch networks, so the network shown is a best guess from the prefix.
-      </p>
-    </details>
     </div>
+
+    </div>
+    <Modal :open="resultsOpen" title="Export check results" @close="resultsOpen = false">
+      <p class="export-note">{{ filteredContacts.length }} {{ filteredContacts.length === 1 ? 'number' : 'numbers' }}{{ networkFilter !== 'All' || contactQuery ? ' (the ones your filter shows)' : '' }}, with each one’s network and any problem.</p>
+      <div class="export-buttons">
+        <button type="button" class="btn btn-quiet" @click="exportResults('csv')">CSV</button>
+        <button type="button" class="btn btn-quiet" @click="exportResults('json')">JSON</button>
+        <button type="button" class="btn" @click="copyResults">Copy to clipboard</button>
+      </div>
+    </Modal>
   </ToolPage>
 </template>
 
 <style scoped>
+.aside-buttons,
+.export-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.export-note {
+  margin: 0 0 1rem;
+  color: var(--ink-2);
+}
+
+.book-source .link {
+  margin-left: 0.5rem;
+}
+
 /* One narrow column, like a phone screen: dial, see the SIM, reference tucked below.
    On wide screens the checker stays phone-sized on the left and the contacts fill the rest. */
 .workspace {
@@ -398,20 +499,47 @@ function checkContact(c: CheckedContact) {
   margin: 0 auto;
 }
 
+/* Narrow screens: no sticking at all; the left column's parts flow in the page order
+   checker → contacts → prefix list */
+@media (max-width: 1099px) {
+  .left {
+    display: contents;
+  }
+
+  .check { order: 0; }
+  .right { order: 1; display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  .reference { order: 2; }
+}
+
 @media (min-width: 1100px) {
   .workspace {
     max-width: none;
     grid-template-columns: minmax(380px, 520px) minmax(0, 1fr);
-    grid-template-areas: 'check contacts' 'reference contacts';
-    grid-template-rows: auto 1fr;
+    grid-template-areas: 'left contacts';
     gap: 1.5rem 2.5rem;
     align-items: start;
   }
 
-  /* The checker stays in view while a long address book scrolls */
-  .check { grid-area: check; position: sticky; top: 5.5rem; }
-  .contacts-step { grid-area: contacts; }
-  .reference { grid-area: reference; }
+  /* The checker and the prefix list stay in view while a long address book scrolls. They're one
+     sticky column (pinned under the back and menu buttons, or by its bottom when taller than the
+     window), so the checker can't slide over the list below it. */
+  .left {
+    grid-area: left;
+    position: sticky;
+    top: 5.5rem;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .right {
+    grid-area: contacts;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-width: 0;
+  }
 
   /* A long address book reads across in columns instead of one tall list */
   .people {
