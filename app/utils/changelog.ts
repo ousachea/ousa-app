@@ -64,7 +64,8 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.1.0', date: '2026-10-05', changes: ['Shrink PDFs too: make the photos inside smaller, or redraw each page.', 'No files handy? Try it with three example files.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Make images smaller without uploading them.', 'Dark mode.'] }
   ],
-  '/case': [
+  '/text': [
+    { version: '2.0.0', date: '2026-10-08', changes: ['Now called Text tools.', 'Compare two versions of a text and see every word added, removed or changed, side by side on wide screens and stacked on phones.', 'Ignore capital letters or extra spaces when comparing, and swap the two sides.'] },
     { version: '1.2.0', date: '2026-10-07', changes: [WIDE] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Dark mode and its own design.', EXAMPLE] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Switch text between lowercase, UPPERCASE, Title Case and Sentence case.'] }

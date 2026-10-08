@@ -3,6 +3,17 @@ import { toast } from 'vue-sonner'
 
 const { play } = useSound()
 
+// Two tools: change case, or compare two texts (CHECKLIST.md #51, #52). The tab lives in the URL.
+type Tab = 'case' | 'compare'
+const route = useRoute()
+const router = useRouter()
+const tab = computed<Tab>(() => (route.query.tab === 'compare' ? 'compare' : 'case'))
+function setTab(next: Tab) {
+  if (next === tab.value) return
+  router.replace({ query: next === 'compare' ? { tab: 'compare' } : {} })
+  play('select')
+}
+
 const input = ref('')
 const mode = ref<CaseMode>('sentence')
 const copied = ref(false)
@@ -15,6 +26,7 @@ the new office opens in phnom penh next MONTH. please bring your ID card on the 
 
 action items: book the meeting room, ORDER coffee, and send the slides to sokha before friday.`
 const { active: demoOn } = useDemo()
+// The demo fills whichever tool is showing; Compare fills its own two boxes
 let savedInput = ''
 watch(demoOn, (on) => {
   if (on) {
@@ -70,7 +82,20 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 <template>
   <ToolPage header="bar">
-    <div class="workspace">
+    <div class="tabs segmented" role="radiogroup" aria-label="Text tools">
+      <label :class="{ active: tab === 'case' }">
+        <input type="radio" name="text-tool" :checked="tab === 'case'" @change="setTab('case')">Change case
+      </label>
+      <label :class="{ active: tab === 'compare' }">
+        <input type="radio" name="text-tool" :checked="tab === 'compare'" @change="setTab('compare')">Compare texts
+      </label>
+    </div>
+
+    <ClientOnly v-if="tab === 'compare'">
+      <TextCompare />
+    </ClientOnly>
+
+    <div v-else class="workspace">
       <Step title="Your text" class="input-step">
         <div class="panel editor">
           <textarea
@@ -136,6 +161,17 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 </template>
 
 <style scoped>
+.tabs {
+  width: fit-content;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.tabs label {
+  padding-inline: 1.1rem;
+  white-space: nowrap;
+}
+
 /* Editor: the case picker is a toolbar across the top, input and result side by side below */
 .workspace {
   display: grid;

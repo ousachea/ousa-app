@@ -18,7 +18,7 @@ const MENU_KEYS: Record<string, string> = {
   '/qr': 'q',
   '/phone': 'p',
   '/compress': 'i', // Image
-  '/case': 't', // Text
+  '/text': 't', // Text
   '/password': 'w', // passWords
   '/exchange': 'x', // eXchange
   '/things': 'o', // Own

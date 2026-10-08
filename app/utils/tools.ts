@@ -57,14 +57,14 @@ export const TOOLS: Tool[] = [
     demo: true
   },
   {
-    to: '/case',
-    name: 'Text case converter',
-    summary: 'Switch text between lowercase, UPPERCASE, Title Case and Sentence case.',
+    to: '/text',
+    name: 'Text tools',
+    summary: 'Change text to any case, or compare two versions and see exactly what changed.',
     color: 'var(--yellow)',
     onColor: '#1b1f2a',
     icon: 'case',
-    seoTitle: 'Text case converter',
-    description: 'Change text to lowercase, UPPERCASE, Title Case or Sentence case instantly. Paste your text, pick a style and copy the result.',
+    seoTitle: 'Text case converter and text compare',
+    description: 'Change text to lowercase, UPPERCASE, Title Case or Sentence case, or compare two texts side by side and see every word added, removed or changed.',
     demo: true
   },
   {

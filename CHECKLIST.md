@@ -292,21 +292,19 @@ Show manufacturer logos automatically, generic icon fallback.
 # PART D — TEXT TOOLS APP (`/case`)
 
 ## #51 — Rename Text Case
-**Status:** ⬜
+**Status:** 🟢
 Rename to reflect what it does; update navigation, page title, header, description, metadata.
-**Notes:**
+**Notes:** Renamed to **Text tools** at `/text` (`/case` redirects with a 301): menu (key T), page title, header, summary, search title and description, changelog (v2.0.0), sitemap/OG (copied `og/text.png`; rerun `npm run og:images` to redraw it with the new name), offline cache list. Two tools in one page: Change case and Compare texts (tab kept in the URL).
 
 ## #52 — Text Comparison
-**Status:** ⬜
+**Status:** 🟢
 Original vs Modified, highlighting added, removed, changed.
-**Notes:**
+**Notes:** `utils/textDiff.ts`: word-level Myers diff (memory grows with the number of edits, not the text; 4,000 words in ~3 ms; verified both texts rebuild exactly). `TextCompare.vue`: Original VS Modified, word counts, Ignore capitals / Ignore extra spaces, Swap, Clear (with Undo), summary (+added, −removed, ~changed, or Identical) with a legend; added = green underline `<ins>`, removed = red strikethrough `<del>`, changed = amber old→new, so colour isn't the only signal. Example data via the app icon. axe: no issues.
 
 ## #53 — Responsive Text Comparison
-**Status:** ⬜
+**Status:** 🟢
 Side by side on desktop, stacked on mobile; long text stays readable.
-**Notes:**
-
----
+**Notes:** Desktop: inputs and results side by side (or Inline, remembered). Phones (≤760 px): inputs, VS and both result columns stack. Long text keeps its line breaks, wraps long words and scrolls inside a 32rem box; very large texts compare a moment after typing stops.
 
 # PART E — RENEWALS APP
 

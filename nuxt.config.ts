@@ -6,6 +6,8 @@ export default defineNuxtConfig({
   routeRules: {
     // The password saver now lives in the Passwords tool
     '/vault': { redirect: { to: '/password?tab=saved', status: 301 } },
+    // The text case converter grew into Text tools
+    '/case': { redirect: { to: '/text', status: 301 } },
     // The Phrase bank app was retired
     '/phrases': { redirect: { to: '/', status: 301 } }
   },
