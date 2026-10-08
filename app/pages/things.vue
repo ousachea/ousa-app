@@ -646,7 +646,7 @@ function del(t: Thing) {
               <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
                 <header class="thing-head">
                   <span class="thing-icon" :class="{ logo: logoOf(t) }" aria-hidden="true">
-                    <img v-if="logoOf(t)" :src="logoOf(t)" alt="" referrerpolicy="no-referrer" @error="brokenLogos.add(logoOf(t)!)">
+                    <img v-if="logoOf(t)" :src="logoOf(t)" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenLogos.add(logoOf(t)!)">
                     <CategoryIcon v-else :name="typeOf(t.category).icon" />
                   </span>
                   <span class="thing-title">

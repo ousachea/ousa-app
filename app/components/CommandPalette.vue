@@ -218,6 +218,7 @@ watch(() => palette.open, (open) => {
   const el = dialog.value
   if (!el) return
   if (open && !el.open) {
+    takeSearchSnapshot()
     query.value = ''
     active.value = 0
     el.showModal()
@@ -229,6 +230,7 @@ watch(() => palette.open, (open) => {
 })
 
 function onClose() {
+  dropSearchSnapshot()
   if (palette.open) closePalette()
 }
 

@@ -176,6 +176,9 @@ function parseLink(raw: string) {
 }
 
 function flash(id: string) {
+  // Make sure it's drawn even in a long list
+  const at = shown.value.findIndex(b => b.id === id)
+  if (at >= limit.value) limit.value = at + 1
   flashId.value = id
   setTimeout(() => flashId.value === id && (flashId.value = undefined), 1600)
   nextTick(() => document.getElementById(`bm-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
@@ -310,6 +313,8 @@ function followLink() {
   else if (route.query.focus) {
     activeFolder.value = ALL_BOOKMARKS
     query.value = ''
+    // Draw everything so the bookmark being jumped to exists on the page
+    nextTick(() => (limit.value = Math.max(limit.value, shown.value.length)))
   }
 }
 onMounted(followLink)
@@ -394,6 +399,23 @@ const shown = computed(() => {
   if (sort.value === 'opened') return list.sort((a, b) => b.visits - a.visits || (b.lastOpened ?? '').localeCompare(a.lastOpened ?? ''))
   return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 })
+
+// Long libraries draw 150 rows at a time (#70); more appear as you reach the end
+const PAGE = 150
+const limit = ref(PAGE)
+watch([activeFolder, query, sort], () => (limit.value = PAGE))
+const visibleMarks = computed(() => shown.value.slice(0, limit.value))
+const moreSentinel = ref<HTMLElement>()
+let moreObserver: IntersectionObserver | undefined
+watch(moreSentinel, (el) => {
+  moreObserver?.disconnect()
+  if (!el) return
+  moreObserver = new IntersectionObserver((entries) => {
+    if (entries.some(e => e.isIntersecting)) limit.value += PAGE
+  }, { rootMargin: '600px' })
+  moreObserver.observe(el)
+})
+onBeforeUnmount(() => moreObserver?.disconnect())
 
 const activeFolderRecord = computed(() => folderById(activeFolder.value))
 const listTitle = computed(() => activeFolder.value === UNFILED ? 'Not in a folder' : activeFolderRecord.value ? pathText(folders.value, activeFolder.value) : 'All bookmarks')
@@ -809,7 +831,7 @@ async function enrich(list: Bookmark[]) {
           </div>
 
           <TransitionGroup v-if="shown.length" tag="ul" name="list" class="marks" :class="view === 'compact' ? ['list', 'compact'] : view">
-            <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :class="{ flash: flashId === b.id }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)">
+            <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :class="{ flash: flashId === b.id }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)">
               <span class="mark-icon" aria-hidden="true">
                 <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
                 <span v-else>{{ initial(b) }}</span>
@@ -846,6 +868,9 @@ async function enrich(list: Bookmark[]) {
               </div>
             </li>
           </TransitionGroup>
+          <div v-if="shown.length > limit" ref="moreSentinel" class="more-sentinel">
+            <button type="button" class="btn btn-quiet btn-sm" @click="limit += PAGE">Show more ({{ shown.length - limit }} left)</button>
+          </div>
 
           <div v-else-if="ready && items.length" class="empty">
             <p>Nothing matches{{ query ? ` “${query}”` : '' }}.</p>
@@ -925,6 +950,12 @@ async function enrich(list: Bookmark[]) {
 
 <style scoped>
 /* ---------- Address bar ---------- */
+.more-sentinel {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
 .count-pill {
   display: inline-block;
   min-width: 1.3em;

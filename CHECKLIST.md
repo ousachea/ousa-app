@@ -397,10 +397,10 @@ Every network operation has loading, success, failure, retry and offline fallbac
 **Notes:** Reviewed every network call. Link previews: reading state, saves under the address on failure/offline. Refresh icon: loading/success/failure/offline. Rate: skeleton, last saved rate with date + Try again, and (new) when no rate ever loaded, a labelled typical rate in Renewals and Things instead of “…” forever (`useMarketRateInfo`). Holidays: skeleton, saved copy, Try again. Gold price: offline-aware, Try again. Google contacts / files: busy labels and error toasts. Photo upload: saving state and error. Firestore: badge, one toast with Retry, pending changes retried. Logos: fallback icons. Exports are local.
 
 ## #70 — Performance Optimization
-**Status:** ⬜
+**Status:** 🔵
 Re-renders, images, icons, slow lists, network requests, polling, bundle size; lazy loading, caching,
 virtualisation where needed, debounced search, efficient state.
-**Notes:**
+**Notes:** Measured a production build: every page loads ~1.5 MB raw JS; PDF libraries (pdf.js, pdf-lib, ~840 KB) only load on /compress, QR scanning only on /qr. Done: duplicate finder parses each address once; ⌘K reads each app's data once per opening instead of per keystroke; long bookmark lists draw 150 rows at a time (more as you scroll, jump-to and new saves always drawn): 3,000 bookmarks open in ~1.8 s in dev with search ~125 ms; logos and icons lazy-load; Google Fonts use display=swap; timers are only per-second where a countdown needs it (renewals under an hour, countdown clock), otherwise 30–60 s; rate/holiday/gold requests are cached. **Needs your decision:** the Firebase SDK (526 KB raw, ~157 KB gzipped) loads on every page for everyone, even signed out. Loading it only when signing in or syncing would cut first-load JS by about a third, but it touches sign-in and sync, and I couldn't test against your real Firebase project, so I left it as is rather than risk your sync.
 
 ## #71 — Mobile UX Review
 **Status:** ⬜

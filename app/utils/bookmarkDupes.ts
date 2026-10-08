@@ -75,9 +75,15 @@ const sameTitle = (a: string, b: string) => {
 export function findDuplicates<T extends DupeItem>(list: readonly T[], ignored: ReadonlySet<string> = new Set()): DupeGroup<T>[] {
   const groups: DupeGroup<T>[] = []
 
-  // 1. Duplicates: same page key
+  // 1. Duplicates: same page key (each address parsed once; this runs whenever bookmarks change)
+  const keys = new Map(list.map(b => [b.id, pageKey(b.url)]))
   const byPage = new Map<string, T[]>()
-  for (const b of list) byPage.set(pageKey(b.url), [...(byPage.get(pageKey(b.url)) ?? []), b])
+  for (const b of list) {
+    const k = keys.get(b.id)!
+    const group = byPage.get(k)
+    if (group) group.push(b)
+    else byPage.set(k, [b])
+  }
   const inDuplicate = new Set<string>()
   for (const [key, items] of byPage) {
     if (items.length < 2) continue
@@ -89,10 +95,13 @@ export function findDuplicates<T extends DupeItem>(list: readonly T[], ignored: 
 
   // 2. Similar: one representative per page, compared pairwise on the same site
   const reps = [...byPage.values()].map(items => items[0]!)
+  const segs = new Map(reps.map(b => [b.id, segments(b.url)]))
   const bySite = new Map<string, T[]>()
   for (const b of reps) {
-    const { host } = segments(b.url)
-    bySite.set(host, [...(bySite.get(host) ?? []), b])
+    const { host } = segs.get(b.id)!
+    const site = bySite.get(host)
+    if (site) site.push(b)
+    else bySite.set(host, [b])
   }
   const parent = new Map<string, string>()
   const find = (x: string): string => (parent.get(x) === x || !parent.has(x) ? x : find(parent.get(x)!))
@@ -105,8 +114,8 @@ export function findDuplicates<T extends DupeItem>(list: readonly T[], ignored: 
       for (let j = i + 1; j < site.length; j++) {
         const a = site[i]!
         const b = site[j]!
-        const pa = segments(a.url).parts
-        const pb = segments(b.url).parts
+        const pa = segs.get(a.id)!.parts
+        const pb = segs.get(b.id)!.parts
         const [short, long] = pa.length <= pb.length ? [pa, pb] : [pb, pa]
         const nested = short.length >= 1 && long.length - short.length === 1 && short.every((p, k) => p === long[k])
         const titled = sameTitle(a.title, b.title)
@@ -126,7 +135,7 @@ export function findDuplicates<T extends DupeItem>(list: readonly T[], ignored: 
   }
   for (const [root, items] of clusters) {
     if (items.length < 2) continue
-    const groupKey = `sim:${items.map(b => pageKey(b.url)).sort().join('|')}`
+    const groupKey = `sim:${items.map(b => keys.get(b.id)!).sort().join('|')}`
     if (ignored.has(groupKey)) continue
     const reasons = new Set<string>()
     for (const [r, set] of why) if (find(r) === root) set.forEach(s => reasons.add(s))

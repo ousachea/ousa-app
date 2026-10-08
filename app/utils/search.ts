@@ -90,7 +90,24 @@ export const SEARCH_SOURCES: Source[] = [
   }
 ]
 
+// The palette reads every app's list once when it opens, not on every keystroke
+let snapshot: Map<string, Record<string, any>[]> | undefined
+export function takeSearchSnapshot() {
+  snapshot = new Map()
+}
+export function dropSearchSnapshot() {
+  snapshot = undefined
+}
+
 function readCollection(name: string): Record<string, any>[] {
+  const hit = snapshot?.get(name)
+  if (hit) return hit
+  const list = readCollectionFromStorage(name)
+  snapshot?.set(name, list)
+  return list
+}
+
+function readCollectionFromStorage(name: string): Record<string, any>[] {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(`ousa-app:${name}`) ?? '[]')
     return Array.isArray(parsed) ? parsed : []

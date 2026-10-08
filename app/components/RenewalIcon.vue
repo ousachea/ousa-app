@@ -27,7 +27,7 @@ const letter = computed(() => (props.name.trim()[0] ?? '?').toUpperCase())
 
 <template>
   <span class="renewal-icon" :class="{ image: src && !broken }" :style="{ '--c': color }" aria-hidden="true">
-    <img v-if="src && !broken" :src="src" alt="" referrerpolicy="no-referrer" @error="broken = true">
+    <img v-if="src && !broken" :src="src" alt="" loading="lazy" referrerpolicy="no-referrer" @error="broken = true">
     <span v-else>{{ letter }}</span>
   </span>
 </template>
