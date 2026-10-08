@@ -1,31 +1,158 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import type { Bookmark } from '~/utils/bookmarks'
+import type { Bookmark, ImportedBookmark } from '~/utils/bookmarks'
+import type { Folder } from '~/utils/folders'
 import type { CsvColumn } from '~/utils/transfer'
 import type { MenuEntry } from '~/composables/useContextMenu'
 
 const { play } = useSound()
-// Demo: a few pinned daily sites, tagged reading, and a note
-const demoMark = (url: string, title: string, tags: string[], extra: Partial<Bookmark> = {}): Omit<Bookmark, 'id'> => ({
-  url, title, tags, description: '', note: '', icon: new URL('/favicon.ico', url).href, pinned: false, visits: 0, createdAt: new Date(isoDaysAgo(Math.round(Math.random() * 90))).toISOString(), ...extra
+
+// ---------- Demo: a few folders, pinned daily sites and a note ----------
+const DEMO_FOLDERS = (): (Folder)[] => [
+  { id: 'demo-dev', name: 'Development', parentId: '', icon: 'code', color: 'indigo', order: 0 },
+  { id: 'demo-docs', name: 'Documentation', parentId: 'demo-dev', icon: 'docs', color: '', order: 0 },
+  { id: 'demo-design', name: 'Design', parentId: '', icon: 'design', color: 'pink', order: 1 },
+  { id: 'demo-news', name: 'News', parentId: '', icon: 'news', color: 'teal', order: 2 }
+]
+const demoMark = (url: string, title: string, folders: string[], extra: Partial<Bookmark> = {}): Omit<Bookmark, 'id'> => ({
+  url, title, tags: [], folders, description: '', note: '', icon: new URL('/favicon.ico', url).href, pinned: false, visits: 0, createdAt: new Date(isoDaysAgo(Math.round(Math.random() * 90))).toISOString(), ...extra
 })
 const DEMO = (): Omit<Bookmark, 'id'>[] => [
-  demoMark('https://github.com/', 'GitHub', ['dev'], { pinned: true, visits: 42, icon: 'https://github.com/fluidicon.png' }),
-  demoMark('https://nuxt.com/', 'Nuxt', ['dev', 'docs'], { pinned: true, visits: 18, icon: 'https://nuxt.com/icon.png', note: 'Docs for the framework this app is built on' }),
-  demoMark('https://developer.mozilla.org/', 'MDN Web Docs', ['dev', 'docs'], { visits: 9, description: 'Resources for developers, by developers.' }),
-  demoMark('https://www.figma.com/', 'Figma', ['design'], { pinned: true, visits: 12 }),
-  demoMark('https://fonts.google.com/', 'Google Fonts', ['design'], { description: 'Making the web more beautiful, fast, and open through great typography.' }),
-  demoMark('https://www.khmertimeskh.com/', 'Khmer Times', ['news', 'khmer'], { visits: 5 }),
+  demoMark('https://github.com/', 'GitHub', ['demo-dev'], { pinned: true, visits: 42, icon: 'https://github.com/fluidicon.png' }),
+  demoMark('https://nuxt.com/', 'Nuxt', ['demo-dev', 'demo-docs'], { pinned: true, visits: 18, icon: 'https://nuxt.com/icon.png', note: 'Docs for the framework this app is built on' }),
+  demoMark('https://developer.mozilla.org/', 'MDN Web Docs', ['demo-docs'], { visits: 9, description: 'Resources for developers, by developers.' }),
+  demoMark('https://www.figma.com/', 'Figma', ['demo-design'], { pinned: true, visits: 12 }),
+  demoMark('https://fonts.google.com/', 'Google Fonts', ['demo-design'], { description: 'Making the web more beautiful, fast, and open through great typography.' }),
+  demoMark('https://www.khmertimeskh.com/', 'Khmer Times', ['demo-news'], { visits: 5 }),
   demoMark('https://www.youtube.com/', 'YouTube', [], { visits: 30 })
 ]
 const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Bookmark>('bookmarks', undefined, { demo: DEMO })
+
+// ---------- Folders (CHECKLIST.md #35–#40) ----------
+const folderStore = useCollection<Folder>('bookmark-folders', undefined, { demo: DEMO_FOLDERS, app: '/bookmarks', trash: false, label: f => f.name })
+const folders = folderStore.items
+const folderIds = computed(() => new Set(folders.value.map(f => f.id)))
+// Only folders that still exist; a restored bookmark may point at one deleted since
+const foldersOf = (b: Pick<Bookmark, 'folders'>) => (b.folders ?? []).filter(id => folderIds.value.has(id))
+const folderById = (id: string) => folders.value.find(f => f.id === id)
+const pathsOf = (b: Bookmark) => foldersOf(b).map(id => pathText(folders.value, id))
+
+/** A folder by name (any capitalisation), made if it doesn't exist yet; returns its id */
+function ensureFolder(name: string, parentId = ''): string {
+  const n = folderName(name)
+  const found = folders.value.find(f => f.parentId === parentId && f.name.toLowerCase() === n.toLowerCase())
+  if (found) return found.id
+  return folderStore.add({ name: n, parentId, icon: guessIcon(n), color: '', order: childrenOf(folders.value, parentId).length }).id
+}
+/** "Work → Banking" (or ["Work", "Banking"]) to the innermost folder's id, making any that are missing */
+function ensurePath(path: string[]) {
+  let parent = ''
+  for (const part of path.map(p => p.trim()).filter(Boolean)) parent = ensureFolder(part, parent)
+  return parent
+}
+
+// Old free-text tags become folders, once, when both lists have loaded
+let migrated = false
+watch([ready, folderStore.ready], ([a, b]) => {
+  if (!a || !b || migrated || useDemoState('/bookmarks').active.value) return
+  migrated = true
+  const pending = items.value.filter(bk => !bk.folders && bk.tags?.length)
+  if (!pending.length) return
+  for (const bk of pending) update(bk.id, { folders: [...new Set(bk.tags.map(t => ensureFolder(t.replace(/-/g, ' '))))] }, { quiet: true })
+  toast.success('Tags are folders now', { description: `${pending.length} ${pending.length === 1 ? 'bookmark was' : 'bookmarks were'} put in folders named after their tags.` })
+}, { immediate: true })
+
+// Open and closed folders in the sidebar, remembered (#14)
+const collapsed = useRemembered<string[]>('bookmarks-collapsed', [], Array.isArray)
+function toggleFolder(id: string) {
+  collapsed.value = collapsed.value.includes(id) ? collapsed.value.filter(x => x !== id) : [...collapsed.value, id]
+}
+
+// Create / edit / delete
+const folderEditor = reactive({ open: false, folder: undefined as Folder | undefined, parentId: '' })
+function openNewFolder(parentId = '') {
+  Object.assign(folderEditor, { open: true, folder: undefined, parentId })
+  if (parentId && collapsed.value.includes(parentId)) toggleFolder(parentId)
+  play('open')
+}
+function openEditFolder(f: Folder) {
+  Object.assign(folderEditor, { open: true, folder: f, parentId: f.parentId })
+  play('open')
+}
+function saveFolder(data: Pick<Folder, 'name' | 'parentId' | 'icon' | 'color'>) {
+  const f = folderEditor.folder
+  folderEditor.open = false
+  if (f) {
+    const before = folderStore.update(f.id, { ...data, ...(data.parentId !== f.parentId ? { order: childrenOf(folders.value, data.parentId).length } : {}) })
+    toastSaved(before && (() => folderStore.replace(before)), `${data.name} saved`)
+  } else {
+    const created = folderStore.add({ ...data, order: childrenOf(folders.value, data.parentId).length })
+    activeFolder.value = created.id
+    toast.success(`${created.name} created`, { action: { label: 'Undo', onClick: () => folderStore.remove(created.id, { undoAdd: true }) } })
+  }
+  play('success')
+}
+
+// Deleting a folder keeps its bookmarks (they just leave it) and lifts its sub-folders up a level.
+// Undo puts everything back exactly.
+function deleteFolder(f: Folder) {
+  const members = items.value.filter(b => b.folders?.includes(f.id))
+  const children = folders.value.filter(c => c.parentId === f.id)
+  for (const b of members) update(b.id, { folders: (b.folders ?? []).filter(id => id !== f.id) }, { quiet: true })
+  for (const c of children) folderStore.update(c.id, { parentId: f.parentId }, { quiet: true })
+  folderStore.remove(f.id)
+  if (activeFolder.value === f.id) activeFolder.value = ALL_BOOKMARKS
+  play('delete')
+  toast(`${f.name} deleted`, {
+    description: members.length ? `Its ${members.length} ${members.length === 1 ? 'bookmark is' : 'bookmarks are'} still in All bookmarks.` : undefined,
+    duration: 7000,
+    action: { label: 'Undo', onClick: () => {
+      folderStore.restore(f)
+      for (const c of children) folderStore.update(c.id, { parentId: f.id }, { quiet: true })
+      for (const b of members) update(b.id, { folders: [...new Set([...(items.value.find(x => x.id === b.id)?.folders ?? []), f.id])] }, { quiet: true })
+    } }
+  })
+}
+
+// Reorder or nest by dragging (#28): siblings are renumbered in their new order
+function moveFolder(id: string, parentId: string, beforeId: string | null) {
+  const f = folderById(id)
+  if (!f || id === parentId || descendantsOf(folders.value, id).includes(parentId)) return
+  const before = folders.value.map(x => ({ ...x }))
+  const siblings = childrenOf(folders.value, parentId).filter(s => s.id !== id)
+  const at = beforeId ? siblings.findIndex(s => s.id === beforeId) : siblings.length
+  siblings.splice(at < 0 ? siblings.length : at, 0, f)
+  siblings.forEach((s, i) => {
+    if (s.order !== i || s.parentId !== parentId) folderStore.update(s.id, { order: i, parentId }, { quiet: true })
+  })
+  if (parentId && collapsed.value.includes(parentId)) toggleFolder(parentId)
+  play('select')
+  toast(parentId && f.parentId !== parentId ? `${f.name} moved into ${folderById(parentId)?.name}` : `${f.name} moved`, {
+    action: { label: 'Undo', onClick: () => before.forEach(x => folderStore.replace(x)) }
+  })
+}
+
+// Move a bookmark to a folder (drag onto the sidebar, or Move to folder…); Not in a folder clears it
+function moveBookmark(id: string, folderId: string) {
+  const b = items.value.find(x => x.id === id)
+  if (!b) return
+  const target = folderId === UNFILED || folderId === ALL_BOOKMARKS ? [] : [folderId]
+  if (JSON.stringify(foldersOf(b)) === JSON.stringify(target)) return
+  const before = update(id, { folders: target, updatedAt: new Date().toISOString() })
+  play('success')
+  toast(target.length ? `Moved to ${pathText(folders.value, folderId)}` : 'Taken out of its folders', {
+    description: b.title,
+    action: before && { label: 'Undo', onClick: () => replace(before) }
+  })
+}
+const moving = ref<Bookmark>()
 
 // ---------- Save a link ----------
 const online = useOnline()
 
 // Pull down on a phone to sync again (CHECKLIST.md #26)
 usePullToRefresh(async () => {
-  await sync.retry()
+  await Promise.all([sync.retry(), folderStore.sync.retry()])
   toast(sync.signedIn.value ? 'Up to date with your account' : 'Refreshed', { duration: 1800 })
 })
 const linkInput = ref('')
@@ -52,16 +179,28 @@ function flash(id: string) {
 // A link that's already saved asks first (CHECKLIST.md #29)
 const duplicateOf = ref<Bookmark>()
 watch(linkInput, () => (duplicateOf.value = undefined))
-const folderPath = (b: Bookmark) => b.tags.length ? b.tags.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') : undefined
+const folderPath = (b: Bookmark) => pathsOf(b).join(', ') || undefined
 function showExisting() {
   const b = duplicateOf.value
   duplicateOf.value = undefined
   if (!b) return
   linkInput.value = ''
-  activeTag.value = undefined
+  activeFolder.value = ALL_BOOKMARKS
   query.value = ''
   flash(b.id)
 }
+
+// A folder suggestion as a name, from where you've filed other links from the site (CHECKLIST.md #30)
+const suggestFor = (url: string, exceptId?: string) => {
+  const name = suggestFolder(url, items.value.filter(b => b.id !== exceptId).map(b => ({ url: b.url, tags: foldersOf(b).map(id => folderById(id)?.name ?? '') })))
+  return name ? folderName(name) : undefined
+}
+
+// Review before saving (CHECKLIST.md #43): what the page says about itself, editable, with folders.
+// Enter in the link box reads the page; Enter again (or Save) keeps it.
+const review = ref<{ url: string, title: string, description: string, icon: string, image: string, siteName: string, folders: string[], suggestion?: string, offline: boolean }>()
+const reviewTitle = ref<HTMLInputElement>()
+const reviewImageBroken = ref(false)
 
 async function save(force = false) {
   const raw = linkInput.value.trim()
@@ -81,62 +220,92 @@ async function save(force = false) {
   duplicateOf.value = undefined
 
   saving.value = true
-  // Read the page's title and icon; if the site won't say (or there's no internet), save it under its domain name
+  // Read the page's title, description, image and icon; if the site won't say (or there's no internet), use its address
   const preview = online.value
     ? await $fetch('/api/link-preview', { query: { url: url.href } }).catch(() => undefined)
     : undefined
   saving.value = false
 
   const finalUrl = preview?.url || url.href
-  // Not filed yet: offer the folder this site usually goes in (CHECKLIST.md #30)
-  const filed = !!(activeTag.value && activeTag.value !== UNSORTED)
-  const suggested = filed ? undefined : suggestFolder(finalUrl, items.value)
-  const record = add({
+  const inFolder = activeFolder.value && activeFolder.value !== UNFILED && folderIds.value.has(activeFolder.value)
+  const suggestion = inFolder ? undefined : suggestFor(finalUrl)
+  reviewImageBroken.value = false
+  review.value = {
     url: finalUrl,
     title: preview?.title || hostOf(finalUrl),
     description: preview?.description ?? '',
-    note: '',
-    tags: activeTag.value && activeTag.value !== UNSORTED ? [activeTag.value] : [],
     icon: preview?.icon || new URL('/favicon.ico', finalUrl).href,
+    image: preview?.image ?? '',
+    siteName: preview?.siteName || preview?.domain || hostOf(finalUrl),
+    folders: inFolder ? [activeFolder.value] : [],
+    suggestion,
+    offline: !preview
+  }
+  play('open')
+  nextTick(() => reviewTitle.value?.focus())
+}
+
+function keepReviewed() {
+  const r = review.value
+  if (!r) return
+  const record = add({
+    url: r.url,
+    title: r.title.trim() || hostOf(r.url),
+    description: r.description.trim(),
+    note: '',
+    tags: [],
+    folders: r.folders,
+    icon: r.icon,
+    ...(r.image && !reviewImageBroken.value ? { image: r.image } : {}),
     pinned: false,
     visits: 0,
     createdAt: new Date().toISOString()
   })
+  review.value = undefined
   linkInput.value = ''
   play('success')
   toast.success('Bookmark saved', {
-    description: online.value ? record.title : 'Website details aren’t available offline, so it’s saved under its address. Edit it any time.',
-    action: suggested
-      ? { label: `Add to ${capitalise(suggested)}`, onClick: () => {
-          update(record.id, { tags: [suggested] })
-          play('success')
-        } }
-      : { label: 'Add tags', onClick: () => edit(record) },
-    cancel: { label: 'Undo', onClick: () => remove(record.id, { undoAdd: true }) }
+    description: record.folders?.length ? `${record.title} · ${pathsOf(record).join(', ')}` : record.title,
+    action: { label: 'Undo', onClick: () => remove(record.id, { undoAdd: true }) }
   })
   flash(record.id)
+  nextTick(() => linkField.value?.focus())
+}
+
+function cancelReview() {
+  review.value = undefined
+  nextTick(() => linkField.value?.focus())
 }
 
 // ---------- Browse ----------
-const UNSORTED = ':unsorted'
 const query = ref('')
 // The folder you were looking at, the sort and the view are remembered on this device (CHECKLIST.md #14)
-const activeTag = useRemembered<string | undefined>('bookmarks-folder', undefined, v => typeof v === 'string' || v === null || v === undefined)
-// Opened from search on a folder (?folder=work): show just that folder
+const activeFolder = useRemembered<string>('bookmarks-folder-id', ALL_BOOKMARKS, v => typeof v === 'string')
+// Opened from search on a folder (?folder=<id>): show just that folder
 const route = useRoute()
-onMounted(() => {
+// Also when already here (picking a folder in ⌘K while on Bookmarks)
+const router = useRouter()
+function followLink() {
   const f = route.query.folder
   if (typeof f === 'string' && f) {
-    activeTag.value = f
+    activeFolder.value = f
+    query.value = ''
     const { folder: _, ...rest } = route.query
-    useRouter().replace({ query: rest })
+    router.replace({ query: rest })
   }
   // Jumping to one bookmark from search: show everything so it's on screen
   else if (route.query.focus) {
-    activeTag.value = undefined
+    activeFolder.value = ALL_BOOKMARKS
     query.value = ''
   }
+}
+onMounted(followLink)
+watch(() => route.query, followLink)
+// A folder that no longer exists drops back to All
+watch([folders, activeFolder], () => {
+  if (folderStore.ready.value && activeFolder.value && activeFolder.value !== UNFILED && !folderIds.value.has(activeFolder.value)) activeFolder.value = ALL_BOOKMARKS
 })
+
 const SORTS = [
   { value: 'newest', label: 'Recently added' },
   { value: 'updated', label: 'Recently updated' },
@@ -167,17 +336,13 @@ function setView(next: View) {
 }
 const searchInput = ref<HTMLInputElement>()
 
-const tags = computed(() => {
-  const counts = new Map<string, number>()
-  for (const b of items.value) for (const t of b.tags) counts.set(t, (counts.get(t) ?? 0) + 1)
-  return [...counts].sort((a, b) => a[0].localeCompare(b[0])).map(([name, count]) => ({ name, count }))
+// How many bookmarks sit directly in each folder; the tree adds up sub-folders itself
+const counts = computed(() => {
+  const out: Record<string, number> = {}
+  for (const b of items.value) for (const id of foldersOf(b)) out[id] = (out[id] ?? 0) + 1
+  return out
 })
-const unsortedCount = computed(() => items.value.filter(b => !b.tags.length).length)
-
-// A tag that no longer exists (its last bookmark was deleted or retagged) drops back to All
-watch([tags, activeTag], ([list]) => {
-  if (ready.value && activeTag.value && activeTag.value !== UNSORTED && !list.some(t => t.name === activeTag.value)) activeTag.value = undefined
-})
+const unfiledCount = computed(() => items.value.filter(b => !foldersOf(b).length).length)
 
 // The pinned shelf keeps the order you drag it into; never-dragged ones follow, oldest first
 const pinned = computed(() => items.value
@@ -193,22 +358,32 @@ const reorderPinned = useDragReorder<Bookmark>({
   }
 })
 
+// A folder shows its own bookmarks and those in its sub-folders
+const inView = computed(() => {
+  if (!activeFolder.value) return undefined
+  if (activeFolder.value === UNFILED) return UNFILED
+  return new Set([activeFolder.value, ...descendantsOf(folders.value, activeFolder.value)])
+})
+
 const shown = computed(() => {
   const q = query.value.trim().toLowerCase()
+  const scope = inView.value
   const list = items.value.filter((b) => {
-    if (activeTag.value === UNSORTED ? b.tags.length : activeTag.value && !b.tags.includes(activeTag.value)) return false
+    const mine = foldersOf(b)
+    if (scope === UNFILED ? mine.length : scope && !mine.some(id => scope.has(id))) return false
     if (!q) return true
-    return [b.title, b.url, b.note, b.description, ...b.tags].some(f => f.toLowerCase().includes(q))
+    return [b.title, b.url, b.note, b.description, ...pathsOf(b)].some(f => f.toLowerCase().includes(q))
   })
   if (sort.value === 'az') return list.sort((a, b) => a.title.localeCompare(b.title))
   if (sort.value === 'updated') return list.sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
-  // By folder, then by name; bookmarks without one come last
-  if (sort.value === 'folder') return list.sort((a, b) => (a.tags[0] ?? '\uffff').localeCompare(b.tags[0] ?? '\uffff') || a.title.localeCompare(b.title))
+  // By folder path, then by name; bookmarks without one come last
+  if (sort.value === 'folder') return list.sort((a, b) => (pathsOf(a)[0] ?? '￿').localeCompare(pathsOf(b)[0] ?? '￿') || a.title.localeCompare(b.title))
   if (sort.value === 'opened') return list.sort((a, b) => b.visits - a.visits || (b.lastOpened ?? '').localeCompare(a.lastOpened ?? ''))
   return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 })
 
-const listTitle = computed(() => activeTag.value === UNSORTED ? 'No tag' : activeTag.value ? `#${activeTag.value}` : 'All bookmarks')
+const activeFolderRecord = computed(() => folderById(activeFolder.value))
+const listTitle = computed(() => activeFolder.value === UNFILED ? 'Not in a folder' : activeFolderRecord.value ? pathText(folders.value, activeFolder.value) : 'All bookmarks')
 
 // "/" jumps to search from anywhere on the page, like most sites with a search box
 function onKey(e: KeyboardEvent) {
@@ -245,6 +420,15 @@ function del(b: Bookmark) {
   toastDeleted(b.title, () => removed && restore(removed))
 }
 
+// Bookmarks drag onto folders in the sidebar (desktop; phones use Move to folder…)
+const finePointer = ref(false)
+onMounted(() => (finePointer.value = matchMedia('(pointer: fine)').matches))
+function onBookmarkDrag(e: DragEvent, b: Bookmark) {
+  e.dataTransfer?.setData('application/x-bookmark', b.id)
+  e.dataTransfer?.setData('text/uri-list', b.url)
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove'
+}
+
 // ---------- Right-click / long-press menu (CHECKLIST.md #26, #27) ----------
 const menuFor = useRowMenu()
 const bookmarkMenu = (b: Bookmark): MenuEntry[] => [
@@ -258,6 +442,7 @@ const bookmarkMenu = (b: Bookmark): MenuEntry[] => [
   } },
   '-',
   { label: 'Edit', icon: 'edit', run: () => edit(b) },
+  { label: 'Move to folder…', icon: 'folder', run: () => (moving.value = b) },
   { label: b.pinned ? 'Unpin' : 'Pin to the top', icon: 'pin', run: () => togglePin(b) },
   { label: 'Copy link', icon: 'copy', run: () => copyLink(b) },
   { label: 'Refresh icon', icon: 'refresh', disabled: refreshing.value.has(b.id), run: () => refreshIcon(b) },
@@ -339,26 +524,20 @@ function ago(iso?: string) {
 
 // ---------- Edit (popup) ----------
 const editingId = ref<string>()
-const form = reactive({ url: '', title: '', note: '', tags: '', pinned: false })
-const formTags = computed(() => [...new Set(form.tags.split(',').map(normaliseTag).filter(Boolean))])
+const form = reactive({ url: '', title: '', note: '', folders: [] as string[], pinned: false })
 // A folder suggestion while it has none (CHECKLIST.md #30); Ignore hides it for this bookmark
 const ignoredSuggestion = ref(false)
 const formSuggestion = computed(() => {
-  if (ignoredSuggestion.value || formTags.value.length) return undefined
+  if (ignoredSuggestion.value || form.folders.length) return undefined
   const link = parseLink(form.url.trim())
-  return link ? suggestFolder(link.href, items.value.filter(b => b.id !== editingId.value)) : undefined
+  return link ? suggestFor(link.href, editingId.value) : undefined
 })
-const suggestions = computed(() => tags.value.map(t => t.name).filter(t => !formTags.value.includes(t)).slice(0, 12))
 
 function edit(b: Bookmark) {
   ignoredSuggestion.value = false
   editingId.value = b.id
-  Object.assign(form, { url: b.url, title: b.title, note: b.note, tags: b.tags.join(', '), pinned: b.pinned })
+  Object.assign(form, { url: b.url, title: b.title, note: b.note, folders: foldersOf(b), pinned: b.pinned })
   play('select')
-}
-
-function addSuggestion(t: string) {
-  form.tags = [...formTags.value, t].join(', ')
 }
 
 function saveEdit() {
@@ -370,7 +549,7 @@ function saveEdit() {
     url: url.href,
     title: form.title.trim() || hostOf(url.href),
     note: form.note.trim(),
-    tags: formTags.value,
+    folders: [...form.folders],
     pinned: form.pinned,
     updatedAt: new Date().toISOString(),
     // A new address means a new site icon
@@ -386,19 +565,22 @@ const transferOpen = ref(false)
 const BOOKMARK_COLUMNS: CsvColumn<Bookmark>[] = [
   { header: 'Title', get: b => b.title },
   { header: 'URL', get: b => b.url },
-  { header: 'Folders', get: b => b.tags },
+  { header: 'Folders', get: b => pathsOf(b) },
   { header: 'Note', get: b => b.note },
   { header: 'Description', get: b => b.description },
   { header: 'Pinned', get: b => (b.pinned ? 'yes' : '') },
   { header: 'Added', get: b => b.createdAt }
 ]
-function bookmarkFrom(url: string, title: string, folders: string[], note: string, description: string, pinned: boolean, added: string): Omit<Bookmark, 'id'> | undefined {
+// Folders arrive as paths ("Work → Banking", "Work/Banking"); missing ones are made
+function bookmarkFrom(url: string, title: string, paths: string[], note: string, description: string, pinned: boolean, added: string): Omit<Bookmark, 'id'> | undefined {
   const link = parseLink(url.trim())
   if (!link) return undefined
+  const ids = paths.map(p => p.trim()).filter(Boolean).map(p => ensurePath(p.split(/\s*(?:→|\/|>)\s*/)))
   return {
     url: link.href,
     title: title.trim() || hostOf(link.href),
-    tags: [...new Set(folders.map(normaliseTag).filter(Boolean))],
+    tags: [],
+    folders: [...new Set(ids)],
     note: note.trim(),
     description: description.trim(),
     icon: new URL('/favicon.ico', link).href,
@@ -411,16 +593,23 @@ const bookmarkFromRow = (r: Record<string, string>) => bookmarkFrom(
   cellOf(r, 'url', 'link', 'address'), cellOf(r, 'title', 'name'), cellOf(r, 'folders', 'folder', 'tags').split(/[;,|]/),
   cellOf(r, 'note', 'notes'), cellOf(r, 'description'), /^(yes|true|1)$/i.test(cellOf(r, 'pinned')), cellOf(r, 'added', 'created')
 )
-const bookmarkFromJSON = (r: Record<string, unknown>) => bookmarkFrom(
-  String(r.url ?? ''), String(r.title ?? ''), Array.isArray(r.tags) ? r.tags.map(String) : Array.isArray(r.folders) ? r.folders.map(String) : [],
-  String(r.note ?? ''), String(r.description ?? ''), r.pinned === true, String(r.createdAt ?? '')
-)
+// Our own JSON keeps folder ids; they're used when this device has those folders, else the folder paths
+const bookmarkFromJSON = (r: Record<string, unknown>) => {
+  const ids = Array.isArray(r.folders) ? r.folders.map(String).filter(id => folderIds.value.has(id)) : []
+  const paths = ids.length ? [] : Array.isArray(r.folderPaths) ? r.folderPaths.map(String) : Array.isArray(r.tags) ? r.tags.map(String) : []
+  const made = bookmarkFrom(String(r.url ?? ''), String(r.title ?? ''), paths, String(r.note ?? ''), String(r.description ?? ''), r.pinned === true, String(r.createdAt ?? ''))
+  return made && ids.length ? { ...made, folders: ids } : made
+}
+const exportItems = computed(() => items.value.map(b => ({ ...b, folderPaths: pathsOf(b) })))
 const BOOKMARK_HTML = [{
   label: 'Browser HTML',
   ext: 'html',
   mime: 'text/html',
-  write: (list: Bookmark[]) => exportBrowserBookmarks(list),
-  read: (text: string) => parseBrowserBookmarks(text)
+  write: (list: Bookmark[]) => exportBrowserBookmarks(list, folders.value),
+  read: (text: string) => parseBrowserBookmarks(text).map((b: ImportedBookmark) => {
+    const { folderPath, ...rest } = b
+    return { ...rest, tags: [], folders: folderPath?.length ? [ensurePath(folderPath)] : [] }
+  })
 }]
 
 // Imported links only have a name; fill in each site's icon and description in the background,
@@ -431,7 +620,7 @@ async function enrich(list: Bookmark[]) {
   const worker = async () => {
     for (let b = queue.shift(); b; b = queue.shift()) {
       const preview = await $fetch('/api/link-preview', { query: { url: b.url } }).catch(() => undefined)
-      if (preview && items.value.some(i => i.id === b!.id)) update(b.id, { icon: preview.icon, description: preview.description }, { quiet: true })
+      if (preview && items.value.some(i => i.id === b!.id)) update(b.id, { icon: preview.icon, description: preview.description, ...(preview.image ? { image: preview.image } : {}) }, { quiet: true })
     }
   }
   await Promise.all(Array.from({ length: 4 }, worker))
@@ -445,7 +634,7 @@ async function enrich(list: Bookmark[]) {
       title="Bookmarks"
       collection="bookmarks"
       app="/bookmarks"
-      :items="items"
+      :items="exportItems"
       :columns="BOOKMARK_COLUMNS"
       :from-row="bookmarkFromRow"
       :from-json="bookmarkFromJSON"
@@ -488,6 +677,47 @@ async function enrich(list: Bookmark[]) {
       @cancel="duplicateOf = undefined"
     />
 
+    <!-- Review before saving (#43): what the page says about itself, editable, plus folders -->
+    <Transition name="slide-down">
+      <form v-if="review" class="review panel" aria-label="Review the bookmark before saving" @submit.prevent="keepReviewed" @keydown.esc.stop="cancelReview">
+        <div class="review-media">
+          <img v-if="review.image && !reviewImageBroken" :src="review.image" alt="" referrerpolicy="no-referrer" @error="reviewImageBroken = true">
+          <span v-else class="review-icon">
+            <img v-if="!brokenIcons.has(review.icon)" :src="review.icon" alt="" referrerpolicy="no-referrer" @error="brokenIcons.add(review.icon)">
+            <span v-else>{{ (review.title[0] ?? '?').toUpperCase() }}</span>
+          </span>
+        </div>
+        <div class="review-fields">
+          <p class="review-site">{{ review.siteName }} · <span class="review-url">{{ review.url }}</span></p>
+          <p v-if="review.offline" class="review-note">Website details aren’t available offline. Your bookmark can still be saved; edit the title now or later.</p>
+          <label class="field">
+            <span class="sr-only">Title</span>
+            <input ref="reviewTitle" v-model="review.title" class="input review-title" aria-label="Title">
+          </label>
+          <label class="field">
+            <span class="sr-only">Description</span>
+            <textarea v-model="review.description" class="input" rows="2" placeholder="Add a description" aria-label="Description" />
+          </label>
+          <div class="field">
+            <span class="field-head">Folders <span class="optional">Optional</span></span>
+            <FolderPicker v-model="review.folders" :folders="folders" :create-folder="name => ensureFolder(name)" />
+          </div>
+          <SuggestionChip
+            v-if="review.suggestion && !review.folders.length"
+            label="Suggested folder"
+            :value="review.suggestion"
+            @use="review!.folders = [ensureFolder(review!.suggestion!)]"
+            @ignore="review!.suggestion = undefined"
+          />
+          <div class="review-actions">
+            <button type="submit" class="btn">Save bookmark</button>
+            <button type="button" class="btn btn-quiet" @click="cancelReview">Cancel</button>
+            <span class="review-hint"><kbd>Enter</kbd> to save</span>
+          </div>
+        </div>
+      </form>
+    </Transition>
+
     <ClientOnly>
       <!-- Pinned: the sites you open every day, as big tiles -->
       <section v-if="pinned.length" class="shelf drop-x" aria-label="Pinned. Drag to reorder, or Alt and the arrow keys.">
@@ -512,37 +742,36 @@ async function enrich(list: Bookmark[]) {
       </section>
 
       <div class="library">
-        <!-- Tags down the side, like the spines on a shelf -->
-        <aside v-sticky-fit class="side" aria-label="Tags">
-          <nav class="tags">
-            <button type="button" class="tag-row" :class="{ on: !activeTag }" :aria-pressed="!activeTag" @click="activeTag = undefined">
-              <span>All</span><b>{{ items.length }}</b>
-            </button>
-            <button
-              v-for="t in tags"
-              :key="t.name"
-              type="button"
-              class="tag-row"
-              :class="{ on: activeTag === t.name }"
-              :style="{ '--tag': tagColor(t.name) }"
-              :aria-pressed="activeTag === t.name"
-              @click="activeTag = t.name"
-            >
-              <span><i class="swatch" aria-hidden="true" />{{ t.name }}</span><b>{{ t.count }}</b>
-            </button>
-            <button v-if="unsortedCount && tags.length" type="button" class="tag-row muted" :class="{ on: activeTag === UNSORTED }" :aria-pressed="activeTag === UNSORTED" @click="activeTag = UNSORTED">
-              <span>No tag</span><b>{{ unsortedCount }}</b>
-            </button>
-          </nav>
+        <!-- Folders down the side, like the spines on a shelf -->
+        <aside v-sticky-fit class="side" aria-label="Folders">
+          <FolderTree
+            :folders="folders"
+            :counts="counts"
+            :total="items.length"
+            :unfiled="unfiledCount"
+            :active="activeFolder"
+            :collapsed="collapsed"
+            @select="id => activeFolder = id"
+            @toggle="toggleFolder"
+            @add="openNewFolder"
+            @edit="openEditFolder"
+            @delete="deleteFolder"
+            @move-folder="moveFolder"
+            @drop-bookmark="moveBookmark"
+          />
 
           <div class="side-tools">
             <button type="button" class="link" @click="transferOpen = true">Import / Export</button>
+            <NuxtLink to="/trash?app=/bookmarks" class="link">Recycle Bin</NuxtLink>
           </div>
         </aside>
 
         <section class="main" :aria-label="listTitle">
           <div v-sticky-bar class="toolbar">
-            <h2>{{ listTitle }}</h2>
+            <h2 class="list-title">
+              <FolderIcon v-if="activeFolderRecord" :icon="activeFolderRecord.icon" :color="activeFolderRecord.color" />
+              {{ listTitle }}
+            </h2>
             <label class="search">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
               <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
@@ -566,7 +795,7 @@ async function enrich(list: Bookmark[]) {
           </div>
 
           <TransitionGroup v-if="shown.length" tag="ul" name="list" class="marks" :class="view === 'compact' ? ['list', 'compact'] : view">
-            <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :class="{ flash: flashId === b.id }">
+            <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :class="{ flash: flashId === b.id }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)">
               <span class="mark-icon" aria-hidden="true">
                 <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
                 <span v-else>{{ initial(b) }}</span>
@@ -578,8 +807,18 @@ async function enrich(list: Bookmark[]) {
                 </span>
                 <p v-if="b.description && !b.note" class="mark-desc">{{ b.description }}</p>
                 <p v-if="b.note" class="mark-note">{{ b.note }}</p>
-                <span v-if="b.tags.length" class="mark-tags">
-                  <button v-for="t in b.tags" :key="t" type="button" class="chip" :style="{ '--tag': tagColor(t) }" @click="activeTag = t">#{{ t }}</button>
+                <span v-if="foldersOf(b).length" class="mark-tags">
+                  <button
+                    v-for="id in foldersOf(b)"
+                    :key="id"
+                    type="button"
+                    class="chip"
+                    :style="{ '--tag': folderColor(folderById(id)) }"
+                    :title="`Show ${pathText(folders, id)}`"
+                    @click="activeFolder = id"
+                  >
+                    <FolderIcon :icon="folderById(id)?.icon" :color="folderById(id)?.color" />{{ folderById(id)?.name }}
+                  </button>
                 </span>
               </div>
               <div class="mark-actions">
@@ -596,7 +835,7 @@ async function enrich(list: Bookmark[]) {
 
           <div v-else-if="ready && items.length" class="empty">
             <p>Nothing matches{{ query ? ` “${query}”` : '' }}.</p>
-            <button type="button" class="btn btn-quiet btn-sm" @click="query = ''; activeTag = undefined">Show everything</button>
+            <button type="button" class="btn btn-quiet btn-sm" @click="query = ''; activeFolder = ALL_BOOKMARKS">Show everything</button>
           </div>
 
           <div v-else-if="ready" class="empty-panel">
@@ -627,14 +866,11 @@ async function enrich(list: Bookmark[]) {
           <span class="field-head">Note <span class="optional">Optional</span></span>
           <textarea v-model="form.note" class="input" rows="3" placeholder="Why you saved it, or what to look at" />
         </label>
-        <label class="field">
-          <span class="field-head">Tags <span class="optional">Separate with commas</span></span>
-          <input v-model="form.tags" class="input" placeholder="design, reading">
-        </label>
-        <SuggestionChip v-if="formSuggestion" label="Suggested folder" :value="capitalise(formSuggestion)" @use="addSuggestion(formSuggestion)" @ignore="ignoredSuggestion = true" />
-        <div v-if="suggestions.length" class="suggest" aria-label="Your tags">
-          <button v-for="t in suggestions" :key="t" type="button" class="chip" :style="{ '--tag': tagColor(t) }" @click="addSuggestion(t)">+ {{ t }}</button>
+        <div class="field">
+          <span class="field-head">Folders <span class="optional">Optional</span></span>
+          <FolderPicker v-model="form.folders" :folders="folders" :create-folder="name => ensureFolder(name)" />
         </div>
+        <SuggestionChip v-if="formSuggestion" label="Suggested folder" :value="formSuggestion" @use="form.folders = [ensureFolder(formSuggestion!)]" @ignore="ignoredSuggestion = true" />
         <label class="pin-check">
           <input v-model="form.pinned" type="checkbox">
           Pin to the top
@@ -645,6 +881,29 @@ async function enrich(list: Bookmark[]) {
         </div>
       </form>
     </Modal>
+
+    <FolderEditor :open="folderEditor.open" :folders="folders" :folder="folderEditor.folder" :parent-id="folderEditor.parentId" @close="folderEditor.open = false" @save="saveFolder" />
+
+    <!-- Move to folder… (the menu way to do what dragging does) -->
+    <Modal :open="!!moving" :title="moving ? `Move ${moving.title}` : 'Move'" @close="moving = undefined">
+      <div class="move-list" role="listbox" aria-label="Folders">
+        <button type="button" class="move-opt" @click="moveBookmark(moving!.id, UNFILED); moving = undefined">
+          <ToolIcon name="bookmarks" /> Not in a folder
+        </button>
+        <button
+          v-for="o in flatTree(folders)"
+          :key="o.folder.id"
+          type="button"
+          class="move-opt"
+          :class="{ current: moving && foldersOf(moving).includes(o.folder.id) }"
+          :style="{ paddingLeft: `${0.8 + o.depth * 1}rem` }"
+          @click="moveBookmark(moving!.id, o.folder.id); moving = undefined"
+        >
+          <FolderIcon :icon="o.folder.icon" :color="o.folder.color" /> {{ o.folder.name }}
+        </button>
+        <button type="button" class="move-opt new" @click="moving = undefined; openNewFolder()">+ New folder…</button>
+      </div>
+    </Modal>
   </ToolPage>
 </template>
 
@@ -653,6 +912,153 @@ async function enrich(list: Bookmark[]) {
 .dup-card {
   width: min(100%, 760px);
   margin: 0.75rem auto 0;
+}
+
+/* ---------- Review before saving ---------- */
+.review {
+  width: min(100%, 760px);
+  margin: 0.75rem auto 0;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: 1rem;
+  text-align: left;
+}
+
+.review-media img {
+  width: 100%;
+  aspect-ratio: 1.91;
+  object-fit: cover;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.review-icon {
+  width: 100%;
+  aspect-ratio: 1.91;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border-radius: 12px;
+}
+
+.review-icon img {
+  width: 2.75rem;
+  height: 2.75rem;
+  aspect-ratio: auto;
+  object-fit: contain;
+  background: none;
+}
+
+.review-fields {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.review-site {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-url {
+  color: var(--ink-3);
+}
+
+.review-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--warn-ink);
+}
+
+.review-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.review-hint {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+@media (max-width: 560px) {
+  .review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .review-media img,
+  .review-icon {
+    aspect-ratio: 2.6;
+  }
+
+  .review-hint {
+    display: none;
+  }
+}
+
+.list-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ---------- Move to folder ---------- */
+.move-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 60dvh;
+  overflow-y: auto;
+}
+
+.move-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.move-opt:hover {
+  background: var(--surface-2);
+}
+
+.move-opt.current {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.move-opt.new {
+  color: var(--ink-2);
 }
 
 .empty-panel {

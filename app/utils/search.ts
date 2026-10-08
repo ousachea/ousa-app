@@ -1,3 +1,4 @@
+import { pathText, type Folder } from './folders'
 // Universal search (CHECKLIST.md #06): one place that knows how to find records in every app.
 // Each source reads an app's saved list from this device (the same copy useCollection keeps), so
 // search works offline and never sends anything anywhere. Add a source here when a new app stores data.
@@ -45,7 +46,7 @@ export const SEARCH_SOURCES: Source[] = [
     group: 'Bookmarks',
     title: b => b.title,
     subtitle: b => host(b.url),
-    text: b => [b.url, b.note, b.description, ...(b.tags ?? []), ...(b.folders ?? [])]
+    text: b => [b.url, b.note, b.description, ...(b.folderNames ?? [])]
   },
   {
     collection: 'things',
@@ -121,6 +122,12 @@ export function searchEverything(query: string, perGroup = 6): { group: string, 
 
   for (const src of SEARCH_SOURCES) {
     const items = readCollection(src.collection)
+    // Bookmarks are found by the names of their folders too
+    if (src.collection === 'bookmarks') {
+      const folders = readCollection('bookmark-folders')
+      const names = new Map(folders.map(f => [f.id, String(f.name)]))
+      for (const b of items) b.folderNames = (Array.isArray(b.folders) ? b.folders : []).map((id: string) => names.get(id)).filter(Boolean)
+    }
     const hits: SearchHit[] = []
     for (const item of items) {
       const title = String(src.title(item) ?? '')
@@ -132,14 +139,16 @@ export function searchEverything(query: string, perGroup = 6): { group: string, 
     }
     if (hits.length) groups.push({ group: src.group, hits: hits.sort((a, b) => b.score - a.score).slice(0, perGroup) })
 
-    // Bookmark folders are worth finding on their own: they open the bookmarks filtered to that folder
+    // Bookmark folders are worth finding on their own: they open the bookmarks in that folder
     if (src.collection === 'bookmarks') {
-      const folders = new Map<string, number>()
-      for (const b of items) for (const f of [...(b.folders ?? []), ...(b.tags ?? [])]) folders.set(f, (folders.get(f) ?? 0) + 1)
+      const folders = readCollection('bookmark-folders') as unknown as Folder[]
       const folderHits: SearchHit[] = []
-      for (const [name, count] of folders) {
-        const score = scoreOf(words, name, '')
-        if (score) folderHits.push({ key: `folder:${name}`, group: 'Folders', title: name.charAt(0).toUpperCase() + name.slice(1), subtitle: `${count} ${count === 1 ? 'bookmark' : 'bookmarks'}`, to: `/bookmarks?folder=${encodeURIComponent(name)}`, app: '/bookmarks', score })
+      for (const f of folders) {
+        const path = pathText(folders, f.id)
+        const score = scoreOf(words, f.name, path)
+        if (!score) continue
+        const inside = items.filter(b => Array.isArray(b.folders) && b.folders.includes(f.id)).length
+        folderHits.push({ key: `folder:${f.id}`, group: 'Folders', title: f.name, subtitle: [path !== f.name ? path : '', `${inside} ${inside === 1 ? 'bookmark' : 'bookmarks'}`].filter(Boolean).join(' · '), to: `/bookmarks?folder=${encodeURIComponent(f.id)}`, app: '/bookmarks', score })
       }
       if (folderHits.length) groups.push({ group: 'Folders', hits: folderHits.sort((a, b) => b.score - a.score).slice(0, perGroup) })
     }

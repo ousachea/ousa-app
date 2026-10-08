@@ -9,6 +9,11 @@ const { play } = useSound()
 
 // ---------- Filter by app ----------
 const appFilter = ref<string>() // undefined = everything
+// /trash?app=/bookmarks opens filtered to one app (the link in each app)
+const route = useRoute()
+onMounted(() => {
+  if (typeof route.query.app === 'string') appFilter.value = route.query.app
+})
 const apps = computed(() => {
   const counts = new Map<string, number>()
   for (const e of entries.value) counts.set(e.app, (counts.get(e.app) ?? 0) + 1)

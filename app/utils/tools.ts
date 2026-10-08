@@ -146,12 +146,12 @@ export const TOOLS: Tool[] = [
   {
     to: '/bookmarks',
     name: 'Bookmarks',
-    summary: 'Save links with tags and notes, and pin the ones you open every day.',
+    summary: 'Save links in folders, and pin the ones you open every day.',
     color: 'var(--rust)',
     icon: 'bookmarks',
     group: 'Life',
-    seoTitle: 'Bookmark manager with tags',
-    description: 'Save links with tags and notes, pin the sites you open every day, and import or export your browser bookmarks.',
+    seoTitle: 'Bookmark manager with folders',
+    description: 'Save links in nested folders with notes, pin the sites you open every day, and import or export your browser bookmarks.',
     demo: true
   },
   {

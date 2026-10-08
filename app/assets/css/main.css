@@ -760,16 +760,17 @@ kbd {
   translate: 0 -6px;
 }
 
-/* Lists: new items grow in, removed ones fade out, the rest glide into place (sorting and filtering too) */
-.list-move {
+/* Lists: new items grow in, removed ones fade out, the rest glide into place (sorting and filtering too).
+   The doubled :root outranks each row's own scoped transition, which would otherwise replace these. */
+:root:root .list-move {
   transition: transform var(--dur-slow) var(--ease-out);
 }
 
-.list-enter-active {
+:root:root .list-enter-active {
   transition: opacity var(--dur) var(--ease-out), scale var(--dur) var(--ease-out);
 }
 
-.list-leave-active {
+:root:root .list-leave-active {
   transition: opacity var(--dur-fast) var(--ease-in), scale var(--dur-fast) var(--ease-in);
 }
 
@@ -780,7 +781,7 @@ kbd {
 }
 
 /* Leaving items step out of the flow so the others can move up smoothly */
-.list-leave-active {
+:root:root .list-leave-active {
   position: absolute !important;
   pointer-events: none;
 }
@@ -811,7 +812,7 @@ kbd {
     scroll-behavior: auto !important;
   }
 
-  .list-move {
+  :root:root .list-move {
     transition: none;
   }
 }

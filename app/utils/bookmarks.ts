@@ -1,10 +1,14 @@
+import { childrenOf, type Folder } from './folders'
+
 export interface Bookmark {
   id: string
   url: string
   title: string
   description: string // from the page itself
   note: string // the user's own words
-  tags: string[]
+  tags: string[] // older versions' free-text tags; turned into folders on first open, then left as they were
+  folders?: string[] // ids of the folders it's in (CHECKLIST.md #35)
+  image?: string // the page's preview image (og:image), when it has one
   icon: string // site icon URL ('' to use the letter tile)
   pinned: boolean
   visits: number
@@ -49,10 +53,12 @@ export const normaliseTag = (t: string) => t.trim().toLowerCase().replace(/^#/, 
 const ROOT_FOLDERS = new Set(['bookmarks', 'bookmarks bar', 'bookmarks toolbar', 'bookmarks menu', 'other bookmarks', 'mobile bookmarks', 'favorites', 'favourites', 'favorites bar', 'imported'])
 
 // The "Netscape bookmark file" every browser exports: nested <DL> lists, <H3> folders, <A> links.
-// The folder a link sits in becomes its tag.
-export function parseBrowserBookmarks(html: string): NewBookmark[] {
+// Each link keeps the path of folders it sat in (`folderPath`), so nested folders come across as nested.
+export type ImportedBookmark = NewBookmark & { folderPath?: string[] }
+
+export function parseBrowserBookmarks(html: string): ImportedBookmark[] {
   const doc = new DOMParser().parseFromString(html, 'text/html')
-  const out: NewBookmark[] = []
+  const out: ImportedBookmark[] = []
 
   function walk(dl: Element, folders: string[]) {
     for (const dt of Array.from(dl.children)) {
@@ -70,6 +76,7 @@ export function parseBrowserBookmarks(html: string): NewBookmark[] {
           description: '',
           note: '',
           tags: folder ? [normaliseTag(folder)] : [],
+          folderPath: [...folders],
           icon: new URL('/favicon.ico', href).href,
           pinned: false,
           visits: 0,
@@ -91,19 +98,21 @@ export function parseBrowserBookmarks(html: string): NewBookmark[] {
 
 const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-// Export in the same format, one folder per first tag, so any browser can import it
-export function exportBrowserBookmarks(list: Bookmark[]) {
-  const groups = new Map<string, Bookmark[]>()
-  for (const b of list) {
-    const folder = b.tags[0] ?? ''
-    groups.set(folder, [...(groups.get(folder) ?? []), b])
-  }
-  const link = (b: Bookmark) => `<DT><A HREF="${escape(b.url)}" ADD_DATE="${Math.floor(new Date(b.createdAt).getTime() / 1000)}"${b.tags.length ? ` TAGS="${escape(b.tags.join(','))}"` : ''}>${escape(b.title)}</A>`
+// Export in the same format, with the folder tree nested as it is here, so any browser can import it.
+// A bookmark in several folders is listed under the first one.
+export function exportBrowserBookmarks(list: Bookmark[], folders: readonly Folder[] = []) {
+  const known = new Set(folders.map(f => f.id))
+  const home = (b: Bookmark) => (b.folders ?? []).find(id => known.has(id)) ?? ''
+  const link = (b: Bookmark, pad: string) => `${pad}<DT><A HREF="${escape(b.url)}" ADD_DATE="${Math.floor(new Date(b.createdAt).getTime() / 1000)}">${escape(b.title)}</A>`
   const lines = ['<!DOCTYPE NETSCAPE-Bookmark-file-1>', '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">', '<TITLE>Bookmarks</TITLE>', '<H1>Bookmarks</H1>', '<DL><p>']
-  for (const [folder, items] of groups) {
-    if (folder) lines.push(`<DT><H3>${escape(folder)}</H3>`, '<DL><p>', ...items.map(b => `  ${link(b)}`), '</DL><p>')
-    else lines.push(...items.map(link))
+  const walk = (parentId: string, pad: string) => {
+    for (const f of childrenOf(folders, parentId)) {
+      lines.push(`${pad}<DT><H3>${escape(f.name)}</H3>`, `${pad}<DL><p>`)
+      walk(f.id, `${pad}  `)
+      lines.push(...list.filter(b => home(b) === f.id).map(b => link(b, `${pad}  `)), `${pad}</DL><p>`)
+    }
   }
-  lines.push('</DL><p>')
+  walk('', '  ')
+  lines.push(...list.filter(b => !home(b)).map(b => link(b, '  ')), '</DL><p>')
   return lines.join('\n')
 }

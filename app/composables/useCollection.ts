@@ -168,7 +168,8 @@ export function useCollection<T extends StoredItem>(
     watch(demoOn, (on) => {
       if (on) {
         realItems = items.value
-        items.value = makeDemo().map(item => ({ ...item, id: crypto.randomUUID() }) as T)
+        // Demo records may bring their own ids (so demo bookmarks can point at demo folders)
+        items.value = makeDemo().map(item => ({ id: crypto.randomUUID(), ...item }) as T)
       } else {
         items.value = readCache<T>(key) ?? realItems
       }

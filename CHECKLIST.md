@@ -167,9 +167,9 @@ Copy URL, Refresh Favicon, Duplicate, Delete).
 **Notes:** `ContextMenu.vue` + `useContextMenu`: right-click opens a menu at the pointer (kept on screen), arrow keys/Enter/Esc, focus returns; Shift + right-click keeps the browser's menu. Bookmarks: Open, Open in new tab, Edit, Pin, Copy link, Refresh icon, Duplicate, Delete (Move to folder joins with #35). Renewals: Edit, Duplicate, Copy details, Delete. Things: Edit, Duplicate, Delete. Countdowns: Edit, Delete. Recycle Bin: Restore, Select, Delete for good. Tested desktop.
 
 ## #28 — Drag & Drop
-**Status:** 🟡
+**Status:** 🟢
 Bookmark → folder, folder → folder, reordering where appropriate, with visual drop indicators.
-**Notes:** `useDragReorder` (native drag, a line where it lands, Alt + arrow keys as the keyboard way) + `moved()`. Used for the pinned bookmarks shelf (new `pinOrder`) and pinned apps on the home page. Still to do: drag a bookmark onto a folder and folders into folders, which arrive with folders (#35–#36).
+**Notes:** `useDragReorder` (native drag with a drop line, Alt + arrows) for pinned bookmarks and pinned apps. Bookmarks: drag a row onto a folder in the sidebar to move it there (or onto Not in a folder / All); drag a folder onto another's middle to nest it, onto its top/bottom edge to reorder, onto All to move it to the top level; cycles are refused; every move has Undo. Rows only become draggable with a mouse; phones use Move to folder… Tested desktop.
 
 ## #29 — Duplicate Detection
 **Status:** 🟢
@@ -208,52 +208,50 @@ reduced motion, colour never the only status indicator.
 # PART B — BOOKMARK APP
 
 ## #35 — Rename Tag → Folder
-**Status:** ⬜
+**Status:** 🟢
 Replace "Tag" with "Folder"; support nested sub-folders (Work → Banking, Projects, Documentation).
-**Notes:**
+**Notes:** Tags are now folders (`utils/folders.ts`, collection `bookmark-folders`): nested sub-folders, a bookmark can be in several. Existing tags convert automatically the first time (one folder per tag, icon guessed from the name), the old field is left as it was. Sidebar shows the tree (Work → Banking), list title shows the path, choosing a folder shows its bookmarks and those in its sub-folders; ⌘K finds folders by name or path. CSV/JSON/HTML import-export keep folder paths (nested in the browser file). Copy says folder everywhere. Tested desktop + mobile.
 
 ## #36 — Folder Management
-**Status:** ⬜
+**Status:** 🟢
 Create, edit, rename, delete, reorder, icon, color, sub-folder.
-**Notes:**
+**Notes:** `FolderEditor`: create, edit/rename, choose where it sits (searchable, can't go inside itself), icon, colour; delete keeps its bookmarks and lifts sub-folders a level, with Undo restoring everything; reorder by drag. Duplicate names in the same place are refused with a message. Actions from the ⋯ button or right-click on a folder.
 
 ## #37 — Folder Icons
-**Status:** ⬜
+**Status:** 🟢
 Icon picker for folders.
-**Notes:**
+**Notes:** Icon picker with 26 line icons drawn on the app's grid (folder, work, bank, code, design, docs…); new folders guess one from their name until you pick.
 
 ## #38 — Folder Colors
-**Status:** ⬜
+**Status:** 🟢
 Folder colours used subtly for icon, accent, selected state.
-**Notes:**
+**Notes:** 13 colours (or the Bookmarks colour), used for the folder's icon, the selected row's edge and its chips.
 
 ## #39 — Folder Chips / Selection
-**Status:** ⬜
+**Status:** 🟢
 Selected folders as removable chips; search, add, remove, clear; capitalise the first letter.
-**Notes:**
+**Notes:** `FolderPicker` in the review card and edit popup: chips like [ Work × ] [ Banking × ] with icon and colour, type to search (shows each folder's path), Enter adds, “Create folder “X”” makes a new one, Backspace removes the last chip, Clear empties. Names always start with a capital (`folderName`).
 
 ## #40 — Add Folder Locations
-**Status:** ⬜
+**Status:** 🟢
 "+ Add Folder" at the top and bottom of the sidebar.
-**Notes:**
+**Notes:** + Add folder at the top and the bottom of the sidebar (and in Move to folder…), plus Add a sub-folder on each folder.
 
 ## #41 — Bookmark Recycle Bin
-**Status:** ⬜
+**Status:** 🟢
 Deleted bookmarks go to a recycle bin: select, restore selected, delete selected, restore all, delete all.
 Permanent deletion needs confirmation.
-**Notes:**
+**Notes:** Deleted bookmarks go to the Recycle Bin (#02): select, restore selected, delete selected (confirmed), restore all, empty (confirmed). The sidebar's Recycle Bin link opens it filtered to bookmarks (`/trash?app=/bookmarks`).
 
 ## #42 — Favicon Refresh
-**Status:** ⬜
+**Status:** 🟢
 "Refresh Favicon" with loading, success, failure and offline states; keep the old icon if it fails.
-**Notes:**
+**Notes:** Refresh icon in the right-click menu: loading toast, checks the new icon really loads before using it, success (with Undo), failure keeps the old icon (with Try again), offline explains and keeps it.
 
 ## #43 — Bookmark Metadata Extraction
-**Status:** ⬜
+**Status:** 🟢
 Fetch title, description, OG title/description/image, favicon, domain; let the user edit before saving.
-**Notes:** `/api/link-preview` already reads title, description and icon.
-
----
+**Notes:** `/api/link-preview` now returns page title, og:title, og:description, og:image, site name and domain (still only public addresses). Saving a link shows a review card first: preview image or icon, site and address, editable title and description, folders (with a suggestion), Save / Cancel; Enter twice is still the quick path. Offline it says details aren't available and still saves. The preview image is kept on the bookmark. Tested desktop + mobile.
 
 # PART C — THINGS I OWN
 

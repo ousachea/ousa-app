@@ -7,9 +7,15 @@ import { defineEventHandler, getQuery, HTTPError } from 'h3'
 // route can't be used to poke at the server's own network.
 export interface LinkPreview {
   url: string // final URL after redirects
-  title: string
-  description: string
+  title: string // best title: og:title, else <title>
+  description: string // best description: meta description, else og:description
   icon: string // absolute URL; /favicon.ico when the page doesn't declare one
+  pageTitle: string // the page's own <title>
+  ogTitle: string
+  ogDescription: string
+  image: string // og:image / twitter:image, absolute; '' when there isn't one
+  siteName: string // og:site_name
+  domain: string // hostname without www.
 }
 
 const MAX_BYTES = 512 * 1024
@@ -124,7 +130,8 @@ export default defineEventHandler(async (event): Promise<LinkPreview> => {
   }
 
   const { res, url } = page
-  const fallback = { url: url.href, title: '', description: '', icon: new URL('/favicon.ico', url).href }
+  const domain = url.hostname.replace(/^www\./, '')
+  const fallback: LinkPreview = { url: url.href, title: '', description: '', icon: new URL('/favicon.ico', url).href, pageTitle: '', ogTitle: '', ogDescription: '', image: '', siteName: '', domain }
   // Error pages ("Forbidden", "Just a moment…") would make a misleading title
   if (!res.ok || !(res.headers.get('content-type') ?? '').includes('html')) {
     res.body?.cancel().catch(() => {})
@@ -133,11 +140,25 @@ export default defineEventHandler(async (event): Promise<LinkPreview> => {
 
   const html = await readCapped(res)
   const head = html.split(/<\/head>/i)[0] ?? html
-  const title = meta(head, ['og:title', 'twitter:title']) || decode(head.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '')
+  const pageTitle = decode(head.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').slice(0, 200)
+  const ogTitle = meta(head, ['og:title', 'twitter:title']).slice(0, 200)
+  const ogDescription = meta(head, ['og:description', 'twitter:description']).slice(0, 300)
+  const rawImage = meta(head, ['og:image', 'og:image:url', 'og:image:secure_url', 'twitter:image', 'twitter:image:src'])
+  let image = ''
+  try {
+    const abs = rawImage ? new URL(rawImage, url) : undefined
+    if (abs && (abs.protocol === 'https:' || abs.protocol === 'http:')) image = abs.href
+  } catch {}
   return {
     url: url.href,
-    title: title.slice(0, 200),
-    description: meta(head, ['description', 'og:description', 'twitter:description']).slice(0, 300),
-    icon: iconOf(head, url)
+    title: ogTitle || pageTitle,
+    description: (meta(head, ['description']) || ogDescription).slice(0, 300),
+    icon: iconOf(head, url),
+    pageTitle,
+    ogTitle,
+    ogDescription,
+    image,
+    siteName: meta(head, ['og:site_name']).slice(0, 100),
+    domain
   }
 })

@@ -11,6 +11,7 @@ export interface BackupSection {
 
 export const BACKUP_SECTIONS: BackupSection[] = [
   { name: 'bookmarks', label: 'Bookmarks', app: '/bookmarks' },
+  { name: 'bookmark-folders', label: 'Bookmark folders', app: '/bookmarks' },
   { name: 'things', label: 'Things I own', app: '/things' },
   { name: 'renewals', label: 'Renewals', app: '/renewals' },
   { name: 'countdown', label: 'Countdowns', app: '/countdown' },
