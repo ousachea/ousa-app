@@ -36,7 +36,12 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Free everyday tools: check Cambodian phone numbers, KHR/USD rates, gold price in chi and damlung, salary tax, QR codes, passwords and more.' },
         { name: 'application-name', content: 'Ousa’s Apps' },
         { name: 'apple-mobile-web-app-title', content: 'Ousa’s Apps' },
-        { name: 'theme-color', content: '#e8ebf0' }
+        { name: 'theme-color', content: '#e8ebf0', media: '(prefers-color-scheme: light)' },
+        { name: 'theme-color', content: '#0e1116', media: '(prefers-color-scheme: dark)' },
+        // Installed app (CHECKLIST.md #20): full screen on iPhone, with a light status bar
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }
       ],
       script: [
         {
@@ -56,6 +61,8 @@ export default defineNuxtConfig({
         }
       ],
       link: [
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+        { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Noto+Sans+Khmer:wght@400..700&display=swap' }

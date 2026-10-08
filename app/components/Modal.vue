@@ -45,7 +45,9 @@ function onClick(e: MouseEvent) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
       </header>
-      <slot />
+      <!-- Only while open: a closed popup's form shouldn't sit in the page, and content that depends on
+           this device (sign-in state, saved drafts) can't differ between the server and the browser -->
+      <slot v-if="open" />
     </div>
   </dialog>
 </template>

@@ -2,6 +2,7 @@
 import { toast } from 'vue-sonner'
 import type { Currency } from '~/utils/exchange'
 import type { Cycle } from '~/utils/renewals'
+import type { CsvColumn } from '~/utils/transfer'
 
 interface Renewal {
   id: string
@@ -26,7 +27,7 @@ const DEMO = (): Omit<Renewal, 'id'>[] => [
   { name: 'Domain name', price: 12, currency: 'USD', cycle: 'yearly', nextDate: isoDaysAhead(45) },
   { name: 'Phone top-up', price: 20000, currency: 'KHR', cycle: 'weekly', nextDate: isoDaysAhead(2) }
 ]
-const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Renewal>('renewals', undefined, { demo: DEMO })
+const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Renewal>('renewals', undefined, { demo: DEMO })
 const rate = useMarketRate()
 
 const isoToday = () => new Date().toISOString().slice(0, 10)
@@ -182,6 +183,34 @@ function cancel() {
   Object.assign(form, blank())
 }
 
+// ---------- Import & export (CHECKLIST.md #18) ----------
+const transferOpen = ref(false)
+const RENEWAL_COLUMNS: CsvColumn<Renewal>[] = [
+  { header: 'Name', get: r => r.name },
+  { header: 'Price', get: r => r.price },
+  { header: 'Currency', get: r => r.currency },
+  { header: 'Billed', get: r => CYCLES.find(c => c.value === r.cycle)?.label ?? r.cycle },
+  { header: 'Next renewal', get: r => nextRenewal(r.nextDate, r.cycle) }
+]
+const cycleFrom = (s: string): Cycle => {
+  const t = s.trim().toLowerCase()
+  return CYCLES.find(c => c.value === t || c.label.toLowerCase() === t)?.value
+    ?? (/week/.test(t) ? 'weekly' : /quarter|3 month/.test(t) ? 'quarterly' : /year|annual/.test(t) ? 'yearly' : 'monthly')
+}
+function renewalFrom(name: string, price: number | undefined, currency: string, cycle: string, date: string): Omit<Renewal, 'id'> | undefined {
+  if (!name.trim() || !price || price <= 0) return undefined
+  return { name: name.trim(), price, currency: currency.toUpperCase() === 'KHR' ? 'KHR' : 'USD', cycle: cycleFrom(cycle), nextDate: toIsoDate(date) || isoToday() }
+}
+const renewalFromRow = (row: Record<string, string>) => renewalFrom(
+  cellOf(row, 'name', 'service', 'subscription'),
+  toNumber(cellOf(row, 'price', 'amount', 'cost')),
+  cellOf(row, 'currency'),
+  cellOf(row, 'billed', 'cycle', 'billing'),
+  cellOf(row, 'next renewal', 'next date', 'nextdate', 'date')
+)
+const renewalFromJSON = (r: Record<string, unknown>) => renewalFrom(String(r.name ?? ''), Number(r.price), String(r.currency ?? ''), String(r.cycle ?? ''), String(r.nextDate ?? ''))
+const renewalKey = (r: Omit<Renewal, 'id'>) => `${r.name.toLowerCase()}|${r.price}|${r.cycle}`
+
 function del(r: Renewal) {
   const removed = remove(r.id)
   if (editingId.value === r.id) cancel()
@@ -193,8 +222,26 @@ function del(r: Renewal) {
 <template>
   <ToolPage header="bar">
     <template #actions>
-      <button type="button" class="btn" @click="openAdd">+ Add subscription</button>
+      <div class="head-buttons">
+        <ClientOnly><button type="button" class="btn btn-quiet" @click="transferOpen = true">Import / Export</button></ClientOnly>
+        <button type="button" class="btn" @click="openAdd">+ Add subscription</button>
+      </div>
     </template>
+
+    <TransferDialog
+      :open="transferOpen"
+      title="Renewals"
+      collection="renewals"
+      app="/renewals"
+      :items="items"
+      :columns="RENEWAL_COLUMNS"
+      :from-row="renewalFromRow"
+      :from-json="renewalFromJSON"
+      :same-as="renewalKey"
+      :add-many="addMany"
+      :remove="remove"
+      @close="transferOpen = false"
+    />
 
     <Modal :open="formOpen" :title="editingId ? 'Edit subscription' : 'Add a subscription'" @close="cancel">
       <form v-validate class="form" @submit.prevent="save">
@@ -303,11 +350,13 @@ function del(r: Renewal) {
             </TransitionGroup>
           </template>
 
-          <div v-else-if="ready" class="panel empty">
-            <h2>No subscriptions yet</h2>
-            <p>Add your streaming, cloud storage or phone plan to see what they cost each month.</p>
-            <button type="button" class="btn" @click="openAdd">+ Add subscription</button>
+          <div v-else-if="ready" class="panel">
+            <EmptyState title="No renewals yet" icon="renewals" action="+ Add renewal" @action="openAdd">
+              Track subscriptions and recurring payments, like streaming, cloud storage or your phone plan, so you never forget an upcoming charge.
+            </EmptyState>
           </div>
+          <SkeletonList v-else label="Loading your renewals" />
+          <template #fallback><SkeletonList label="Loading your renewals" /></template>
         </ClientOnly>
       </Step>
     </div>
@@ -488,6 +537,12 @@ function del(r: Renewal) {
   margin: 1.5rem 0 0;
   font-size: 0.875rem;
   color: var(--ink-3);
+}
+
+.head-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .list-head {

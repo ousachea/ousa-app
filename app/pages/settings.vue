@@ -216,7 +216,11 @@ const volume = computed({
         </div>
 
         <div class="main">
-          <Step :n="4" title="Sound" hint="Turn it on, set the volume, then pick a style and try it.">
+          <Step id="data" :n="4" title="Your data" hint="Back up everything to one file, or restore from one." class="data-step">
+            <DataPanel />
+          </Step>
+
+          <Step :n="5" title="Sound" hint="Turn it on, set the volume, then pick a style and try it.">
             <section class="panel master">
               <span class="master-icon" :class="{ on: state.enabled }"><SoundIcon :name="state.enabled ? 'on' : 'off'" /></span>
               <div class="master-text">
@@ -254,7 +258,7 @@ const volume = computed({
           </Step>
 
           <div class="sound-options" :class="{ muted: !state.enabled }" :inert="!state.enabled">
-          <Step :n="5" title="Choose a style" hint="Each style plays a sample when you pick it.">
+          <Step :n="6" title="Choose a style" hint="Each style plays a sample when you pick it.">
             <div class="packs" role="radiogroup" aria-label="Sound style">
               <label
                 v-for="pack in PACKS"
@@ -277,7 +281,7 @@ const volume = computed({
             </div>
           </Step>
 
-          <Step :n="6" title="Try it" hint="Hear the sounds and see the pop-ups you’ll get around the app." class="try">
+          <Step :n="7" title="Try it" hint="Hear the sounds and see the pop-ups you’ll get around the app." class="try">
             <div class="samples">
               <button
                 v-for="s in SAMPLES"
@@ -339,6 +343,11 @@ const volume = computed({
   background: var(--surface-2);
   border-radius: 5px;
   box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--line);
+}
+
+.data-step {
+  margin-bottom: 2rem;
+  scroll-margin-top: 6rem;
 }
 
 .behaviour {

@@ -45,6 +45,23 @@ export function defaultLabel(item: Record<string, unknown>) {
   return typeof item.date === 'string' ? `Entry on ${item.date}` : 'Item'
 }
 
+// Pending changes for writes made outside a page (Recycle Bin, backups); the page's own list reads the same key
+function notePending(name: string, ids: string[], op: 'put' | 'delete', done = false) {
+  const k = `ousa-app:${name}:pending`
+  try {
+    const p = JSON.parse(localStorage.getItem(k) ?? '{}') as Record<string, string>
+    for (const id of ids) {
+      if (done) {
+        if (p[id] === op) delete p[id]
+      } else {
+        p[id] = op
+      }
+    }
+    if (Object.keys(p).length) localStorage.setItem(k, JSON.stringify(p))
+    else localStorage.removeItem(k)
+  } catch {}
+}
+
 /**
  * Put records back into a collection from outside its page (the Recycle Bin, a backup restore).
  * Updates this device's copy and, when signed in, Firestore. Records already there are replaced.
@@ -56,7 +73,11 @@ export async function writeToCollection(name: string, records: StoredItem[]) {
   const current = readCache<StoredItem>(key) ?? []
   try {
     localStorage.setItem(key, JSON.stringify([...current.filter(r => !ids.has(r.id)), ...records]))
+    // Real data is here now; a first visit to the app shouldn't add examples on top
+    localStorage.setItem(`${key}:seeded`, '1')
   } catch {}
+  const recordIds = records.map(r => r.id)
+  notePending(name, recordIds, 'put')
   if (!firebaseConfigured()) return
   const { auth, db } = useFirebase()
   await auth.authStateReady()
@@ -68,6 +89,45 @@ export async function writeToCollection(name: string, records: StoredItem[]) {
     for (const r of records.slice(i, i + BATCH_LIMIT)) batch.set(doc(itemsRef(uid), r.id), { collection: name, data: r, updatedAt })
     await withTimeout(batch.commit())
   }
+  notePending(name, recordIds, 'put', true)
+}
+
+/** What this device has saved for a collection (empty when nothing is) */
+export const readCollection = (name: string) => readCache<StoredItem & Record<string, unknown>>(`ousa-app:${name}`) ?? []
+
+/**
+ * Make a collection exactly `records` (restoring a backup with Replace). Anything it removes goes to
+ * the Recycle Bin first, so even a replace can be undone.
+ */
+export async function replaceCollection(name: string, app: string, records: StoredItem[], labelOf: (r: Record<string, unknown>) => string = defaultLabel) {
+  const key = `ousa-app:${name}`
+  const keep = new Set(records.map(r => r.id))
+  const removed = readCollection(name).filter(r => !keep.has(r.id))
+  const trash = useTrash()
+  for (const r of removed) trash.put(name, app, r, labelOf(r))
+  try {
+    localStorage.setItem(key, JSON.stringify(records))
+    localStorage.setItem(`${key}:seeded`, '1')
+  } catch {}
+  notePending(name, removed.map(r => r.id), 'delete')
+  notePending(name, records.map(r => r.id), 'put')
+  if (!firebaseConfigured()) return
+  const { auth, db } = useFirebase()
+  await auth.authStateReady()
+  const uid = auth.currentUser?.uid
+  if (!uid) return
+  const updatedAt = new Date().toISOString()
+  const writes: ((b: ReturnType<typeof writeBatch>) => void)[] = [
+    ...removed.map(r => (b: ReturnType<typeof writeBatch>) => b.delete(doc(itemsRef(uid), r.id))),
+    ...records.map(r => (b: ReturnType<typeof writeBatch>) => b.set(doc(itemsRef(uid), r.id), { collection: name, data: r, updatedAt }))
+  ]
+  for (let i = 0; i < writes.length; i += BATCH_LIMIT) {
+    const batch = writeBatch(db)
+    for (const w of writes.slice(i, i + BATCH_LIMIT)) w(batch)
+    await withTimeout(batch.commit())
+  }
+  notePending(name, removed.map(r => r.id), 'delete', true)
+  notePending(name, records.map(r => r.id), 'put', true)
 }
 
 export interface CollectionOptions<T> {
@@ -122,6 +182,39 @@ export function useCollection<T extends StoredItem>(
     } catch {}
   }
 
+  // ---------- Changes not yet confirmed by Firestore (CHECKLIST.md #19, #73) ----------
+  // Every change is noted here until the server confirms it. If the app closes first (offline, a lost
+  // connection), the next load pushes the device's version instead of letting the older cloud copy win,
+  // and deletes made offline are carried out instead of the record coming back.
+  type PendingOp = 'put' | 'delete'
+  const pendingKey = `${key}:pending`
+  function readPending(): Record<string, PendingOp> {
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(pendingKey) ?? '{}')
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, PendingOp> : {}
+    } catch {
+      return {}
+    }
+  }
+  function writePending(p: Record<string, PendingOp>) {
+    try {
+      if (Object.keys(p).length) localStorage.setItem(pendingKey, JSON.stringify(p))
+      else localStorage.removeItem(pendingKey)
+    } catch {}
+  }
+  function markPending(ids: string[], op: PendingOp) {
+    if (demoOn.value || !ids.length) return
+    const p = readPending()
+    for (const id of ids) p[id] = op
+    writePending(p)
+  }
+  function clearPending(ids: string[], op?: PendingOp) {
+    const p = readPending()
+    // Only clear what this write covered; a newer change to the same record stays pending
+    for (const id of ids) if (!op || p[id] === op) delete p[id]
+    writePending(p)
+  }
+
   // ---------- Firestore ----------
   let uid: string | undefined
 
@@ -146,15 +239,26 @@ export function useCollection<T extends StoredItem>(
     }
   }
 
-  // Run a write against Firestore in the background and reflect the outcome in the badge
-  async function sync(task: () => Promise<void>) {
+  // Run a write against Firestore in the background and reflect the outcome in the badge.
+  // The change is already on screen and saved on this device (optimistic, CHECKLIST.md #25); if the
+  // account can't be reached, say so once, with a retry, rather than undoing what you did.
+  async function sync(task: () => Promise<void>, done?: { ids: string[], op: PendingOp }) {
     if (demoOn.value || !signedIn.value || state.value === 'needs-setup') return
+    const wasOffline = state.value === 'offline'
     state.value = 'saving'
     try {
       await task()
+      if (done) clearPending(done.ids, done.op)
       state.value = 'synced'
     } catch (e) {
       state.value = needsFirestoreSetup(e) ? 'needs-setup' : 'offline'
+      // Offline is already shown by the Offline badge; only a surprise failure gets a toast
+      if (state.value === 'offline' && !wasOffline && navigator.onLine) {
+        toast.warning('Saved on this device only', {
+          description: 'Your account couldn’t be reached just now. Nothing is lost; it’ll sync when it can.',
+          action: { label: 'Retry', onClick: () => load() }
+        })
+      }
     }
   }
 
@@ -176,15 +280,27 @@ export function useCollection<T extends StoredItem>(
     try {
       const remote = await pull()
       if (!remote) return // not set up yet; keep using the device copy
-      // Union by id: the cloud wins for records it has; device-only records get uploaded
+      // Union by id: the cloud wins for records it has, except ones changed on this device and not yet
+      // saved there (they win and get uploaded); deletes made here are carried out; device-only records get uploaded
+      const pending = readPending()
+      const localList = local ?? items.value
+      const localById = new Map(localList.map(r => [r.id, r]))
       const remoteIds = new Set(remote.map(r => r.id))
-      const deviceOnly = (local ?? items.value).filter(r => !remoteIds.has(r.id))
-      items.value = [...remote, ...deviceOnly]
+      const merged = remote
+        .filter(r => pending[r.id] !== 'delete')
+        .map(r => (pending[r.id] === 'put' && localById.has(r.id) ? localById.get(r.id)! : r))
+      const deviceOnly = localList.filter(r => !remoteIds.has(r.id) && pending[r.id] !== 'delete')
+      const changedHere = merged.filter(r => pending[r.id] === 'put')
+      const deletedHere = remote.filter(r => pending[r.id] === 'delete')
+      items.value = [...merged, ...deviceOnly]
       cache()
       state.value = 'saving'
-      await push(deviceOnly)
+      await push([...deviceOnly, ...changedHere])
+      for (const r of deletedHere) await withTimeout(deleteDoc(doc(itemsRef(uid!), r.id)))
+      writePending({})
       state.value = 'synced'
-      if (deviceOnly.length) toast.success('Synced with Firebase', { description: `${deviceOnly.length} ${deviceOnly.length === 1 ? 'item' : 'items'} from this device uploaded.` })
+      const uploaded = deviceOnly.length + changedHere.length
+      if (uploaded) toast.success('Synced with Firebase', { description: `${uploaded} ${uploaded === 1 ? 'change' : 'changes'} from this device uploaded.` })
     } catch {
       state.value = 'offline'
     }
@@ -224,9 +340,17 @@ export function useCollection<T extends StoredItem>(
   const onStorage = (e: StorageEvent) => {
     if (e.key === key && !demoOn.value) items.value = readCache<T>(key) ?? []
   }
-  onMounted(() => window.addEventListener('storage', onStorage))
+  // Back online after a failed save: catch the account up straight away
+  const onOnline = () => {
+    if (signedIn.value && state.value === 'offline') load()
+  }
+  onMounted(() => {
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('online', onOnline)
+  })
   onBeforeUnmount(() => {
     window.removeEventListener('storage', onStorage)
+    window.removeEventListener('online', onOnline)
     unsubscribe?.()
   })
 
@@ -238,7 +362,8 @@ export function useCollection<T extends StoredItem>(
       const created = { ...item, id: crypto.randomUUID() } as T
       items.value = [...items.value, created]
       cache()
-      sync(() => push([created]))
+      markPending([created.id], 'put')
+      sync(() => push([created]), { ids: [created.id], op: 'put' })
       record('added', labelOf(created))
       return created
     },
@@ -247,7 +372,9 @@ export function useCollection<T extends StoredItem>(
       const records = list.map(item => ({ ...item, id: crypto.randomUUID() }) as T)
       items.value = [...items.value, ...records]
       cache()
-      sync(() => push(records))
+      const ids = records.map(r => r.id)
+      markPending(ids, 'put')
+      sync(() => push(records), { ids, op: 'put' })
       if (records.length) record('imported', `${records.length} ${records.length === 1 ? 'item' : 'items'}`)
       return records
     },
@@ -259,7 +386,8 @@ export function useCollection<T extends StoredItem>(
       cache()
       const updated = items.value.find(i => i.id === id)
       if (updated) {
-        sync(() => push([updated]))
+        markPending([id], 'put')
+        sync(() => push([updated]), { ids: [id], op: 'put' })
         if (!opts.quiet) record('edited', labelOf(updated))
       }
       return before
@@ -269,7 +397,8 @@ export function useCollection<T extends StoredItem>(
       if (!items.value.some(i => i.id === item.id)) return
       items.value = items.value.map(i => (i.id === item.id ? item : i))
       cache()
-      sync(() => push([item]))
+      markPending([item.id], 'put')
+      sync(() => push([item]), { ids: [item.id], op: 'put' })
     },
     /** Deletes a record; it goes to the Recycle Bin (unless this collection opts out) */
     /** `undoAdd`: taking back something just added (Undo), so it skips the bin and the activity log */
@@ -277,7 +406,8 @@ export function useCollection<T extends StoredItem>(
       const removed = items.value.find(i => i.id === id)
       items.value = items.value.filter(i => i.id !== id)
       cache()
-      sync(() => withTimeout(deleteDoc(doc(itemsRef(uid!), id))))
+      markPending([id], 'delete')
+      sync(() => withTimeout(deleteDoc(doc(itemsRef(uid!), id))), { ids: [id], op: 'delete' })
       if (removed && !opts.undoAdd) {
         if (trash && !demoOn.value) trash.put(name, app, removed as TrashEntry['item'], labelOf(removed))
         record('deleted', labelOf(removed))
@@ -289,7 +419,8 @@ export function useCollection<T extends StoredItem>(
       if (items.value.some(i => i.id === item.id)) return
       items.value = [...items.value, item]
       cache()
-      sync(() => push([item]))
+      markPending([item.id], 'put')
+      sync(() => push([item]), { ids: [item.id], op: 'put' })
       trash?.take([item.id])
       record('restored', labelOf(item))
     }

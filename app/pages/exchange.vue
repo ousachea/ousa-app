@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import type { Direction } from '~/utils/exchange'
+import type { Cached } from '~/utils/cache'
 
 const { play } = useSound()
+const online = useOnline()
 
 type Mode = 'check' | 'track'
 const MODES: { value: Mode, label: string }[] = [
@@ -23,7 +25,14 @@ const rate = ref<number | null>(4000) // the rate you're offered, or the one you
 const { data: live, status, error, refresh } = await useFetch<{ rate: number, updatedAt: string, source: string }>('/api/rate', { server: false })
 const useOwnRate = ref(false)
 const ownRate = ref<number | null>(null)
-const market = computed(() => (useOwnRate.value ? ownRate.value : live.value?.rate) ?? null)
+// Offline or when the service is down: the last rate this device saw, clearly labelled
+const cachedRate = ref<Cached<{ rate: number, updatedAt: string, source: string }>>()
+onMounted(() => (cachedRate.value = readCached('rate')))
+watch(live, (d) => {
+  if (d?.rate) writeCached('rate', d)
+})
+const usingCached = computed(() => !useOwnRate.value && !live.value?.rate && !!cachedRate.value)
+const market = computed(() => (useOwnRate.value ? ownRate.value : live.value?.rate ?? cachedRate.value?.data.rate) ?? null)
 
 watch(useOwnRate, (on) => {
   if (on && !ownRate.value && live.value) ownRate.value = Math.round(live.value.rate)
@@ -186,12 +195,16 @@ async function reloadRate() {
               <span class="label">Market rate</span>
               <strong v-if="market">1 USD = {{ Math.round(market).toLocaleString('en-US') }} ៛</strong>
               <!-- "idle" is what the server renders, since the rate is only fetched in the browser -->
-              <strong v-else-if="status === 'pending' || status === 'idle'">Loading…</strong>
+              <span v-else-if="status === 'pending' || status === 'idle'" class="skeleton rate-skeleton" aria-label="Loading the market rate" />
               <strong v-else>Not available</strong>
             </div>
             <button v-if="!useOwnRate" type="button" class="btn btn-quiet btn-sm" :disabled="status === 'pending' || status === 'idle'" @click="reloadRate">Refresh</button>
           </div>
           <p v-if="!useOwnRate && live" class="note">Mid-market rate from {{ live.source }}, updated {{ updated }}. Money changers usually quote a little either side of it.</p>
+          <p v-else-if="usingCached && cachedRate" class="note">
+            {{ online ? 'Couldn’t reach the rate service just now' : 'You’re offline' }}, so this is the last rate seen on this device, from {{ cachedWhen(cachedRate.at) }}.
+            <button type="button" class="link" @click="reloadRate">Try again</button>
+          </p>
           <p v-else-if="!useOwnRate && error" class="note bad">Couldn’t load the market rate. Check your connection, or use your own rate below.</p>
           <label class="check">
             <input v-model="useOwnRate" type="checkbox">
@@ -390,6 +403,12 @@ async function reloadRate() {
 .market-head > div {
   display: flex;
   flex-direction: column;
+}
+
+.rate-skeleton {
+  width: 11rem;
+  height: 1.6rem;
+  margin-top: 0.2rem;
 }
 
 .label {

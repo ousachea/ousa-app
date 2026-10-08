@@ -277,10 +277,13 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
             </details>
           </template>
 
-          <div v-else-if="ready" class="panel empty">
-            <h2>No entries yet</h2>
-            <p>Log your weight to start your trend. One a day is plenty.</p>
+          <div v-else-if="ready" class="panel">
+            <EmptyState title="No entries yet" icon="weight" action="Log your weight" @action="focusField(weightField)">
+              Log your weight to start a trend line. Once a day is plenty, and the chart smooths out the daily ups and downs.
+            </EmptyState>
           </div>
+          <SkeletonList v-else variant="cards" :count="1" label="Loading your weight log" />
+          <template #fallback><SkeletonList variant="cards" :count="1" label="Loading your weight log" /></template>
         </ClientOnly>
       </Step>
     </div>

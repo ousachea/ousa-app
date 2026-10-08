@@ -1,12 +1,18 @@
 import type { Currency } from '~/utils/exchange'
 
 // Today's mid-market riel-per-dollar rate from /api/rate, shared by every page that needs it.
+// Offline, or if the rate service is down, the last rate this device saw is used instead.
 export function useMarketRate() {
   const { data } = useFetch<{ rate: number, updatedAt: string, source: string }>('/api/rate', {
     key: 'market-rate',
     server: false
   })
-  return computed(() => data.value?.rate)
+  const cached = ref<number>()
+  onMounted(() => (cached.value = readCached<{ rate: number }>('rate')?.data.rate))
+  watch(data, (d) => {
+    if (d?.rate) writeCached('rate', d)
+  })
+  return computed(() => data.value?.rate ?? cached.value)
 }
 
 // Sum amounts kept in USD and KHR, plus a combined dollar total once the rate is known

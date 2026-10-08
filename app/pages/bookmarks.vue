@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import type { Bookmark } from '~/utils/bookmarks'
+import type { CsvColumn } from '~/utils/transfer'
 
 const { play } = useSound()
 // Demo: a few pinned daily sites, tagged reading, and a note
@@ -19,6 +20,7 @@ const DEMO = (): Omit<Bookmark, 'id'>[] => [
 const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Bookmark>('bookmarks', undefined, { demo: DEMO })
 
 // ---------- Save a link ----------
+const online = useOnline()
 const linkInput = ref('')
 const linkField = ref<HTMLInputElement>()
 useAddAction(() => focusField(linkField.value))
@@ -58,8 +60,10 @@ async function save() {
   }
 
   saving.value = true
-  // Read the page's title and icon; if the site won't say, save it under its domain name
-  const preview = await $fetch('/api/link-preview', { query: { url: url.href } }).catch(() => undefined)
+  // Read the page's title and icon; if the site won't say (or there's no internet), save it under its domain name
+  const preview = online.value
+    ? await $fetch('/api/link-preview', { query: { url: url.href } }).catch(() => undefined)
+    : undefined
   saving.value = false
 
   const finalUrl = preview?.url || url.href
@@ -77,7 +81,7 @@ async function save() {
   linkInput.value = ''
   play('success')
   toast.success('Bookmark saved', {
-    description: record.title,
+    description: online.value ? record.title : 'Website details aren’t available offline, so it’s saved under its address. Edit it any time.',
     action: { label: 'Add tags', onClick: () => edit(record) },
     cancel: { label: 'Undo', onClick: () => remove(record.id, { undoAdd: true }) }
   })
@@ -248,44 +252,52 @@ function saveEdit() {
   toastSaved(before && (() => replace(before)))
 }
 
-// ---------- Import / export ----------
-const fileInput = ref<HTMLInputElement>()
-
-async function importFile(e: Event) {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-  try {
-    const found = parseBrowserBookmarks(await file.text())
-    const have = new Set(items.value.map(b => urlKey(b.url)))
-    const fresh = found.filter((b) => {
-      const k = urlKey(b.url)
-      if (have.has(k)) return false
-      have.add(k)
-      return true
-    })
-    if (!found.length) {
-      toast.error('No bookmarks in that file', { description: 'Export them from your browser as an HTML file.' })
-      play('error')
-      return
-    }
-    const imported = fresh.length ? addMany(fresh) : []
-    enrich(imported)
-    play('success')
-    toast.success(`${fresh.length} ${fresh.length === 1 ? 'bookmark' : 'bookmarks'} imported`, {
-      description: found.length > fresh.length ? `${found.length - fresh.length} you already had were skipped.` : 'Folders became tags.',
-      action: imported.length ? { label: 'Undo', onClick: () => imported.forEach(b => remove(b.id, { undoAdd: true })) } : undefined
-    })
-  } catch {
-    toast.error('Couldn’t read that file')
-    play('error')
+// ---------- Import / export (CHECKLIST.md #18): JSON, CSV and the browser's HTML bookmarks file ----------
+const transferOpen = ref(false)
+const BOOKMARK_COLUMNS: CsvColumn<Bookmark>[] = [
+  { header: 'Title', get: b => b.title },
+  { header: 'URL', get: b => b.url },
+  { header: 'Folders', get: b => b.tags },
+  { header: 'Note', get: b => b.note },
+  { header: 'Description', get: b => b.description },
+  { header: 'Pinned', get: b => (b.pinned ? 'yes' : '') },
+  { header: 'Added', get: b => b.createdAt }
+]
+function bookmarkFrom(url: string, title: string, folders: string[], note: string, description: string, pinned: boolean, added: string): Omit<Bookmark, 'id'> | undefined {
+  const link = parseLink(url.trim())
+  if (!link) return undefined
+  return {
+    url: link.href,
+    title: title.trim() || hostOf(link.href),
+    tags: [...new Set(folders.map(normaliseTag).filter(Boolean))],
+    note: note.trim(),
+    description: description.trim(),
+    icon: new URL('/favicon.ico', link).href,
+    pinned,
+    visits: 0,
+    createdAt: added && !Number.isNaN(new Date(added).getTime()) ? new Date(added).toISOString() : new Date().toISOString()
   }
 }
+const bookmarkFromRow = (r: Record<string, string>) => bookmarkFrom(
+  cellOf(r, 'url', 'link', 'address'), cellOf(r, 'title', 'name'), cellOf(r, 'folders', 'folder', 'tags').split(/[;,|]/),
+  cellOf(r, 'note', 'notes'), cellOf(r, 'description'), /^(yes|true|1)$/i.test(cellOf(r, 'pinned')), cellOf(r, 'added', 'created')
+)
+const bookmarkFromJSON = (r: Record<string, unknown>) => bookmarkFrom(
+  String(r.url ?? ''), String(r.title ?? ''), Array.isArray(r.tags) ? r.tags.map(String) : Array.isArray(r.folders) ? r.folders.map(String) : [],
+  String(r.note ?? ''), String(r.description ?? ''), r.pinned === true, String(r.createdAt ?? '')
+)
+const BOOKMARK_HTML = [{
+  label: 'Browser HTML',
+  ext: 'html',
+  mime: 'text/html',
+  write: (list: Bookmark[]) => exportBrowserBookmarks(list),
+  read: (text: string) => parseBrowserBookmarks(text)
+}]
 
 // Imported links only have a name; fill in each site's icon and description in the background,
 // a few at a time, keeping the title the browser had
 async function enrich(list: Bookmark[]) {
+  if (!online.value) return
   const queue = [...list]
   const worker = async () => {
     for (let b = queue.shift(); b; b = queue.shift()) {
@@ -295,22 +307,26 @@ async function enrich(list: Bookmark[]) {
   }
   await Promise.all(Array.from({ length: 4 }, worker))
 }
-
-function exportFile() {
-  const blob = new Blob([exportBrowserBookmarks(items.value)], { type: 'text/html' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `bookmarks-${new Date().toISOString().slice(0, 10)}.html`
-  logActivity('exported', '/bookmarks', `${items.value.length} bookmarks`)
-  a.click()
-  URL.revokeObjectURL(a.href)
-  play('copy')
-  toast.success('Bookmarks exported', { description: 'Import the file into any browser.' })
-}
 </script>
 
 <template>
   <ToolPage header="bar">
+    <TransferDialog
+      :open="transferOpen"
+      title="Bookmarks"
+      collection="bookmarks"
+      app="/bookmarks"
+      :items="items"
+      :columns="BOOKMARK_COLUMNS"
+      :from-row="bookmarkFromRow"
+      :from-json="bookmarkFromJSON"
+      :same-as="b => urlKey(b.url)"
+      :add-many="addMany"
+      :remove="remove"
+      :extra="BOOKMARK_HTML"
+      :on-imported="enrich"
+      @close="transferOpen = false"
+    />
     <template #actions><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
 
     <!-- The address bar: paste, press Enter, done -->
@@ -380,9 +396,7 @@ function exportFile() {
           </nav>
 
           <div class="side-tools">
-            <button type="button" class="link" @click="fileInput?.click()">Import from browser</button>
-            <button v-if="items.length" type="button" class="link" @click="exportFile">Export</button>
-            <input ref="fileInput" type="file" accept=".html,.htm,text/html" hidden @change="importFile">
+            <button type="button" class="link" @click="transferOpen = true">Import / Export</button>
           </div>
         </aside>
 
@@ -445,13 +459,18 @@ function exportFile() {
             <button type="button" class="btn btn-quiet btn-sm" @click="query = ''; activeTag = undefined">Show everything</button>
           </div>
 
-          <div v-else-if="ready" class="empty first">
-            <h3>No bookmarks yet</h3>
-            <p>Paste a link above to save it. The page title and icon are filled in for you.</p>
-            <p>Already have bookmarks in your browser? <button type="button" class="link" @click="fileInput?.click()">Import them</button>, and their folders become tags.</p>
+          <div v-else-if="ready" class="empty-panel">
+            <EmptyState title="No bookmarks yet" icon="bookmarks" action="Save your first link" @action="focusField(linkField)">
+              Paste a link and its title and icon are filled in for you. Pin the ones you open every day.
+              <template #extra>
+                <p class="import-hint">Already have bookmarks in your browser? <button type="button" class="link" @click="transferOpen = true">Import them</button>.</p>
+              </template>
+            </EmptyState>
           </div>
+          <SkeletonList v-else label="Loading your bookmarks" />
         </section>
       </div>
+      <template #fallback><SkeletonList label="Loading your bookmarks" /></template>
     </ClientOnly>
 
     <Modal :open="!!editingId" title="Edit bookmark" @close="editingId = undefined">
@@ -490,6 +509,18 @@ function exportFile() {
 
 <style scoped>
 /* ---------- Address bar ---------- */
+.empty-panel {
+  margin-top: 1rem;
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.import-hint {
+  margin: 0.5rem 0 0;
+  font-size: var(--text-sm);
+}
+
 .omnibox {
   width: min(100%, 760px);
   margin: 0 auto;

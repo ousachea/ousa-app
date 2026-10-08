@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import type { Currency } from '~/utils/exchange'
+import type { CsvColumn } from '~/utils/transfer'
 
 interface Thing {
   id: string
@@ -53,7 +54,7 @@ const DEMO = (): Omit<Thing, 'id'>[] => [
   { name: 'Honda Dream 125', category: 'Vehicle', purchaseDate: isoDaysAgo(1100), price: 2350, currency: 'USD', currentValue: 1800, notes: 'Plate 2AB-1234' },
   { name: 'Rice cooker', category: 'Home', purchaseDate: isoDaysAgo(60), price: 180000, currency: 'KHR', currentValue: null, notes: '' }
 ]
-const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Thing>('things', undefined, { demo: DEMO })
+const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Thing>('things', undefined, { demo: DEMO })
 const rate = useMarketRate()
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -181,6 +182,32 @@ function cancel() {
   Object.assign(form, blank())
 }
 
+// ---------- Import & export (CHECKLIST.md #18) ----------
+const transferOpen = ref(false)
+const THING_COLUMNS: CsvColumn<Thing>[] = [
+  { header: 'Name', get: t => t.name },
+  { header: 'Category', get: t => t.category },
+  { header: 'Bought on', get: t => t.purchaseDate },
+  { header: 'Price', get: t => t.price },
+  { header: 'Currency', get: t => t.currency },
+  { header: 'Worth now', get: t => t.currentValue ?? '' },
+  { header: 'Notes', get: t => t.notes }
+]
+function thingFrom(name: string, category: string, date: string, price: number | undefined, currency: string, worth: number | undefined, notes: string): Omit<Thing, 'id'> | undefined {
+  if (!name.trim()) return undefined
+  const cat = CATEGORIES.find(c => c.toLowerCase() === category.trim().toLowerCase()) ?? 'Other'
+  return { name: name.trim(), category: cat, purchaseDate: toIsoDate(date) || today(), price: price && price > 0 ? price : 0, currency: currency.toUpperCase() === 'KHR' ? 'KHR' : 'USD', currentValue: worth && worth > 0 ? worth : null, notes: notes.trim() }
+}
+const thingFromRow = (r: Record<string, string>) => thingFrom(
+  cellOf(r, 'name', 'item', 'device'), cellOf(r, 'category', 'type'), cellOf(r, 'bought on', 'purchase date', 'date'),
+  toNumber(cellOf(r, 'price', 'paid', 'cost')), cellOf(r, 'currency'), toNumber(cellOf(r, 'worth now', 'value', 'current value')), cellOf(r, 'notes', 'note')
+)
+const thingFromJSON = (r: Record<string, unknown>) => thingFrom(
+  String(r.name ?? ''), String(r.category ?? r.type ?? ''), String(r.purchaseDate ?? ''), Number(r.price), String(r.currency ?? ''),
+  r.currentValue == null ? undefined : Number(r.currentValue), String(r.notes ?? '')
+)
+const thingKey = (t: Omit<Thing, 'id'>) => `${t.name.toLowerCase()}|${t.purchaseDate}`
+
 function del(t: Thing) {
   const removed = remove(t.id)
   if (editingId.value === t.id) cancel()
@@ -192,8 +219,26 @@ function del(t: Thing) {
 <template>
   <ToolPage header="band">
     <template #actions>
-      <button type="button" class="btn add-btn" @click="openAdd">+ Add item</button>
+      <div class="head-buttons">
+        <ClientOnly><button type="button" class="btn btn-quiet" @click="transferOpen = true">Import / Export</button></ClientOnly>
+        <button type="button" class="btn add-btn" @click="openAdd">+ Add item</button>
+      </div>
     </template>
+
+    <TransferDialog
+      :open="transferOpen"
+      title="Things I own"
+      collection="things"
+      app="/things"
+      :items="items"
+      :columns="THING_COLUMNS"
+      :from-row="thingFromRow"
+      :from-json="thingFromJSON"
+      :same-as="thingKey"
+      :add-many="addMany"
+      :remove="remove"
+      @close="transferOpen = false"
+    />
 
     <Modal :open="formOpen" :title="editingId ? 'Edit item' : 'Add something you own'" @close="cancel">
       <form v-validate class="form" @submit.prevent="save">
@@ -349,16 +394,24 @@ function del(t: Thing) {
             <p v-if="!visible.length" class="empty-search">Nothing matches “{{ query }}”.</p>
           </template>
 
-          <div v-else-if="ready" class="panel empty">
-            <h2>Nothing here yet</h2>
-            <p>Add your phone, laptop or anything valuable to see what it’s all worth.</p>
-            <button type="button" class="btn" @click="openAdd">+ Add your first item</button>
+          <div v-else-if="ready" class="panel">
+            <EmptyState title="Nothing here yet" icon="things" action="+ Add your first item" @action="openAdd">
+              Add your phone, laptop or anything valuable to see what you paid, what it’s worth today, and where your money went.
+            </EmptyState>
           </div>
+          <SkeletonList v-else variant="cards" :count="3" label="Loading your things" />
+          <template #fallback><SkeletonList variant="cards" :count="3" label="Loading your things" /></template>
         </ClientOnly>
   </ToolPage>
 </template>
 
 <style scoped>
+.head-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 /* ---------- Summary: totals on the left, where the value is on the right ---------- */
 .summary {
   padding: 1.4rem 1.5rem;

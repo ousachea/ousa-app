@@ -44,7 +44,7 @@ const WORDS = {
   en: {
     li: 'Li', hun: 'Hun', chi: 'Chi', gram: 'Gram', damlung: 'Damlung', troyOz: 'Troy oz',
     spot: 'Gold spot price', perOz: 'per troy ounce', live: 'Live', custom: 'My price', refresh: 'Refresh',
-    byUnit: 'Price by unit', convert: 'Convert units', myGold: 'My gold', add: '+ Add purchase',
+    byUnit: 'Price by unit', convert: 'Convert units', myGold: 'My gold', add: '+ Add purchase', noGold: 'No gold yet', noGoldText: 'Add the gold you bought and what you paid, and see what it’s worth at today’s price.',
     invested: 'Paid', worth: 'Worth now', gainLoss: 'Gain or loss', weight: 'Weight', paid: 'Paid', date: 'Date',
     step1: 'Check today’s price', step1Hint: 'Live from the world market. Switch to “My price” to use a shop’s quote.',
     step2: 'Choose your gold’s purity', step2Hint: 'Jewellery is often 22K or 18K, so it’s worth less than pure 24K gold.',
@@ -55,7 +55,7 @@ const WORDS = {
   km: {
     li: 'លី', hun: 'ហុន', chi: 'ជី', gram: 'ក្រាម', damlung: 'ដំឡឹង', troyOz: 'អោន',
     spot: 'តម្លៃមាសទីផ្សារ', perOz: 'ក្នុងមួយអោន', live: 'បន្តផ្ទាល់', custom: 'តម្លៃខ្ញុំ', refresh: 'ធ្វើបច្ចុប្បន្នភាព',
-    byUnit: 'តម្លៃតាមឯកតា', convert: 'បម្លែងឯកតា', myGold: 'មាសរបស់ខ្ញុំ', add: '+ បន្ថែមការទិញ',
+    byUnit: 'តម្លៃតាមឯកតា', convert: 'បម្លែងឯកតា', myGold: 'មាសរបស់ខ្ញុំ', add: '+ បន្ថែមការទិញ', noGold: 'មិនទាន់មានមាសនៅឡើយ', noGoldText: 'បន្ថែមមាសដែលអ្នកបានទិញ និងតម្លៃដែលអ្នកបានបង់ ដើម្បីមើលថាវាមានតម្លៃប៉ុន្មាននៅថ្ងៃនេះ។',
     invested: 'បានបង់', worth: 'តម្លៃឥឡូវ', gainLoss: 'ចំណេញ ឬខាត', weight: 'ទម្ងន់', paid: 'បានបង់', date: 'កាលបរិច្ឆេទ',
     step1: 'មើលតម្លៃថ្ងៃនេះ', step1Hint: 'តម្លៃផ្ទាល់ពីទីផ្សារពិភពលោក។ ប្តូរទៅ «តម្លៃខ្ញុំ» ដើម្បីប្រើតម្លៃហាង។',
     step2: 'ជ្រើសរើសភាពសុទ្ធនៃមាស', step2Hint: 'គ្រឿងអលង្ការជាញឹកញាប់ 22K ឬ 18K ដូច្នេះតម្លៃទាបជាងមាសសុទ្ធ 24K។',
@@ -108,8 +108,16 @@ const purityFactor = computed(() => purity.value === 'custom'
 const perGram = computed(() => spot.value / TROY * purityFactor.value)
 const priceOf = (unit: Unit, qty = 1) => perGram.value * UNIT_GRAMS[unit] * qty
 
-async function fetchQuote() {
+const online = useOnline()
+
+// `quiet`: an automatic refresh; offline it just keeps the saved price instead of complaining every time
+async function fetchQuote(quiet = false) {
   if (loading.value) return
+  if (!online.value) {
+    if (quote.value.price) quote.value = { ...quote.value, status: 'cached' }
+    if (!quiet) toast('You’re offline', { description: quote.value.price ? 'Showing the last price saved on this device.' : 'Connect to get today’s gold price, or enter your own.' })
+    return
+  }
   loading.value = true
   const before = quote.value.price
   let next: Quote | undefined
@@ -140,10 +148,12 @@ async function fetchQuote() {
     saveSettings()
   } else if (quote.value.price) {
     quote.value = { ...quote.value, status: 'cached' }
-    toast.error('Couldn’t get a live price', { description: 'Showing the last price saved on this device.' })
-    play('error')
-  } else {
-    toast.error('Couldn’t get a live price', { description: 'Check your connection, or enter your own price.' })
+    if (!quiet) {
+      toast.error('Couldn’t get a live price', { description: 'Showing the last price saved on this device.', action: { label: 'Try again', onClick: () => fetchQuote() } })
+      play('error')
+    }
+  } else if (!quiet) {
+    toast.error('Couldn’t get a live price', { description: 'Check your connection, or enter your own price.', action: { label: 'Try again', onClick: () => fetchQuote() } })
     play('error')
   }
 }
@@ -465,7 +475,7 @@ let refreshTimer: ReturnType<typeof setInterval> | undefined
 let clock: ReturnType<typeof setInterval> | undefined
 watch(autoRefresh, (sec) => {
   clearInterval(refreshTimer)
-  if (sec) refreshTimer = setInterval(() => source.value === 'api' && fetchQuote(), sec * 1000)
+  if (sec) refreshTimer = setInterval(() => source.value === 'api' && fetchQuote(true), sec * 1000)
 })
 
 onMounted(() => {
@@ -488,7 +498,7 @@ onMounted(() => {
       sort.value = s.sort ?? 'date-desc'
     }
   } catch {}
-  if (source.value === 'api') fetchQuote()
+  if (source.value === 'api') fetchQuote(!online.value)
   clock = setInterval(() => (now.value = Date.now()), 30_000)
   IDLE_EVENTS.forEach(e => window.addEventListener(e, resetIdle, { passive: true }))
   resetIdle()
@@ -751,10 +761,10 @@ const PURITIES: { value: Purity, label: string }[] = [
               </li>
             </ul>
 
-            <div v-else-if="ready" class="panel empty">
-              <h3>No gold yet</h3>
-              <p>Add what you bought and what you paid to see what it’s worth today.</p>
+            <div v-else-if="ready" class="panel">
+              <EmptyState :title="w.noGold" icon="gold" :action="w.add" @action="openAdd">{{ w.noGoldText }}</EmptyState>
             </div>
+            <SkeletonList v-else variant="cards" :count="2" label="Loading your gold" />
 
             <p class="csv">
               <button type="button" class="link" @click="fileInput?.click()">Import CSV</button>

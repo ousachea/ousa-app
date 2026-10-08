@@ -1,0 +1,26 @@
+{
+  "name": "Ousa’s Apps",
+  "short_name": "Ousa’s Apps",
+  "description": "Everyday tools and trackers for life in Cambodia: bookmarks, renewals, things you own, countdowns, gold, phone numbers and more.",
+  "id": "/",
+  "start_url": "/?source=installed",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#e8ebf0",
+  "theme_color": "#e8ebf0",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Add a bookmark", "short_name": "Bookmark", "url": "/bookmarks?add=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Renewals", "url": "/renewals", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Countdown", "url": "/countdown", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Things I own", "url": "/things", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

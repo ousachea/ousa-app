@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import type { Cached } from '~/utils/cache'
 
 interface CountdownEvent {
   id: string
@@ -10,6 +11,7 @@ interface CountdownEvent {
 }
 
 const { play } = useSound()
+const online = useOnline()
 const { items, ready, sync, add, update, replace, remove, restore } = useCollection<CountdownEvent>('countdown')
 
 const isoToday = () => new Date().toISOString().slice(0, 10)
@@ -54,7 +56,16 @@ const todayKhmer = computed(() => {
 })
 
 // Public holidays come from the server (Nager.Date); each one starts at midnight Cambodia time
-const { data: holidayData, status: holidayStatus, refresh: refreshHolidays } = useFetch('/api/holidays', { server: false, lazy: true })
+const { data: liveHolidays, status: holidayStatus, refresh: refreshHolidays } = useFetch('/api/holidays', { server: false, lazy: true })
+// The last list this device saw keeps the countdown working offline (CHECKLIST.md #19)
+type HolidayData = NonNullable<typeof liveHolidays.value>
+const cachedHolidays = ref<Cached<HolidayData>>()
+onMounted(() => (cachedHolidays.value = readCached<HolidayData>('holidays')))
+watch(liveHolidays, (d) => {
+  if (d?.holidays?.length) writeCached('holidays', d)
+})
+const holidayData = computed(() => liveHolidays.value ?? (holidayStatus.value === 'error' ? cachedHolidays.value?.data : undefined))
+const holidaysFromCache = computed(() => !liveHolidays.value && !!holidayData.value)
 const DAY = 86_400_000
 const khMidnight = (iso: string) => new Date(`${iso}T00:00:00+07:00`).getTime()
 
@@ -302,23 +313,34 @@ function del(e: CountdownEvent) {
             </section>
           </template>
 
-          <div v-else-if="ready" class="panel empty">
-            <h2>No dates yet</h2>
-            <p>Add a birthday, trip or deadline to start counting down.</p>
+          <div v-else-if="ready" class="panel">
+            <EmptyState title="No countdowns yet" icon="countdown" action="Add a date" @action="focusField(titleInput)">
+              Count down to a birthday, a trip or a deadline, and see how much of the wait is behind you.
+            </EmptyState>
           </div>
+          <SkeletonList v-else variant="cards" :count="2" label="Loading your countdowns" />
+          <template #fallback><SkeletonList variant="cards" :count="2" label="Loading your countdowns" /></template>
         </ClientOnly>
       </Step>
 
       <Step title="Cambodian public holidays" hint="Official days off. Lunar dates move every year, so they’re fetched fresh." v-sticky-fit class="holiday-step">
         <ClientOnly>
-          <div v-if="holidayStatus === 'error'" class="panel holiday-msg">
-            <p>Couldn’t load the holiday list.</p>
+          <div v-if="holidayStatus === 'error' && !holidayData" class="panel holiday-msg">
+            <p><strong>Couldn’t load the holiday list</strong></p>
+            <p>{{ online ? 'The holiday service didn’t answer.' : 'You’re offline.' }} Your own countdowns still work.</p>
             <button type="button" class="btn btn-sm" @click="refreshHolidays()">Try again</button>
           </div>
-          <div v-else-if="!holidayData" class="panel holiday-msg">
-            <p>Loading holidays…</p>
+          <div v-else-if="!holidayData" class="panel holiday-skeleton" aria-label="Loading holidays">
+            <span class="skeleton" style="width: 40%; height: 0.9rem" />
+            <span class="skeleton" style="width: 70%; height: 1.6rem" />
+            <span class="skeleton" style="width: 55%; height: 0.9rem" />
+            <span class="skeleton" style="height: 3rem; margin-top: 0.5rem" />
           </div>
-          <template v-else-if="nextHoliday">
+          <p v-if="holidaysFromCache && cachedHolidays" class="cache-note">
+            {{ online ? 'Couldn’t refresh the list' : 'You’re offline' }}: showing the holidays saved on {{ cachedWhen(cachedHolidays.at) }}.
+            <button type="button" class="link" @click="refreshHolidays()">Try again</button>
+          </p>
+          <template v-if="holidayData && nextHoliday">
             <!-- The next day off, counting down live -->
             <section class="panel next-off" :class="{ 'on-now': nextHoliday.onNow }">
               <span class="label">{{ nextHoliday.onNow ? 'Today is a holiday' : 'Next day off' }}</span>
@@ -864,9 +886,26 @@ function del(e: CountdownEvent) {
 .holiday-msg {
   padding: 1.25rem;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--ink-2);
+}
+
+.holiday-msg strong {
+  color: var(--ink);
+}
+
+.holiday-skeleton {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cache-note {
+  margin: 0 0 0.75rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
