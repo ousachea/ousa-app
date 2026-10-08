@@ -3,7 +3,7 @@
 // Apple Calendar, Outlook and most phones open directly. A date with no time becomes an all-day event;
 // with a time it's a one-hour event at that time, in whatever time zone the calendar is set to.
 // `repeat` makes it a repeating event (subscriptions that renew every week, month, 3 months or year).
-type Repeat = 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+type Repeat = 'weekly' | 'monthly' | 'quarterly' | 'halfyearly' | 'yearly' | 'once'
 const props = defineProps<{ title: string, date: string, time?: string, details?: string, label?: string, repeat?: Repeat }>()
 
 const trigger = ref<HTMLButtonElement>()
@@ -30,11 +30,12 @@ const range = computed(() => {
 const rrule = computed(() => {
   if (!props.repeat) return ''
   const [, m, d] = props.date.split('-').map(Number) as [number, number, number]
+  if (props.repeat === 'once') return ''
   if (props.repeat === 'weekly') return 'RRULE:FREQ=WEEKLY'
   if (props.repeat === 'yearly') {
     return m === 2 && d === 29 ? 'RRULE:FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=28,29;BYSETPOS=-1' : 'RRULE:FREQ=YEARLY'
   }
-  const base = props.repeat === 'monthly' ? 'RRULE:FREQ=MONTHLY' : 'RRULE:FREQ=MONTHLY;INTERVAL=3'
+  const base = props.repeat === 'monthly' ? 'RRULE:FREQ=MONTHLY' : props.repeat === 'halfyearly' ? 'RRULE:FREQ=MONTHLY;INTERVAL=6' : 'RRULE:FREQ=MONTHLY;INTERVAL=3'
   if (d <= 28) return base
   const days = Array.from({ length: d - 27 }, (_, i) => 28 + i).join(',')
   return `${base};BYMONTHDAY=${days};BYSETPOS=-1`

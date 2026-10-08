@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import type { Currency } from '~/utils/exchange'
-import type { Cycle } from '~/utils/renewals'
+import type { Countdown, Cycle, Period } from '~/utils/renewals'
 import type { RenewalCategory } from '~/utils/services'
 import type { CsvColumn } from '~/utils/transfer'
 import type { MenuEntry } from '~/composables/useContextMenu'
@@ -14,6 +14,7 @@ interface Renewal {
   cycle: Cycle
   nextDate: string // yyyy-mm-dd, as entered; past dates roll forward when shown
   category?: RenewalCategory | '' // optional; suggested from the name (CHECKLIST.md #30)
+  icon?: string // '' automatic from the name; 'letter', 'svc:<service>' or an image link chosen by hand (#54)
 }
 
 const SOON_DAYS = 7
@@ -43,7 +44,21 @@ const isoToday = () => new Date().toISOString().slice(0, 10)
 // New subscriptions start with the currency and billing cycle used last time (CHECKLIST.md #14)
 const lastCurrency = useRemembered<Renewal['currency']>('renewals-currency', 'USD', v => v === 'USD' || v === 'KHR')
 const lastCycle = useRemembered<Renewal['cycle']>('renewals-cycle', 'monthly', v => CYCLES.some(c => c.value === v))
-const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: lastCurrency.value, cycle: lastCycle.value, nextDate: isoToday(), category: '' })
+const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: lastCurrency.value, cycle: lastCycle.value, nextDate: isoToday(), category: '', icon: '' })
+
+// Icon (#54): type a service to look like it, "Letter only", or paste an image link; empty = automatic
+const ICON_OPTIONS = [{ value: 'Letter only' }, ...SERVICES.map(s => ({ value: s.name, logo: `https://${s.domain}/favicon.ico` }))]
+const iconText = ref('')
+const iconFrom = (text: string) => {
+  const t = text.trim()
+  if (!t) return ''
+  if (/^https?:\/\//i.test(t)) return t
+  if (t.toLowerCase() === 'letter only') return 'letter'
+  const svc = SERVICES.find(s => s.name.toLowerCase() === t.toLowerCase())
+  return svc ? `svc:${svc.name}` : ''
+}
+const textFromIcon = (icon?: string) => (!icon ? '' : icon === 'letter' ? 'Letter only' : icon.startsWith('svc:') ? icon.slice(4) : icon)
+watch(iconText, t => (form.icon = iconFrom(t)))
 
 // Category suggestion from the name, e.g. Netflix → Entertainment (CHECKLIST.md #30)
 const CATEGORY_OPTIONS = [{ value: '', label: 'No category' }, ...RENEWAL_CATEGORIES.map(c => ({ value: c, label: c }))]
@@ -71,8 +86,28 @@ function openAdd() {
   play('open')
 }
 
-const toUsd = (r: Pick<Renewal, 'price' | 'currency'>) => (r.currency === 'USD' ? r.price : rate.value ? r.price / rate.value : undefined)
+// Conversions go through the shared helpers in utils/exchange.ts (#57)
+const usdOf = (r: Pick<Renewal, 'price' | 'currency'>) => toUsd(r.price, r.currency, rate.value)
 const perMonth = (r: Renewal) => CYCLES.find(c => c.value === r.cycle)!.perMonth
+
+// A clock for the countdowns (#55): every second while something is under an hour away, else every 30 s
+const now = ref(new Date())
+let tick: ReturnType<typeof setTimeout> | undefined
+function scheduleTick() {
+  clearTimeout(tick)
+  const live = upcoming.value.some(r => r.countdown.live)
+  tick = setTimeout(() => {
+    now.value = new Date()
+    scheduleTick()
+  }, live ? 1000 : 30_000)
+}
+onMounted(scheduleTick)
+onBeforeUnmount(() => clearTimeout(tick))
+
+// Equivalent cost per period (#58), and which currency the totals show in (#57)
+const period = useRemembered<Period>('renewals-period', 'month', v => PERIODS.some(p => p.value === v))
+const periodLabel = computed(() => PERIODS.find(p => p.value === period.value)!.label.toLowerCase())
+const showIn = useRemembered<'both' | 'USD' | 'KHR'>('renewals-show-in', 'both', v => v === 'both' || v === 'USD' || v === 'KHR')
 
 const SORTS = [
   { value: 'soonest', label: 'Soonest' },
@@ -82,35 +117,52 @@ const SORTS = [
 const sort = useRemembered<(typeof SORTS)[number]['value']>('renewals-sort', 'soonest', v => SORTS.some(s => s.value === v))
 
 // Compared by what they cost per month in dollars, so a yearly plan and a monthly one line up
-const monthlyCost = (r: Renewal) => (toUsd(r) ?? r.price / 4000) * perMonth(r)
+const monthlyCost = (r: Renewal) => (usdOf(r) ?? r.price / 4000) * perMonth(r)
 
 const upcoming = computed(() => items.value
   .map((r) => {
-    const next = nextRenewal(r.nextDate, r.cycle)
-    return { ...r, next, days: daysUntil(next) }
+    const next = nextRenewal(r.nextDate, r.cycle, now.value)
+    const days = daysUntil(next, now.value)
+    return { ...r, next, days, status: statusOf(days), countdown: countdown(renewalMoment(next), now.value) }
   })
   .sort((a, b) => {
+    // Expired ones always sink to the bottom
+    if ((a.status === 'expired') !== (b.status === 'expired')) return a.status === 'expired' ? 1 : -1
     if (sort.value === 'expensive') return monthlyCost(b) - monthlyCost(a) || a.days - b.days
     if (sort.value === 'name') return a.name.localeCompare(b.name)
     return a.days - b.days
   }))
 
+const active = computed(() => upcoming.value.filter(r => r.status !== 'expired'))
 const monthlyUsd = computed(() => {
   let sum = 0
-  for (const r of items.value) {
-    const usd = toUsd(r)
+  for (const r of active.value) {
+    const usd = usdOf(r)
     if (usd === undefined) return undefined // waiting for the rate
     sum += usd * perMonth(r)
   }
   return sum
 })
+// The chosen period's total, in dollars (converted for riel below)
+const periodUsd = computed(() => monthlyUsd.value === undefined ? undefined : monthlyUsd.value * PERIODS.find(p => p.value === period.value)!.perMonth)
+const totalText = (usd: number) => showIn.value === 'KHR' && rate.value
+  ? formatMoney(usd * rate.value, 'KHR')
+  : showIn.value === 'both' ? formatBoth(usd, 'USD', rate.value) : formatMoney(usd, 'USD')
 
-const dueSoon = computed(() => upcoming.value.filter(r => r.days <= SOON_DAYS))
+const dueSoon = computed(() => upcoming.value.filter(r => r.status === 'due' || r.status === 'soon'))
+const expired = computed(() => upcoming.value.filter(r => r.status === 'expired'))
+
+// "≈ $0.50 a day" under each subscription, unless it's already billed that often
+const SAME_PERIOD: Partial<Record<Cycle, Period>> = { weekly: 'week', monthly: 'month', quarterly: 'quarter', halfyearly: 'half', yearly: 'year' }
+const rowEquivalent = (r: Renewal) => {
+  if (r.cycle === 'once' || SAME_PERIOD[r.cycle] === period.value) return ''
+  return `≈ ${formatMoney(equivalent(r.price, r.cycle, period.value), r.currency)} a ${periodLabel.value}`
+}
 
 // A heads-up for anything renewing today or tomorrow, once per browser session
 watch(ready, (isReady) => {
   if (!isReady) return
-  const urgent = upcoming.value.filter(r => r.days <= 1)
+  const urgent = upcoming.value.filter(r => r.status === 'due')
   if (!urgent.length) return
   try {
     if (sessionStorage.getItem('ousa-app:renewals-reminded') === isoToday()) return
@@ -132,9 +184,10 @@ const timeline = computed(() => {
   for (const r of items.value) {
     let from = new Date()
     for (let guard = 0; guard < 10; guard++) {
+      if (r.cycle === 'once' && guard > 0) break
       const next = nextRenewal(r.nextDate, r.cycle, from)
       const day = daysUntil(next)
-      if (day > WINDOW) break
+      if (day > WINDOW || day < 0) break
       marks.push({ id: `${r.id}-${day}`, name: r.name, price: formatMoney(r.price, r.currency), day, lane: 0 })
       from = new Date(`${next}T00:00`)
       from.setDate(from.getDate() + 1)
@@ -160,10 +213,12 @@ const tickLabel = (d: number) => {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
-function whenText(days: number) {
-  if (days === 0) return 'Renews today'
-  if (days === 1) return 'Renews tomorrow'
-  return `Renews in ${days} days`
+function whenText(r: { days: number, cycle: Cycle, countdown: Countdown }) {
+  const verb = r.cycle === 'once' ? 'Ends' : 'Renews'
+  if (r.days < 0) return `Ended ${-r.days} ${-r.days === 1 ? 'day' : 'days'} ago`
+  if (r.days === 0) return `${verb} today`
+  if (r.days === 1) return `${verb} tomorrow, in ${r.countdown.text}`
+  return `${verb} in ${r.countdown.text}`
 }
 
 const formatDate = (d: string) => new Date(`${d}T00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -215,7 +270,8 @@ async function copyText(text: string) {
 
 function edit(r: Renewal) {
   editingId.value = r.id
-  Object.assign(form, { name: r.name, price: r.price, currency: r.currency, cycle: r.cycle, nextDate: nextRenewal(r.nextDate, r.cycle), category: r.category ?? '' })
+  Object.assign(form, { name: r.name, price: r.price, currency: r.currency, cycle: r.cycle, nextDate: nextRenewal(r.nextDate, r.cycle), category: r.category ?? '', icon: r.icon ?? '' })
+  iconText.value = textFromIcon(r.icon)
   formOpen.value = true
   play('open')
 }
@@ -224,6 +280,7 @@ function cancel() {
   editingId.value = undefined
   formOpen.value = false
   Object.assign(form, blank())
+  iconText.value = ''
 }
 
 // ---------- Import & export (CHECKLIST.md #18) ----------
@@ -329,6 +386,13 @@ function del(r: Renewal) {
           <span class="field-head">Category <span class="optional">Optional</span></span>
           <AppSelect v-model="form.category" aria-label="Category" :options="CATEGORY_OPTIONS" />
         </label>
+        <div class="field">
+          <span class="field-head">Icon <span class="optional">Automatic</span></span>
+          <div class="icon-row">
+            <RenewalIcon :name="form.name || '?'" :icon="form.icon" />
+            <ComboInput v-model="iconText" :options="ICON_OPTIONS" placeholder="From the name. Or pick a service, “Letter only”, or paste an image link" aria-label="Icon" />
+          </div>
+        </div>
         <div class="actions">
           <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add subscription' }}</button>
           <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
@@ -343,17 +407,30 @@ function del(r: Renewal) {
         <ClientOnly>
           <template v-if="ready && items.length">
             <section class="panel summary">
-              <div>
-                <span class="label">Per month</span>
-                <strong>{{ monthlyUsd !== undefined ? formatMoney(monthlyUsd, 'USD') : '…' }}</strong>
+              <div class="total">
+                <span class="label">What it all costs, spread evenly</span>
+                <div class="periods segmented" role="radiogroup" aria-label="Per">
+                  <label v-for="p in PERIODS" :key="p.value" :class="{ active: period === p.value }">
+                    <input v-model="period" type="radio" name="period" :value="p.value">{{ p.label }}
+                  </label>
+                </div>
+                <strong class="total-figure">{{ periodUsd !== undefined ? `≈ ${totalText(periodUsd)}` : '…' }}</strong>
+                <span class="total-note">
+                  An equivalent per {{ periodLabel }}, not what you’re charged on any one day.
+                  <span class="show-in">Show in
+                    <button v-for="c in (['both', 'USD', 'KHR'] as const)" :key="c" type="button" class="link" :aria-pressed="showIn === c" @click="showIn = c">{{ c === 'both' ? 'both' : c === 'USD' ? '$' : '៛' }}</button>
+                  </span>
+                </span>
               </div>
               <div>
-                <span class="label">Per year</span>
-                <strong>{{ monthlyUsd !== undefined ? formatMoney(monthlyUsd * 12, 'USD') : '…' }}</strong>
-              </div>
-              <div>
-                <span class="label">Renewing this week</span>
+                <span class="label">Due soon</span>
                 <strong>{{ dueSoon.length }}</strong>
+                <span class="total-note">Within a week</span>
+              </div>
+              <div v-if="expired.length">
+                <span class="label">Expired</span>
+                <strong>{{ expired.length }}</strong>
+                <span class="total-note">One-off dates that passed</span>
               </div>
             </section>
 
@@ -382,19 +459,32 @@ function del(r: Renewal) {
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             </div>
             <TransitionGroup tag="ul" name="list" class="renewals">
-              <li v-for="r in upcoming" :key="r.id" :data-item-id="r.id" class="panel renewal" v-bind="menuFor(() => renewalMenu(r), r.name)" v-swipe-delete="() => del(r)" :class="{ soon: r.days <= SOON_DAYS, editing: editingId === r.id }">
-                <div class="when" :aria-label="whenText(r.days)">
-                  <strong>{{ r.days === 0 ? 'Today' : r.days }}</strong>
-                  <span v-if="r.days !== 0">{{ r.days === 1 ? 'day' : 'days' }}</span>
+              <li v-for="r in upcoming" :key="r.id" :data-item-id="r.id" class="panel renewal" v-bind="menuFor(() => renewalMenu(r), r.name)" v-swipe-delete="() => del(r)" :class="[`is-${r.status}`, { soon: r.status === 'soon' || r.status === 'due', editing: editingId === r.id }]">
+                <!-- Countdown (#55): bigger units far away, down to seconds in the last hour -->
+                <div class="when" role="timer" :aria-label="whenText(r)" :title="whenText(r)">
+                  <template v-if="r.status === 'expired'"><strong>✕</strong><span>ended</span></template>
+                  <template v-else-if="r.days === 0"><strong class="word">Today</strong><span>renews</span></template>
+                  <template v-else><strong>{{ r.countdown.value }}</strong><span>{{ r.countdown.unit }}</span></template>
                 </div>
+                <RenewalIcon :name="r.name" :icon="r.icon" />
                 <div class="main">
-                  <strong>{{ r.name }}</strong>
-                  <span class="meta">{{ formatMoney(r.price, r.currency) }} {{ cycleLabel(r.cycle) }} · next {{ formatDate(r.next) }}<template v-if="r.category"> · {{ r.category }}</template></span>
+                  <span class="title-row">
+                    <strong>{{ r.name }}</strong>
+                    <span class="badge" :class="STATUS[r.status].badge"><span aria-hidden="true">{{ STATUS[r.status].symbol }}</span> {{ r.status === 'due' && r.days === 1 ? 'Due tomorrow' : r.status === 'due' ? 'Due today' : STATUS[r.status].label }}</span>
+                  </span>
+                  <span class="meta">
+                    {{ formatBoth(r.price, r.currency, rate) }} {{ r.cycle === 'once' ? '' : cycleLabel(r.cycle) }} · {{ r.status === 'expired' ? 'ended' : r.cycle === 'once' ? 'ends' : 'next' }} {{ formatDate(r.next) }}<template v-if="r.category"> · {{ r.category }}</template>
+                  </span>
+                  <span class="meta fine">
+                    <template v-if="r.status !== 'expired' && r.days > 0">in {{ r.countdown.text }}</template>
+                    <template v-if="rowEquivalent(r)"> · {{ rowEquivalent(r) }}</template>
+                  </span>
                 </div>
                 <span class="links">
                   <!-- A repeating event from the next renewal, so every future charge is in the calendar -->
                   <CalendarAdd
-                    :title="`${r.name} renews`"
+                    v-if="r.status !== 'expired'"
+                    :title="`${r.name} ${r.cycle === 'once' ? 'ends' : 'renews'}`"
                     :date="r.next"
                     :repeat="r.cycle"
                     :details="`${formatMoney(r.price, r.currency)} ${cycleLabel(r.cycle)}. From Renewals in Ousa’s Apps.`"
@@ -477,11 +567,69 @@ function del(r: Renewal) {
 .summary {
   padding: 1.25rem 1.4rem;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: minmax(0, 2.4fr) repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 1rem 1.5rem;
 }
 
-.summary div {
+.total {
+  gap: 0.45rem;
+}
+
+.periods {
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: var(--text-sm);
+}
+
+.periods label {
+  padding-inline: 0.65rem;
+  white-space: nowrap;
+}
+
+.total-figure {
+  overflow-wrap: anywhere;
+}
+
+.total-note {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.show-in {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-left: 0.4rem;
+}
+
+.show-in .link[aria-pressed='true'] {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .total {
+    grid-column: 1 / -1;
+  }
+}
+
+.icon-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.icon-row > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.summary > div {
   display: flex;
   flex-direction: column;
 }
@@ -659,6 +807,31 @@ function del(r: Renewal) {
   font-variant-numeric: tabular-nums;
 }
 
+.when strong.word {
+  font-size: 1rem;
+}
+
+/* Expired: everything steps back */
+.is-expired {
+  opacity: 0.7;
+}
+
+.is-expired .when {
+  color: var(--ink-3);
+}
+
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+}
+
+.meta.fine {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
 .when span {
   font-size: 0.75rem;
   color: var(--ink-2);
@@ -667,7 +840,7 @@ function del(r: Renewal) {
 /* Renewing within a week: the countdown tile takes the tool colour */
 .soon .when {
   color: #fff;
-  background: var(--accent);
+  background: var(--accent-btn, var(--accent));
 }
 
 .soon .when span {

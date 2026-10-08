@@ -122,6 +122,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Count down to the dates that matter.'] }
   ],
   '/renewals': [
+    { version: '2.0.0', date: '2026-10-08', changes: ['Each subscription shows its service’s icon automatically; pick another, a letter, or your own image link.', 'A live countdown that gets more exact as the date nears: months, then weeks, days, hours, and minutes and seconds in the last hour.', 'Status at a glance: Safe, Upcoming, Soon, Due and Expired, in words as well as colour.', 'Prices and totals in both dollars and riel, using today’s rate.', 'See what everything costs per day, week, month, quarter, half-year or year.', 'New billing options: every 6 months, and one-off dates that expire.'] },
     { version: '1.4.0', date: '2026-10-08', changes: ['Sort by soonest, most expensive or name.', 'Give subscriptions a category; well-known services suggest one.', TRANSFER, 'New subscriptions start with the currency and billing you used last.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
     { version: '1.3.1', date: '2026-10-07', changes: ['The 30-day timeline stays readable on a phone: short names, no overlapping prices.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.3.0', date: '2026-10-07', changes: ['Add a subscription to your calendar as a repeating event: Google Calendar, or Apple, Outlook and phones with an .ics file.', 'Billing on the 29th–31st lands on the last day of shorter months, just like real billing.'] },

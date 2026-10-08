@@ -309,31 +309,29 @@ Side by side on desktop, stacked on mobile; long text stays readable.
 # PART E — RENEWALS APP
 
 ## #54 — Automatic Renewal Icons
-**Status:** ⬜
+**Status:** 🟢
 Icon picked from the service name; manual replacement allowed.
-**Notes:**
+**Notes:** `RenewalIcon`: automatic from the name via the services catalog (the service's own site icon, e.g. Netflix, Smart), else a letter tile in a colour derived from the name; image failures fall back to the letter. Manual replacement in the form's Icon field: pick a service to look like, “Letter only”, or paste an image link (live preview).
 
 ## #55 — Renewal Countdown
-**Status:** ⬜
+**Status:** 🟢
 Countdown in months/weeks/days/hours/minutes/seconds, more precise as the date gets close.
-**Notes:**
+**Notes:** `countdown()` in `utils/renewals.ts`: ≥ 60 days months + weeks, ≥ 14 days weeks + days, ≥ 2 days days + hours, ≥ 1 hour hours + minutes, last hour minutes + seconds (ticks every second only then, otherwise every 30 s). Big number + unit in the row tile, full reading underneath and in the label for screen readers. Verified with fixed dates.
 
 ## #56 — Renewal Status
-**Status:** ⬜
+**Status:** 🟢
 Safe / Upcoming / Soon / Due / Expired, shown with colour and text/icon.
-**Notes:**
+**Notes:** Safe (> 30 days), Upcoming (8–30), Soon (2–7), Due (today/tomorrow), Expired (a one-off date that passed; new “Doesn’t repeat” billing). Each shows a badge with symbol + word + colour (✓ Safe, ◷ Upcoming, ! Soon, ● Due today/tomorrow, ✕ Expired); expired rows fade and sink to the bottom, can't be added to calendars, and don't count in totals. Summary counts Due soon and Expired.
 
 ## #57 — USD / KHR Conversion
-**Status:** ⬜
+**Status:** 🟢
 USD ↔ KHR, totals in both currencies, centralised exchange-rate logic.
-**Notes:**
+**Notes:** One place for conversions: `toUsd`, `toKhr`, `formatBoth` in `utils/exchange.ts` with the shared `useMarketRate` (falls back to the last rate seen offline). Every price shows both ("$15.49 · 62,682 ៛"), totals too, with Show in both / $ / ៛ (remembered).
 
 ## #58 — Renewal Cost Calculations
-**Status:** ⬜
+**Status:** 🟢
 Equivalent cost per year, half-year, quarter, month, week, day — clearly marked as equivalent.
-**Notes:**
-
----
+**Notes:** `equivalent()` + PERIODS: the summary total for Day, Week, Month, Quarter, Half-year or Year (remembered), labelled “What it all costs, spread evenly … An equivalent per month, not what you’re charged on any one day” and prefixed ≈; each row adds “≈ $0.51 a day” unless it's already billed that often. New “Every 6 months” billing (and calendar repeat).
 
 # PART F — COUNTDOWN APP
 

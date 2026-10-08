@@ -57,3 +57,24 @@ export function formatMoney(value: number, currency: Currency, { signed = false 
   if (!signed) return value < 0 ? `−${text}` : text
   return `${value < 0 ? '−' : '+'}${text}`
 }
+
+// ---------- One place for converting saved amounts (CHECKLIST.md #57) ----------
+// `rate` is riel per dollar (useMarketRate). Without a rate yet, conversions return undefined
+// so the page can show "…" rather than a wrong number.
+
+export function toUsd(amount: number, currency: Currency, rate?: number) {
+  if (currency === 'USD') return amount
+  return rate ? amount / rate : undefined
+}
+
+export function toKhr(amount: number, currency: Currency, rate?: number) {
+  if (currency === 'KHR') return amount
+  return rate ? amount * rate : undefined
+}
+
+/** "$12.50 · ៛50,600" — both currencies, the one it was entered in first */
+export function formatBoth(amount: number, currency: Currency, rate?: number) {
+  const other = currency === 'USD' ? toKhr(amount, 'USD', rate) : toUsd(amount, 'KHR', rate)
+  const main = formatMoney(amount, currency)
+  return other === undefined ? main : `${main} · ${formatMoney(other, currency === 'USD' ? 'KHR' : 'USD')}`
+}
