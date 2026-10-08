@@ -92,6 +92,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Work out what a raise is really worth after Cambodian salary tax.'] }
   ],
   '/things': [
+    { version: '3.0.0', date: '2026-10-08', changes: ['Adding starts with what kind of thing it is: phone, tablet, laptop, desktop, monitor, TV, keyboard, mouse, headphones and more.', 'Company, model and generation suggest as you type, from a list of common devices; anything else can be typed in.', 'Known models suggest their release year, RAM and screen size, and the storage sizes they came in.', 'Each item shows its company’s logo and details like 2023 · 256 GB · 8 GB RAM.', 'Filter by type, company, year, storage and generation; sort by recently added, company, type or release year.', 'A compact list view alongside the cards.', 'Adding the same device twice asks first.'] },
     { version: '2.1.0', date: '2026-10-08', changes: [TRANSFER, 'Adding something with the same name as one you have asks first.', 'Worth now and notes tuck under More details until you need them.', 'New items start in the category and currency you used last.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
     { version: '2.0.0', date: '2026-10-07', changes: ['New design: a summary showing where your value is, and cards comparing what you paid with what it’s worth now.', 'Each card shows how much of its price it still keeps.', SYNC, PICKERS, 'Search and sort stay pinned while you scroll.', TWO_CLICK] },
     { version: '1.1.0', date: '2026-10-05', changes: [EXAMPLE] },

@@ -1,4 +1,5 @@
 import { pathText, type Folder } from './folders'
+import { typeOf } from './devices'
 // Universal search (CHECKLIST.md #06): one place that knows how to find records in every app.
 // Each source reads an app's saved list from this device (the same copy useCollection keeps), so
 // search works offline and never sends anything anywhere. Add a source here when a new app stores data.
@@ -53,7 +54,7 @@ export const SEARCH_SOURCES: Source[] = [
     app: '/things',
     group: 'Things I own',
     title: t => t.name,
-    subtitle: t => [t.type ?? t.category, t.company, t.year].filter(Boolean).join(' · '),
+    subtitle: t => [typeOf(t.category).label, t.company, t.year].filter(Boolean).join(' · '),
     text: t => [t.category, t.type, t.company, t.model, t.generation, t.notes]
   },
   {

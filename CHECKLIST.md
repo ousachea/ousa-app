@@ -99,15 +99,15 @@ Remember last folder, type, currency, filter, sort, view, sidebar state — easy
 **Notes:** `useRemembered(key, default, validate)` (hydration-safe). Remembered: bookmarks folder, sort and view; things sort, last category and currency for new items; renewals sort, last currency and billing cycle; gold sort; plus existing ones (weight unit, home cube colours). Changing a control simply remembers the new choice.
 
 ## #15 — Multiple Views
-**Status:** 🟡
+**Status:** 🟢
 Grid / List / Compact for list-heavy apps, same underlying data.
-**Notes:** Bookmarks: List / Grid / Compact (one line per bookmark, stays one line on phones), remembered. Things gets its own views with the redesign in #44–#47.
+**Notes:** Bookmarks: List / Grid / Compact. Things I own: Cards / List (one row per thing, stacks on phones). Both remembered; a Default view setting applies until you pick one.
 
 ## #16 — Better Sorting
-**Status:** 🟡
+**Status:** 🟢
 Bookmarks: recently added, recently updated, A–Z, folder. Things I Own: recently added, company, type,
 release year. Renewals: soonest, most expensive, name. Others: sorting that fits their content.
-**Notes:** Bookmarks: Recently added, Recently updated (new `updatedAt` on edits), Most opened, A–Z, Folder. Renewals: Soonest, Most expensive (compared per month in USD), Name. Gold keeps its sorts (now remembered). Still to do: Things by company, type and release year, which needs the new device fields (#44–#46).
+**Notes:** Bookmarks: Recently added, Recently updated, Most opened, A–Z, Folder. Things I own: Highest value, Recently added (new `createdAt`), Newest/Oldest purchase, Company, Type, Release year, Name. Renewals: Soonest, Most expensive, Name. Gold keeps its sorts. All remembered.
 
 ## #17 — Data Backup & Restore
 **Status:** 🟢
@@ -256,40 +256,38 @@ Fetch title, description, OG title/description/image, favicon, domain; let the u
 # PART C — THINGS I OWN
 
 ## #44 — Type-First Add Flow
-**Status:** ⬜
+**Status:** 🟢
 Pick the type first: Phone, Tablet, Laptop, Desktop, Monitor, TV, Keyboard, Mouse, Headphones, Other.
-**Notes:**
+**Notes:** Add starts with "What are you adding?": a grid of types (Phone, Tablet, Laptop, Desktop, Monitor, TV, Keyboard, Mouse, Headphones, Watch, Camera, Game console, Speaker/audio, Home, Vehicle, Other), then the details, with Change type. Editing goes straight to details; continuing a draft too. Tested desktop + mobile.
 
 ## #45 — Company / Model / Generation Suggestions
-**Status:** ⬜
+**Status:** 🟢
 Searchable autocomplete for company, model, generation; custom values allowed.
-**Notes:**
+**Notes:** `ComboInput` autocomplete for Company (catalog companies for the type first, with logos), Model (filtered by type and company, with year hints; picking one fills the company) and Generation (when the model has them). Custom values always accepted. The name writes itself ("Lenovo Legion Y700 Gen 3") until you type your own.
 
 ## #46 — Automatic Device Information
-**Status:** ⬜
+**Status:** 🟢
 Suggest release year, storage, RAM, generation, display size, manufacturer, model info.
-**Notes:**
+**Notes:** `utils/devices.ts` catalog (~90 common devices): "Suggested details: Released 2025 · 8.8″ screen [Use] [Ignore]" fills release year, RAM and screen size; storage sizes the model came in appear as quick picks. New optional fields: company, model, generation, release year, storage, RAM, screen; shown on cards ("Gen 3 · 2025 · 256 GB · 8.8″"), in CSV/JSON import-export and search. Only details I'm confident about are in the catalog; everything is editable.
 
 ## #47 — Device Filtering
-**Status:** ⬜
+**Status:** 🟢
 Filter by type, company, year, storage, generation.
-**Notes:**
+**Notes:** Filters for type, company, release year, storage and generation (only those your things have values for), remembered, with Clear filters and a "Nothing matches these filters" state; folded behind a Filters button on phones.
 
 ## #48 — TV / Monitor Types
-**Status:** ⬜
-**Notes:**
+**Status:** 🟢
+**Notes:** TV and Monitor types with their own icons, colours, depreciation and screen-size detail; catalog entries for common models.
 
 ## #49 — Mouse / Keyboard Types
-**Status:** ⬜
+**Status:** 🟢
 Architecture should make more categories easy to add later.
-**Notes:**
+**Notes:** Mouse and Keyboard types added. Kinds of things are one registry (`THING_TYPES`: key, label, icon, colour, yearly loss, which details to ask for), used by the form, cards, breakdown, filters, estimates and imports; the old Computer type is kept for existing items.
 
 ## #50 — Company Logos
-**Status:** ⬜
+**Status:** 🟢
 Show manufacturer logos automatically, generic icon fallback.
-**Notes:**
-
----
+**Notes:** Company logos from each company's own site icon (no third-party logo service) on a white tile, with the type icon when it can't load; also in the Company suggestions.
 
 # PART D — TEXT TOOLS APP (`/case`)
 
