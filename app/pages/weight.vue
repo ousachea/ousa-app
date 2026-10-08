@@ -27,7 +27,7 @@ const DEMO = (): Omit<Entry, 'id'>[] => {
   }
   return out
 }
-const { items, ready, sync, add, update, remove, restore } = useCollection<Entry>('weight', undefined, { demo: DEMO })
+const { items, ready, sync, add, update, remove, restore } = useCollection<Entry>('weight', undefined, { demo: DEMO, label: e => `${Math.round(e.kg * 10) / 10} kg on ${e.date}` })
 
 // Display unit is a per-visitor preference
 const unit = ref<Unit>('kg')
@@ -49,6 +49,9 @@ const formatDate = (d: string, long = false) => new Date(`${d}T00:00`).toLocaleD
 
 // ---------- Logging ----------
 const form = reactive({ date: isoToday(), value: null as number | null })
+
+const weightField = ref<HTMLInputElement>()
+useAddAction(() => focusField(weightField.value))
 
 function save() {
   if (!form.value || form.value <= 0) return
@@ -74,7 +77,7 @@ function save() {
 function del(e: Entry) {
   const removed = remove(e.id)
   play('delete')
-  toast(`Removed ${formatDate(e.date)}`, { action: { label: 'Undo', onClick: () => removed && restore(removed) } })
+  toastDeleted(`Entry for ${formatDate(e.date)}`, () => removed && restore(removed))
 }
 
 // ---------- Data for the chart ----------
@@ -165,7 +168,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
   <ToolPage header="bar">
     <div class="workspace">
       <Step title="Log your weight" class="form-step">
-        <form class="panel form" @submit.prevent="save">
+        <form v-validate class="panel form" @submit.prevent="save">
           <div class="row">
             <label class="field">
               <span class="field-head">Date</span>
@@ -174,7 +177,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
             <label class="field">
               <span class="field-head">Weight</span>
               <span class="weight-in input">
-                <input v-model.number="form.value" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0.0" aria-label="Weight" required>
+                <input ref="weightField" v-model.number="form.value" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0.0" aria-label="Weight" required v-check="Number(form.value) > 0 ? '' : 'Enter your weight'">
                 <span>{{ unit }}</span>
               </span>
             </label>
@@ -184,7 +187,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
               <input v-model="unit" type="radio" name="unit" :value="u">{{ u === 'kg' ? 'Kilograms' : 'Pounds' }}
             </label>
           </div>
-          <button type="submit" class="btn" :disabled="!form.value">Log weight</button>
+          <button type="submit" class="btn">Log weight</button>
           <p class="hint">Logging the same day again updates that day.</p>
         </form>
       </Step>
@@ -266,7 +269,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
                   <tr v-for="e in [...sorted].reverse()" :key="e.id">
                     <td>{{ formatDate(e.date, true) }}</td>
                     <td class="num">{{ fmt(e.kg) }}</td>
-                    <td class="act"><ConfirmDelete class="link danger" name="this entry" @confirm="del(e)" /></td>
+                    <td class="act"><ConfirmDelete :name="`the entry for ${formatDate(e.date, true)}`" @confirm="del(e)" /></td>
                   </tr>
                 </tbody>
               </table>
@@ -533,10 +536,6 @@ th {
   border: 0;
   text-decoration: underline;
   cursor: pointer;
-}
-
-.link.danger {
-  color: var(--bad-ink);
 }
 
 .sr-only {

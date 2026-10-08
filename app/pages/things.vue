@@ -63,6 +63,7 @@ const editingId = ref<string>()
 // Adding and editing happen in a popup
 const formOpen = ref(false)
 
+useAddAction(() => openAdd())
 function openAdd() {
   cancel()
   formOpen.value = true
@@ -171,9 +172,7 @@ function del(t: Thing) {
   const removed = remove(t.id)
   if (editingId.value === t.id) cancel()
   play('delete')
-  toast(`${t.name} deleted`, {
-    action: { label: 'Undo', onClick: () => removed && restore(removed) }
-  })
+  toastDeleted(t.name, () => removed && restore(removed))
 }
 </script>
 
@@ -184,10 +183,10 @@ function del(t: Thing) {
     </template>
 
     <Modal :open="formOpen" :title="editingId ? 'Edit item' : 'Add something you own'" @close="cancel">
-      <form class="form" @submit.prevent="save">
+      <form v-validate class="form" @submit.prevent="save">
         <label class="field">
           <span class="field-head">What is it?</span>
-          <input v-model="form.name" class="input" placeholder="iPhone 16 Pro Max" required>
+          <input v-model="form.name" class="input" placeholder="iPhone 16 Pro Max" required data-error="Give it a name, like iPhone 16 Pro">
         </label>
         <div class="field">
           <span class="field-head">Category</span>
@@ -235,7 +234,7 @@ function del(t: Thing) {
           <input v-model="form.notes" class="input" placeholder="Daily driver, warranty until 2027…">
         </label>
         <div class="actions">
-          <button type="submit" class="btn" :disabled="!canSave">{{ editingId ? 'Save changes' : 'Add item' }}</button>
+          <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add item' }}</button>
           <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
         </div>
       </form>
@@ -292,7 +291,7 @@ function del(t: Thing) {
             </div>
 
             <!-- One card per thing: what it is, what you paid → what it's worth now, and how much of its price it keeps -->
-            <ul class="things">
+            <TransitionGroup tag="ul" name="list" class="things">
               <li v-for="t in visible" :key="t.id" class="thing" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
                 <header class="thing-head">
                   <span class="thing-icon" aria-hidden="true"><CategoryIcon :name="t.category" /></span>
@@ -327,10 +326,10 @@ function del(t: Thing) {
 
                 <footer class="links">
                   <button type="button" class="link" @click="edit(t)">Edit</button>
-                  <ConfirmDelete class="link danger" :name="t.name" @confirm="del(t)" />
+                  <ConfirmDelete text :name="t.name" @confirm="del(t)" />
                 </footer>
               </li>
-            </ul>
+            </TransitionGroup>
             <p v-if="!visible.length" class="empty-search">Nothing matches “{{ query }}”.</p>
           </template>
 
@@ -490,6 +489,7 @@ function del(t: Thing) {
 
 /* ---------- Cards ---------- */
 .things {
+  position: relative;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -848,10 +848,6 @@ function del(t: Thing) {
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
-}
-
-.link.danger {
-  color: var(--bad-ink);
 }
 
 .empty,

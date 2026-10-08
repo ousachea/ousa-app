@@ -44,12 +44,12 @@ async function submit() {
 </script>
 
 <template>
-  <form class="editor" :class="bare ? 'bare' : 'panel'" @submit.prevent="submit">
+  <form v-validate class="editor" :class="bare ? 'bare' : 'panel'" @submit.prevent="submit">
     <h2 v-if="!bare">{{ item ? `Edit ${item.site}` : 'Add a password' }}</h2>
 
     <label class="field">
       <span class="field-head">Site or app</span>
-      <input v-model="form.site" class="input" placeholder="GitHub" required>
+      <input v-model="form.site" class="input" placeholder="GitHub" required data-error="Name the site or app">
     </label>
 
     <label class="field">
@@ -65,7 +65,7 @@ async function submit() {
     <label class="field">
       <span class="field-head">Password</span>
       <span class="secret">
-        <input v-model="form.password" class="input mono" :type="show ? 'text' : 'password'" autocomplete="new-password" required>
+        <input v-model="form.password" class="input mono" :type="show ? 'text' : 'password'" autocomplete="new-password" required data-error="Enter or generate a password">
         <button type="button" class="btn btn-quiet btn-sm" :aria-pressed="show" @click="show = !show">{{ show ? 'Hide' : 'Show' }}</button>
       </span>
     </label>
@@ -77,7 +77,7 @@ async function submit() {
     </label>
 
     <div class="actions">
-      <button type="submit" class="btn" :disabled="busy || !form.site.trim() || !form.password">
+      <button type="submit" class="btn" :disabled="busy">
         {{ busy ? 'Encrypting…' : item ? 'Save changes' : 'Save password' }}
       </button>
       <button type="button" class="btn btn-quiet" @click="emit('done')">Cancel</button>

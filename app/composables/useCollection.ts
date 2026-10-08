@@ -36,12 +36,64 @@ function readCache<T>(key: string): T[] | undefined {
   }
 }
 
+// What a record is called in activity, the Recycle Bin and search, when the page doesn't say
+export function defaultLabel(item: Record<string, unknown>) {
+  for (const k of ['title', 'name', 'site', 'label']) {
+    const v = item[k]
+    if (typeof v === 'string' && v.trim()) return v.trim()
+  }
+  return typeof item.date === 'string' ? `Entry on ${item.date}` : 'Item'
+}
+
+/**
+ * Put records back into a collection from outside its page (the Recycle Bin, a backup restore).
+ * Updates this device's copy and, when signed in, Firestore. Records already there are replaced.
+ */
+export async function writeToCollection(name: string, records: StoredItem[]) {
+  if (!records.length) return
+  const key = `ousa-app:${name}`
+  const ids = new Set(records.map(r => r.id))
+  const current = readCache<StoredItem>(key) ?? []
+  try {
+    localStorage.setItem(key, JSON.stringify([...current.filter(r => !ids.has(r.id)), ...records]))
+  } catch {}
+  if (!firebaseConfigured()) return
+  const { auth, db } = useFirebase()
+  await auth.authStateReady()
+  const uid = auth.currentUser?.uid
+  if (!uid) return
+  const updatedAt = new Date().toISOString()
+  for (let i = 0; i < records.length; i += BATCH_LIMIT) {
+    const batch = writeBatch(db)
+    for (const r of records.slice(i, i + BATCH_LIMIT)) batch.set(doc(itemsRef(uid), r.id), { collection: name, data: r, updatedAt })
+    await withTimeout(batch.commit())
+  }
+}
+
+export interface CollectionOptions<T> {
+  demo?: () => Omit<T, 'id'>[]
+  /** How a record is named in activity and the Recycle Bin */
+  label?: (item: T) => string
+  /** The app it belongs to, for activity and the Recycle Bin (default `/${name}`) */
+  app?: string
+  /** Deleted records go to the Recycle Bin (default true); off for background data like price history */
+  trash?: boolean
+}
+
 export function useCollection<T extends StoredItem>(
   name: string,
   seed: () => T[] = () => [],
-  options: { demo?: () => Omit<T, 'id'>[] } = {}
+  options: CollectionOptions<T> = {}
 ) {
   const key = `ousa-app:${name}`
+  const app = options.app ?? `/${name}`
+  const labelOf = (item: T) => options.label?.(item) ?? defaultLabel(item as unknown as Record<string, unknown>)
+  const useBin = options.trash !== false
+  const trash = useBin ? useTrash() : undefined
+  // Demo data is make-believe: it never reaches the activity log or the bin
+  const record = (kind: ActivityKind, label: string) => {
+    if (!demoOn.value) logActivity(kind, app, label)
+  }
   const items = ref<T[]>([]) as Ref<T[]>
   const ready = ref(false)
   const state = ref<SyncState>('loading')
@@ -183,11 +235,12 @@ export function useCollection<T extends StoredItem>(
     ready,
     sync: { state: computed<SyncState>(() => (demoOn.value ? 'demo' : state.value)), signedIn, retry: load },
     add(item: Omit<T, 'id'>) {
-      const record = { ...item, id: crypto.randomUUID() } as T
-      items.value = [...items.value, record]
+      const created = { ...item, id: crypto.randomUUID() } as T
+      items.value = [...items.value, created]
       cache()
-      sync(() => push([record]))
-      return record
+      sync(() => push([created]))
+      record('added', labelOf(created))
+      return created
     },
     // For imports: one cache write and one Firestore batch however many records there are
     addMany(list: Omit<T, 'id'>[]) {
@@ -195,27 +248,39 @@ export function useCollection<T extends StoredItem>(
       items.value = [...items.value, ...records]
       cache()
       sync(() => push(records))
+      if (records.length) record('imported', `${records.length} ${records.length === 1 ? 'item' : 'items'}`)
       return records
     },
-    update(id: string, patch: Partial<T>) {
+    /** `quiet`: background bookkeeping (visit counts, fetched icons) that isn't worth showing in activity */
+    update(id: string, patch: Partial<T>, opts: { quiet?: boolean } = {}) {
       items.value = items.value.map(i => (i.id === id ? { ...i, ...patch } : i))
       cache()
-      const record = items.value.find(i => i.id === id)
-      if (record) sync(() => push([record]))
+      const updated = items.value.find(i => i.id === id)
+      if (updated) {
+        sync(() => push([updated]))
+        if (!opts.quiet) record('edited', labelOf(updated))
+      }
     },
+    /** Deletes a record; it goes to the Recycle Bin (unless this collection opts out) */
     remove(id: string) {
       const removed = items.value.find(i => i.id === id)
       items.value = items.value.filter(i => i.id !== id)
       cache()
       sync(() => withTimeout(deleteDoc(doc(itemsRef(uid!), id))))
+      if (removed) {
+        if (trash && !demoOn.value) trash.put(name, app, removed as TrashEntry['item'], labelOf(removed))
+        record('deleted', labelOf(removed))
+      }
       return removed
     },
-    // Put a removed item back (for Undo)
+    // Put a removed item back (for Undo, or from the Recycle Bin)
     restore(item: T) {
       if (items.value.some(i => i.id === item.id)) return
       items.value = [...items.value, item]
       cache()
       sync(() => push([item]))
+      trash?.take([item.id])
+      record('restored', labelOf(item))
     }
   }
 }

@@ -112,7 +112,7 @@ async function submit() {
         <p class="lead">Signed in as <strong>{{ vault.email }}</strong>. Enter your master password to unlock.</p>
       </template>
 
-      <form class="form" @submit.prevent="submit">
+      <form v-validate class="form" @submit.prevent="submit">
         <!-- Hidden username keeps password managers pairing the password with the right account -->
         <input :value="vault.email" type="email" autocomplete="username" hidden>
 
@@ -125,6 +125,8 @@ async function submit() {
               :type="show ? 'text' : 'password'"
               :autocomplete="choosing ? 'new-password' : 'current-password'"
               required
+              data-error="Enter your master password"
+              v-check="choosing && password && password.length < MIN_LENGTH ? `Use at least ${MIN_LENGTH} characters` : ''"
             >
             <button type="button" class="btn btn-quiet btn-sm" :aria-pressed="show" @click="show = !show">{{ show ? 'Hide' : 'Show' }}</button>
           </span>
@@ -132,13 +134,13 @@ async function submit() {
 
         <label v-if="choosing" class="field">
           <span class="field-head">Type it again</span>
-          <input v-model="confirm" class="input" :type="show ? 'text' : 'password'" autocomplete="new-password" required>
+          <input v-model="confirm" class="input" :type="show ? 'text' : 'password'" autocomplete="new-password" required data-error="Type the password again" v-check="confirm && confirm !== password ? 'The two passwords don’t match' : ''">
         </label>
 
         <p v-if="problem" class="hint">{{ problem }}</p>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
 
-        <button type="submit" class="btn" :disabled="!canSubmit">
+        <button type="submit" class="btn" :disabled="busy">
           <template v-if="busy">Working…</template>
           <template v-else-if="choosing">Save master password</template>
           <template v-else>Unlock</template>

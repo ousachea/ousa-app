@@ -159,6 +159,32 @@ defineProps<{ name: ToolIconName }>()
       <path d="M15.5 9a4.2 4.2 0 0 1 0 6" />
       <path d="M18.5 6a8.5 8.5 0 0 1 0 12" />
     </template>
+
+    <!-- Recycle Bin: a bin with its lid -->
+    <template v-else-if="name === 'trash'">
+      <path d="M4 7h16" />
+      <path d="M9.5 7V4.5h5V7" />
+      <path d="M6 7l1 13h10l1-13" />
+      <path d="M10 11v5M14 11v5" />
+    </template>
+
+    <!-- Activity: a clock face with its hands -->
+    <template v-else-if="name === 'activity'">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </template>
+
+    <!-- Add: a plus in a rounded square -->
+    <template v-else-if="name === 'plus'">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
+      <path d="M12 8v8M8 12h8" />
+    </template>
+
+    <!-- Search -->
+    <template v-else-if="name === 'search'">
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </template>
   </svg>
 </template>
 

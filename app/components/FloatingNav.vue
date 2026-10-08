@@ -59,6 +59,7 @@ const searchInput = ref<HTMLInputElement>()
 const route = useRoute()
 const router = useRouter()
 const { toggle: toggleTheme } = useTheme()
+const { prefs } = usePrefs()
 
 // Account lives at the top of this menu: one sign-in syncs every app to Firebase.
 // It's the same Google account as the password vault.
@@ -129,14 +130,6 @@ function onPointerDown(e: PointerEvent) {
   if (open.value && !root.value?.contains(e.target as Node)) open.value = false
 }
 
-// Keys typed into these go into the field, not to the shortcuts
-function isTyping(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
-  if (target.isContentEditable || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true
-  return target instanceof HTMLInputElement
-    && ['text', 'tel', 'search', 'email', 'url', 'password', 'number'].includes(target.type)
-}
-
 function goTo(index: number) {
   const link = LINKS[index]
   if (!link) return
@@ -163,6 +156,8 @@ function onKeydown(e: KeyboardEvent) {
 
   // Never take over browser or OS shortcuts, and never steal keys while someone is typing
   if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || isTyping(e.target)) return
+  // Single-key shortcuts can be switched off in Settings; a popup keeps its own keys
+  if (!prefs.shortcuts || document.querySelector('dialog[open]')) return
 
   // Menu open: a letter opens its app, / jumps to search
   if (open.value) {
@@ -185,6 +180,9 @@ function onKeydown(e: KeyboardEvent) {
   else if (e.key === ']') goTo(current + 1)
   else if (e.key === '[') goTo(current - 1)
   else if (e.key === 'm' || e.key === 'M') toggleMenu()
+  else if (e.key === 'a' || e.key === 'A') {
+    if (!runAddAction()) return
+  }
   else if (e.key === 'd' || e.key === 'D') {
     toggleTheme()
     play('toggle-on')

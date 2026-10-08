@@ -1,6 +1,7 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
+  | 'trash' | 'activity' | 'plus' | 'search'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -187,7 +188,19 @@ export const SETTINGS: Tool = {
   icon: 'sound'
 }
 
+// Pages that belong to the whole app rather than one tool; kept out of search results
+export const TRASH: Tool = {
+  to: '/trash',
+  name: 'Recycle Bin',
+  summary: 'Deleted things wait here for 30 days, so you can put them back.',
+  color: 'var(--slate)',
+  icon: 'trash'
+}
+
 export const toolFor = (path: string) => [...TOOLS, SETTINGS].find(t => t.to === path)
+
+/** Any page with a name and icon, including the Recycle Bin */
+export const pageFor = (path: string) => [...TOOLS, SETTINGS, TRASH].find(t => t.to === path)
 
 // Page order drives the transition direction and the forward/back navigation sounds
 const PAGE_ORDER = ['/', ...TOOLS.map(t => t.to), SETTINGS.to]

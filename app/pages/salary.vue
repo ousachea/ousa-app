@@ -1045,10 +1045,6 @@ function switchCurrency(next) {
   cursor: pointer;
 }
 
-.link.danger {
-  color: var(--bad-ink);
-}
-
 .visually-hidden {
   position: absolute;
   width: 1px;

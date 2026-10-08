@@ -35,6 +35,7 @@ const form = reactive(blank())
 const editingId = ref<string>()
 const formOpen = ref(false)
 
+useAddAction(() => openAdd())
 function openAdd() {
   cancel()
   formOpen.value = true
@@ -158,7 +159,7 @@ function del(r: Renewal) {
   const removed = remove(r.id)
   if (editingId.value === r.id) cancel()
   play('delete')
-  toast(`${r.name} deleted`, { action: { label: 'Undo', onClick: () => removed && restore(removed) } })
+  toastDeleted(r.name, () => removed && restore(removed))
 }
 </script>
 
@@ -169,15 +170,15 @@ function del(r: Renewal) {
     </template>
 
     <Modal :open="formOpen" :title="editingId ? 'Edit subscription' : 'Add a subscription'" @close="cancel">
-      <form class="form" @submit.prevent="save">
+      <form v-validate class="form" @submit.prevent="save">
         <label class="field">
           <span class="field-head">Name</span>
-          <input v-model="form.name" class="input" placeholder="Netflix, iCloud, phone plan…" required>
+          <input v-model="form.name" class="input" placeholder="Netflix, iCloud, phone plan…" required data-error="Give it a name, like Netflix">
         </label>
         <div class="field">
           <span class="field-head">Price</span>
           <div class="price">
-            <input v-model.number="form.price" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="Price" required>
+            <input v-model.number="form.price" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="Price" required v-check="Number(form.price) > 0 ? '' : 'Enter what it costs'">
             <div class="segmented" role="radiogroup" aria-label="Currency">
               <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }">
                 <input v-model="form.currency" type="radio" name="currency" :value="c">
@@ -197,7 +198,7 @@ function del(r: Renewal) {
           </label>
         </div>
         <div class="actions">
-          <button type="submit" class="btn" :disabled="!canSave">{{ editingId ? 'Save changes' : 'Add subscription' }}</button>
+          <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add subscription' }}</button>
           <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
         </div>
       </form>
@@ -244,7 +245,7 @@ function del(r: Renewal) {
               <p v-if="!timeline.length" class="quiet">Nothing renews in the next 30 days.</p>
             </section>
 
-            <ul class="renewals">
+            <TransitionGroup tag="ul" name="list" class="renewals">
               <li v-for="r in upcoming" :key="r.id" class="panel renewal" :class="{ soon: r.days <= SOON_DAYS, editing: editingId === r.id }">
                 <div class="when" :aria-label="whenText(r.days)">
                   <strong>{{ r.days === 0 ? 'Today' : r.days }}</strong>
@@ -264,10 +265,10 @@ function del(r: Renewal) {
                     label="Calendar"
                   />
                   <button type="button" class="link" @click="edit(r)">Edit</button>
-                  <ConfirmDelete class="link danger" :name="r.name" @confirm="del(r)" />
+                  <ConfirmDelete text :name="r.name" @confirm="del(r)" />
                 </span>
               </li>
-            </ul>
+            </TransitionGroup>
           </template>
 
           <div v-else-if="ready" class="panel empty">
@@ -458,6 +459,7 @@ function del(r: Renewal) {
 }
 
 .renewals {
+  position: relative;
   list-style: none;
   margin: 1rem 0 0;
   padding: 0;
@@ -541,10 +543,6 @@ function del(r: Renewal) {
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
-}
-
-.link.danger {
-  color: var(--bad-ink);
 }
 
 .empty {

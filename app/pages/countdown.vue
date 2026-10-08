@@ -149,6 +149,8 @@ const dayOf = (e: CountdownEvent) => at(e).getDate()
 const weekdayOf = (e: CountdownEvent) => at(e).toLocaleDateString('en-GB', { weekday: 'long' })
 
 const canSave = computed(() => form.title.trim() && form.date)
+const titleInput = ref<HTMLInputElement>()
+useAddAction(() => focusField(titleInput.value))
 
 function save() {
   if (!canSave.value) return
@@ -185,7 +187,7 @@ function del(e: CountdownEvent) {
   const removed = remove(e.id)
   if (editingId.value === e.id) cancel()
   play('delete')
-  toast(`${e.title} deleted`, { action: { label: 'Undo', onClick: () => removed && restore(removed) } })
+  toastDeleted(e.title, () => removed && restore(removed))
 }
 </script>
 
@@ -205,10 +207,10 @@ function del(e: CountdownEvent) {
     <div class="workspace">
       <!-- One-row add bar resting on the band -->
       <div class="form-step">
-        <form class="panel form" aria-label="Add a date" @submit.prevent="save">
+        <form v-validate class="panel form" aria-label="Add a date" @submit.prevent="save">
           <label class="field">
             <span class="field-head">What’s happening?</span>
-            <input v-model="form.title" class="input" placeholder="Khmer New Year, trip to Siem Reap…" required>
+            <input ref="titleInput" v-model="form.title" class="input" placeholder="Khmer New Year, trip to Siem Reap…" required data-error="Name what you’re counting down to">
           </label>
           <div class="row">
             <label class="field">
@@ -221,7 +223,7 @@ function del(e: CountdownEvent) {
             </label>
           </div>
           <div class="actions">
-            <button type="submit" class="btn" :disabled="!canSave">Start countdown</button>
+            <button type="submit" class="btn">Start countdown</button>
           </div>
         </form>
       </div>
@@ -245,7 +247,7 @@ function del(e: CountdownEvent) {
                 <span class="links">
                   <CalendarAdd :title="featured.title" :date="featured.date" :time="featured.time" details="Counting down in Ousa’s Apps" />
                   <button type="button" class="link" @click="edit(featured)">Edit</button>
-                  <ConfirmDelete class="link" :name="featured.title" @confirm="del(featured)" />
+                  <ConfirmDelete text :name="featured.title" @confirm="del(featured)" />
                 </span>
               </div>
               <div class="clock" role="timer" :aria-label="`${parts(featured.left).days} days left`">
@@ -258,7 +260,7 @@ function del(e: CountdownEvent) {
 
             <!-- Each later date is a page torn from a desk calendar -->
             <h3 v-if="later.length" class="later-head">After that</h3>
-            <ul v-if="later.length" class="pages">
+            <TransitionGroup v-if="later.length" tag="ul" name="list" class="pages">
               <li v-for="e in later" :key="e.id" class="page" :class="{ editing: editingId === e.id }">
                 <span class="rings" aria-hidden="true"><i /><i /></span>
                 <span class="month">{{ monthOf(e) }}</span>
@@ -274,10 +276,10 @@ function del(e: CountdownEvent) {
                 <span class="links">
                   <CalendarAdd :title="e.title" :date="e.date" :time="e.time" details="Counting down in Ousa’s Apps" label="Calendar" />
                   <button type="button" class="link" @click="edit(e)">Edit</button>
-                  <ConfirmDelete class="link danger" :name="e.title" @confirm="del(e)" />
+                  <ConfirmDelete text :name="e.title" @confirm="del(e)" />
                 </span>
               </li>
-            </ul>
+            </TransitionGroup>
             <p v-else-if="!featured" class="panel all-past">Everything has already happened. Add a new date to count down to.</p>
 
             <section v-if="past.length" class="past">
@@ -286,7 +288,7 @@ function del(e: CountdownEvent) {
                 <li v-for="e in past" :key="e.id">
                   <span>{{ e.title }}</span>
                   <span class="meta">{{ agoText(e.left) }}</span>
-                  <ConfirmDelete class="link danger" :name="e.title" @confirm="del(e)" />
+                  <ConfirmDelete :name="e.title" @confirm="del(e)" />
                 </li>
               </ul>
             </section>
@@ -353,10 +355,10 @@ function del(e: CountdownEvent) {
       </Step>
     </div>
     <Modal :open="!!editingId" title="Edit countdown" @close="cancel">
-      <form class="edit-form" @submit.prevent="saveEdit">
+      <form v-validate class="edit-form" @submit.prevent="saveEdit">
         <label class="field">
           <span class="field-head">What’s happening?</span>
-          <input v-model="editForm.title" class="input" required>
+          <input v-model="editForm.title" class="input" required data-error="Name what you’re counting down to">
         </label>
         <div class="edit-row">
           <label class="field">
@@ -369,7 +371,7 @@ function del(e: CountdownEvent) {
           </label>
         </div>
         <div class="edit-actions">
-          <button type="submit" class="btn" :disabled="!canSaveEdit">Save changes</button>
+          <button type="submit" class="btn">Save changes</button>
           <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
         </div>
       </form>
@@ -592,6 +594,7 @@ function del(e: CountdownEvent) {
 }
 
 .pages {
+  position: relative;
   list-style: none;
   margin: 1.1rem 0 0;
   padding: 0;
@@ -724,10 +727,6 @@ function del(e: CountdownEvent) {
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
-}
-
-.link.danger {
-  color: var(--bad-ink);
 }
 
 .all-past {

@@ -12,6 +12,10 @@ const panel = ref<HTMLDivElement>()
 const { open, placement, show, hide } = useAnchoredPopover(trigger, panel)
 const { play } = useSound()
 
+// Picking a date never types into the hidden required input, so tell the form's validation (v-validate) it changed
+const validateInput = ref<HTMLInputElement>()
+watch(model, () => nextTick(() => validateInput.value?.dispatchEvent(new Event('change', { bubbles: true }))))
+
 const pad = (n: number) => String(n).padStart(2, '0')
 const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const parse = (s?: string) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T00:00:00`) : undefined)
@@ -153,7 +157,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
 </script>
 
 <template>
-  <div class="date-picker" v-bind="$attrs">
+  <div class="date-picker" data-validate-target v-bind="$attrs">
     <button
       ref="trigger"
       type="button"
@@ -169,7 +173,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
       <span class="value">{{ label || placeholder || 'Pick a date' }}</span>
     </button>
     <!-- Keeps the browser's "please fill in this field" check for required dates -->
-    <input v-if="required" class="validate" :value="model" required tabindex="-1" aria-hidden="true" @focus="trigger?.focus()">
+    <input v-if="required" ref="validateInput" class="validate" :value="model" required data-error="Pick a date" tabindex="-1" aria-hidden="true" @focus="trigger?.focus()">
 
     <div
       :id="`${uid}-panel`"

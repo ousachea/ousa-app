@@ -14,6 +14,10 @@ const CLIPBOARD_CLEAR_MS = 30_000
 const query = ref('')
 // undefined = editor closed, null = adding a new entry, item = editing that entry
 const editing = ref<VaultItem | null | undefined>(undefined)
+// A: add a password, once the vault is open
+useAddAction(() => {
+  if (vault.status === 'unlocked') editing.value = null
+})
 const revealed = ref(new Set<string>())
 
 // Site icons come straight from each site, never via a third-party favicon service,
@@ -224,7 +228,7 @@ onBeforeUnmount(() => clearTimeout(clipboardTimer))
 
               <div class="item-actions">
                 <button type="button" class="link" @click="editing = item">Edit</button>
-                <ConfirmDelete class="link danger" :name="item.site" @confirm="deleteItem(item)" />
+                <ConfirmDelete text permanent :name="item.site" @confirm="deleteItem(item)" />
               </div>
             </li>
           </ul>
@@ -334,10 +338,6 @@ pre {
 
 .link:hover {
   color: var(--ink);
-}
-
-.link.danger {
-  color: var(--bad-ink);
 }
 
 .unreadable {

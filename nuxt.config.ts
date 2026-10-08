@@ -45,6 +45,11 @@ export default defineNuxtConfig({
           tagPosition: 'head'
         },
         {
+          // Density and reduced motion from Settings, before first paint (see composables/usePrefs.ts)
+          innerHTML: "(function(){try{var p=JSON.parse(localStorage.getItem('ousa-app:prefs')||'{}');var r=document.documentElement;r.dataset.density=p.density||'comfortable';if(p.motion==='reduced')r.dataset.motion='reduced'}catch(e){}})()",
+          tagPosition: 'head'
+        },
+        {
           // Lite effects for old or slow computers, decided before first paint (see composables/useEffects.ts)
           innerHTML: "(function(){try{var p=localStorage.getItem('ousa-app:effects')||'auto';var n=navigator;var slow=localStorage.getItem('ousa-app:effects-detected')==='slow'||(n.hardwareConcurrency||8)<=2||(n.deviceMemory||8)<=2||!!(n.connection&&n.connection.saveData);document.documentElement.dataset.effects=p==='lite'||(p==='auto'&&slow)?'lite':'full'}catch(e){}})()",
           tagPosition: 'head'

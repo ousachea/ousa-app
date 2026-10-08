@@ -20,6 +20,8 @@ const { items, ready, sync, add, addMany, update, remove, restore } = useCollect
 
 // ---------- Save a link ----------
 const linkInput = ref('')
+const linkField = ref<HTMLInputElement>()
+useAddAction(() => focusField(linkField.value))
 const saving = ref(false)
 const flashId = ref<string>()
 
@@ -153,7 +155,7 @@ function openFirst() {
 }
 
 function opened(b: Bookmark) {
-  update(b.id, { visits: (b.visits ?? 0) + 1, lastOpened: new Date().toISOString() })
+  update(b.id, { visits: (b.visits ?? 0) + 1, lastOpened: new Date().toISOString() }, { quiet: true })
 }
 
 function togglePin(b: Bookmark) {
@@ -165,7 +167,7 @@ function togglePin(b: Bookmark) {
 function del(b: Bookmark) {
   const removed = remove(b.id)
   play('delete')
-  toast(`${b.title} deleted`, { action: { label: 'Undo', onClick: () => removed && restore(removed) } })
+  toastDeleted(b.title, () => removed && restore(removed))
 }
 
 // Site icons load straight from each site; any that fail fall back to a letter tile
@@ -256,7 +258,7 @@ async function enrich(list: Bookmark[]) {
   const worker = async () => {
     for (let b = queue.shift(); b; b = queue.shift()) {
       const preview = await $fetch('/api/link-preview', { query: { url: b.url } }).catch(() => undefined)
-      if (preview && items.value.some(i => i.id === b!.id)) update(b.id, { icon: preview.icon, description: preview.description })
+      if (preview && items.value.some(i => i.id === b!.id)) update(b.id, { icon: preview.icon, description: preview.description }, { quiet: true })
     }
   }
   await Promise.all(Array.from({ length: 4 }, worker))
@@ -279,9 +281,10 @@ function exportFile() {
     <template #actions><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
 
     <!-- The address bar: paste, press Enter, done -->
-    <form class="omnibox" aria-label="Save a link" @submit.prevent="save">
+    <form v-validate data-validate-target class="omnibox" aria-label="Save a link" @submit.prevent="save">
       <span class="omni-icon" aria-hidden="true"><ToolIcon name="bookmarks" /></span>
       <input
+        ref="linkField"
         v-model="linkInput"
         type="text"
         inputmode="url"
@@ -289,9 +292,12 @@ function exportFile() {
         spellcheck="false"
         placeholder="Paste a link to save it"
         aria-label="Link to save"
+        required
+        data-error="Paste a link first"
+        v-check="linkInput.trim() && !parseLink(linkInput.trim()) ? 'That doesn’t look like a link. Try something like nuxt.com' : ''"
         :disabled="saving"
       >
-      <button type="submit" class="btn" :disabled="!linkInput.trim() || saving">{{ saving ? 'Reading page…' : 'Save' }}</button>
+      <button type="submit" class="btn" :disabled="saving">{{ saving ? 'Reading page…' : 'Save' }}</button>
     </form>
 
     <ClientOnly>
@@ -368,7 +374,7 @@ function exportFile() {
             </div>
           </div>
 
-          <ul v-if="shown.length" class="marks" :class="view">
+          <TransitionGroup v-if="shown.length" tag="ul" name="list" class="marks" :class="view">
             <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" class="mark" :class="{ flash: flashId === b.id }">
               <span class="mark-icon" aria-hidden="true">
                 <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
@@ -392,12 +398,10 @@ function exportFile() {
                 <button type="button" class="icon-btn" :aria-label="`Edit ${b.title}`" title="Edit" @click="edit(b)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
                 </button>
-                <ConfirmDelete class="icon-btn danger" :name="b.title" icon @confirm="del(b)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13" /></svg>
-                </ConfirmDelete>
+                <ConfirmDelete :name="b.title" @confirm="del(b)" />
               </div>
             </li>
-          </ul>
+          </TransitionGroup>
 
           <div v-else-if="ready && items.length" class="empty">
             <p>Nothing matches{{ query ? ` “${query}”` : '' }}.</p>
@@ -414,14 +418,14 @@ function exportFile() {
     </ClientOnly>
 
     <Modal :open="!!editingId" title="Edit bookmark" @close="editingId = undefined">
-      <form class="edit" @submit.prevent="saveEdit">
+      <form v-validate class="edit" @submit.prevent="saveEdit">
         <label class="field">
           <span class="field-head">Title</span>
           <input v-model="form.title" class="input">
         </label>
         <label class="field">
           <span class="field-head">Link</span>
-          <input v-model="form.url" class="input" inputmode="url" spellcheck="false" required>
+          <input v-model="form.url" class="input" inputmode="url" spellcheck="false" required data-error="Enter the link" v-check="form.url.trim() && !parseLink(form.url.trim()) ? 'That doesn’t look like a link. Try something like nuxt.com' : ''">
         </label>
         <label class="field">
           <span class="field-head">Note <span class="optional">Optional</span></span>
@@ -439,7 +443,7 @@ function exportFile() {
           Pin to the top
         </label>
         <div class="edit-actions">
-          <button type="submit" class="btn" :disabled="!parseLink(form.url.trim())">Save changes</button>
+          <button type="submit" class="btn">Save changes</button>
           <button type="button" class="btn btn-quiet" @click="editingId = undefined">Cancel</button>
         </div>
       </form>
@@ -464,6 +468,16 @@ function exportFile() {
 
 .omnibox:focus-within {
   box-shadow: 0 0 0 2px var(--accent), 0 14px 30px -16px rgb(var(--shadow) / 0.35);
+}
+
+.omnibox.is-invalid {
+  box-shadow: 0 0 0 2px var(--bad-ink), 0 14px 30px -16px rgb(var(--shadow) / 0.35);
+}
+
+/* The validation message sits centred under the address bar */
+.omnibox + :global(.field-error) {
+  justify-content: center;
+  margin-top: 0.6rem;
 }
 
 .omni-icon {
@@ -764,6 +778,7 @@ kbd {
 }
 
 .marks {
+  position: relative;
   list-style: none;
   margin: 1rem 0 0;
   padding: 0;

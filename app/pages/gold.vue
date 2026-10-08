@@ -35,7 +35,7 @@ const DEMO = (): Omit<Purchase, 'id'>[] => [
   { weight: 1, unit: 'damlung', price: 3900, date: isoDaysAgo(150) },
   { weight: 0.5, unit: 'chi', price: 262, date: isoDaysAgo(20) }
 ]
-const { items: purchases, ready, sync, add, addMany, update, remove, restore } = useCollection<Purchase>('gold', undefined, { demo: DEMO })
+const { items: purchases, ready, sync, add, addMany, update, remove, restore } = useCollection<Purchase>('gold', undefined, { demo: DEMO, label: p => `${p.weight} ${p.unit} of gold` })
 // Signed out: offer Google sign-in right here, so purchases sync without a trip to Settings
 const signedOut = computed(() => sync.state.value === 'device')
 
@@ -172,7 +172,7 @@ interface Point { id: string, price: number, time: number }
 const HISTORY_MAX = 500
 // A steady price is only recorded again after a while, so auto-refresh doesn't fill the log with repeats
 const SAME_PRICE_GAP_MS = 5 * 60_000
-const { items: priceLog, sync: historySync, add: addPoint, addMany: addPoints, remove: removePoint } = useCollection<Point>('gold-prices')
+const { items: priceLog, sync: historySync, add: addPoint, addMany: addPoints, remove: removePoint } = useCollection<Point>('gold-prices', undefined, { app: '/gold', trash: false })
 const history = computed(() => [...priceLog.value].sort((a, b) => a.time - b.time))
 
 // Prices fetched while the log is still loading wait, so the load doesn't overwrite them
@@ -312,6 +312,7 @@ const editingId = ref<string>()
 const form = reactive({ weight: null as number | null, unit: 'chi' as Unit, price: null as number | null, date: today() })
 const canSave = computed(() => (form.weight ?? 0) > 0 && (form.price ?? 0) > 0)
 
+useAddAction(() => openAdd())
 function openAdd() {
   editingId.value = undefined
   Object.assign(form, { weight: null, unit: 'chi', price: null, date: today() })
@@ -356,7 +357,7 @@ function savePurchase() {
 function del(p: Purchase) {
   const removed = remove(p.id)
   play('delete')
-  toast(`${p.weight} ${w.value[p.unit]} deleted`, { action: { label: 'Undo', onClick: () => removed && restore(removed) } })
+  toastDeleted(`${p.weight} ${w.value[p.unit]}`, () => removed && restore(removed))
 }
 
 // CSV with Weight, Unit, Paid, Date columns (the same format Export writes)
@@ -734,7 +735,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                   </span>
                   <span class="p-actions">
                     <button type="button" class="link" @click.stop="openEdit(p)">Edit</button>
-                    <ConfirmDelete class="link danger" name="this purchase" @confirm="del(p)" />
+                    <ConfirmDelete text name="this purchase" @confirm="del(p)" />
                   </span>
                 </footer>
               </li>
@@ -784,11 +785,11 @@ const PURITIES: { value: Purity, label: string }[] = [
       </div>
 
       <Modal :open="formOpen" :title="editingId ? 'Edit purchase' : 'Add a purchase'" @close="formOpen = false">
-        <form class="form" @submit.prevent="savePurchase">
+        <form v-validate class="form" @submit.prevent="savePurchase">
           <div class="form-row">
             <label class="field">
               <span class="field-head">{{ w.weight }}</span>
-              <input v-model.number="form.weight" class="input" type="number" min="0" step="any" inputmode="decimal" required>
+              <input v-model.number="form.weight" class="input" type="number" min="0" step="any" inputmode="decimal" required v-check="Number(form.weight) > 0 ? '' : 'Enter how much gold'">
             </label>
             <label class="field">
               <span class="field-head">Unit</span>
@@ -798,7 +799,7 @@ const PURITIES: { value: Purity, label: string }[] = [
           <div class="form-row">
             <label class="field">
               <span class="field-head">{{ w.paid }} (USD)</span>
-              <input v-model.number="form.price" class="input" type="number" min="0" step="0.01" inputmode="decimal" required>
+              <input v-model.number="form.price" class="input" type="number" min="0" step="any" inputmode="decimal" required v-check="Number(form.price) > 0 ? '' : 'Enter what you paid'">
             </label>
             <label class="field">
               <span class="field-head">{{ w.date }}</span>
@@ -810,7 +811,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             <button type="button" class="link" @click="useTodayPrice">Use today’s price</button>
           </p>
           <div class="form-actions">
-            <button type="submit" class="btn" :disabled="!canSave">{{ editingId ? 'Save changes' : 'Add purchase' }}</button>
+            <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add purchase' }}</button>
             <button type="button" class="btn btn-quiet" @click="formOpen = false">Cancel</button>
           </div>
           <p v-if="!editingId" class="form-note import-note">
@@ -1548,8 +1549,6 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .link:hover { color: var(--ink); }
-.link.danger { color: var(--bad-ink); }
-
 .sign-in {
   margin-top: 1rem;
   padding: 1rem 1.25rem;

@@ -181,6 +181,9 @@ async function saveEdit() {
   cancelEdit()
 }
 
+const nameField = ref<HTMLInputElement>()
+useAddAction(() => focusField(nameField.value))
+
 async function save() {
   if (!form.name.trim() || saving.value) return
   saving.value = true
@@ -236,7 +239,7 @@ function del(s: Spot) {
   // A head-to-head that included it starts over with what's left
   if (duel.value && (duel.value.champ === s.id || duel.value.queue.includes(s.id))) duel.value = undefined
   play('delete')
-  toast(`${s.name} deleted`, { action: { label: 'Undo', onClick: () => { if (removed) { restore(removed); deck.value.push(removed.id) } } } })
+  toastDeleted(s.name, () => { if (removed) { restore(removed); deck.value.push(removed.id) } })
 }
 
 // ---------- Deck ----------
@@ -604,7 +607,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     <section class="manage" aria-labelledby="manage-title">
       <h2 id="manage-title">Your foods and places</h2>
       <div class="manage-grid">
-        <form class="panel form" @submit.prevent="save">
+        <form v-validate class="panel form" @submit.prevent="save">
           <h3>Add one</h3>
           <div class="segmented" role="radiogroup" aria-label="Type">
             <label :class="{ active: form.kind === 'food' }"><input v-model="form.kind" type="radio" value="food">A food</label>
@@ -620,7 +623,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             <div class="form-fields">
               <label class="field">
                 <span class="field-head">Name</span>
-                <input v-model="form.name" class="input" :placeholder="form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required>
+                <input ref="nameField" v-model="form.name" class="input" :placeholder="form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required :data-error="form.kind === 'food' ? 'Name the food' : 'Name the place'">
               </label>
               <label class="field">
                 <span class="field-head">Note <span class="optional">Optional</span></span>
@@ -644,7 +647,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               </label>
             </div>
           </div>
-          <button type="submit" class="btn" :disabled="!form.name.trim() || saving">{{ saving && !editingId ? 'Saving photo…' : 'Save' }}</button>
+          <button type="submit" class="btn" :disabled="saving">{{ saving && !editingId ? 'Saving photo…' : 'Save' }}</button>
           <p class="hint">A photo link works anywhere and syncs with the item. Picked photos are cropped square and saved to <code>public/eat/</code> in this project so you can commit them, which only works while running the app locally.</p>
         </form>
 
@@ -660,7 +663,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               <span class="thumb-name">{{ s.name }}</span>
               <span class="thumb-links">
                 <button type="button" class="link" :aria-label="`Edit ${s.name}`" @click="edit(s)">Edit</button>
-                <ConfirmDelete class="link danger" :name="s.name" @confirm="del(s)" />
+                <ConfirmDelete text :name="s.name" @confirm="del(s)" />
               </span>
             </li>
           </ul>
@@ -669,7 +672,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     </section>
     </div>
     <Modal :open="!!editingId" :title="editingSpot ? `Edit ${editingSpot.name}` : 'Edit'" @close="cancelEdit">
-      <form class="form edit-form" @submit.prevent="saveEdit">
+      <form v-validate class="form edit-form" @submit.prevent="saveEdit">
         <div class="segmented" role="radiogroup" aria-label="Type">
           <label :class="{ active: editForm.kind === 'food' }"><input v-model="editForm.kind" type="radio" value="food">A food</label>
           <label :class="{ active: editForm.kind === 'place' }"><input v-model="editForm.kind" type="radio" value="place">A place</label>
@@ -684,7 +687,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           <div class="form-fields">
             <label class="field">
               <span class="field-head">Name</span>
-              <input v-model="editForm.name" class="input" required>
+              <input v-model="editForm.name" class="input" required data-error="Give it a name">
             </label>
             <label class="field">
               <span class="field-head">Note <span class="optional">Optional</span></span>
@@ -709,7 +712,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           </div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn" :disabled="!editForm.name.trim() || saving">{{ saving ? 'Saving photo…' : 'Save changes' }}</button>
+          <button type="submit" class="btn" :disabled="saving">{{ saving ? 'Saving photo…' : 'Save changes' }}</button>
           <button type="button" class="btn btn-quiet" @click="cancelEdit">Cancel</button>
         </div>
       </form>
@@ -989,10 +992,6 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   border: 0;
   text-decoration: underline;
   cursor: pointer;
-}
-
-.link.danger {
-  color: var(--bad-ink);
 }
 
 .filter {

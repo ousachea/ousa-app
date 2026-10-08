@@ -5,15 +5,29 @@ const emit = defineEmits<{ close: [] }>()
 
 const dialog = ref<HTMLDialogElement>()
 
+// Start typing straight away: focus the first field (or anything marked autofocus), not the close button.
+// Popups without fields (confirmations) leave focus to their own buttons.
+function focusFirstField() {
+  const target = dialog.value?.querySelector<HTMLElement>('[autofocus], input:not([type=hidden]):not([hidden]):not([type=file]):not([type=radio]):not([type=checkbox]):not([tabindex="-1"]), textarea, select')
+  if (target && !target.closest('.modal-head')) target.focus()
+}
+
+function show() {
+  const el = dialog.value
+  if (!el || el.open) return
+  el.showModal()
+  nextTick(focusFirstField)
+}
+
 watch(() => props.open, (open) => {
   const el = dialog.value
   if (!el) return
-  if (open && !el.open) el.showModal()
-  else if (!open && el.open) el.close()
+  if (open) show()
+  else if (el.open) el.close()
 }, { flush: 'post' })
 
 onMounted(() => {
-  if (props.open) dialog.value?.showModal()
+  if (props.open) show()
 })
 
 // Clicking the dimmed backdrop (the dialog element itself, outside the panel) closes it
