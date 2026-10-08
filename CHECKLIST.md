@@ -413,9 +413,9 @@ Shortcuts, command palette, context menus, drag & drop, multi-column layouts, ho
 **Notes:** Retested: shortcuts (/ to search, A to add, Enter submits, Esc closes), ⌘K palette (search, add, jump, Esc keeps the page), right-click menus on rows (and long-press on touch), drag to reorder bookmarks, folders and pinned apps plus Alt+arrow keys as the keyboard way. Every icon-only button has a tooltip (none missing on any page). Checked at 1024, 1440 and 2560 wide: content stays centred with sensible widths; Salary's notes were stretching to ~1,800px at 2560, now capped at a readable line length. **Bug found and fixed:** my #70 list paging broke the list/empty-state pairing in Bookmarks, so “Nothing matches · Show everything” showed under every list; now it only shows when a search or folder really has no results (3,000-bookmark test rerun). Bookmarks shows “+ Add folder” above and below the folder list on purpose (long folder lists).
 
 ## #73 — Data Integrity Review
-**Status:** ⬜
+**Status:** 🟢
 Duplicates, failed saves, partial updates, import/restore conflicts, delete/restore, offline changes, backup integrity.
-**Notes:**
+**Notes:** Retested: duplicate warnings in Bookmarks (same page under different addresses) and Things (same model), Keep both / Open it; backup export → restore round trip; CSV/JSON import with duplicates; delete → Recycle Bin → restore and empty bin; offline changes kept and pushed on reconnect (pending-change list, deletes made offline stay deleted); several tabs stay in step through the storage event. **New:** if a saved list on this device can't be read (damaged), the page still opens and the damaged copy is set aside (…:damaged) instead of being overwritten by the next change, so it can be recovered; if the browser's storage is full or blocked, you get one clear warning (with what to do: export a backup or sign in) instead of changes silently not being kept. Not testable here: partial Firestore batch failures against your real project (the code retries pending changes, but I couldn't force a server-side failure).
 
 ## #74 — Security & Privacy Review
 **Status:** ⬜

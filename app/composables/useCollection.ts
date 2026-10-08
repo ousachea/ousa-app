@@ -26,14 +26,34 @@ const BATCH_LIMIT = 500
 export const itemsRef = (uid: string) => collection(useFirebase().db, 'users', uid, 'items')
 
 function readCache<T>(key: string): T[] | undefined {
+  let raw: string | null = null
   try {
-    const raw = localStorage.getItem(key)
+    raw = localStorage.getItem(key)
     if (!raw) return undefined
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as T[]) : undefined
-  } catch {
-    return undefined // corrupt or blocked storage shouldn't break the page
+    if (Array.isArray(parsed)) return parsed as T[]
+  } catch {}
+  // Corrupt or blocked storage shouldn't break the page, but the damaged copy is set aside before the
+  // next save replaces it, so it can still be recovered by hand (CHECKLIST.md #73)
+  if (raw) {
+    try {
+      if (!localStorage.getItem(`${key}:damaged`)) localStorage.setItem(`${key}:damaged`, raw)
+    } catch {}
   }
+  return undefined
+}
+
+// A full or blocked storage: said once per visit, not on every change
+let warnedStorage = false
+function warnStorage(signedIn: boolean) {
+  if (warnedStorage) return
+  warnedStorage = true
+  toast.error('Couldn’t save on this device', {
+    description: signedIn
+      ? 'This browser’s storage is full or blocked. Your changes still go to your account, but this device won’t have them offline.'
+      : 'This browser’s storage is full or blocked, so your latest changes will be lost when you close the page. Export a backup in Settings → Data, or sign in to keep them in your account.',
+    duration: 15_000
+  })
 }
 
 // What a record is called in activity, the Recycle Bin and search, when the page doesn't say
@@ -180,7 +200,9 @@ export function useCollection<T extends StoredItem>(
     if (demoOn.value) return
     try {
       localStorage.setItem(key, JSON.stringify(items.value))
-    } catch {}
+    } catch {
+      warnStorage(signedIn.value)
+    }
   }
 
   // ---------- Changes not yet confirmed by Firestore (CHECKLIST.md #19, #73) ----------
