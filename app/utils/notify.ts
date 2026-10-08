@@ -10,3 +10,11 @@ export function toastDeleted(name: string, undo?: () => void) {
     action: undo ? { label: 'Undo', onClick: undo } : undefined
   })
 }
+
+/** After an edit: offers to put back how it was */
+export function toastSaved(undo?: () => void, title = 'Changes saved') {
+  toast.success(title, {
+    duration: 5000,
+    action: undo ? { label: 'Undo', onClick: undo } : undefined
+  })
+}

@@ -16,7 +16,7 @@ const DEMO = (): Omit<Bookmark, 'id'>[] => [
   demoMark('https://www.khmertimeskh.com/', 'Khmer Times', ['news', 'khmer'], { visits: 5 }),
   demoMark('https://www.youtube.com/', 'YouTube', [], { visits: 30 })
 ]
-const { items, ready, sync, add, addMany, update, remove, restore } = useCollection<Bookmark>('bookmarks', undefined, { demo: DEMO })
+const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Bookmark>('bookmarks', undefined, { demo: DEMO })
 
 // ---------- Save a link ----------
 const linkInput = ref('')
@@ -78,7 +78,8 @@ async function save() {
   play('success')
   toast.success('Bookmark saved', {
     description: record.title,
-    action: { label: 'Add tags', onClick: () => edit(record) }
+    action: { label: 'Add tags', onClick: () => edit(record) },
+    cancel: { label: 'Undo', onClick: () => remove(record.id, { undoAdd: true }) }
   })
   flash(record.id)
 }
@@ -86,24 +87,49 @@ async function save() {
 // ---------- Browse ----------
 const UNSORTED = ':unsorted'
 const query = ref('')
-const activeTag = ref<string>() // undefined = all
-const sort = ref<'newest' | 'opened' | 'az'>('newest')
+// The folder you were looking at, the sort and the view are remembered on this device (CHECKLIST.md #14)
+const activeTag = useRemembered<string | undefined>('bookmarks-folder', undefined, v => typeof v === 'string' || v === null || v === undefined)
+// Opened from search on a folder (?folder=work): show just that folder
+const route = useRoute()
+onMounted(() => {
+  const f = route.query.folder
+  if (typeof f === 'string' && f) {
+    activeTag.value = f
+    const { folder: _, ...rest } = route.query
+    useRouter().replace({ query: rest })
+  }
+  // Jumping to one bookmark from search: show everything so it's on screen
+  else if (route.query.focus) {
+    activeTag.value = undefined
+    query.value = ''
+  }
+})
+const SORTS = [
+  { value: 'newest', label: 'Recently added' },
+  { value: 'updated', label: 'Recently updated' },
+  { value: 'opened', label: 'Most opened' },
+  { value: 'az', label: 'A–Z' },
+  { value: 'folder', label: 'Folder' }
+] as const
+type Sort = (typeof SORTS)[number]['value']
+const sort = useRemembered<Sort>('bookmarks-sort', 'newest', v => SORTS.some(s => s.value === v))
 
-// List or grid of cards, remembered on this device
-const VIEW_KEY = 'ousa-app:bookmarks-view'
-const view = ref<'list' | 'grid'>('list')
+// List, grid of cards, or compact one-line rows (CHECKLIST.md #15)
+type View = 'list' | 'grid' | 'compact'
+const VIEWS: View[] = ['list', 'grid', 'compact']
+const view = useRemembered<View>('bookmarks-view', 'list', v => VIEWS.includes(v as View))
+// Earlier versions kept the view under its own key
 onMounted(() => {
   try {
-    if (localStorage.getItem(VIEW_KEY) === 'grid') view.value = 'grid'
+    const old = localStorage.getItem('ousa-app:bookmarks-view')
+    if (old === 'grid') view.value = 'grid'
+    localStorage.removeItem('ousa-app:bookmarks-view')
   } catch {}
 })
-function setView(next: 'list' | 'grid') {
+function setView(next: View) {
   if (view.value === next) return
   view.value = next
   play('select')
-  try {
-    localStorage.setItem(VIEW_KEY, next)
-  } catch {}
 }
 const searchInput = ref<HTMLInputElement>()
 
@@ -115,8 +141,8 @@ const tags = computed(() => {
 const unsortedCount = computed(() => items.value.filter(b => !b.tags.length).length)
 
 // A tag that no longer exists (its last bookmark was deleted or retagged) drops back to All
-watch(tags, (list) => {
-  if (activeTag.value && activeTag.value !== UNSORTED && !list.some(t => t.name === activeTag.value)) activeTag.value = undefined
+watch([tags, activeTag], ([list]) => {
+  if (ready.value && activeTag.value && activeTag.value !== UNSORTED && !list.some(t => t.name === activeTag.value)) activeTag.value = undefined
 })
 
 const pinned = computed(() => items.value.filter(b => b.pinned))
@@ -129,6 +155,9 @@ const shown = computed(() => {
     return [b.title, b.url, b.note, b.description, ...b.tags].some(f => f.toLowerCase().includes(q))
   })
   if (sort.value === 'az') return list.sort((a, b) => a.title.localeCompare(b.title))
+  if (sort.value === 'updated') return list.sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+  // By folder, then by name; bookmarks without one come last
+  if (sort.value === 'folder') return list.sort((a, b) => (a.tags[0] ?? '\uffff').localeCompare(b.tags[0] ?? '\uffff') || a.title.localeCompare(b.title))
   if (sort.value === 'opened') return list.sort((a, b) => b.visits - a.visits || (b.lastOpened ?? '').localeCompare(a.lastOpened ?? ''))
   return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 })
@@ -159,9 +188,9 @@ function opened(b: Bookmark) {
 }
 
 function togglePin(b: Bookmark) {
-  update(b.id, { pinned: !b.pinned })
+  const before = update(b.id, { pinned: !b.pinned })
   play(b.pinned ? 'toggle-off' : 'toggle-on')
-  toast(b.pinned ? 'Unpinned' : 'Pinned to the top', { description: b.title })
+  toast(b.pinned ? 'Unpinned' : 'Pinned to the top', { description: b.title, action: before && { label: 'Undo', onClick: () => replace(before) } })
 }
 
 function del(b: Bookmark) {
@@ -203,19 +232,20 @@ function saveEdit() {
   const id = editingId.value
   const url = parseLink(form.url.trim())
   if (!id || !url) return
-  const before = items.value.find(b => b.id === id)
-  update(id, {
+  const prev = items.value.find(b => b.id === id)
+  const before = update(id, {
     url: url.href,
     title: form.title.trim() || hostOf(url.href),
     note: form.note.trim(),
     tags: formTags.value,
     pinned: form.pinned,
+    updatedAt: new Date().toISOString(),
     // A new address means a new site icon
-    ...(before && hostOf(before.url) !== hostOf(url.href) ? { icon: new URL('/favicon.ico', url).href } : {})
+    ...(prev && hostOf(prev.url) !== hostOf(url.href) ? { icon: new URL('/favicon.ico', url).href } : {})
   })
   editingId.value = undefined
   play('success')
-  toast.success('Changes saved')
+  toastSaved(before && (() => replace(before)))
 }
 
 // ---------- Import / export ----------
@@ -240,10 +270,12 @@ async function importFile(e: Event) {
       play('error')
       return
     }
-    if (fresh.length) enrich(addMany(fresh))
+    const imported = fresh.length ? addMany(fresh) : []
+    enrich(imported)
     play('success')
     toast.success(`${fresh.length} ${fresh.length === 1 ? 'bookmark' : 'bookmarks'} imported`, {
-      description: found.length > fresh.length ? `${found.length - fresh.length} you already had were skipped.` : 'Folders became tags.'
+      description: found.length > fresh.length ? `${found.length - fresh.length} you already had were skipped.` : 'Folders became tags.',
+      action: imported.length ? { label: 'Undo', onClick: () => imported.forEach(b => remove(b.id, { undoAdd: true })) } : undefined
     })
   } catch {
     toast.error('Couldn’t read that file')
@@ -269,6 +301,7 @@ function exportFile() {
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = `bookmarks-${new Date().toISOString().slice(0, 10)}.html`
+  logActivity('exported', '/bookmarks', `${items.value.length} bookmarks`)
   a.click()
   URL.revokeObjectURL(a.href)
   play('copy')
@@ -361,7 +394,7 @@ function exportFile() {
               <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
-            <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="[{ value: 'newest', label: 'Newest' }, { value: 'opened', label: 'Most opened' }, { value: 'az', label: 'A–Z' }]" />
+            <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             <div class="views" role="radiogroup" aria-label="View">
               <button type="button" role="radio" class="view-btn" :aria-checked="view === 'list'" title="List" @click="setView('list')">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11" /><circle cx="4.75" cy="6.5" r="1.1" /><circle cx="4.75" cy="12" r="1.1" /><circle cx="4.75" cy="17.5" r="1.1" /></svg>
@@ -371,11 +404,15 @@ function exportFile() {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></svg>
                 <span class="sr-only">Grid</span>
               </button>
+              <button type="button" role="radio" class="view-btn" :aria-checked="view === 'compact'" title="Compact" @click="setView('compact')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 9.7h16M4 14.3h16M4 19h16" /></svg>
+                <span class="sr-only">Compact</span>
+              </button>
             </div>
           </div>
 
-          <TransitionGroup v-if="shown.length" tag="ul" name="list" class="marks" :class="view">
-            <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" class="mark" :class="{ flash: flashId === b.id }">
+          <TransitionGroup v-if="shown.length" tag="ul" name="list" class="marks" :class="view === 'compact' ? ['list', 'compact'] : view">
+            <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" :class="{ flash: flashId === b.id }">
               <span class="mark-icon" aria-hidden="true">
                 <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
                 <span v-else>{{ initial(b) }}</span>
@@ -1032,6 +1069,52 @@ kbd {
 }
 
 /* ---------- Grid view: each bookmark is a card ---------- */
+/* ---------- Compact: one line per bookmark, nothing but the name and site ---------- */
+.marks.compact .mark {
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.4rem 0.6rem 0.4rem 0.9rem;
+}
+
+.marks.compact .mark-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+}
+
+.marks.compact .mark-body {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.marks.compact .mark-title {
+  flex: none;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marks.compact .mark-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marks.compact .mark-desc,
+.marks.compact .mark-note,
+.marks.compact .mark-tags {
+  display: none;
+}
+
+.marks.compact .icon-btn {
+  width: 2rem;
+  height: 2rem;
+}
+
 .marks.grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
@@ -1264,19 +1347,32 @@ kbd {
 
 /* Narrow phones: the buttons move under the text so titles get the full width */
 @media (max-width: 520px) {
-  .marks.list .mark {
+  .marks.list:not(.compact) .mark {
     flex-wrap: wrap;
     column-gap: 0.75rem;
     row-gap: 0.2rem;
   }
 
-  .marks.list .mark-body {
+  .marks.list:not(.compact) .mark-body {
     flex-basis: calc(100% - 3.25rem);
   }
 
-  .marks.list .mark-actions {
+  .marks.list:not(.compact) .mark-actions {
     width: 100%;
     padding-left: 2.6rem;
+  }
+
+  /* Compact stays one line: the site name gives way to the title */
+  .marks.compact .mark-body {
+    flex: 1;
+  }
+
+  .marks.compact .mark-title {
+    max-width: 100%;
+  }
+
+  .marks.compact .mark-meta {
+    display: none;
   }
 
   /* Phones: two small cards across */

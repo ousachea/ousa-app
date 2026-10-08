@@ -10,6 +10,7 @@ export interface Bookmark {
   visits: number
   createdAt: string // ISO
   lastOpened?: string // ISO
+  updatedAt?: string // ISO, last edited by hand
 }
 
 export type NewBookmark = Omit<Bookmark, 'id'>

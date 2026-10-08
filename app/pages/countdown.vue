@@ -10,7 +10,7 @@ interface CountdownEvent {
 }
 
 const { play } = useSound()
-const { items, ready, sync, add, update, remove, restore } = useCollection<CountdownEvent>('countdown')
+const { items, ready, sync, add, update, replace, remove, restore } = useCollection<CountdownEvent>('countdown')
 
 const isoToday = () => new Date().toISOString().slice(0, 10)
 const blank = () => ({ title: '', date: '', time: '' })
@@ -94,9 +94,9 @@ const isTracked = (h: { name: string, start: string }) => items.value.some(e => 
 
 function track(h: { name: string, start: string }) {
   if (isTracked(h)) return
-  add({ title: h.name, date: h.start, time: '', createdAt: new Date().toISOString() })
+  const added = add({ title: h.name, date: h.start, time: '', createdAt: new Date().toISOString() })
   play('success')
-  toast.success(`Counting down to ${h.name}`)
+  toast.success(`Counting down to ${h.name}`, { action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
 }
 
 const target = (e: CountdownEvent) => new Date(`${e.date}T${e.time || '00:00'}`).getTime()
@@ -150,12 +150,19 @@ const weekdayOf = (e: CountdownEvent) => at(e).toLocaleDateString('en-GB', { wee
 
 const canSave = computed(() => form.title.trim() && form.date)
 const titleInput = ref<HTMLInputElement>()
+const draft = useDraft('countdown', form, {
+  active: () => true,
+  isEmpty: f => !f.title.trim() && !f.date,
+  summary: f => [f.title, f.date && new Date(`${f.date}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }), f.time]
+})
+onMounted(() => draft.check())
 useAddAction(() => focusField(titleInput.value))
 
 function save() {
   if (!canSave.value) return
-  add({ title: form.title.trim(), date: form.date, time: form.time, createdAt: new Date().toISOString() })
-  toast.success(`Counting down to ${form.title.trim()}`)
+  const added = add({ title: form.title.trim(), date: form.date, time: form.time, createdAt: new Date().toISOString() })
+  draft.clear()
+  toast.success(`Counting down to ${form.title.trim()}`, { action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
   play('success')
   Object.assign(form, blank())
 }
@@ -173,8 +180,8 @@ function edit(e: CountdownEvent) {
 
 function saveEdit() {
   if (!editingId.value || !canSaveEdit.value) return
-  update(editingId.value, { title: editForm.title.trim(), date: editForm.date, time: editForm.time })
-  toast.success('Changes saved')
+  const before = update(editingId.value, { title: editForm.title.trim(), date: editForm.date, time: editForm.time })
+  toastSaved(before && (() => replace(before)))
   play('success')
   cancel()
 }
@@ -208,6 +215,7 @@ function del(e: CountdownEvent) {
       <!-- One-row add bar resting on the band -->
       <div class="form-step">
         <form v-validate class="panel form" aria-label="Add a date" @submit.prevent="save">
+          <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
           <label class="field">
             <span class="field-head">What’s happening?</span>
             <input ref="titleInput" v-model="form.title" class="input" placeholder="Khmer New Year, trip to Siem Reap…" required data-error="Name what you’re counting down to">
@@ -233,7 +241,7 @@ function del(e: CountdownEvent) {
         <ClientOnly>
           <template v-if="ready && items.length">
             <!-- The next date gets the spotlight: name and date on the left, a live flip clock on the right -->
-            <section v-if="featured" class="panel featured" :class="{ editing: editingId === featured.id }" aria-live="off">
+            <section v-if="featured" :data-item-id="featured.id" class="panel featured" :class="{ editing: editingId === featured.id }" aria-live="off">
               <div class="featured-text">
                 <span class="label">Next up</span>
                 <h2>{{ featured.title }}</h2>
@@ -261,7 +269,7 @@ function del(e: CountdownEvent) {
             <!-- Each later date is a page torn from a desk calendar -->
             <h3 v-if="later.length" class="later-head">After that</h3>
             <TransitionGroup v-if="later.length" tag="ul" name="list" class="pages">
-              <li v-for="e in later" :key="e.id" class="page" :class="{ editing: editingId === e.id }">
+              <li v-for="e in later" :key="e.id" :data-item-id="e.id" class="page" :class="{ editing: editingId === e.id }">
                 <span class="rings" aria-hidden="true"><i /><i /></span>
                 <span class="month">{{ monthOf(e) }}</span>
                 <strong class="day">{{ dayOf(e) }}</strong>
@@ -285,7 +293,7 @@ function del(e: CountdownEvent) {
             <section v-if="past.length" class="past">
               <h3>Already happened</h3>
               <ul>
-                <li v-for="e in past" :key="e.id">
+                <li v-for="e in past" :key="e.id" :data-item-id="e.id">
                   <span>{{ e.title }}</span>
                   <span class="meta">{{ agoText(e.left) }}</span>
                   <ConfirmDelete :name="e.title" @confirm="del(e)" />

@@ -15,10 +15,21 @@ function setColors(apps: boolean) {
   } catch {}
 }
 
-const GROUPS = [
-  { name: 'Tools', tools: TOOLS.filter(t => (t.group ?? 'Tools') === 'Tools') },
-  { name: 'Life', tools: TOOLS.filter(t => t.group === 'Life') }
-]
+// Pinned apps get their own row at the top (CHECKLIST.md #09); only known after mount, so the
+// server-rendered page always shows the plain groups
+const { prefs } = usePrefs()
+const hydrated = useHydrated()
+const GROUPS = computed(() => {
+  const pins = hydrated.value ? prefs.pinnedApps : []
+  const pinned = pins.map(p => TOOLS.find(t => t.to === p)).filter((t): t is typeof TOOLS[number] => !!t)
+  const rest = TOOLS.filter(t => !pins.includes(t.to))
+  return [
+    { name: 'Pinned', tools: pinned },
+    { name: 'Tools', tools: rest.filter(t => (t.group ?? 'Tools') === 'Tools') },
+    { name: 'Life', tools: rest.filter(t => t.group === 'Life') }
+  ].filter(g => g.tools.length)
+})
+const { log } = useActivity()
 
 useHead({ title: 'Ousa’s Apps: free tools and trackers for life in Cambodia', titleTemplate: '%s' })
 
@@ -80,6 +91,15 @@ useAppSeo({
         </NuxtLink>
       </nav>
     </section>
+
+    <ClientOnly>
+      <section v-if="log.length" id="activity" class="group recent" aria-labelledby="group-activity">
+        <h2 id="group-activity">Recent activity</h2>
+        <div class="panel recent-panel">
+          <ActivityFeed :limit="6" />
+        </div>
+      </section>
+    </ClientOnly>
   </main>
 </template>
 
@@ -277,6 +297,16 @@ h1 {
 .summary {
   font-size: 0.925rem;
   color: var(--ink-2);
+}
+
+.recent-panel {
+  width: 100%;
+  padding: 0.85rem 0.6rem 0.75rem;
+}
+
+.recent {
+  max-width: 720px;
+  scroll-margin-top: 5rem;
 }
 
 @media (max-width: 720px) {

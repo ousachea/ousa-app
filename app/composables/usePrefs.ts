@@ -1,3 +1,5 @@
+import { toast } from 'vue-sonner'
+
 // App-wide behaviour preferences, chosen in Settings and remembered on this device.
 // Appearance has its own composables (useTheme, useEffects); this holds everything else.
 const KEY = 'ousa-app:prefs'
@@ -68,4 +70,17 @@ export function usePrefs() {
     prefs,
     reset: () => Object.assign(prefs, { ...DEFAULTS, pinnedApps: prefs.pinnedApps })
   }
+}
+
+/** Pin an app to the top of the menu, home page and palette, or unpin it (CHECKLIST.md #09) */
+export function togglePinnedApp(to: string) {
+  const { prefs } = usePrefs()
+  const pinned = prefs.pinnedApps.includes(to)
+  prefs.pinnedApps = pinned ? prefs.pinnedApps.filter(p => p !== to) : [...prefs.pinnedApps, to]
+  const name = toolFor(to)?.name ?? 'App'
+  useSound().play(pinned ? 'toggle-off' : 'toggle-on')
+  toast(pinned ? `${name} unpinned` : `${name} pinned`, {
+    description: pinned ? undefined : 'It’s at the top of the menu and home page now.',
+    action: { label: 'Undo', onClick: () => togglePinnedApp(to) }
+  })
 }

@@ -45,7 +45,12 @@ export function useSound() {
 
   return {
     state: readonly(state),
-    play: (cue: CueName, options?: PlayOptions) => getPlayer()?.play(cue, options) ?? null,
+    // Browsers block audio until the visitor has clicked or pressed a key; a sound from a page load
+    // (data arriving, a deck being dealt) would only log a warning, so it's skipped
+    play: (cue: CueName, options?: PlayOptions) => {
+      if (import.meta.client && navigator.userActivation && !navigator.userActivation.hasBeenActive) return null
+      return getPlayer()?.play(cue, options) ?? null
+    },
     unlock: () => getPlayer()?.unlock() ?? Promise.resolve(false),
     preload: (cues: CueName[]) => getPlayer()?.preload(cues).catch(() => {}) ?? Promise.resolve(),
     setEnabled(enabled: boolean) {

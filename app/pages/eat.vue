@@ -40,7 +40,7 @@ const DEMO = (): Omit<Spot, 'id'>[] => [
   { name: 'Brown Coffee', kind: 'place', note: 'Iced latte and a quiet corner', price: 2 },
   { name: 'Night market noodle cart', kind: 'place', note: 'Open late, always busy', price: 1 }
 ]
-const { items, ready, sync, add, update, remove, restore } = useCollection<Spot>('eat', SEED, { demo: DEMO })
+const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Spot>('eat', SEED, { demo: DEMO })
 
 // ---------- Adding ----------
 const form = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'], imageUrl: '' })
@@ -174,14 +174,20 @@ async function saveEdit() {
     toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed. Your other changes were saved.' })
   }
   // Changes show straight away on its card, in the deck and on the shortlist
-  update(id, { name: editForm.name.trim(), kind: editForm.kind, note: editForm.note.trim(), price: editForm.price, image })
-  toast.success(`${editForm.name.trim()} updated`)
+  const before = update(id, { name: editForm.name.trim(), kind: editForm.kind, note: editForm.note.trim(), price: editForm.price, image })
+  toastSaved(before && (() => replace(before)), `${editForm.name.trim()} updated`)
   play('success')
   saving.value = false
   cancelEdit()
 }
 
 const nameField = ref<HTMLInputElement>()
+const draft = useDraft('eat', form, {
+  active: () => true,
+  isEmpty: f => !f.name.trim() && !f.note.trim() && !f.imageUrl.trim(),
+  summary: f => [f.name, f.note, f.kind === 'place' ? 'A place' : 'A food']
+})
+onMounted(() => draft.check())
 useAddAction(() => focusField(nameField.value))
 
 async function save() {
@@ -200,8 +206,18 @@ async function save() {
     toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed. The item was added without it.' })
   }
   const spot = add({ name: form.name.trim(), kind: form.kind, note: form.note.trim(), price: form.price, ...(image ? { image } : {}) })
+  draft.clear()
   deck.value.push(spot.id) // new cards join the end of the current deck
-  toast.success(`${spot.name} added`, uploaded ? { description: `Photo saved to public${image}. Commit it to keep it.` } : undefined)
+  toast.success(`${spot.name} added`, {
+    description: uploaded ? `Photo saved to public${image}. Commit it to keep it.` : undefined,
+    action: {
+      label: 'Undo',
+      onClick: () => {
+        remove(spot.id, { undoAdd: true })
+        deck.value = deck.value.filter(id => id !== spot.id)
+      }
+    }
+  })
   play('success')
   Object.assign(form, { name: '', note: '', imageUrl: '' })
   clearPhoto()
@@ -609,6 +625,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
       <div class="manage-grid">
         <form v-validate class="panel form" @submit.prevent="save">
           <h3>Add one</h3>
+          <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
           <div class="segmented" role="radiogroup" aria-label="Type">
             <label :class="{ active: form.kind === 'food' }"><input v-model="form.kind" type="radio" value="food">A food</label>
             <label :class="{ active: form.kind === 'place' }"><input v-model="form.kind" type="radio" value="place">A place</label>
@@ -653,7 +670,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
         <ClientOnly>
           <ul v-if="items.length" class="thumbs">
-            <li v-for="s in items" :key="s.id" class="thumb" :class="{ editing: editingId === s.id }" :data-kind="s.kind">
+            <li v-for="s in items" :key="s.id" :data-item-id="s.id" class="thumb" :class="{ editing: editingId === s.id }" :data-kind="s.kind">
               <!-- Click a thumbnail to add or replace its photo -->
               <label class="thumb-img" :style="photoStyle(s)" :title="s.image ? 'Replace photo' : 'Add a photo'">
                 <input type="file" accept="image/*" :aria-label="s.image ? `Replace photo of ${s.name}` : `Add a photo of ${s.name}`" @change="setPhoto(s, $event)">

@@ -816,3 +816,54 @@ kbd {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/* A record you jumped to from search glows briefly (plugins/focus.client.ts) */
+.found {
+  animation: found 2.2s var(--ease-out);
+}
+
+@keyframes found {
+  0%, 30% {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  100% {
+    outline: 3px solid transparent;
+    outline-offset: 3px;
+  }
+}
+
+/* ---------- On/off switch (role="switch" with a .knob inside) ---------- */
+.switch {
+  flex: none;
+  position: relative;
+  width: 3.5rem;
+  height: 2rem;
+  padding: 0;
+  background: var(--line);
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.switch[aria-checked='true'] {
+  background: var(--green);
+}
+
+.switch .knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 1.625rem;
+  height: 1.625rem;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgb(var(--shadow) / 0.25);
+  transition: transform 0.25s var(--ease-spring);
+}
+
+.switch[aria-checked='true'] .knob {
+  transform: translateX(1.5rem);
+}

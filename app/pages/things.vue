@@ -53,24 +53,34 @@ const DEMO = (): Omit<Thing, 'id'>[] => [
   { name: 'Honda Dream 125', category: 'Vehicle', purchaseDate: isoDaysAgo(1100), price: 2350, currency: 'USD', currentValue: 1800, notes: 'Plate 2AB-1234' },
   { name: 'Rice cooker', category: 'Home', purchaseDate: isoDaysAgo(60), price: 180000, currency: 'KHR', currentValue: null, notes: '' }
 ]
-const { items, ready, sync, add, update, remove, restore } = useCollection<Thing>('things', undefined, { demo: DEMO })
+const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Thing>('things', undefined, { demo: DEMO })
 const rate = useMarketRate()
 
 const today = () => new Date().toISOString().slice(0, 10)
-const blank = (): Omit<Thing, 'id'> => ({ name: '', category: 'Phone', purchaseDate: today(), price: 0, currency: 'USD', currentValue: null, notes: '' })
+// New items start in the category and currency used last time (CHECKLIST.md #14)
+const lastCategory = useRemembered('things-category', 'Phone', v => CATEGORIES.includes(v as string))
+const lastCurrency = useRemembered<Currency>('things-currency', 'USD', v => v === 'USD' || v === 'KHR')
+const blank = (): Omit<Thing, 'id'> => ({ name: '', category: lastCategory.value, purchaseDate: today(), price: 0, currency: lastCurrency.value, currentValue: null, notes: '' })
 const form = reactive(blank())
 const editingId = ref<string>()
 // Adding and editing happen in a popup
 const formOpen = ref(false)
 
+const draft = useDraft('things', form, {
+  active: () => formOpen.value && !editingId.value,
+  isEmpty: f => !f.name.trim() && !f.price && !f.notes.trim(),
+  summary: f => [f.name, f.category, f.price && `${f.price} ${f.currency}`]
+})
+
 useAddAction(() => openAdd())
 function openAdd() {
   cancel()
   formOpen.value = true
+  draft.check()
   play('open')
 }
 const query = ref('')
-const sort = ref<(typeof SORTS)[number]['value']>('value')
+const sort = useRemembered<(typeof SORTS)[number]['value']>('things-sort', 'value', v => SORTS.some(s => s.value === v))
 
 // Today's value: what the owner entered, otherwise an age-and-category estimate
 const isEstimate = (t: Thing) => t.currentValue == null
@@ -145,11 +155,14 @@ function save() {
     currentValue: typeof form.currentValue === 'number' ? form.currentValue : null
   }
   if (editingId.value) {
-    update(editingId.value, record)
-    toast.success('Changes saved')
+    const before = update(editingId.value, record)
+    toastSaved(before && (() => replace(before)))
   } else {
-    add(record)
-    toast.success(`${record.name} added`)
+    const added = add(record)
+    draft.clear()
+    lastCategory.value = record.category
+    lastCurrency.value = record.currency
+    toast.success(`${record.name} added`, { action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
   }
   play('success')
   cancel()
@@ -184,6 +197,7 @@ function del(t: Thing) {
 
     <Modal :open="formOpen" :title="editingId ? 'Edit item' : 'Add something you own'" @close="cancel">
       <form v-validate class="form" @submit.prevent="save">
+        <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
         <label class="field">
           <span class="field-head">What is it?</span>
           <input v-model="form.name" class="input" placeholder="iPhone 16 Pro Max" required data-error="Give it a name, like iPhone 16 Pro">
@@ -221,6 +235,7 @@ function del(t: Thing) {
             </div>
           </div>
         </div>
+        <MoreFields :filled="!!form.currentValue || !!form.notes">
         <div class="field">
           <span class="field-head">What it’s worth now <span class="optional">Optional</span></span>
           <div class="price">
@@ -233,6 +248,7 @@ function del(t: Thing) {
           <span class="field-head">Notes <span class="optional">Optional</span></span>
           <input v-model="form.notes" class="input" placeholder="Daily driver, warranty until 2027…">
         </label>
+        </MoreFields>
         <div class="actions">
           <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add item' }}</button>
           <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
@@ -292,7 +308,7 @@ function del(t: Thing) {
 
             <!-- One card per thing: what it is, what you paid → what it's worth now, and how much of its price it keeps -->
             <TransitionGroup tag="ul" name="list" class="things">
-              <li v-for="t in visible" :key="t.id" class="thing" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
+              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
                 <header class="thing-head">
                   <span class="thing-icon" aria-hidden="true"><CategoryIcon :name="t.category" /></span>
                   <span class="thing-title">

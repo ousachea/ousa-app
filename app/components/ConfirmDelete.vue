@@ -17,7 +17,8 @@ let timer: ReturnType<typeof setTimeout> | undefined
 const { play } = useSound()
 const { prefs } = usePrefs()
 
-const needsSecondClick = computed(() => props.permanent || prefs.confirmDelete)
+const hydrated = useHydrated()
+const needsSecondClick = computed(() => props.permanent || (hydrated.value && prefs.confirmDelete))
 
 function disarm() {
   armed.value = false

@@ -27,7 +27,7 @@ const DEMO = (): Omit<Entry, 'id'>[] => {
   }
   return out
 }
-const { items, ready, sync, add, update, remove, restore } = useCollection<Entry>('weight', undefined, { demo: DEMO, label: e => `${Math.round(e.kg * 10) / 10} kg on ${e.date}` })
+const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Entry>('weight', undefined, { demo: DEMO, label: e => `${Math.round(e.kg * 10) / 10} kg on ${e.date}` })
 
 // Display unit is a per-visitor preference
 const unit = ref<Unit>('kg')
@@ -58,16 +58,17 @@ function save() {
   const kg = unit.value === 'kg' ? form.value : form.value / LB_PER_KG
   const existing = items.value.find(e => e.date === form.date)
   if (existing) {
-    update(existing.id, { kg })
-    toast.success(`Updated ${formatDate(form.date)}`)
+    const before = update(existing.id, { kg })
+    toastSaved(before && (() => replace(before)), `Updated ${formatDate(form.date)}`)
   } else {
     const previous = [...items.value].filter(e => e.date < form.date).sort((a, b) => b.date.localeCompare(a.date))[0]
-    add({ date: form.date, kg })
+    const added = add({ date: form.date, kg })
     const diff = previous ? kg - previous.kg : 0
     toast.success(`Logged ${fmt(kg)}`, {
       description: !previous ? 'Your first entry. Log again soon to see a trend.'
         : Math.abs(diff) < 0.05 ? `Same as ${formatDate(previous.date)}`
-          : `${diff < 0 ? 'Down' : 'Up'} ${fmt(Math.abs(diff))} since ${formatDate(previous.date)}`
+          : `${diff < 0 ? 'Down' : 'Up'} ${fmt(Math.abs(diff))} since ${formatDate(previous.date)}`,
+      action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) }
     })
   }
   play('success')

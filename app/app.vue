@@ -17,6 +17,7 @@ const bare = computed(() => route.path.startsWith('/og-card/'))
     <NuxtPage />
     <template v-if="!bare">
       <FloatingNav />
+      <ClientOnly><CommandPalette /></ClientOnly>
       <GooeyToaster />
     </template>
   </div>

@@ -78,6 +78,11 @@ function openWhatsNew() {
   play('open')
 }
 
+// Pin this app to the top of the menu, home page and palette (CHECKLIST.md #09)
+const { prefs } = usePrefs()
+const pinnable = computed(() => TOOLS.some(t => t.to === route.path))
+const pinned = computed(() => prefs.pinnedApps.includes(route.path))
+
 // Demo: on pages that have one, the app icon switches sample data on and off
 const demo = useDemoState(route.path)
 const { play } = useSound()
@@ -133,11 +138,27 @@ function goBack(e: MouseEvent) {
       <div class="head-text">
         <h1>{{ tool.name }}</h1>
         <p>{{ tool.summary }}</p>
+        <div class="head-meta">
         <button v-if="latest" type="button" class="version" :aria-label="`Version ${latest.version}. See what’s new`" @click="openWhatsNew">
           <span>v{{ latest.version }}</span>
           <ClientOnly><span v-if="isNew" class="version-new">New</span></ClientOnly>
           <span class="version-more" aria-hidden="true">What’s new</span>
         </button>
+        <ClientOnly>
+          <button
+            v-if="pinnable"
+            type="button"
+            class="pin"
+            :class="{ on: pinned }"
+            :aria-pressed="pinned"
+            :title="pinned ? 'Unpin from the top of the menu' : 'Pin to the top of the menu and home page'"
+            @click="togglePinnedApp(route.path)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg>
+            {{ pinned ? 'Pinned' : 'Pin' }}
+          </button>
+        </ClientOnly>
+        </div>
       </div>
       <div v-if="$slots.actions" class="head-actions"><slot name="actions" /></div>
     </header>
@@ -357,6 +378,70 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: inherit;
+}
+
+/* Version and Pin sit side by side */
+.head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: inherit;
+  gap: 0.4rem;
+}
+
+.head-meta:empty {
+  display: none;
+}
+
+.pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.6rem;
+  padding: 0.1rem 0.55rem 0.1rem 0.4rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color var(--dur-fast), border-color var(--dur-fast), background-color var(--dur-fast);
+}
+
+.pin:hover {
+  color: var(--ink);
+  border-color: var(--ink-3);
+}
+
+.pin.on {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.pin svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pin.on svg {
+  fill: currentColor;
+}
+
+.header-band .pin {
+  color: inherit;
+  opacity: 0.85;
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.header-band .pin.on {
+  background: color-mix(in srgb, currentColor 12%, transparent);
 }
 
 .body {

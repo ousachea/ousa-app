@@ -35,7 +35,7 @@ const DEMO = (): Omit<Purchase, 'id'>[] => [
   { weight: 1, unit: 'damlung', price: 3900, date: isoDaysAgo(150) },
   { weight: 0.5, unit: 'chi', price: 262, date: isoDaysAgo(20) }
 ]
-const { items: purchases, ready, sync, add, addMany, update, remove, restore } = useCollection<Purchase>('gold', undefined, { demo: DEMO, label: p => `${p.weight} ${p.unit} of gold` })
+const { items: purchases, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Purchase>('gold', undefined, { demo: DEMO, label: p => `${p.weight} ${p.unit} of gold` })
 // Signed out: offer Google sign-in right here, so purchases sync without a trip to Settings
 const signedOut = computed(() => sync.state.value === 'device')
 
@@ -84,7 +84,7 @@ const SORTS = [
   { value: 'gl-asc', label: 'Biggest loss' },
   { value: 'weight-desc', label: 'Heaviest' }
 ] as const
-const sort = ref<(typeof SORTS)[number]['value']>('date-desc')
+const sort = useRemembered<(typeof SORTS)[number]['value']>('gold-sort', 'date-desc', v => SORTS.some(s => s.value === v))
 const unitOptions = computed(() => UNITS.map(u => ({ value: u, label: w.value[u] })))
 
 const w = computed(() => WORDS[lang.value])
@@ -312,11 +312,18 @@ const editingId = ref<string>()
 const form = reactive({ weight: null as number | null, unit: 'chi' as Unit, price: null as number | null, date: today() })
 const canSave = computed(() => (form.weight ?? 0) > 0 && (form.price ?? 0) > 0)
 
+const draft = useDraft('gold', form, {
+  active: () => formOpen.value && !editingId.value,
+  isEmpty: f => !f.weight && !f.price,
+  summary: f => [f.weight && `${f.weight} ${w.value[f.unit]}`, f.price && money(f.price)]
+})
+
 useAddAction(() => openAdd())
 function openAdd() {
   editingId.value = undefined
   Object.assign(form, { weight: null, unit: 'chi', price: null, date: today() })
   formOpen.value = true
+  draft.check()
   play('open')
 }
 
@@ -344,11 +351,12 @@ function savePurchase() {
   if (!canSave.value) return
   const entry = { weight: form.weight!, unit: form.unit, price: form.price!, date: form.date || today() }
   if (editingId.value) {
-    update(editingId.value, entry)
-    toast.success('Changes saved')
+    const before = update(editingId.value, entry)
+    toastSaved(before && (() => replace(before)))
   } else {
-    add(entry)
-    toast.success('Purchase saved', { description: `${entry.weight} ${w.value[entry.unit]} for ${money(entry.price)}` })
+    const added = add(entry)
+    draft.clear()
+    toast.success('Purchase saved', { description: `${entry.weight} ${w.value[entry.unit]} for ${money(entry.price)}`, action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
   }
   play('success')
   formOpen.value = false
@@ -400,11 +408,12 @@ async function importCSV(e: Event) {
     toast('Nothing new to import', { description: skippedNote })
     return
   }
-  addMany(fresh)
+  const imported = addMany(fresh)
   play('success')
   const synced = sync.signedIn.value ? ' Saving to your account too.' : ''
   toast.success(`${fresh.length} ${fresh.length === 1 ? 'purchase' : 'purchases'} imported`, {
-    description: [skippedNote, synced.trim()].filter(Boolean).join(' ') || undefined
+    description: [skippedNote, synced.trim()].filter(Boolean).join(' ') || undefined,
+    action: { label: 'Undo', onClick: () => imported.forEach(p => remove(p.id, { undoAdd: true })) }
   })
 }
 
@@ -413,6 +422,7 @@ function exportCSV() {
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
   a.download = `gold-${today()}.csv`
+  logActivity('exported', '/gold', `${purchases.value.length} purchases`)
   a.click()
   URL.revokeObjectURL(a.href)
   play('copy')
@@ -786,6 +796,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
       <Modal :open="formOpen" :title="editingId ? 'Edit purchase' : 'Add a purchase'" @close="formOpen = false">
         <form v-validate class="form" @submit.prevent="savePurchase">
+          <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
           <div class="form-row">
             <label class="field">
               <span class="field-head">{{ w.weight }}</span>

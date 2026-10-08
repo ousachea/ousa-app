@@ -16,7 +16,17 @@ const addAction = shallowRef<(() => void) | null>(null)
 
 /** Register what A (and Quick Add for this app) does on this page, e.g. open the Add popup */
 export function useAddAction(fn: () => void) {
-  onMounted(() => (addAction.value = fn))
+  const route = useRoute()
+  const router = useRouter()
+  onMounted(() => {
+    addAction.value = fn
+    // Arrived from Quick Add (?add=1): open the form straight away, then tidy the address
+    if (route.query.add) {
+      const { add: _, ...rest } = route.query
+      router.replace({ query: rest })
+      setTimeout(fn, 250)
+    }
+  })
   onBeforeUnmount(() => {
     if (addAction.value === fn) addAction.value = null
   })

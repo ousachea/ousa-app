@@ -104,9 +104,15 @@ const matches = (t: Tool) => {
   const q = query.value.trim().toLowerCase()
   return !q || `${t.name} ${t.summary}`.toLowerCase().includes(q)
 }
+// Pinned apps come first and leave their usual group (CHECKLIST.md #09)
+const hydrated = useHydrated()
+const pins = computed(() => (hydrated.value ? prefs.pinnedApps : []))
+const pinnedTools = computed(() => pins.value.map(p => TOOLS.find(t => t.to === p)).filter((t): t is Tool => !!t))
+const unpinned = (t: Tool) => !pins.value.includes(t.to)
 const groups = computed(() => [
-  { name: 'Tools', items: TOOLS.filter(t => !t.group || t.group === 'Tools').filter(matches) },
-  { name: 'Life', items: TOOLS.filter(t => t.group === 'Life').filter(matches) }
+  { name: 'Pinned', items: pinnedTools.value.filter(matches) },
+  { name: 'Tools', items: TOOLS.filter(t => !t.group || t.group === 'Tools').filter(unpinned).filter(matches) },
+  { name: 'Life', items: TOOLS.filter(t => t.group === 'Life').filter(unpinned).filter(matches) }
 ].filter(g => g.items.length))
 const results = computed(() => groups.value.flatMap(g => g.items))
 
@@ -143,7 +149,21 @@ function goBack() {
   else if (route.path !== '/') router.push('/')
 }
 
+const { palette, openPalette } = usePalette()
+
 function onKeydown(e: KeyboardEvent) {
+  // ⌘K / Ctrl+K: the command palette, from anywhere (even a text field), and again to close it
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    if (palette.open) usePalette().closePalette()
+    else {
+      open.value = false
+      openPalette()
+    }
+    return
+  }
+  if (palette.open) return
+
   if (e.key === 'Escape') {
     // Something on the page (e.g. a chart) already handled it, or a popup is closing itself
     if (e.defaultPrevented || document.querySelector('dialog[open]')) return
@@ -180,8 +200,9 @@ function onKeydown(e: KeyboardEvent) {
   else if (e.key === ']') goTo(current + 1)
   else if (e.key === '[') goTo(current - 1)
   else if (e.key === 'm' || e.key === 'M') toggleMenu()
+  // A: this page's own Add, or Quick Add where there isn't one
   else if (e.key === 'a' || e.key === 'A') {
-    if (!runAddAction()) return
+    if (!runAddAction()) openPalette('add')
   }
   else if (e.key === 'd' || e.key === 'D') {
     toggleTheme()
@@ -196,7 +217,9 @@ function onKeydown(e: KeyboardEvent) {
   e.preventDefault()
 }
 
+const isMac = ref(false)
 onMounted(() => {
+  isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)
   canFullscreen.value = !!document.fullscreenEnabled
   syncFullscreen()
   // Esc or F11 can leave full screen too; keep the button's label in step
@@ -257,6 +280,20 @@ onBeforeUnmount(() => {
         </div>
       </ClientOnly>
 
+      <!-- Search everything and Quick Add, for touch screens and anyone who doesn't know the keys -->
+      <div class="quick">
+        <button type="button" class="quick-btn" aria-keyshortcuts="Control+K Meta+K" @click="open = false; openPalette()">
+          <span class="quick-icon" aria-hidden="true"><ToolIcon name="search" /></span>
+          Search everything
+          <kbd class="quick-kbd">{{ isMac ? '⌘' : 'Ctrl' }} K</kbd>
+        </button>
+        <button type="button" class="quick-btn add" aria-keyshortcuts="A" @click="open = false; openPalette('add')">
+          <span class="quick-icon" aria-hidden="true"><ToolIcon name="plus" /></span>
+          Add
+          <kbd class="quick-kbd">A</kbd>
+        </button>
+      </div>
+
       <label class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
         <input
@@ -298,6 +335,9 @@ onBeforeUnmount(() => {
       <footer class="foot">
         <NuxtLink to="/" class="foot-link" :aria-current="route.path === '/' ? 'page' : undefined" aria-keyshortcuts="H 0">
           <AppLogo class="foot-logo" />Home<kbd>H</kbd>
+        </NuxtLink>
+        <NuxtLink to="/trash" class="foot-link" :aria-current="route.path === '/trash' ? 'page' : undefined">
+          <span class="foot-icon" aria-hidden="true"><ToolIcon name="trash" /></span>Recycle Bin
         </NuxtLink>
         <NuxtLink to="/settings" class="foot-link" :aria-current="route.path === '/settings' ? 'page' : undefined" :aria-keyshortcuts="LETTER.get('/settings')?.toUpperCase()">
           <span class="foot-icon" aria-hidden="true"><ToolIcon name="sound" /></span>Settings<kbd v-if="LETTER.get('/settings')">{{ LETTER.get('/settings')!.toUpperCase() }}</kbd>
@@ -538,6 +578,65 @@ onBeforeUnmount(() => {
 @keyframes live-ping {
   0% { opacity: 0.75; scale: 1; }
   80%, 100% { opacity: 0; scale: 2.6; }
+}
+
+/* ---------- Search everything / Add ---------- */
+.quick {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0 0.6rem 0 0.75rem;
+  font: inherit;
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast), border-color var(--dur-fast);
+}
+
+.quick-btn:hover {
+  border-color: var(--ink-3);
+}
+
+.quick-btn.add {
+  color: #fff;
+  background: var(--plastic);
+  border-color: var(--plastic);
+}
+
+.quick-btn.add:hover {
+  background: var(--plastic-hover);
+}
+
+.quick-icon {
+  display: grid;
+  font-size: 1.1rem;
+}
+
+.quick-kbd {
+  margin-left: auto;
+}
+
+.quick-btn.add .quick-kbd {
+  color: #fff;
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.2);
+}
+
+@media (pointer: coarse) {
+  .quick-kbd {
+    display: none;
+  }
 }
 
 /* ---------- Search ---------- */

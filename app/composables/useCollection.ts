@@ -252,7 +252,9 @@ export function useCollection<T extends StoredItem>(
       return records
     },
     /** `quiet`: background bookkeeping (visit counts, fetched icons) that isn't worth showing in activity */
+    /** Returns the record as it was before, for Undo */
     update(id: string, patch: Partial<T>, opts: { quiet?: boolean } = {}) {
+      const before = items.value.find(i => i.id === id)
       items.value = items.value.map(i => (i.id === id ? { ...i, ...patch } : i))
       cache()
       const updated = items.value.find(i => i.id === id)
@@ -260,14 +262,23 @@ export function useCollection<T extends StoredItem>(
         sync(() => push([updated]))
         if (!opts.quiet) record('edited', labelOf(updated))
       }
+      return before
+    },
+    /** Put a record back exactly as it was (Undo after an edit) */
+    replace(item: T) {
+      if (!items.value.some(i => i.id === item.id)) return
+      items.value = items.value.map(i => (i.id === item.id ? item : i))
+      cache()
+      sync(() => push([item]))
     },
     /** Deletes a record; it goes to the Recycle Bin (unless this collection opts out) */
-    remove(id: string) {
+    /** `undoAdd`: taking back something just added (Undo), so it skips the bin and the activity log */
+    remove(id: string, opts: { undoAdd?: boolean } = {}) {
       const removed = items.value.find(i => i.id === id)
       items.value = items.value.filter(i => i.id !== id)
       cache()
       sync(() => withTimeout(deleteDoc(doc(itemsRef(uid!), id))))
-      if (removed) {
+      if (removed && !opts.undoAdd) {
         if (trash && !demoOn.value) trash.put(name, app, removed as TrashEntry['item'], labelOf(removed))
         record('deleted', labelOf(removed))
       }

@@ -46,68 +46,68 @@ icons, modals, toasts, badges, chips, tabs, tables, empty states.
 **Notes:** Tokens in `main.css` (radius, spacing, text sizes, shadows, motion, density) and shared classes: `.btn` variants, `.input`, `.field`, `.segmented` (tabs), `.panel` (cards), `.link`/`.link.danger`, `.icon-btn`, `.chip`-style filters, `.badge` (good/warn/bad/info), `kbd`, `.sr-only`, `.skeleton`, `.empty-state`, `.field-error`. Components: `Modal`, `ConfirmDialog`, `ConfirmDelete`, `EmptyState`, `AppSelect`, `DatePicker`, `ToolIcon` (+ trash, activity, plus, search). Needs review: older pages still carry scoped copies of some of these styles; they're folded in as each app is reworked (Phase 5).
 
 ## #06 — Universal Search
-**Status:** ⬜
+**Status:** 🟢
 One search across bookmarks, folders, devices, renewals, countdowns, contacts and future data; results
 grouped by app/type.
-**Notes:**
+**Notes:** `utils/search.ts`: one registry of sources (bookmarks, folders, things, renewals, countdowns, contacts, foods & places) read from this device, so it works offline and sends nothing anywhere; every word must match, title-start matches rank first, results grouped by type. Choosing a result opens its app with `?focus=<id>` and `plugins/focus.client.ts` scrolls to and highlights the row (`data-item-id` on each list item); folders open the bookmarks filtered to that folder. The password vault is never searched. Tested desktop + mobile.
 
 ## #07 — Command Palette
-**Status:** ⬜
+**Status:** 🟢
 `Ctrl+K` / `⌘K`. Search, navigation, actions, settings, quick add (Add Bookmark, Add Device, Add Renewal,
 Add Countdown, Open Recycle Bin, Open Settings, Export Data, Go to Bookmarks…).
-**Notes:**
+**Notes:** `components/CommandPalette.vue` (⌘K / Ctrl+K anywhere, even in a text field; also Search everything in the menu for touch screens). Empty: Quick add, Recent, Apps (pinned first), Commands (Add…, Recycle Bin, Recent activity, Settings, Export data, Import backup, dark/light, sound, pin/unpin this app). Typing: data results, then matching apps and commands. ↑/↓/PgUp/PgDn move, Enter runs, Esc closes, combobox/listbox ARIA. Tested desktop + mobile, no console errors.
 
 ## #08 — Global Quick Add
-**Status:** ⬜
+**Status:** 🟢
 `A` or `Ctrl+K → Add` shows "What do you want to add?" (Bookmark, Device, Renewal, Countdown, Contact…);
 choosing one opens that form.
-**Notes:**
+**Notes:** `A` on a page without its own Add (or Add in the menu / Add something… in the palette) opens "What do you want to add?": Bookmark, Device, Renewal, Countdown, Food or place, Weight, Gold purchase, Password. Choosing one opens that app with `?add=1` and `useAddAction` opens/focuses its form. Contact joins the list once contacts can be saved (#62). Tested desktop + mobile.
 
 ## #09 — Favorites / Pinning
-**Status:** ⬜
+**Status:** 🟡
 Pin apps, bookmarks, devices, renewals and other frequent items; pinned items appear near the top of
 relevant navigation.
-**Notes:** Bookmarks already supports pinning.
+**Notes:** Apps: Pin button in every app header, Pin/Unpin in the palette; pinned apps lead the menu, the home page and the palette (`prefs.pinnedApps`, with Undo). Bookmarks already pin to the top shelf (now with Undo). Still to do: pinning devices and renewals, which lands with record favourites in #66.
 
 ## #10 — Recent Activity
-**Status:** ⬜
+**Status:** 🟢
 Lightweight history of Added / Edited / Deleted / Restored / Imported / Exported, grouped by day.
-**Notes:**
+**Notes:** `useActivity` logs added/edited/deleted/restored/imported/exported automatically from `useCollection` (plus Recycle Bin restores and exports), newest 200 kept on this device, repeated edits within a minute merged, background bookkeeping (visit counts, fetched icons) marked quiet, demo data never logged. `ActivityFeed.vue` groups by day with time, coloured verb and app icon, Show all, and Clear history (confirmed). Shown on the home page (#activity) and as Recent in the palette.
 
 ## #11 — Undo Everything Possible
-**Status:** ⬜
+**Status:** 🟢
 Undo instead of confirmation dialogs for delete, move, archive, edit, folder changes, bulk actions.
 Confirm only irreversible actions.
-**Notes:** Delete already offers Undo in most trackers.
+**Notes:** Undo instead of confirmation: delete (to the Recycle Bin), edit (`update` returns the previous record, `replace` puts it back; `toastSaved`), add (`remove(id, { undoAdd: true })` skips the bin), import (bookmarks, gold), pin toggles (apps, bookmarks). Only irreversible actions confirm (delete for good, empty bin, clear history). Moving bookmarks between folders gets the same Undo when folders arrive (#35–#36).
 
 ## #12 — Autosave
-**Status:** ⬜
+**Status:** 🟢
 Preserve unfinished forms ("Continue where you left off? [Continue] [Discard]") and prevent accidental
 loss when navigating away.
-**Notes:**
+**Notes:** `useDraft` + `DraftCard`: unfinished Add forms in renewals, things, gold (popups) and countdown, eat (inline) are kept on this device as you type and on page hide; reopening shows "Continue where you left off?" with a summary, Continue / Discard; saving clears it. Off with Settings → Autosave forms. Never used for passwords. Tested desktop + mobile.
 
 ## #13 — Better Form UX
-**Status:** ⬜
+**Status:** 🟡
 Autofocus, logical tab order, Enter submits, Escape cancels, clear required indicators, inline validation,
 helpful placeholders, searchable selects, autocomplete, keep data after errors, no unnecessary fields,
 progressive disclosure for advanced fields.
-**Notes:**
+**Notes:** Done: popups focus their first field, Enter submits everywhere (no disabled submit buttons), Esc closes, required `*` marks, inline validation (#01), data kept after errors, `AppSelect` gets a search box for lists over 10 options (countdown times, categories), `MoreFields` tucks optional fields away (Things: worth now, notes). Still to do: name autocomplete for devices and renewals (#45, #54) and a placeholder pass in the final audit.
 
 ## #14 — Smart Defaults
-**Status:** ⬜
+**Status:** 🟢
 Remember last folder, type, currency, filter, sort, view, sidebar state — easy to override.
-**Notes:**
+**Notes:** `useRemembered(key, default, validate)` (hydration-safe). Remembered: bookmarks folder, sort and view; things sort, last category and currency for new items; renewals sort, last currency and billing cycle; gold sort; plus existing ones (weight unit, home cube colours). Changing a control simply remembers the new choice.
 
 ## #15 — Multiple Views
-**Status:** ⬜
+**Status:** 🟡
 Grid / List / Compact for list-heavy apps, same underlying data.
-**Notes:** Bookmarks already has list and grid.
+**Notes:** Bookmarks: List / Grid / Compact (one line per bookmark, stays one line on phones), remembered. Things gets its own views with the redesign in #44–#47.
 
 ## #16 — Better Sorting
-**Status:** ⬜
+**Status:** 🟡
 Bookmarks: recently added, recently updated, A–Z, folder. Things I Own: recently added, company, type,
 release year. Renewals: soonest, most expensive, name. Others: sorting that fits their content.
-**Notes:**
+**Notes:** Bookmarks: Recently added, Recently updated (new `updatedAt` on edits), Most opened, A–Z, Folder. Renewals: Soonest, Most expensive (compared per month in USD), Name. Gold keeps its sorts (now remembered). Still to do: Things by company, type and release year, which needs the new device fields (#44–#46).
 
 ## #17 — Data Backup & Restore
 **Status:** ⬜

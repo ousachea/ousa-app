@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import type { EffectsPreference } from '~/composables/useEffects'
+import type { Density, MotionPreference, Prefs } from '~/composables/usePrefs'
 import { getPack, packNames, type CueName, type PackName } from 'uisfx'
 import { getDocsFromServer, limit, query } from 'firebase/firestore'
 
@@ -62,6 +63,23 @@ function chooseEffects(value: EffectsPreference) {
   setEffects(value)
   sound.play('select')
   toast(value === 'lite' ? 'Lite effects on' : value === 'full' ? 'Full effects on' : 'Effects follow this computer’s speed')
+}
+
+// Behaviour and density (usePrefs); appearance above, data below
+const { prefs } = usePrefs()
+const DENSITIES: { value: Density, label: string }[] = [
+  { value: 'spacious', label: 'Spacious' },
+  { value: 'comfortable', label: 'Comfortable' },
+  { value: 'compact', label: 'Compact' }
+]
+const MOTIONS: { value: MotionPreference, label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'full', label: 'On' },
+  { value: 'reduced', label: 'Reduced' }
+]
+function choose<K extends 'density' | 'motion'>(key: K, value: Prefs[K]) {
+  prefs[key] = value
+  sound.play('select')
 }
 
 const PACKS = packNames.map(name => getPack(name))
@@ -141,10 +159,36 @@ const volume = computed({
               Lite turns off blur and background animation so older computers stay smooth.
               <template v-if="effects.preference === 'auto'">This computer gets {{ effects.slowDevice ? 'lite' : 'full' }} effects.</template>
             </p>
+
+            <h3 class="effects-head">Density</h3>
+            <div class="segmented" role="radiogroup" aria-label="Density">
+              <label v-for="d in DENSITIES" :key="d.value" :class="{ active: prefs.density === d.value }">
+                <input type="radio" name="density" :value="d.value" :checked="prefs.density === d.value" @change="choose('density', d.value)">
+                {{ d.label }}
+              </label>
+            </div>
+            <p class="theme-note">How much room lists and cards get. Compact fits more on screen.</p>
+
+            <h3 class="effects-head">Animations</h3>
+            <div class="segmented" role="radiogroup" aria-label="Animations">
+              <label v-for="m in MOTIONS" :key="m.value" :class="{ active: prefs.motion === m.value }">
+                <input type="radio" name="motion" :value="m.value" :checked="prefs.motion === m.value" @change="choose('motion', m.value)">
+                {{ m.label }}
+              </label>
+            </div>
+            <p class="theme-note">System follows your device’s reduce-motion setting.</p>
           </div>
         </Step>
 
-        <Step id="sync" :n="2" title="Sync with Firebase" hint="Keep your trackers in your Firebase account and see them on every device." class="sync-step">
+        <Step id="behaviour" :n="2" title="Behaviour" hint="How the apps respond when you work in them." class="sync-step">
+          <div class="panel behaviour">
+            <SettingRow v-model="prefs.shortcuts" title="Keyboard shortcuts" description="Single keys like A to add, D for dark mode and M for the menu. ⌘K / Ctrl+K always works." />
+            <SettingRow v-model="prefs.confirmDelete" title="Confirm before delete" description="Ask for a second click before something goes to the Recycle Bin." />
+            <SettingRow v-model="prefs.autosave" title="Autosave forms" description="Keep what you’ve typed into an Add form if you close it, so you can continue later." />
+          </div>
+        </Step>
+
+        <Step id="sync" :n="3" title="Sync with Firebase" hint="Keep your trackers in your Firebase account and see them on every device." class="sync-step">
           <div class="panel sync">
             <template v-if="!signedIn">
               <p>You’re not signed in, so Things I own, Renewals, Countdown and the other trackers are saved on this device only.</p>
@@ -172,7 +216,7 @@ const volume = computed({
         </div>
 
         <div class="main">
-          <Step :n="3" title="Sound" hint="Turn it on, set the volume, then pick a style and try it.">
+          <Step :n="4" title="Sound" hint="Turn it on, set the volume, then pick a style and try it.">
             <section class="panel master">
               <span class="master-icon" :class="{ on: state.enabled }"><SoundIcon :name="state.enabled ? 'on' : 'off'" /></span>
               <div class="master-text">
@@ -210,7 +254,7 @@ const volume = computed({
           </Step>
 
           <div class="sound-options" :class="{ muted: !state.enabled }" :inert="!state.enabled">
-          <Step :n="4" title="Choose a style" hint="Each style plays a sample when you pick it.">
+          <Step :n="5" title="Choose a style" hint="Each style plays a sample when you pick it.">
             <div class="packs" role="radiogroup" aria-label="Sound style">
               <label
                 v-for="pack in PACKS"
@@ -233,7 +277,7 @@ const volume = computed({
             </div>
           </Step>
 
-          <Step :n="5" title="Try it" hint="Hear the sounds and see the pop-ups you’ll get around the app." class="try">
+          <Step :n="6" title="Try it" hint="Hear the sounds and see the pop-ups you’ll get around the app." class="try">
             <div class="samples">
               <button
                 v-for="s in SAMPLES"
@@ -295,6 +339,10 @@ const volume = computed({
   background: var(--surface-2);
   border-radius: 5px;
   box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--line);
+}
+
+.behaviour {
+  padding: 0.25rem 1.1rem;
 }
 
 .sync-step {

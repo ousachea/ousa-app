@@ -26,31 +26,55 @@ const DEMO = (): Omit<Renewal, 'id'>[] => [
   { name: 'Domain name', price: 12, currency: 'USD', cycle: 'yearly', nextDate: isoDaysAhead(45) },
   { name: 'Phone top-up', price: 20000, currency: 'KHR', cycle: 'weekly', nextDate: isoDaysAhead(2) }
 ]
-const { items, ready, sync, add, update, remove, restore } = useCollection<Renewal>('renewals', undefined, { demo: DEMO })
+const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Renewal>('renewals', undefined, { demo: DEMO })
 const rate = useMarketRate()
 
 const isoToday = () => new Date().toISOString().slice(0, 10)
-const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: 'USD', cycle: 'monthly', nextDate: isoToday() })
+// New subscriptions start with the currency and billing cycle used last time (CHECKLIST.md #14)
+const lastCurrency = useRemembered<Renewal['currency']>('renewals-currency', 'USD', v => v === 'USD' || v === 'KHR')
+const lastCycle = useRemembered<Renewal['cycle']>('renewals-cycle', 'monthly', v => CYCLES.some(c => c.value === v))
+const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: lastCurrency.value, cycle: lastCycle.value, nextDate: isoToday() })
 const form = reactive(blank())
 const editingId = ref<string>()
 const formOpen = ref(false)
+
+const draft = useDraft('renewals', form, {
+  active: () => formOpen.value && !editingId.value,
+  isEmpty: f => !f.name.trim() && !f.price,
+  summary: f => [f.name, f.price && formatMoney(f.price, f.currency), CYCLES.find(c => c.value === f.cycle)?.label]
+})
 
 useAddAction(() => openAdd())
 function openAdd() {
   cancel()
   formOpen.value = true
+  draft.check()
   play('open')
 }
 
 const toUsd = (r: Pick<Renewal, 'price' | 'currency'>) => (r.currency === 'USD' ? r.price : rate.value ? r.price / rate.value : undefined)
 const perMonth = (r: Renewal) => CYCLES.find(c => c.value === r.cycle)!.perMonth
 
+const SORTS = [
+  { value: 'soonest', label: 'Soonest' },
+  { value: 'expensive', label: 'Most expensive' },
+  { value: 'name', label: 'Name' }
+] as const
+const sort = useRemembered<(typeof SORTS)[number]['value']>('renewals-sort', 'soonest', v => SORTS.some(s => s.value === v))
+
+// Compared by what they cost per month in dollars, so a yearly plan and a monthly one line up
+const monthlyCost = (r: Renewal) => (toUsd(r) ?? r.price / 4000) * perMonth(r)
+
 const upcoming = computed(() => items.value
   .map((r) => {
     const next = nextRenewal(r.nextDate, r.cycle)
     return { ...r, next, days: daysUntil(next) }
   })
-  .sort((a, b) => a.days - b.days))
+  .sort((a, b) => {
+    if (sort.value === 'expensive') return monthlyCost(b) - monthlyCost(a) || a.days - b.days
+    if (sort.value === 'name') return a.name.localeCompare(b.name)
+    return a.days - b.days
+  }))
 
 const monthlyUsd = computed(() => {
   let sum = 0
@@ -132,11 +156,14 @@ function save() {
   if (!canSave.value) return
   const record = { ...form, name: form.name.trim() }
   if (editingId.value) {
-    update(editingId.value, record)
-    toast.success('Changes saved')
+    const before = update(editingId.value, record)
+    toastSaved(before && (() => replace(before)))
   } else {
-    add(record)
-    toast.success(`${record.name} added`)
+    const added = add(record)
+    draft.clear()
+    lastCurrency.value = record.currency
+    lastCycle.value = record.cycle
+    toast.success(`${record.name} added`, { action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
   }
   play('success')
   cancel()
@@ -171,6 +198,7 @@ function del(r: Renewal) {
 
     <Modal :open="formOpen" :title="editingId ? 'Edit subscription' : 'Add a subscription'" @close="cancel">
       <form v-validate class="form" @submit.prevent="save">
+        <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
         <label class="field">
           <span class="field-head">Name</span>
           <input v-model="form.name" class="input" placeholder="Netflix, iCloud, phone plan…" required data-error="Give it a name, like Netflix">
@@ -245,8 +273,12 @@ function del(r: Renewal) {
               <p v-if="!timeline.length" class="quiet">Nothing renews in the next 30 days.</p>
             </section>
 
+            <div class="list-head">
+              <h3>{{ items.length }} {{ items.length === 1 ? 'subscription' : 'subscriptions' }}</h3>
+              <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
+            </div>
             <TransitionGroup tag="ul" name="list" class="renewals">
-              <li v-for="r in upcoming" :key="r.id" class="panel renewal" :class="{ soon: r.days <= SOON_DAYS, editing: editingId === r.id }">
+              <li v-for="r in upcoming" :key="r.id" :data-item-id="r.id" class="panel renewal" :class="{ soon: r.days <= SOON_DAYS, editing: editingId === r.id }">
                 <div class="when" :aria-label="whenText(r.days)">
                   <strong>{{ r.days === 0 ? 'Today' : r.days }}</strong>
                   <span v-if="r.days !== 0">{{ r.days === 1 ? 'day' : 'days' }}</span>
@@ -456,6 +488,23 @@ function del(r: Renewal) {
   margin: 1.5rem 0 0;
   font-size: 0.875rem;
   color: var(--ink-3);
+}
+
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.5rem 0 -0.25rem;
+}
+
+.list-head h3 {
+  font-size: 1rem;
+  color: var(--ink-2);
+}
+
+.list-head .sort {
+  width: 12rem;
 }
 
 .renewals {
