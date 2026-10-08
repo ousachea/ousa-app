@@ -461,6 +461,7 @@ function del(t: Thing) {
               role="radio"
               class="type-option"
               :aria-checked="form.category === t.key"
+              :autofocus="form.category === t.key || undefined"
               :style="categoryStyle(t.key)"
               @click="chooseType(t.key)"
             >

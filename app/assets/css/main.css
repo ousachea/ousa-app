@@ -296,12 +296,16 @@ textarea.input {
    own scoped button styles. */
 @media (pointer: coarse) {
   :root:root .link,
-  :root:root .calendar-add .trigger {
+  :root:root .calendar-add .trigger,
+  :root:root .confirm-delete,
+  :root:root .pin {
     position: relative;
   }
 
   :root:root .link::before,
-  :root:root .calendar-add .trigger::before {
+  :root:root .calendar-add .trigger::before,
+  :root:root .confirm-delete::before,
+  :root:root .pin::before {
     content: '';
     position: absolute;
     inset: -0.6rem -0.3rem;
@@ -319,8 +323,26 @@ textarea.input {
   }
 
   :root:root .chip,
-  :root:root .life-seg button {
+  :root:root .life-seg button,
+  :root:root .segmented label {
     min-height: 2.25rem;
+  }
+
+  :root:root .segmented label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* The sync status pill in each app's header */
+  :root:root button.badge {
+    position: relative;
+  }
+
+  :root:root button.badge::before {
+    content: '';
+    position: absolute;
+    inset: -0.4rem -0.2rem;
   }
 
   :root:root summary {

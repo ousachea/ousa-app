@@ -592,16 +592,16 @@ function switchCurrency(next) {
                     <tr v-for="(band, index) in brackets" :key="index">
                       <td>
                         <span v-if="band.upTo === null" class="open-band">and above</span>
-                        <span v-else class="money input slim">
+                        <label v-else class="money input slim">
                           <span class="unit" aria-hidden="true">{{ symbol }}</span>
                           <input v-model.number="band.upTo" type="number" min="0" step="any" aria-label="Band upper limit" @change="presetName = 'Custom'">
-                        </span>
+                        </label>
                       </td>
                       <td class="num">
-                        <span class="money input slim rate">
+                        <label class="money input slim rate">
                           <input v-model.number="band.rate" type="number" min="0" max="100" step="0.5" aria-label="Band rate" @change="presetName = 'Custom'">
                           <span class="unit" aria-hidden="true">%</span>
-                        </span>
+                        </label>
                       </td>
                       <td class="shrink">
                         <button type="button" class="link danger" :aria-label="`Remove band ${index + 1}`" @click="removeBracket(index); sfx.play('delete')">Remove</button>

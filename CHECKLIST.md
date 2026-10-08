@@ -403,9 +403,9 @@ virtualisation where needed, debounced search, efficient state.
 **Notes:** Measured a production build: every page loads ~1.5 MB raw JS; PDF libraries (pdf.js, pdf-lib, ~840 KB) only load on /compress, QR scanning only on /qr. Done: duplicate finder parses each address once; ⌘K reads each app's data once per opening instead of per keystroke; long bookmark lists draw 150 rows at a time (more as you scroll, jump-to and new saves always drawn): 3,000 bookmarks open in ~1.8 s in dev with search ~125 ms; logos and icons lazy-load; Google Fonts use display=swap; timers are only per-second where a countdown needs it (renewals under an hour, countdown clock), otherwise 30–60 s; rate/holiday/gold requests are cached. **Needs your decision:** the Firebase SDK (526 KB raw, ~157 KB gzipped) loads on every page for everyone, even signed out. Loading it only when signing in or syncing would cut first-load JS by about a third, but it touches sign-in and sync, and I couldn't test against your real Firebase project, so I left it as is rather than risk your sync.
 
 ## #71 — Mobile UX Review
-**Status:** ⬜
+**Status:** 🟢
 Touch targets, swipe actions, bottom sheets, modals, keyboard behaviour, long lists, forms, navigation, sticky elements.
-**Notes:**
+**Notes:** Audited all 18 pages at 390×844 (touch): no sideways scrolling, no console errors, no field under 16px text (so iPhones don't zoom in). Tap areas measured by hit-testing, not just box size: small text buttons (Edit, Delete, Pin, Calendar, the sync badge) now have an invisible ~40px tap area on touch screens without moving anything; segmented toggles (Gold's EN/ខ្មែរ, USD/KHR) are 36px+; Salary's tax-band fields are now labels, so tapping anywhere in the box focuses them. Dialogs checked with a keyboard-height screen (390×480): the first field is focused and visible and the Save button is reachable in Renewals, Phone, Bookmarks, Countdown, Weight; Things now focuses the chosen type instead of the Close button. Swipe to delete, long-press menus and pull to refresh retested. Sticky search/filter bars and Things' Filters toggle checked. The home cube's faces are rotated 3D links; the same apps are listed as normal tiles below, so they're left as they are.
 
 ## #72 — Desktop UX Review
 **Status:** ⬜
