@@ -1380,17 +1380,6 @@ async function enrich(list: Bookmark[]) {
   border-top: 1px solid var(--line);
 }
 
-.link {
-  padding: 0;
-  font: inherit;
-  font-size: 0.875rem;
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
 
 .link:hover {
   color: var(--ink);

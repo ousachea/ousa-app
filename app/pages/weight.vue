@@ -537,16 +537,6 @@ th {
   text-align: right;
 }
 
-.link {
-  padding: 0;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  cursor: pointer;
-}
 
 .sr-only {
   position: absolute;

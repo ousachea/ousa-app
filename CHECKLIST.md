@@ -40,10 +40,10 @@ typing in inputs, textareas or contenteditable elements.
 **Notes:** `useShortcuts.ts`: shared `isTyping`, `useAddAction(fn)` + `runAddAction()`. `A` runs the page's Add (opens the popup in renewals/things/gold/passwords, focuses the always-visible field in countdown/bookmarks/eat/weight); Quick Add takes over on pages without one (#08). Enter submits (forms no longer disable submit), Esc closes popups/menus then goes back. Shortcuts never fire while typing or with a popup open, and can be turned off (`prefs.shortcuts`). Popups now focus their first field instead of the close button. Tested on desktop.
 
 ## #05 — Shared Design System
-**Status:** 🔵
+**Status:** 🟢
 Reusable components and rules for typography, colors, spacing, radius, shadows, buttons, inputs, cards,
 icons, modals, toasts, badges, chips, tabs, tables, empty states.
-**Notes:** Tokens in `main.css` (radius, spacing, text sizes, shadows, motion, density) and shared classes: `.btn` variants, `.input`, `.field`, `.segmented` (tabs), `.panel` (cards), `.link`/`.link.danger`, `.icon-btn`, `.chip`-style filters, `.badge` (good/warn/bad/info), `kbd`, `.sr-only`, `.skeleton`, `.empty-state`, `.field-error`. Components: `Modal`, `ConfirmDialog`, `ConfirmDelete`, `EmptyState`, `AppSelect`, `DatePicker`, `ToolIcon` (+ trash, activity, plus, search). Needs review: older pages still carry scoped copies of some of these styles; they're folded in as each app is reworked (Phase 5).
+**Notes:** Tokens in `main.css` (radius, spacing, text sizes, shadows, motion, density) and shared classes: `.btn` variants, `.input`, `.field`, `.segmented` (tabs), `.panel` (cards), `.link`/`.link.danger`, `.icon-btn`, `.chip`-style filters, `.badge` (good/warn/bad/info), `kbd`, `.sr-only`, `.skeleton`, `.empty-state`, `.field-error`. Components: `Modal`, `ConfirmDialog`, `ConfirmDelete`, `EmptyState`, `AppSelect`, `DatePicker`, `ToolIcon` (+ trash, activity, plus, search). Older pages' own copies of these styles were folded in during Phase 5; in the final audit the last nine copies of the link-button style were removed so every page uses the shared one (with its hover and softer underline). Three components keep a variant on purpose (date picker's Today button, vault links with spacing). Checked across all pages in light and dark, desktop and phone.
 
 ## #06 — Universal Search
 **Status:** 🟢
@@ -87,11 +87,11 @@ loss when navigating away.
 **Notes:** `useDraft` + `DraftCard`: unfinished Add forms in renewals, things, gold (popups) and countdown, eat (inline) are kept on this device as you type and on page hide; reopening shows "Continue where you left off?" with a summary, Continue / Discard; saving clears it. Off with Settings → Autosave forms. Never used for passwords. Tested desktop + mobile.
 
 ## #13 — Better Form UX
-**Status:** 🟡
+**Status:** 🟢
 Autofocus, logical tab order, Enter submits, Escape cancels, clear required indicators, inline validation,
 helpful placeholders, searchable selects, autocomplete, keep data after errors, no unnecessary fields,
 progressive disclosure for advanced fields.
-**Notes:** Done: popups focus their first field, Enter submits everywhere (no disabled submit buttons), Esc closes, required `*` marks, inline validation (#01), data kept after errors, `AppSelect` gets a search box for lists over 10 options (countdown times, categories), `MoreFields` tucks optional fields away (Things: worth now, notes). Still to do: name autocomplete for devices and renewals (#45, #54) and a placeholder pass in the final audit.
+**Notes:** Done: popups focus their first field, Enter submits everywhere (no disabled submit buttons), Esc closes, required `*` marks, inline validation (#01), data kept after errors, `AppSelect` gets a search box for lists over 10 options (countdown times, categories), `MoreFields` tucks optional fields away (Things: worth now, notes). Name autocomplete: Things suggests companies, models and generations (#45); Renewals now suggests 47 known services as you type the name, while anything else can still be typed (#54). Placeholder pass done in the final audit (#75): every field has an example placeholder or a label, and phone-sized fields are 16px+.
 
 ## #14 — Smart Defaults
 **Status:** 🟢

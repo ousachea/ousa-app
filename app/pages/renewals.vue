@@ -355,7 +355,11 @@ function del(r: Renewal) {
         <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
         <label class="field">
           <span class="field-head">Name</span>
-          <input v-model="form.name" class="input" placeholder="Netflix, iCloud, phone plan…" required data-error="Give it a name, like Netflix">
+          <input v-model="form.name" class="input" list="renewal-services" autocomplete="off" placeholder="Netflix, iCloud, phone plan…" required data-error="Give it a name, like Netflix">
+          <!-- Known services as suggestions while typing (#13, #54); anything else can still be typed -->
+          <datalist id="renewal-services">
+            <option v-for="s in SERVICES" :key="s.name" :value="s.name" />
+          </datalist>
         </label>
         <SuggestionChip
           v-if="categorySuggestion"
@@ -889,17 +893,6 @@ function del(r: Renewal) {
   color: var(--ink-2);
 }
 
-.link {
-  padding: 0;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
 
 .empty {
   padding: 2.5rem 1.5rem;

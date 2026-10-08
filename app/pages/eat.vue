@@ -1000,16 +1000,6 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   color: var(--ink-3);
 }
 
-.link {
-  padding: 0;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  cursor: pointer;
-}
 
 .filter {
   width: 340px;

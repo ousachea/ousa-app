@@ -574,15 +574,6 @@ async function copyImage() {
   color: var(--ink-3);
 }
 
-.link {
-  padding: 0;
-  font: inherit;
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  cursor: pointer;
-}
 
 .logos {
   display: grid;

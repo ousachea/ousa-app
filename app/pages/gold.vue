@@ -1567,17 +1567,6 @@ const PURITIES: { value: Purity, label: string }[] = [
   gap: 0.9rem;
 }
 
-.link {
-  padding: 0;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
 
 .link:hover { color: var(--ink); }
 .sign-in {

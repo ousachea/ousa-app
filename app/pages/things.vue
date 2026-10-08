@@ -1435,17 +1435,6 @@ function del(t: Thing) {
   gap: 0.75rem;
 }
 
-.link {
-  padding: 0;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
 
 .empty,
 .empty-search {
