@@ -387,7 +387,15 @@ async function importCSV(e: Event) {
   const file = input.files?.[0]
   input.value = ''
   if (!file) return
-  const lines = (await file.text()).trim().split(/\r?\n/).filter(l => l.trim())
+  let text: string
+  try {
+    text = await readTextFile(file)
+  } catch (err) {
+    toast.error('Couldn’t read that file', { description: err instanceof Error ? err.message : undefined })
+    play('error')
+    return
+  }
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim())
   const head = (lines[0] ?? '').split(',').map(h => h.trim().toLowerCase())
   const [wi, ui, pi, di] = ['weight', 'unit', 'paid', 'date'].map(k => head.indexOf(k))
   if (wi === -1 || pi === -1) {

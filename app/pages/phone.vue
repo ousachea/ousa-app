@@ -153,7 +153,7 @@ async function fromFile(e: Event) {
   if (!file) return
   importing.value = 'file'
   try {
-    loadContacts(parseContactFile(file.name, await file.text()), file.name)
+    loadContacts(parseContactFile(file.name, await readTextFile(file)), file.name)
   } catch (err) {
     toast.error('Couldn’t read that file', { description: err instanceof Error ? err.message : undefined })
     play('error')
