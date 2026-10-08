@@ -77,6 +77,7 @@ const current = computed(() => toolFor(route.path))
 const commandEntries = computed<Entry[]>(() => {
   const list: Entry[] = [
     { id: 'cmd:add', title: 'Add something…', subtitle: 'Bookmark, device, renewal, countdown…', icon: 'plus', color: 'var(--green)', run: () => switchTo('add') },
+    { id: 'cmd:dupes', title: 'Find duplicate bookmarks', subtitle: 'The same or similar links saved more than once', ...iconOf(pageFor('/bookmarks')), run: () => go('/bookmarks?dupes=1') },
     { id: 'cmd:trash', title: 'Open Recycle Bin', subtitle: 'Restore something you deleted', ...iconOf(TRASH), run: () => go('/trash') },
     { id: 'cmd:activity', title: 'Recent activity', subtitle: 'What you added, changed and deleted', icon: 'activity', color: 'var(--slate)', run: () => go('/#activity') },
     { id: 'cmd:new', title: 'What’s new', subtitle: 'Recent changes in every app', icon: 'activity', color: 'var(--green)', run: () => go('/settings#about') },

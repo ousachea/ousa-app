@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Popup built on the native <dialog>: focus moves inside, Esc closes, the page behind is inert
-const props = defineProps<{ open: boolean, title: string }>()
+// `wide`: for popups holding lists or side-by-side content
+const props = defineProps<{ open: boolean, title: string, wide?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
 const dialog = ref<HTMLDialogElement>()
@@ -37,7 +38,7 @@ function onClick(e: MouseEvent) {
 </script>
 
 <template>
-  <dialog ref="dialog" class="modal" :aria-label="title" @close="emit('close')" @click="onClick">
+  <dialog ref="dialog" class="modal" :class="{ wide }" :aria-label="title" @close="emit('close')" @click="onClick">
     <div class="panel-inner">
       <header class="modal-head">
         <h2>{{ title }}</h2>
@@ -62,6 +63,10 @@ function onClick(e: MouseEvent) {
   border: 0;
   border-radius: 22px;
   box-shadow: 0 30px 80px -20px rgb(var(--shadow) / 0.45), 0 0 0 1px var(--line);
+}
+
+.modal.wide {
+  width: min(780px, calc(100vw - 2rem));
 }
 
 .modal::backdrop {

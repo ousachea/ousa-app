@@ -175,7 +175,7 @@ Bookmark → folder, folder → folder, reordering where appropriate, with visua
 **Status:** 🟢
 Bookmarks: duplicate URLs ("Possible duplicate … [Open Existing] [Keep Both]"). Things I Own: likely
 identical devices. The user decides.
-**Notes:** `DuplicateCard`: saving a link you already have (same address, ignoring www/trailing slash) shows "Possible duplicate — This already exists in Development: GitHub" with Open existing (scrolls to and highlights it) and Keep both. Things: adding a name you already have (ignoring case and spacing) shows the same card in the popup with Open it (switches to editing that one) and Keep both. Imports also skip duplicates (#18). Tested desktop + mobile.
+**Notes:** Bookmarks: saving a link that's the same page as one you have (now matched with `pageKey`: ignores http/https, www/m./mobile, trailing slash, index page, #section, tracking codes, query order) shows "Possible duplicate — This already exists in Work: …" with Open existing / Keep both. Plus a **duplicate & similar finder** (requested during the work; sidebar "Find duplicates" with a count, and ⌘K "Find duplicate bookmarks"): Duplicates tab groups the same page with the reason; Similar tab groups same-site links with the same title or a page and its direct sub-page; pick which to keep (best one suggested), Merge (folders, notes, pin, visits combined; others to the Recycle Bin; Undo), Merge all, or Not duplicates (remembered, can be shown again). Things: same name or same company/model/generation/storage asks first. Imports skip duplicates. Tested desktop + mobile.
 
 ## #30 — Smart Categorization
 **Status:** 🟢

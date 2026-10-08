@@ -147,6 +147,11 @@ function moveBookmark(id: string, folderId: string) {
 }
 const moving = ref<Bookmark>()
 
+// Duplicate and similar finder; the sidebar shows how many duplicate groups there are
+const dupesOpen = ref(false)
+const ignoredDupes = useRemembered<string[]>('bookmarks-not-dupes', [], Array.isArray)
+const duplicateCount = computed(() => findDuplicates(items.value, new Set(ignoredDupes.value)).filter(g => g.kind === 'duplicate').length)
+
 // ---------- Save a link ----------
 const online = useOnline()
 
@@ -211,7 +216,8 @@ async function save(force = false) {
     play('error')
     return
   }
-  const existing = force ? undefined : items.value.find(b => urlKey(b.url) === urlKey(url.href))
+  // Same page even if the address differs by http/www/tracking codes (utils/bookmarkDupes.ts)
+  const existing = force ? undefined : items.value.find(b => pageKey(b.url) === pageKey(url.href))
   if (existing) {
     duplicateOf.value = existing
     play('warning')
@@ -286,6 +292,13 @@ const route = useRoute()
 // Also when already here (picking a folder in ⌘K while on Bookmarks)
 const router = useRouter()
 function followLink() {
+  // ?dupes=1 (from ⌘K) opens the duplicate finder
+  if (route.query.dupes) {
+    dupesOpen.value = true
+    const { dupes: _, ...rest } = route.query
+    router.replace({ query: rest })
+    return
+  }
   const f = route.query.folder
   if (typeof f === 'string' && f) {
     activeFolder.value = f
@@ -761,6 +774,7 @@ async function enrich(list: Bookmark[]) {
           />
 
           <div class="side-tools">
+            <button type="button" class="link" @click="dupesOpen = true">Find duplicates<template v-if="duplicateCount"> <span class="count-pill">{{ duplicateCount }}</span></template></button>
             <button type="button" class="link" @click="transferOpen = true">Import / Export</button>
             <NuxtLink to="/trash?app=/bookmarks" class="link">Recycle Bin</NuxtLink>
           </div>
@@ -882,6 +896,8 @@ async function enrich(list: Bookmark[]) {
       </form>
     </Modal>
 
+    <BookmarkDupes v-model:ignored="ignoredDupes" :open="dupesOpen" :bookmarks="items" :folders="folders" :update="update" :replace="replace" :remove="remove" :restore="restore" @close="dupesOpen = false" />
+
     <FolderEditor :open="folderEditor.open" :folders="folders" :folder="folderEditor.folder" :parent-id="folderEditor.parentId" @close="folderEditor.open = false" @save="saveFolder" />
 
     <!-- Move to folder… (the menu way to do what dragging does) -->
@@ -909,6 +925,19 @@ async function enrich(list: Bookmark[]) {
 
 <style scoped>
 /* ---------- Address bar ---------- */
+.count-pill {
+  display: inline-block;
+  min-width: 1.3em;
+  padding: 0 0.35em;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--warn-ink);
+  background: color-mix(in srgb, var(--orange) 16%, var(--surface));
+  border-radius: 999px;
+}
+
 .dup-card {
   width: min(100%, 760px);
   margin: 0.75rem auto 0;
