@@ -64,10 +64,10 @@ choosing one opens that form.
 **Notes:** `A` on a page without its own Add (or Add in the menu / Add something… in the palette) opens "What do you want to add?": Bookmark, Device, Renewal, Countdown, Contact, Food or place, Weight, Gold purchase, Password. Choosing one opens that app with `?add=1` and `useAddAction` opens/focuses its form. Tested desktop + mobile.
 
 ## #09 — Favorites / Pinning
-**Status:** 🟡
+**Status:** 🟢
 Pin apps, bookmarks, devices, renewals and other frequent items; pinned items appear near the top of
 relevant navigation.
-**Notes:** Apps: Pin button in every app header, Pin/Unpin in the palette; pinned apps lead the menu, the home page and the palette (`prefs.pinnedApps`, with Undo). Bookmarks already pin to the top shelf (now with Undo). Still to do: pinning devices and renewals, which lands with record favourites in #66.
+**Notes:** Apps pinned from each header or the palette lead the menu, home and palette (drag to reorder). Bookmarks pin to the top shelf (drag to reorder). Devices, renewals, countdowns and contacts can be starred (#66) and lead the home dashboard's Favourites.
 
 ## #10 — Recent Activity
 **Status:** 🟢
@@ -365,38 +365,36 @@ CSV, JSON, copy to clipboard; meaningful filenames.
 # PART H — GLOBAL DASHBOARD / HOME
 
 ## #64 — Personal Dashboard
-**Status:** ⬜
+**Status:** 🟢
 Favorite apps, quick actions, recent activity, upcoming renewals, active countdowns, recent bookmarks and devices.
-**Notes:**
-
----
+**Notes:** `HomeDashboard.vue` under the cube: greeting + date, Search everything (⌘K), quick-add buttons (Bookmark, Device, Renewal, Countdown, Contact → that app's form), Upcoming renewals (icons, status-coloured days), Counting down, Favourites (starred records across apps + pinned bookmarks), Recently added bookmarks and devices (logos), Recent activity. Reads this device's data (instant, offline), updates when another tab changes data; every row links to the record (highlighted on arrival). Welcome state for brand-new users. Pinned apps lead the app grid below. Tested desktop + mobile.
 
 # PART I — FINAL POLISH
 
 ## #65 — Smart Navigation
-**Status:** ⬜
+**Status:** 🟢
 Consistent navigation to switch apps, search, add, open settings, see favorites and recent activity.
-**Notes:**
+**Notes:** One menu everywhere (FloatingNav): account/sync, Search everything + Add (with ⌘K / A hints), app search, Pinned apps first, Tools and Life groups, footer with Home, Recent activity, Recycle Bin, Settings (New mark for unseen releases), Full screen. ⌘K palette for search/commands, A for Quick Add, Esc back, number/letter shortcuts, each app header has Back, version/What’s new and Pin.
 
 ## #66 — App-Level Favorites
-**Status:** ⬜
+**Status:** 🟢
 Favorite individual records (bookmark, device, renewal, countdown).
-**Notes:**
+**Notes:** Add to favourites / Remove from favourites in the right-click / long-press menu of things, renewals, countdowns and contacts (`toggleFavourite`, with Undo); a ★ next to starred names; bookmarks' Pin counts as their favourite. Favourites appear together on the home dashboard.
 
 ## #67 — Compact / Comfortable Density
-**Status:** ⬜
+**Status:** 🟢
 Spacious / Comfortable / Compact, remembered.
-**Notes:**
+**Notes:** Settings → Density: Spacious / Comfortable / Compact (remembered, applied before first paint). `--density` scales row and card padding and list gaps across bookmarks, renewals, things, countdowns, contacts, the bin and summaries; measured: Compact rows ~15% shorter, Spacious ~10% taller than Comfortable.
 
 ## #68 — Dark / Light / System Theme
-**Status:** ⬜
+**Status:** 🟢
 Light / Dark / System; every component works in each.
-**Notes:** Already implemented (`useTheme`, Settings, `D` shortcut); needs a pass over new components.
+**Notes:** Light / Dark / System (existing `useTheme`, D shortcut, Settings). Every page smoke-tested in dark with no errors; axe contrast checks run in both themes (#34); screenshots of the new pieces (dashboard, folders, review card, statuses, compare, contacts, dialogs, palette) checked in dark.
 
 ## #69 — Smart Loading & Error Recovery Review
-**Status:** ⬜
+**Status:** 🟢
 Every network operation has loading, success, failure, retry and offline fallback.
-**Notes:**
+**Notes:** Reviewed every network call. Link previews: reading state, saves under the address on failure/offline. Refresh icon: loading/success/failure/offline. Rate: skeleton, last saved rate with date + Try again, and (new) when no rate ever loaded, a labelled typical rate in Renewals and Things instead of “…” forever (`useMarketRateInfo`). Holidays: skeleton, saved copy, Try again. Gold price: offline-aware, Try again. Google contacts / files: busy labels and error toasts. Photo upload: saving state and error. Firestore: badge, one toast with Retry, pending changes retried. Logos: fallback icons. Exports are local.
 
 ## #70 — Performance Optimization
 **Status:** ⬜

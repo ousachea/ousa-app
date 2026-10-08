@@ -15,6 +15,7 @@ interface Renewal {
   nextDate: string // yyyy-mm-dd, as entered; past dates roll forward when shown
   category?: RenewalCategory | '' // optional; suggested from the name (CHECKLIST.md #30)
   icon?: string // '' automatic from the name; 'letter', 'svc:<service>' or an image link chosen by hand (#54)
+  favorite?: boolean // starred: shown on the home page (#66)
 }
 
 const SOON_DAYS = 7
@@ -32,7 +33,9 @@ const DEMO = (): Omit<Renewal, 'id'>[] => [
   { name: 'Phone top-up', price: 20000, currency: 'KHR', cycle: 'weekly', nextDate: isoDaysAhead(2) }
 ]
 const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Renewal>('renewals', undefined, { demo: DEMO })
-const rate = useMarketRate()
+// Today's rate, the last one saved here, or (if neither ever loaded) a typical rate that's labelled
+const rateInfo = useMarketRateInfo()
+const rate = computed(() => rateInfo.value.rate)
 
 // Pull down on a phone to sync again (CHECKLIST.md #26)
 usePullToRefresh(async () => {
@@ -247,6 +250,7 @@ function save() {
 const menuFor = useRowMenu()
 const renewalMenu = (r: Renewal): MenuEntry[] => [
   { label: 'Edit', icon: 'edit', run: () => edit(r) },
+  { label: r.favorite ? 'Remove from favourites' : 'Add to favourites', icon: 'star', run: () => toggleFavourite(items.value.find(x => x.id === r.id)!, r.name, update, replace) },
   { label: 'Duplicate', icon: 'duplicate', run: () => duplicate(r) },
   { label: 'Copy details', icon: 'copy', run: () => copyText(`${r.name}: ${formatMoney(r.price, r.currency)} ${cycleLabel(r.cycle)}, next ${formatDate(nextRenewal(r.nextDate, r.cycle))}`) },
   '-',
@@ -415,6 +419,9 @@ function del(r: Renewal) {
                   </label>
                 </div>
                 <strong class="total-figure">{{ periodUsd !== undefined ? `≈ ${totalText(periodUsd)}` : '…' }}</strong>
+                <span v-if="rateInfo.from === 'fallback'" class="total-note warn-note">
+                  Couldn’t get today’s exchange rate, so riel is counted at about {{ FALLBACK_RATE.toLocaleString('en-US') }} ៛ to the dollar.
+                </span>
                 <span class="total-note">
                   An equivalent per {{ periodLabel }}, not what you’re charged on any one day.
                   <span class="show-in">Show in
@@ -469,7 +476,7 @@ function del(r: Renewal) {
                 <RenewalIcon :name="r.name" :icon="r.icon" />
                 <div class="main">
                   <span class="title-row">
-                    <strong>{{ r.name }}</strong>
+                    <strong>{{ r.name }}<span v-if="r.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span></strong>
                     <span class="badge" :class="STATUS[r.status].badge"><span aria-hidden="true">{{ STATUS[r.status].symbol }}</span> {{ r.status === 'due' && r.days === 1 ? 'Due tomorrow' : r.status === 'due' ? 'Due today' : STATUS[r.status].label }}</span>
                   </span>
                   <span class="meta">
@@ -589,6 +596,10 @@ function del(r: Renewal) {
 
 .total-figure {
   overflow-wrap: anywhere;
+}
+
+.warn-note {
+  color: var(--warn-ink);
 }
 
 .total-note {

@@ -337,6 +337,9 @@ onBeforeUnmount(() => {
         <NuxtLink to="/" class="foot-link" :aria-current="route.path === '/' ? 'page' : undefined" aria-keyshortcuts="H 0">
           <AppLogo class="foot-logo" />Home<kbd>H</kbd>
         </NuxtLink>
+        <NuxtLink to="/#activity" class="foot-link">
+          <span class="foot-icon" aria-hidden="true"><ToolIcon name="activity" /></span>Recent activity
+        </NuxtLink>
         <NuxtLink to="/trash" class="foot-link" :aria-current="route.path === '/trash' ? 'page' : undefined">
           <span class="foot-icon" aria-hidden="true"><ToolIcon name="trash" /></span>Recycle Bin
         </NuxtLink>

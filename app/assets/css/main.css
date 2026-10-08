@@ -101,6 +101,15 @@
   color-scheme: light;
 }
 
+/* Density (Settings → Density, CHECKLIST.md #67): how much room list rows and cards get */
+:root[data-density='compact'] {
+  --density: 0.6;
+}
+
+:root[data-density='spacious'] {
+  --density: 1.45;
+}
+
 /* Set on <html> by the theme script in nuxt.config before the page paints */
 :root[data-theme='dark'] {
   --bg: #0e1116;
@@ -968,4 +977,40 @@ kbd {
 
 .drop-x [data-drop='after']::after {
   right: -5px;
+}
+
+/* A starred record (CHECKLIST.md #66) */
+.fav {
+  color: var(--gold);
+  font-size: 0.9em;
+}
+
+/* ---------- Density applied (CHECKLIST.md #67) ----------
+   Rows and cards across the apps take their vertical padding and gaps from --density, so Compact fits
+   more on screen and Spacious gives more air. Comfortable (1) is each app's own design. The doubled
+   :root outranks each page's scoped styles. */
+:root:root:not([data-density='comfortable']) .mark,
+:root:root:not([data-density='comfortable']) .renewal,
+:root:root:not([data-density='comfortable']) .page.panel,
+:root:root:not([data-density='comfortable']) .bin .row,
+:root:root:not([data-density='comfortable']) .saved .row,
+:root:root:not([data-density='comfortable']) .people .person,
+:root:root:not([data-density='comfortable']) .thumbs .thumb {
+  padding-block: calc(0.75rem * var(--density));
+}
+
+:root:root:not([data-density='comfortable']) .thing {
+  padding-block: calc(1rem * var(--density)) calc(0.85rem * var(--density));
+  gap: calc(0.85rem * var(--density));
+}
+
+:root:root:not([data-density='comfortable']) .things,
+:root:root:not([data-density='comfortable']) .renewals,
+:root:root:not([data-density='comfortable']) .pages,
+:root:root:not([data-density='comfortable']) .bin {
+  gap: calc(0.6rem * var(--density));
+}
+
+:root:root:not([data-density='comfortable']) .panel.summary {
+  padding-block: calc(1.25rem * var(--density));
 }

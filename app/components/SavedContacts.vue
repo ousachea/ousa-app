@@ -13,6 +13,7 @@ export interface Contact {
   email: string
   notes: string
   createdAt: string
+  favorite?: boolean // starred: shown on the home page (#66)
 }
 
 const emit = defineEmits<{ check: [phone: string] }>()
@@ -157,6 +158,7 @@ const contactMenu = (c: Contact): MenuEntry[] => [
   { label: 'Check this number', icon: 'open', run: () => emit('check', c.phone) },
   { label: 'Edit', icon: 'edit', run: () => openEdit(c) },
   { label: 'Copy', icon: 'copy', run: () => copyContacts([c]) },
+  { label: c.favorite ? 'Remove from favourites' : 'Add to favourites', icon: 'star', run: () => toggleFavourite(c, c.name || c.phone, update, replace) },
   { label: selected.value.has(c.id) ? 'Unselect' : 'Select', icon: 'star', run: () => toggle(c.id) },
   '-',
   { label: 'Delete', icon: 'delete', danger: true, run: () => del(c) }
@@ -196,7 +198,7 @@ const contactMenu = (c: Contact): MenuEntry[] => [
             <input type="checkbox" class="row-check" :checked="selected.has(c.id)" :aria-label="`Select ${c.name || c.phone}`" @change="toggle(c.id)">
             <span class="avatar" :style="{ '--op': checkOf(c).valid ? checkOf(c).operator?.color ?? 'var(--ink-3)' : 'var(--red)' }" aria-hidden="true">{{ initials(c) || '?' }}</span>
             <button type="button" class="who" :title="`Check ${shownNumber(c)}`" @click="emit('check', c.phone)">
-              <span class="who-name">{{ c.name || 'No name' }}</span>
+              <span class="who-name">{{ c.name || 'No name' }}<span v-if="c.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span></span>
               <span class="who-number">{{ shownNumber(c) }}<template v-if="c.email"> · {{ c.email }}</template></span>
               <span v-if="c.notes" class="who-notes">{{ c.notes }}</span>
             </button>

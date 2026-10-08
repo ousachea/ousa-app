@@ -23,6 +23,7 @@ interface Thing {
   ram?: number | null // GB
   display?: number | null // inches
   createdAt?: string // when it was added here (ISO); older items fall back to the purchase date
+  favorite?: boolean // starred: shown on the home page (#66)
 }
 
 // The kind of thing is the old `category` field; the list of kinds lives in utils/devices.ts (#44, #48, #49)
@@ -60,7 +61,9 @@ const DEMO = (): Omit<Thing, 'id'>[] => [
   { name: 'Rice cooker', category: 'Home', purchaseDate: isoDaysAgo(60), price: 180000, currency: 'KHR', currentValue: null, notes: '' }
 ]
 const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Thing>('things', undefined, { demo: DEMO })
-const rate = useMarketRate()
+// Today's rate, the last one saved here, or a typical one (labelled) when none ever loaded (#69)
+const rateInfo = useMarketRateInfo()
+const rate = computed(() => rateInfo.value.rate)
 
 // Pull down on a phone to sync again (CHECKLIST.md #26)
 usePullToRefresh(async () => {
@@ -326,6 +329,7 @@ function save(force = false) {
 const menuFor = useRowMenu()
 const thingMenu = (t: Thing): MenuEntry[] => [
   { label: 'Edit', icon: 'edit', run: () => edit(t) },
+  { label: t.favorite ? 'Remove from favourites' : 'Add to favourites', icon: 'star', run: () => toggleFavourite(t, t.name, update, replace) },
   { label: 'Duplicate', icon: 'duplicate', run: () => {
     const { id: _, ...rest } = t
     const copy = add({ ...rest, name: `${t.name} (copy)` })
@@ -581,6 +585,9 @@ function del(t: Thing) {
                   </div>
                   <div><dt>Items</dt><dd>{{ items.length }}</dd></div>
                 </dl>
+                <p v-if="rateInfo.from === 'fallback' && items.some(t => t.currency === 'KHR')" class="note">
+                  Couldn’t get today’s exchange rate, so riel prices are counted at about {{ FALLBACK_RATE.toLocaleString('en-US') }} ៛ to the dollar.
+                </p>
                 <p v-if="totals.estimates" class="note">
                   {{ totals.estimates === items.length ? 'All values are estimates' : `${totals.estimates} of ${items.length} values are estimates` }} from age and category. Edit an item to enter its real value.
                 </p>
@@ -643,7 +650,7 @@ function del(t: Thing) {
                     <CategoryIcon v-else :name="typeOf(t.category).icon" />
                   </span>
                   <span class="thing-title">
-                    <strong>{{ t.name }}</strong>
+                    <strong>{{ t.name }}<span v-if="t.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span></strong>
                     <span>{{ [typeLabel(t.category), t.company && !t.name.toLowerCase().includes(t.company.toLowerCase()) ? t.company : ''].filter(Boolean).join(' · ') }} · {{ owned(t.purchaseDate) }}</span>
                     <span v-if="specLine(t)" class="spec-line">{{ specLine(t) }}</span>
                   </span>

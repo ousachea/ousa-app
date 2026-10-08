@@ -9,6 +9,7 @@ interface CountdownEvent {
   date: string // yyyy-mm-dd
   time: string // hh:mm, or '' for all day
   createdAt: string // ISO; the progress bar measures the wait from here
+  favorite?: boolean // starred: shown on the home page (#66)
 }
 
 const { play } = useSound()
@@ -194,6 +195,7 @@ const editTimeOptions = computed(() => timeOptionsFor(editForm.time))
 const menuFor = useRowMenu()
 const countdownMenu = (e: CountdownEvent): MenuEntry[] => [
   { label: 'Edit', icon: 'edit', run: () => edit(e) },
+  { label: e.favorite ? 'Remove from favourites' : 'Add to favourites', icon: 'star', run: () => toggleFavourite(items.value.find(x => x.id === e.id)!, e.title, update, replace) },
   '-',
   { label: 'Delete', icon: 'delete', danger: true, run: () => del(e) }
 ]
@@ -301,7 +303,7 @@ function del(e: CountdownEvent) {
                   <strong class="day">{{ dayOf(e) }}</strong>
                 </span>
                 <span class="page-body">
-                  <span class="title">{{ e.title }}</span>
+                  <span class="title">{{ e.title }}<span v-if="e.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span></span>
                   <span class="weekday">{{ weekdayOf(e) }}, {{ dayOf(e) }} {{ monthOf(e) }}{{ e.time ? ` · ${e.time}` : '' }}</span>
                   <span class="progress" role="img" :aria-label="`${Math.round(e.progress * 100)}% of the wait has passed`">
                     <span :style="{ transform: `scaleX(${e.progress})` }" />
