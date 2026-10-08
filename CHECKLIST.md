@@ -336,16 +336,14 @@ Equivalent cost per year, half-year, quarter, month, week, day — clearly marke
 # PART F — COUNTDOWN APP
 
 ## #59 — Countdown Visual Redesign
-**Status:** ⬜
+**Status:** 🟢
 Consistent with the ecosystem: typography, spacing, number hierarchy, cards, responsive layout.
-**Notes:**
+**Notes:** Later dates moved from small desk-calendar cards to rows in the same shape as Renewals and the Recycle Bin: date tile (month strip + day), title, full date and time, progress bar, a big "how long to go" with its unit (reuses `countdown()`: weeks, months…), Calendar, edit and delete icons; actions drop under the text on phones. The featured banner and holiday card keep the flip-clock hierarchy. Checked desktop + mobile.
 
 ## #60 — Smooth Countdown Number Animation
-**Status:** ⬜
+**Status:** 🟢
 Subtle slide/fade/flip/scale on changing numbers.
-**Notes:**
-
----
+**Notes:** `RollingNumber`: only digits that change move (old slides up and fades, new comes from below, 0.35 s), used in the featured clock, the holiday mini clock and the later rows; plain value for screen readers; no motion with reduced motion.
 
 # PART G — PHONE CHECKER APP (`/phone`)
 

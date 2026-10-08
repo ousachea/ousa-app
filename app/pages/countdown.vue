@@ -286,31 +286,37 @@ function del(e: CountdownEvent) {
               </div>
               <div class="clock" role="timer" :aria-label="`${parts(featured.left).days} days left`">
                 <div v-for="(v, k) in parts(featured.left)" :key="k" class="unit">
-                  <strong>{{ String(v).padStart(k === 'days' ? 1 : 2, '0') }}</strong>
+                  <strong><RollingNumber :value="String(v).padStart(k === 'days' ? 1 : 2, '0')" /></strong>
                   <span>{{ k }}</span>
                 </div>
               </div>
             </section>
 
-            <!-- Each later date is a page torn from a desk calendar -->
+            <!-- Later dates: a date tile, how long to go (more exact as it nears) and how much of the wait is done -->
             <h3 v-if="later.length" class="later-head">After that</h3>
             <TransitionGroup v-if="later.length" tag="ul" name="list" class="pages">
-              <li v-for="e in later" :key="e.id" :data-item-id="e.id" class="page" v-bind="menuFor(() => countdownMenu(e), e.title)" v-swipe-delete="() => del(e)" :class="{ editing: editingId === e.id }">
-                <span class="rings" aria-hidden="true"><i /><i /></span>
-                <span class="month">{{ monthOf(e) }}</span>
-                <strong class="day">{{ dayOf(e) }}</strong>
-                <span class="weekday">{{ weekdayOf(e) }}{{ e.time ? ` · ${e.time}` : '' }}</span>
-                <span class="title">{{ e.title }}</span>
-                <span class="togo">
-                  <b>{{ shortLeft(e.left).value }}</b> {{ shortLeft(e.left).unit }} to go
+              <li v-for="e in later" :key="e.id" :data-item-id="e.id" class="page panel" v-bind="menuFor(() => countdownMenu(e), e.title)" v-swipe-delete="() => del(e)" :class="{ editing: editingId === e.id }">
+                <span class="date-tile" aria-hidden="true">
+                  <span class="month">{{ monthOf(e).split(' ')[0]!.slice(0, 3) }}</span>
+                  <strong class="day">{{ dayOf(e) }}</strong>
                 </span>
-                <span class="progress" role="img" :aria-label="`${Math.round(e.progress * 100)}% of the wait has passed`">
-                  <span :style="{ transform: `scaleX(${e.progress})` }" />
+                <span class="page-body">
+                  <span class="title">{{ e.title }}</span>
+                  <span class="weekday">{{ weekdayOf(e) }}, {{ dayOf(e) }} {{ monthOf(e) }}{{ e.time ? ` · ${e.time}` : '' }}</span>
+                  <span class="progress" role="img" :aria-label="`${Math.round(e.progress * 100)}% of the wait has passed`">
+                    <span :style="{ transform: `scaleX(${e.progress})` }" />
+                  </span>
                 </span>
-                <span class="links">
+                <span class="togo" role="timer" :aria-label="`${countdown(new Date(Date.now() + e.left)).text} to go`">
+                  <b><RollingNumber :value="countdown(new Date(Date.now() + e.left)).value" /></b>
+                  <span>{{ countdown(new Date(Date.now() + e.left)).unit }}</span>
+                </span>
+                <span class="links page-actions">
                   <CalendarAdd :title="e.title" :date="e.date" :time="e.time" details="Counting down in Ousa’s Apps" label="Calendar" />
-                  <button type="button" class="link" @click="edit(e)">Edit</button>
-                  <ConfirmDelete text :name="e.title" @confirm="del(e)" />
+                  <button type="button" class="icon-btn" :aria-label="`Edit ${e.title}`" title="Edit" @click="edit(e)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+                  </button>
+                  <ConfirmDelete :name="e.title" @confirm="del(e)" />
                 </span>
               </li>
             </TransitionGroup>
@@ -366,7 +372,7 @@ function del(e: CountdownEvent) {
               </p>
               <div v-if="!nextHoliday.onNow" class="mini-clock" role="timer" :aria-label="`${parts(nextHoliday.left).days} days until ${nextHoliday.name}`">
                 <div v-for="(v, k) in parts(nextHoliday.left)" :key="k">
-                  <strong>{{ String(v).padStart(k === 'days' ? 1 : 2, '0') }}</strong>
+                  <strong><RollingNumber :value="String(v).padStart(k === 'days' ? 1 : 2, '0')" /></strong>
                   <span>{{ k }}</span>
                 </div>
               </div>
@@ -632,7 +638,7 @@ function del(e: CountdownEvent) {
   font-variant-numeric: tabular-nums;
 }
 
-.unit span {
+.unit > span {
   font-size: 0.75rem;
   text-transform: capitalize;
   opacity: 0.85;
@@ -641,30 +647,20 @@ function del(e: CountdownEvent) {
 .pages {
   position: relative;
   list-style: none;
-  margin: 1.1rem 0 0;
+  margin: 0.75rem 0 0;
   padding: 0;
   display: grid;
-  /* Two pages side by side even on a phone */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
-  gap: 1.25rem 1rem;
+  gap: 0.5rem;
 }
 
-/* A desk-calendar page: binding rings, a coloured month strip, a big day number */
+/* One row per date, in the same shape as Renewals and the Recycle Bin */
 .page {
-  position: relative;
-  padding: 0 0 0.9rem;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  text-align: center;
-  background: var(--surface);
-  border-radius: 6px 6px 14px 14px;
-  box-shadow:
-    0 1px 1px rgb(var(--shadow) / 0.1),
-    0 8px 18px -6px rgb(var(--shadow) / 0.18),
-    /* a second sheet peeking out underneath */
-    0 5px 0 -2px var(--surface-2),
-    0 5px 0 -1px var(--line);
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-lg);
 }
 
 .page.editing {
@@ -672,71 +668,79 @@ function del(e: CountdownEvent) {
   outline-offset: 3px;
 }
 
-.rings {
-  position: absolute;
-  top: -0.45rem;
-  left: 0;
-  right: 0;
+.date-tile {
+  width: 3.4rem;
+  overflow: hidden;
   display: flex;
-  justify-content: space-around;
-  padding: 0 22%;
-}
-
-.rings i {
-  width: 0.5rem;
-  height: 1rem;
-  border-radius: 999px;
-  background: var(--plastic);
-  box-shadow: 0 0 0 2px var(--surface);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--line), 0 2px 4px rgb(var(--shadow) / 0.08);
 }
 
 .month {
   width: 100%;
-  padding: 0.7rem 0.5rem 0.45rem;
-  font-size: 0.85rem;
+  padding: 0.15rem 0;
+  font-size: var(--text-xs);
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: #fff;
   background: var(--accent);
-  border-radius: 6px 6px 0 0;
 }
 
 .day {
-  margin-top: 0.35rem;
-  font-size: 3.4rem;
-  line-height: 1;
-  letter-spacing: -0.04em;
+  padding: 0.1rem 0 0.2rem;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 
-.weekday {
-  font-size: 0.8rem;
-  color: var(--ink-2);
+.page-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .title {
-  margin-top: 0.6rem;
-  padding: 0 0.75rem;
   font-weight: 700;
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
-.togo {
-  margin-top: 0.35rem;
-  font-size: 0.85rem;
+.weekday {
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
+/* Big number, small unit: the hierarchy matches the clock above */
+.togo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+
 .togo b {
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
   color: var(--ink);
-  font-variant-numeric: tabular-nums;
+}
+
+.togo > span {
+  font-size: var(--text-xs);
+  color: var(--ink-2);
 }
 
 /* How much of the wait has passed since the date was added */
 .progress {
-  width: calc(100% - 1.5rem);
+  width: min(100%, 14rem);
   height: 4px;
-  margin-top: 0.7rem;
+  margin-top: 0.35rem;
   overflow: hidden;
   border-radius: 999px;
   background: var(--surface-2);
@@ -749,11 +753,19 @@ function del(e: CountdownEvent) {
   transform-origin: left;
 }
 
-.page .links {
-  margin-top: 0.7rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  color: var(--ink-2);
+.page-actions {
+  gap: 0.25rem;
+}
+
+@media (max-width: 560px) {
+  .page {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .page-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-end;
+  }
 }
 
 .links {
@@ -995,7 +1007,7 @@ function del(e: CountdownEvent) {
   font-variant-numeric: tabular-nums;
 }
 
-.mini-clock span {
+.mini-clock div > span {
   font-size: 0.7rem;
   text-transform: capitalize;
   color: var(--ink-2);

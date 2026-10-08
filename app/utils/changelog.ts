@@ -116,6 +116,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Log your weight and see the trend.'] }
   ],
   '/countdown': [
+    { version: '2.2.0', date: '2026-10-08', changes: ['Later dates are tidy rows with a date tile, how long to go (weeks or months when it’s far, days when it’s close) and a progress bar.', 'Clock digits roll smoothly as they change.'] },
     { version: '2.1.0', date: '2026-10-08', changes: ['The holiday list works offline from the last copy saved on this device.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
     { version: '2.0.0', date: '2026-10-07', changes: ['The next date gets a banner with a live clock and how much of the wait is done.', 'Add any countdown to Google Calendar, or to Apple, Outlook or your phone.', PICKERS, POPUP_EDIT, SYNC, STICKY, TWO_CLICK] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Cambodian public holidays, fetched fresh each year, and a live Phnom Penh clock.'] },
