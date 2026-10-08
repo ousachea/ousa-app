@@ -11,6 +11,7 @@ export interface Bookmark {
   createdAt: string // ISO
   lastOpened?: string // ISO
   updatedAt?: string // ISO, last edited by hand
+  pinOrder?: number // place on the pinned shelf, set by dragging
 }
 
 export type NewBookmark = Omit<Bookmark, 'id'>

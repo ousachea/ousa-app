@@ -79,6 +79,7 @@ const commandEntries = computed<Entry[]>(() => {
     { id: 'cmd:add', title: 'Add something…', subtitle: 'Bookmark, device, renewal, countdown…', icon: 'plus', color: 'var(--green)', run: () => switchTo('add') },
     { id: 'cmd:trash', title: 'Open Recycle Bin', subtitle: 'Restore something you deleted', ...iconOf(TRASH), run: () => go('/trash') },
     { id: 'cmd:activity', title: 'Recent activity', subtitle: 'What you added, changed and deleted', icon: 'activity', color: 'var(--slate)', run: () => go('/#activity') },
+    { id: 'cmd:new', title: 'What’s new', subtitle: 'Recent changes in every app', icon: 'activity', color: 'var(--green)', run: () => go('/settings#about') },
     { id: 'cmd:settings', title: 'Open Settings', subtitle: 'Theme, density, shortcuts, backup', ...iconOf(SETTINGS), run: () => go('/settings') },
     { id: 'cmd:export', title: 'Export data', subtitle: 'Download a backup of everything', icon: 'list', color: 'var(--teal)', run: () => go('/settings#data') },
     { id: 'cmd:import', title: 'Import backup', subtitle: 'Restore from a backup file', icon: 'list', color: 'var(--teal)', run: () => go('/settings#data') },

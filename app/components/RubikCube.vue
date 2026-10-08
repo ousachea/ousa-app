@@ -430,9 +430,10 @@ onBeforeUnmount(() => {
     class="scene"
     :class="{ interactive }"
     :style="{ '--s': `${size}px` }"
-    :role="interactive ? 'button' : 'img'"
+    :role="interactive ? 'group' : 'img'"
     :tabindex="interactive ? 0 : undefined"
-    :aria-label="interactive ? 'Shuffle the Rubik’s cube' : 'Animated Rubik’s cube'"
+    :aria-label="interactive ? 'Rubik’s cube of app icons. Press Enter to shuffle it.' : 'Animated Rubik’s cube'"
+    :aria-keyshortcuts="interactive ? 'Enter Space' : undefined"
     :title="interactive ? 'Click to shuffle' : undefined"
     @click="onShuffle"
     @pointerenter="onHoverStart"
@@ -454,13 +455,15 @@ onBeforeUnmount(() => {
           :class="['face', face, { sticker: cubie.stickers[face] }]"
           :style="faceStyle(cubie, face)"
         >
-          <!-- Clicking an icon opens that app; clicking a plain sticker still shuffles -->
+          <!-- Clicking an icon opens that app; clicking a plain sticker still shuffles. A pointer shortcut
+               only: the same apps are proper links in the list below, so these stay out of the
+               screen-reader and keyboard order (the cube itself is one "shuffle" button) -->
           <NuxtLink
             v-if="cubie.links[face]"
             :to="cubie.links[face]!.to"
             class="face-link"
             :title="cubie.links[face]!.name"
-            :aria-label="cubie.links[face]!.name"
+            aria-hidden="true"
             tabindex="-1"
             @click.stop
           >

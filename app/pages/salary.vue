@@ -1146,11 +1146,11 @@ function switchCurrency(next) {
 .lift small {
   font-size: 0.75rem;
   font-weight: 500;
-  opacity: 0.8;
+  opacity: 0.92;
 }
 
 .lift .up { color: #a6f0c6; }
-.lift .down { color: #ffc2bb; }
+.lift .down { color: #ffd2cd; }
 
 .slip {
   padding: 1.25rem;

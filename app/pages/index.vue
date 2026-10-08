@@ -31,6 +31,13 @@ const GROUPS = computed(() => {
 })
 const { log } = useActivity()
 
+// Pinned apps can be dragged into any order (CHECKLIST.md #28)
+const reorderPins = useDragReorder<typeof TOOLS[number]>({
+  keyOf: t => t.to,
+  axis: 'x',
+  onMove: (from, to) => (prefs.pinnedApps = moved(prefs.pinnedApps, from, to))
+})
+
 useHead({ title: 'Ousa’s Apps: free tools and trackers for life in Cambodia', titleTemplate: '%s' })
 
 const site = useSiteUrl()
@@ -74,11 +81,12 @@ useAppSeo({
 
     <section v-for="group in GROUPS" :key="group.name" class="group" :aria-labelledby="`group-${group.name}`">
       <h2 :id="`group-${group.name}`">{{ group.name }}</h2>
-      <nav class="tools" :aria-label="group.name">
+      <nav class="tools" :class="{ 'drop-x': group.name === 'Pinned' }" :aria-label="group.name === 'Pinned' ? 'Pinned. Drag to reorder, or Alt and the arrow keys.' : group.name">
         <NuxtLink
-          v-for="tool in group.tools"
+          v-for="(tool, i) in group.tools"
           :key="tool.to"
           :to="tool.to"
+          v-bind="group.name === 'Pinned' ? reorderPins.bind(tool, i) : {}"
           class="tile"
           :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff' }"
         >

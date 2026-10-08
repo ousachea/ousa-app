@@ -77,7 +77,19 @@ const MOTIONS: { value: MotionPreference, label: string }[] = [
   { value: 'full', label: 'On' },
   { value: 'reduced', label: 'Reduced' }
 ]
-function choose<K extends 'density' | 'motion'>(key: K, value: Prefs[K]) {
+// Accent: each app's own colour, or one of these everywhere
+const ACCENTS = ['apps', 'blue', 'green', 'purple', 'teal', 'rust', 'slate', 'pink'] as const
+function chooseAccent(a: string) {
+  prefs.accent = a
+  sound.play('select')
+}
+const VIEWS: { value: Prefs['defaultView'], label: string }[] = [
+  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid' },
+  { value: 'compact', label: 'Compact' }
+]
+
+function choose<K extends 'density' | 'motion' | 'defaultView'>(key: K, value: Prefs[K]) {
   prefs[key] = value
   sound.play('select')
 }
@@ -160,6 +172,14 @@ const volume = computed({
               <template v-if="effects.preference === 'auto'">This computer gets {{ effects.slowDevice ? 'lite' : 'full' }} effects.</template>
             </p>
 
+            <h3 class="effects-head">Accent</h3>
+            <div class="accents" role="radiogroup" aria-label="Accent colour">
+              <label v-for="a in ACCENTS" :key="a" class="accent" :class="{ active: prefs.accent === a, apps: a === 'apps' }" :style="a === 'apps' ? undefined : { '--swatch': `var(--${a})` }" :title="a === 'apps' ? 'Each app’s own colour' : a">
+                <input type="radio" name="accent" :value="a" :checked="prefs.accent === a" :aria-label="a === 'apps' ? 'Each app’s own colour' : a" @change="chooseAccent(a)">
+              </label>
+            </div>
+            <p class="theme-note">Buttons and highlights. The first keeps each app’s own colour.</p>
+
             <h3 class="effects-head">Density</h3>
             <div class="segmented" role="radiogroup" aria-label="Density">
               <label v-for="d in DENSITIES" :key="d.value" :class="{ active: prefs.density === d.value }">
@@ -185,6 +205,18 @@ const volume = computed({
             <SettingRow v-model="prefs.shortcuts" title="Keyboard shortcuts" description="Single keys like A to add, D for dark mode and M for the menu. ⌘K / Ctrl+K always works." />
             <SettingRow v-model="prefs.confirmDelete" title="Confirm before delete" description="Ask for a second click before something goes to the Recycle Bin." />
             <SettingRow v-model="prefs.autosave" title="Autosave forms" description="Keep what you’ve typed into an Add form if you close it, so you can continue later." />
+            <div class="setting-choice">
+              <div class="text">
+                <span class="title">Default view</span>
+                <span class="desc">How lists look until you pick a view for them.</span>
+              </div>
+              <div class="segmented" role="radiogroup" aria-label="Default view">
+                <label v-for="v in VIEWS" :key="v.value" :class="{ active: prefs.defaultView === v.value }">
+                  <input type="radio" name="default-view" :value="v.value" :checked="prefs.defaultView === v.value" @change="choose('defaultView', v.value)">
+                  {{ v.label }}
+                </label>
+              </div>
+            </div>
           </div>
         </Step>
 
@@ -296,6 +328,10 @@ const volume = computed({
             </div>
           </Step>
           </div>
+
+          <Step id="about" :n="8" title="About" hint="Version, what’s new everywhere, installing the app and keyboard shortcuts." class="about-step">
+            <AboutPanel />
+          </Step>
         </div>
       </div>
 
@@ -346,6 +382,77 @@ const volume = computed({
 }
 
 .data-step {
+  margin-bottom: 2rem;
+  scroll-margin-top: 6rem;
+}
+
+.accents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.accent {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+  cursor: pointer;
+  transition: scale var(--dur-fast);
+}
+
+/* Each app's own colour: a little wheel of stickers */
+.accent.apps {
+  background: conic-gradient(var(--blue) 0 25%, var(--red) 0 50%, var(--yellow) 0 75%, var(--green) 0);
+}
+
+.accent:hover {
+  scale: 1.08;
+}
+
+.accent.active {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
+}
+
+.accent:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  outline-offset: 3px;
+}
+
+.accent input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.setting-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.setting-choice .text {
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-choice .title {
+  font-weight: 600;
+}
+
+.setting-choice .desc {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.about-step {
+  margin-top: 2rem;
   margin-bottom: 2rem;
   scroll-margin-top: 6rem;
 }

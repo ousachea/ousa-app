@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import type { Cached } from '~/utils/cache'
+import type { MenuEntry } from '~/composables/useContextMenu'
 
 interface CountdownEvent {
   id: string
@@ -13,6 +14,12 @@ interface CountdownEvent {
 const { play } = useSound()
 const online = useOnline()
 const { items, ready, sync, add, update, replace, remove, restore } = useCollection<CountdownEvent>('countdown')
+
+// Pull down on a phone to sync again and fetch the holidays fresh (CHECKLIST.md #26)
+usePullToRefresh(async () => {
+  await Promise.all([sync.retry(), refreshHolidays()])
+  toast('Refreshed', { duration: 1800 })
+})
 
 const isoToday = () => new Date().toISOString().slice(0, 10)
 const blank = () => ({ title: '', date: '', time: '' })
@@ -183,6 +190,14 @@ const editForm = reactive(blank())
 const canSaveEdit = computed(() => editForm.title.trim() && editForm.date)
 const editTimeOptions = computed(() => timeOptionsFor(editForm.time))
 
+// Right-click / long-press (CHECKLIST.md #27)
+const menuFor = useRowMenu()
+const countdownMenu = (e: CountdownEvent): MenuEntry[] => [
+  { label: 'Edit', icon: 'edit', run: () => edit(e) },
+  '-',
+  { label: 'Delete', icon: 'delete', danger: true, run: () => del(e) }
+]
+
 function edit(e: CountdownEvent) {
   editingId.value = e.id
   Object.assign(editForm, { title: e.title, date: e.date, time: e.time })
@@ -252,7 +267,7 @@ function del(e: CountdownEvent) {
         <ClientOnly>
           <template v-if="ready && items.length">
             <!-- The next date gets the spotlight: name and date on the left, a live flip clock on the right -->
-            <section v-if="featured" :data-item-id="featured.id" class="panel featured" :class="{ editing: editingId === featured.id }" aria-live="off">
+            <section v-if="featured" :data-item-id="featured.id" class="panel featured" v-bind="menuFor(() => countdownMenu(featured!), featured.title)" :class="{ editing: editingId === featured.id }" aria-live="off">
               <div class="featured-text">
                 <span class="label">Next up</span>
                 <h2>{{ featured.title }}</h2>
@@ -280,7 +295,7 @@ function del(e: CountdownEvent) {
             <!-- Each later date is a page torn from a desk calendar -->
             <h3 v-if="later.length" class="later-head">After that</h3>
             <TransitionGroup v-if="later.length" tag="ul" name="list" class="pages">
-              <li v-for="e in later" :key="e.id" :data-item-id="e.id" class="page" :class="{ editing: editingId === e.id }">
+              <li v-for="e in later" :key="e.id" :data-item-id="e.id" class="page" v-bind="menuFor(() => countdownMenu(e), e.title)" v-swipe-delete="() => del(e)" :class="{ editing: editingId === e.id }">
                 <span class="rings" aria-hidden="true"><i /><i /></span>
                 <span class="month">{{ monthOf(e) }}</span>
                 <strong class="day">{{ dayOf(e) }}</strong>
@@ -304,7 +319,7 @@ function del(e: CountdownEvent) {
             <section v-if="past.length" class="past">
               <h3>Already happened</h3>
               <ul>
-                <li v-for="e in past" :key="e.id" :data-item-id="e.id">
+                <li v-for="e in past" :key="e.id" :data-item-id="e.id" v-bind="menuFor(() => countdownMenu(e), e.title)">
                   <span>{{ e.title }}</span>
                   <span class="meta">{{ agoText(e.left) }}</span>
                   <ConfirmDelete :name="e.title" @confirm="del(e)" />

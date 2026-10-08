@@ -82,6 +82,11 @@ function openWhatsNew() {
 const { prefs } = usePrefs()
 const pinnable = computed(() => TOOLS.some(t => t.to === route.path))
 const pinned = computed(() => prefs.pinnedApps.includes(route.path))
+// One accent everywhere, if chosen in Settings (after hydration, so the server's colours match first)
+const hydrated = useHydrated()
+const accent = computed(() => (hydrated.value && prefs.accent !== 'apps'
+  ? { override: true, color: `var(--${prefs.accent})`, on: '#fff' }
+  : { override: false, color: tool.value.color, on: tool.value.onColor ?? '#fff' }))
 
 // Demo: on pages that have one, the app icon switches sample data on and off
 const demo = useDemoState(route.path)
@@ -113,7 +118,7 @@ function goBack(e: MouseEvent) {
 </script>
 
 <template>
-  <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
+  <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--accent-btn': tool.buttonColor, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
     <NuxtLink to="/" class="home" :class="{ scrolled }" aria-label="Back, Ousa’s Apps" title="Back (Esc)" @click="goBack">
       <svg class="back" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       <AppLogo class="home-logo" />Ousa’s Apps
@@ -127,7 +132,7 @@ function goBack(e: MouseEvent) {
         class="sticker demo-toggle"
         :class="{ on: demo.active.value }"
         :aria-pressed="demo.active.value"
-        :aria-label="demo.active.value ? 'Go back to your own data' : `Show ${tool.name} with example data`"
+        :aria-label="demo.active.value ? 'Example on: go back to your own data' : `See example: show ${tool.name} with example data`"
         :title="demo.active.value ? 'Go back to your own data' : 'See how it looks with example data'"
         @click="toggleDemo"
       >
@@ -139,10 +144,10 @@ function goBack(e: MouseEvent) {
         <h1>{{ tool.name }}</h1>
         <p>{{ tool.summary }}</p>
         <div class="head-meta">
-        <button v-if="latest" type="button" class="version" :aria-label="`Version ${latest.version}. See what’s new`" @click="openWhatsNew">
+        <button v-if="latest" type="button" class="version" @click="openWhatsNew">
           <span>v{{ latest.version }}</span>
           <ClientOnly><span v-if="isNew" class="version-new">New</span></ClientOnly>
-          <span class="version-more" aria-hidden="true">What’s new</span>
+          <span class="version-more"><span class="sr-only">, see </span>What’s new</span>
         </button>
         <ClientOnly>
           <button
@@ -178,7 +183,8 @@ function goBack(e: MouseEvent) {
       </ol>
     </Modal>
 
-    <div class="body">
+    <!-- The header keeps the app's own colour; buttons and highlights can use one accent everywhere -->
+    <div class="body" :style="accent.override ? { '--accent': accent.color, '--accent-btn': `var(--${prefs.accent}-btn, ${accent.color})`, '--on-accent': accent.on } : undefined">
       <p v-if="demo.active.value" class="demo-banner" role="status">
         <span><strong>This is example data.</strong> Explore freely: changes here aren’t saved, and your own data is untouched.</span>
         <button type="button" class="btn btn-sm" @click="toggleDemo">Back to my data</button>
@@ -577,14 +583,13 @@ h1 {
   font-size: 0.7rem;
   font-weight: 700;
   color: #fff;
-  background: var(--green);
+  background: var(--good-ink-solid, #127a43);
   border-radius: 999px;
 }
 
 /* On the coloured band it takes the band's text colour */
 .header-band .version {
   color: inherit;
-  opacity: 0.92;
 }
 
 .header-band .version:hover {

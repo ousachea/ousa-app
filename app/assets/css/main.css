@@ -11,7 +11,7 @@
   /* Ink */
   --ink: #1b1f2a;
   --ink-2: #555d70;
-  --ink-3: #8a92a3;
+  --ink-3: #606879; /* still 4.5:1 on --bg, so small hints stay readable (CHECKLIST.md #34) */
 
   /* Cube stickers: each tool owns one */
   --blue: #1f5bd8;
@@ -43,7 +43,7 @@
   --bad-ink: #a61b2e;
   --warn-ink: #b85a00;
   --digit-ink: #1f5bd8;
-  --symbol-ink: #c25e00;
+  --symbol-ink: #a85200;
 
   --chart-line: #4f8a12; /* weight chart; validated against each theme's surface */
 
@@ -52,6 +52,14 @@
   --checker-b: #ffffff;
 
   --accent: var(--green);
+
+  /* Buttons in sticker colours that are too light for white text get a slightly deeper shade, so
+     button labels pass 4.5:1 (CHECKLIST.md #34); the stickers themselves keep their colour */
+  --orange-btn: #b15c10;
+  --green-btn: #148448;
+  --teal-btn: #0d7f75;
+  --pink-btn: #c83872;
+  --lime-btn: #4a8211;
 
   /* ---------- Design system (see CHECKLIST.md #05) ----------
      Every app builds from these; a page only adds its own sticker colour (--accent). */
@@ -102,7 +110,7 @@
 
   --ink: #e8ebf1;
   --ink-2: #a3abba;
-  --ink-3: #6e7787;
+  --ink-3: #8a93a3;
 
   --plastic: #05070b;
   --plastic-hover: #1c212b;
@@ -183,7 +191,7 @@ a {
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--on-accent, #fff);
-  background: var(--accent);
+  background: var(--accent-btn, var(--accent));
   border: 0;
   border-radius: 12px;
   cursor: pointer;
@@ -192,7 +200,7 @@ a {
 }
 
 .btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 86%, #000);
+  background: color-mix(in srgb, var(--accent-btn, var(--accent)) 86%, #000);
 }
 
 .btn:active:not(:disabled) {
@@ -866,4 +874,97 @@ kbd {
 
 .switch[aria-checked='true'] .knob {
   transform: translateX(1.5rem);
+}
+
+/* ---------- Swipe to delete (plugins/swipe.ts, CHECKLIST.md #26) ---------- */
+@media (pointer: coarse) {
+  .swipe-row {
+    /* Vertical scrolling stays the browser's; sideways moves come to the row */
+    touch-action: pan-y;
+  }
+}
+
+.swipe-row.swiping {
+  position: relative;
+}
+
+/* The red strip with a bin that the row uncovers as it slides left */
+.swipe-row.swiping::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: var(--swipe-w, 0);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5'/%3E%3C/svg%3E") center / 1.35rem no-repeat,
+    color-mix(in srgb, var(--red) 70%, var(--surface));
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  transition: background-color var(--dur-fast);
+}
+
+.swipe-row.swipe-armed::after {
+  background-color: var(--red);
+}
+
+/* ---------- Drag to reorder (composables/useDragReorder.ts, CHECKLIST.md #28) ---------- */
+[draggable='true'] {
+  cursor: grab;
+}
+
+[draggable='true']:active {
+  cursor: grabbing;
+}
+
+.is-dragging {
+  opacity: 0.4;
+}
+
+/* A line where the dragged item will land */
+[data-drop] {
+  position: relative;
+}
+
+[data-drop]::after {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  background: var(--accent);
+  border-radius: 3px;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+[data-drop='before']::after,
+[data-drop='after']::after {
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+[data-drop='before']::after {
+  top: -3px;
+}
+
+[data-drop='after']::after {
+  bottom: -3px;
+}
+
+/* Rows of tiles show a vertical line instead */
+.drop-x [data-drop='before']::after,
+.drop-x [data-drop='after']::after {
+  top: 0;
+  bottom: 0;
+  left: auto;
+  right: auto;
+  width: 3px;
+  height: auto;
+}
+
+.drop-x [data-drop='before']::after {
+  left: -5px;
+}
+
+.drop-x [data-drop='after']::after {
+  right: -5px;
 }

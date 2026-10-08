@@ -19,6 +19,8 @@ const bare = computed(() => route.path.startsWith('/og-card/'))
       <FloatingNav />
       <ClientOnly>
         <CommandPalette />
+        <ContextMenu />
+        <PullIndicator />
         <OfflineBadge />
       </ClientOnly>
       <GooeyToaster />

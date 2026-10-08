@@ -29,6 +29,12 @@ const DEMO = (): Omit<Entry, 'id'>[] => {
 }
 const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Entry>('weight', undefined, { demo: DEMO, label: e => `${Math.round(e.kg * 10) / 10} kg on ${e.date}` })
 
+// Pull down on a phone to sync again (CHECKLIST.md #26)
+usePullToRefresh(async () => {
+  await sync.retry()
+  toast(sync.signedIn.value ? 'Up to date with your account' : 'Refreshed', { duration: 1800 })
+})
+
 // Display unit is a per-visitor preference
 const unit = ref<Unit>('kg')
 onMounted(() => {

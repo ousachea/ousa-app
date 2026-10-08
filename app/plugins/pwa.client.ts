@@ -3,6 +3,8 @@ import { toast } from 'vue-sonner'
 // Installable app and offline support (CHECKLIST.md #20). The service worker (public/sw.js) only runs
 // in production builds; in development it would fight hot reloading.
 export default defineNuxtPlugin(() => {
+  // Listen for the browser's install offer from the start; it only comes once
+  startInstallWatch()
   if (import.meta.dev || !('serviceWorker' in navigator)) return
 
   window.addEventListener('load', async () => {

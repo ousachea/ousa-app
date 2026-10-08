@@ -162,6 +162,8 @@ function refresh() {
   play('press')
   fetchQuote()
 }
+// Pull down on a phone for a fresh price (CHECKLIST.md #26)
+usePullToRefresh(() => source.value === 'api' ? fetchQuote() : undefined)
 
 const STATUS_LABEL = { live: 'Live', cached: 'Saved price', custom: 'Your price', none: 'No price yet' }
 const status = computed(() => (source.value === 'custom' ? 'custom' : quote.value.status))

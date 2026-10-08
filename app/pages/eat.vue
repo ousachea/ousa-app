@@ -574,7 +574,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               <span class="verdict yes" :style="{ opacity: yes }" aria-hidden="true">Shortlist</span>
               <span class="verdict no" :style="{ opacity: no }" aria-hidden="true">Skip</span>
               <span class="badge">{{ current.kind === 'food' ? 'Food' : 'Place' }}</span>
-              <h3>{{ current.name }}</h3>
+              <h2 class="card-title">{{ current.name }}</h2>
               <p v-if="current.note">{{ current.note }}</p>
               <span class="price">{{ priceText(current.price) }}</span>
             </div>
@@ -1144,7 +1144,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   pointer-events: none;
 }
 
-.card h3 {
+.card .card-title {
   font-size: clamp(1.8rem, 5vw, 2.4rem);
   letter-spacing: -0.03em;
   line-height: 1.05;

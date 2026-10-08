@@ -110,6 +110,9 @@ function selectDirection(value: Direction) {
   play('select')
 }
 
+// Pull down on a phone for a fresh rate (CHECKLIST.md #26)
+usePullToRefresh(() => reloadRate())
+
 async function reloadRate() {
   await refresh()
   play(error.value ? 'error' : 'retry')
@@ -359,7 +362,7 @@ async function reloadRate() {
 
 .presets .btn[aria-pressed='true'] {
   color: var(--on-accent, #fff);
-  background: var(--accent);
+  background: var(--accent-btn, var(--accent));
   box-shadow: none;
 }
 

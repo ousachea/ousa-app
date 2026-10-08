@@ -867,7 +867,7 @@ onMounted(async () => {
                 <span class="pm-icon" :class="{ wide: BRAND_LOGOS[brand]?.wide }" aria-hidden="true">
                   <Transition name="pm-logo" mode="out-in">
                     <svg v-if="BRAND_LOGOS[brand]" :key="brand" class="pm-logo" :viewBox="BRAND_LOGOS[brand]!.box"><path :d="BRAND_LOGOS[brand]!.d" /></svg>
-                    <span v-else :key="`${brand}-badge`" class="brand-badge">RM</span>
+                    <span v-else :key="`${brand}-badge`" class="brand-badge" aria-hidden="true">RM</span>
                   </Transition>
                 </span>
                 <span class="pm-value" aria-live="polite">
@@ -918,7 +918,7 @@ onMounted(async () => {
                 </div>
 
                 <section v-for="group in filteredGroups" :key="group.label" role="group" :aria-label="group.label">
-                  <h3 class="pm-group">{{ group.label }}</h3>
+                  <div class="pm-group" aria-hidden="true">{{ group.label }}</div>
                   <div class="pm-grid">
                     <div
                       v-for="[name, mah] in group.models"
@@ -1065,22 +1065,22 @@ onMounted(async () => {
             <div class="stat big">
               <dt>Max capacity now</dt>
               <dd>{{ fmt(currentMax) }} <em>mAh</em></dd>
-              <p>Your “100%” today, out of {{ fmt(designMah) }} mAh new.</p>
+              <dd class="stat-note">Your “100%” today, out of {{ fmt(designMah) }} mAh new.</dd>
             </div>
             <div class="stat">
               <dt>Lost to wear</dt>
               <dd>{{ fmt(lostMah) }} <em>mAh</em></dd>
-              <p>{{ fmt(Math.max(0, 100 - health), 1) }}% of the original.</p>
+              <dd class="stat-note">{{ fmt(Math.max(0, 100 - health), 1) }}% of the original.</dd>
             </div>
             <div class="stat">
               <dt>In the battery now</dt>
               <dd>{{ fmt(remainingMah) }} <em>mAh</em></dd>
-              <p>{{ fmt(charge) }}% of {{ fmt(currentMax) }} mAh.</p>
+              <dd class="stat-note">{{ fmt(charge) }}% of {{ fmt(currentMax) }} mAh.</dd>
             </div>
             <div class="stat">
               <dt>Same as new phone at</dt>
               <dd>{{ fmt(newEquivalentPct, 1) }} <em>%</em></dd>
-              <p>Your {{ fmt(charge) }}% would show this on a new battery.</p>
+              <dd class="stat-note">Your {{ fmt(charge) }}% would show this on a new battery.</dd>
             </div>
           </dl>
 
@@ -1156,7 +1156,7 @@ onMounted(async () => {
   --light: var(--surface-2);
   --font-sans: var(--font);
   --font-serif: var(--font);
-  --pb-good: #3f8f5a;
+  --pb-good: #357f50;
   --pb-great: #2f7d4a;
   --pb-worn: #c9862b;
   --pb-replace: #c0473a;
@@ -1796,7 +1796,7 @@ onMounted(async () => {
 .stat dd { margin: 0.25rem 0 0; font-family: var(--font-serif); font-weight: 700; font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .stat.big dd { font-size: 2.75rem; }
 .stat dd em { font-family: var(--font-sans); font-weight: 400; font-style: normal; font-size: 0.8125rem; color: var(--gray); letter-spacing: 0; }
-.stat p { font-size: 0.75rem; color: var(--gray); margin: 0.25rem 0 0; line-height: 1.4; }
+.stat .stat-note { font-size: 0.75rem; color: var(--gray); margin: 0.25rem 0 0; line-height: 1.4; }
 
 .note { margin: 1.25rem 0 0; font-size: 0.875rem; }
 

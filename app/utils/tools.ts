@@ -13,6 +13,8 @@ export interface Tool {
   color: string
   /** Text colour on top of `color`; light stickers like yellow need dark text */
   onColor?: string
+  /** A deeper shade for buttons when white text on `color` would be hard to read */
+  buttonColor?: string
   icon: ToolIconName
   group?: ToolGroup
   /** Page title for search results and link previews, worded the way people search */
@@ -48,6 +50,7 @@ export const TOOLS: Tool[] = [
     name: 'Image compressor',
     summary: 'Make images and PDFs smaller without uploading them.',
     color: 'var(--orange)',
+    buttonColor: 'var(--orange-btn)',
     icon: 'compress',
     seoTitle: 'Compress images and PDFs in your browser',
     description: 'Make JPG, PNG, WebP and PDF files smaller without uploading them. Keep PDF text sharp or shrink scans, compare before and after, and download.',
@@ -69,6 +72,7 @@ export const TOOLS: Tool[] = [
     name: 'Passwords',
     summary: 'Make strong passwords and save them, encrypted on this device.',
     color: 'var(--green)',
+    buttonColor: 'var(--green-btn)',
     icon: 'password',
     seoTitle: 'Strong password generator and saver',
     description: 'Generate strong passwords, see how long they’d take to crack, and save them in an encrypted vault that only you can unlock.'
@@ -78,6 +82,7 @@ export const TOOLS: Tool[] = [
     name: 'KHR/USD exchange',
     summary: 'See if an exchange rate makes you gain or lose money.',
     color: 'var(--teal)',
+    buttonColor: 'var(--teal-btn)',
     icon: 'exchange',
     seoTitle: 'KHR to USD exchange rate calculator',
     description: 'See today’s riel to dollar rate and find out if a money changer’s rate makes you gain or lose money on your exchange.'
@@ -98,6 +103,7 @@ export const TOOLS: Tool[] = [
     name: 'What should I eat?',
     summary: 'Swipe through your saved foods and places until one sounds good.',
     color: 'var(--pink)',
+    buttonColor: 'var(--pink-btn)',
     icon: 'eat',
     group: 'Life',
     seoTitle: 'What should I eat? Food picker',
@@ -109,6 +115,7 @@ export const TOOLS: Tool[] = [
     name: 'Weight',
     summary: 'Log your weight and see the trend.',
     color: 'var(--lime)',
+    buttonColor: 'var(--lime-btn)',
     icon: 'weight',
     group: 'Life',
     seoTitle: 'Weight tracker with trend chart',

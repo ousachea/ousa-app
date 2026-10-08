@@ -2,7 +2,9 @@
 import { toast } from 'vue-sonner'
 import type { Currency } from '~/utils/exchange'
 import type { Cycle } from '~/utils/renewals'
+import type { RenewalCategory } from '~/utils/services'
 import type { CsvColumn } from '~/utils/transfer'
+import type { MenuEntry } from '~/composables/useContextMenu'
 
 interface Renewal {
   id: string
@@ -11,6 +13,7 @@ interface Renewal {
   currency: Currency
   cycle: Cycle
   nextDate: string // yyyy-mm-dd, as entered; past dates roll forward when shown
+  category?: RenewalCategory | '' // optional; suggested from the name (CHECKLIST.md #30)
 }
 
 const SOON_DAYS = 7
@@ -30,11 +33,26 @@ const DEMO = (): Omit<Renewal, 'id'>[] => [
 const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Renewal>('renewals', undefined, { demo: DEMO })
 const rate = useMarketRate()
 
+// Pull down on a phone to sync again (CHECKLIST.md #26)
+usePullToRefresh(async () => {
+  await sync.retry()
+  toast(sync.signedIn.value ? 'Up to date with your account' : 'Refreshed', { duration: 1800 })
+})
+
 const isoToday = () => new Date().toISOString().slice(0, 10)
 // New subscriptions start with the currency and billing cycle used last time (CHECKLIST.md #14)
 const lastCurrency = useRemembered<Renewal['currency']>('renewals-currency', 'USD', v => v === 'USD' || v === 'KHR')
 const lastCycle = useRemembered<Renewal['cycle']>('renewals-cycle', 'monthly', v => CYCLES.some(c => c.value === v))
-const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: lastCurrency.value, cycle: lastCycle.value, nextDate: isoToday() })
+const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: lastCurrency.value, cycle: lastCycle.value, nextDate: isoToday(), category: '' })
+
+// Category suggestion from the name, e.g. Netflix → Entertainment (CHECKLIST.md #30)
+const CATEGORY_OPTIONS = [{ value: '', label: 'No category' }, ...RENEWAL_CATEGORIES.map(c => ({ value: c, label: c }))]
+const ignoredCategory = ref('')
+const knownService = computed(() => findService(form.name))
+const categorySuggestion = computed(() => {
+  const s = knownService.value
+  return s && !form.category && ignoredCategory.value !== s.name ? s.category : undefined
+})
 const form = reactive(blank())
 const editingId = ref<string>()
 const formOpen = ref(false)
@@ -170,9 +188,34 @@ function save() {
   cancel()
 }
 
+// Right-click / long-press (CHECKLIST.md #27)
+const menuFor = useRowMenu()
+const renewalMenu = (r: Renewal): MenuEntry[] => [
+  { label: 'Edit', icon: 'edit', run: () => edit(r) },
+  { label: 'Duplicate', icon: 'duplicate', run: () => duplicate(r) },
+  { label: 'Copy details', icon: 'copy', run: () => copyText(`${r.name}: ${formatMoney(r.price, r.currency)} ${cycleLabel(r.cycle)}, next ${formatDate(nextRenewal(r.nextDate, r.cycle))}`) },
+  '-',
+  { label: 'Delete', icon: 'delete', danger: true, run: () => del(r) }
+]
+function duplicate(r: Renewal) {
+  const { id: _, ...rest } = r
+  const copy = add({ ...rest, name: `${r.name} (copy)` })
+  play('success')
+  toast.success('Renewal duplicated', { description: copy.name, action: { label: 'Undo', onClick: () => remove(copy.id, { undoAdd: true }) } })
+}
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    play('copy')
+    toast.success('Copied', { description: text })
+  } catch {
+    toast.error('Couldn’t copy')
+  }
+}
+
 function edit(r: Renewal) {
   editingId.value = r.id
-  Object.assign(form, { name: r.name, price: r.price, currency: r.currency, cycle: r.cycle, nextDate: nextRenewal(r.nextDate, r.cycle) })
+  Object.assign(form, { name: r.name, price: r.price, currency: r.currency, cycle: r.cycle, nextDate: nextRenewal(r.nextDate, r.cycle), category: r.category ?? '' })
   formOpen.value = true
   play('open')
 }
@@ -190,25 +233,28 @@ const RENEWAL_COLUMNS: CsvColumn<Renewal>[] = [
   { header: 'Price', get: r => r.price },
   { header: 'Currency', get: r => r.currency },
   { header: 'Billed', get: r => CYCLES.find(c => c.value === r.cycle)?.label ?? r.cycle },
-  { header: 'Next renewal', get: r => nextRenewal(r.nextDate, r.cycle) }
+  { header: 'Next renewal', get: r => nextRenewal(r.nextDate, r.cycle) },
+  { header: 'Category', get: r => r.category ?? '' }
 ]
 const cycleFrom = (s: string): Cycle => {
   const t = s.trim().toLowerCase()
   return CYCLES.find(c => c.value === t || c.label.toLowerCase() === t)?.value
     ?? (/week/.test(t) ? 'weekly' : /quarter|3 month/.test(t) ? 'quarterly' : /year|annual/.test(t) ? 'yearly' : 'monthly')
 }
-function renewalFrom(name: string, price: number | undefined, currency: string, cycle: string, date: string): Omit<Renewal, 'id'> | undefined {
+function renewalFrom(name: string, price: number | undefined, currency: string, cycle: string, date: string, category = ''): Omit<Renewal, 'id'> | undefined {
   if (!name.trim() || !price || price <= 0) return undefined
-  return { name: name.trim(), price, currency: currency.toUpperCase() === 'KHR' ? 'KHR' : 'USD', cycle: cycleFrom(cycle), nextDate: toIsoDate(date) || isoToday() }
+  const cat = RENEWAL_CATEGORIES.find(c => c.toLowerCase() === category.trim().toLowerCase()) ?? ''
+  return { name: name.trim(), price, currency: currency.toUpperCase() === 'KHR' ? 'KHR' : 'USD', cycle: cycleFrom(cycle), nextDate: toIsoDate(date) || isoToday(), category: cat }
 }
 const renewalFromRow = (row: Record<string, string>) => renewalFrom(
   cellOf(row, 'name', 'service', 'subscription'),
   toNumber(cellOf(row, 'price', 'amount', 'cost')),
   cellOf(row, 'currency'),
   cellOf(row, 'billed', 'cycle', 'billing'),
-  cellOf(row, 'next renewal', 'next date', 'nextdate', 'date')
+  cellOf(row, 'next renewal', 'next date', 'nextdate', 'date'),
+  cellOf(row, 'category')
 )
-const renewalFromJSON = (r: Record<string, unknown>) => renewalFrom(String(r.name ?? ''), Number(r.price), String(r.currency ?? ''), String(r.cycle ?? ''), String(r.nextDate ?? ''))
+const renewalFromJSON = (r: Record<string, unknown>) => renewalFrom(String(r.name ?? ''), Number(r.price), String(r.currency ?? ''), String(r.cycle ?? ''), String(r.nextDate ?? ''), String(r.category ?? ''))
 const renewalKey = (r: Omit<Renewal, 'id'>) => `${r.name.toLowerCase()}|${r.price}|${r.cycle}`
 
 function del(r: Renewal) {
@@ -250,6 +296,13 @@ function del(r: Renewal) {
           <span class="field-head">Name</span>
           <input v-model="form.name" class="input" placeholder="Netflix, iCloud, phone plan…" required data-error="Give it a name, like Netflix">
         </label>
+        <SuggestionChip
+          v-if="categorySuggestion"
+          label="Suggested category"
+          :value="categorySuggestion"
+          @use="form.category = categorySuggestion"
+          @ignore="ignoredCategory = knownService?.name ?? ''"
+        />
         <div class="field">
           <span class="field-head">Price</span>
           <div class="price">
@@ -272,6 +325,10 @@ function del(r: Renewal) {
             <DatePicker v-model="form.nextDate" aria-label="Next renewal" required />
           </label>
         </div>
+        <label class="field">
+          <span class="field-head">Category <span class="optional">Optional</span></span>
+          <AppSelect v-model="form.category" aria-label="Category" :options="CATEGORY_OPTIONS" />
+        </label>
         <div class="actions">
           <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add subscription' }}</button>
           <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
@@ -325,14 +382,14 @@ function del(r: Renewal) {
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             </div>
             <TransitionGroup tag="ul" name="list" class="renewals">
-              <li v-for="r in upcoming" :key="r.id" :data-item-id="r.id" class="panel renewal" :class="{ soon: r.days <= SOON_DAYS, editing: editingId === r.id }">
+              <li v-for="r in upcoming" :key="r.id" :data-item-id="r.id" class="panel renewal" v-bind="menuFor(() => renewalMenu(r), r.name)" v-swipe-delete="() => del(r)" :class="{ soon: r.days <= SOON_DAYS, editing: editingId === r.id }">
                 <div class="when" :aria-label="whenText(r.days)">
                   <strong>{{ r.days === 0 ? 'Today' : r.days }}</strong>
                   <span v-if="r.days !== 0">{{ r.days === 1 ? 'day' : 'days' }}</span>
                 </div>
                 <div class="main">
                   <strong>{{ r.name }}</strong>
-                  <span class="meta">{{ formatMoney(r.price, r.currency) }} {{ cycleLabel(r.cycle) }} · next {{ formatDate(r.next) }}</span>
+                  <span class="meta">{{ formatMoney(r.price, r.currency) }} {{ cycleLabel(r.cycle) }} · next {{ formatDate(r.next) }}<template v-if="r.category"> · {{ r.category }}</template></span>
                 </div>
                 <span class="links">
                   <!-- A repeating event from the next renewal, so every future charge is in the calendar -->
@@ -389,7 +446,8 @@ function del(r: Renewal) {
 
 .row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* Side by side when there's room, stacked on narrow phones so the date never spills out */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   gap: 0.75rem;
 }
 

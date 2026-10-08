@@ -156,56 +156,54 @@ Update the UI immediately and save in the background; on failure restore, show a
 **Notes:** Trackers already update the screen first and save in the background (`useCollection`). Now: a failed account save shows once "Saved on this device only … Nothing is lost" with Retry (not when simply offline, the badge covers that); the change stays and is retried on reconnect (`online` event) and on next load via pending-change tracking. Rolling back isn't used because the device copy is the source of truth; Undo covers changing your mind.
 
 ## #26 — Mobile Gestures
-**Status:** ⬜
+**Status:** 🟢
 Swipe to delete/archive, pull to refresh, long press for actions — never the only way to do something.
-**Notes:**
+**Notes:** Long press opens the row's actions as a bottom sheet (`useRowMenu`, works on iPhone, which never sends contextmenu; moving the finger cancels). `v-swipe-delete` (`plugins/swipe.ts`): swipe a row left, a red bin strip follows, past ~38% it deletes (to the Recycle Bin with Undo), short swipes spring back, vertical scrolling is untouched; on bookmarks, renewals, things, countdowns. `usePullToRefresh` + `PullIndicator`: pull down at the top to re-sync trackers, refetch the rate (exchange), gold price, holidays; the browser's own pull-to-reload is switched off on those pages. Every gesture has a visible button too. Tested with real touch events on mobile.
 
 ## #27 — Desktop Context Menus
-**Status:** ⬜
+**Status:** 🟢
 Right-click menus with relevant actions only (e.g. bookmark: Open, Open in new tab, Edit, Move to Folder,
 Copy URL, Refresh Favicon, Duplicate, Delete).
-**Notes:**
+**Notes:** `ContextMenu.vue` + `useContextMenu`: right-click opens a menu at the pointer (kept on screen), arrow keys/Enter/Esc, focus returns; Shift + right-click keeps the browser's menu. Bookmarks: Open, Open in new tab, Edit, Pin, Copy link, Refresh icon, Duplicate, Delete (Move to folder joins with #35). Renewals: Edit, Duplicate, Copy details, Delete. Things: Edit, Duplicate, Delete. Countdowns: Edit, Delete. Recycle Bin: Restore, Select, Delete for good. Tested desktop.
 
 ## #28 — Drag & Drop
-**Status:** ⬜
+**Status:** 🟡
 Bookmark → folder, folder → folder, reordering where appropriate, with visual drop indicators.
-**Notes:**
+**Notes:** `useDragReorder` (native drag, a line where it lands, Alt + arrow keys as the keyboard way) + `moved()`. Used for the pinned bookmarks shelf (new `pinOrder`) and pinned apps on the home page. Still to do: drag a bookmark onto a folder and folders into folders, which arrive with folders (#35–#36).
 
 ## #29 — Duplicate Detection
-**Status:** ⬜
+**Status:** 🟢
 Bookmarks: duplicate URLs ("Possible duplicate … [Open Existing] [Keep Both]"). Things I Own: likely
 identical devices. The user decides.
-**Notes:** Bookmarks already refuses an exact duplicate URL.
+**Notes:** `DuplicateCard`: saving a link you already have (same address, ignoring www/trailing slash) shows "Possible duplicate — This already exists in Development: GitHub" with Open existing (scrolls to and highlights it) and Keep both. Things: adding a name you already have (ignoring case and spacing) shows the same card in the popup with Open it (switches to editing that one) and Keep both. Imports also skip duplicates (#18). Tested desktop + mobile.
 
 ## #30 — Smart Categorization
-**Status:** ⬜
+**Status:** 🟢
 Optional folder/category suggestions (github.com → Development, Netflix → Entertainment).
-**Notes:**
+**Notes:** `utils/services.ts`: ~50 known services (category, domain, brand colour) and a site→folder map. Bookmarks: the save toast offers "Add to Development" (from where you filed other links from that site, else what the site is known for, else docs → documentation); the edit popup shows "Suggested folder … Use suggestion / Ignore". Renewals: new optional Category field; known names suggest one ("Spotify Family → Music"). Nothing applies on its own. Tested.
 
 ## #31 — Global Settings Page
-**Status:** ⬜
+**Status:** 🟢
 Appearance (theme, accent, density, animations) · Behavior (shortcuts, confirm before delete, default view,
 autosave) · Data (export, import, backup, restore) · About (version, what's new).
-**Notes:** `/settings` already has theme, effects, sound and sync.
+**Notes:** Settings now: 1 Appearance (theme, effects, accent — each app's own colour or one of seven, applied to buttons and highlights while app headers keep their colour —, density, animations), 2 Behaviour (keyboard shortcuts, confirm before delete, autosave, default view), 3 Sync, 4 Your data (export/import/backup/restore, #17), 5–7 Sound, 8 About (version, Install app button or iPhone instructions, what's new everywhere, keyboard shortcuts list). Tested desktop + mobile.
 
 ## #32 — Changelog / What's New
-**Status:** ⬜
+**Status:** 🟢
 Changelog with a small "What's New" indicator when appropriate.
-**Notes:** Per-app changelog (`utils/changelog.ts`) and a "New" badge in each app header already exist.
+**Notes:** Per-app changelogs gained 8 Oct entries for every app touched; new `APP_RELEASES` (app-wide v2.0.0) and `allReleases()`. Settings → About lists the latest updates across apps (Show all). A green New mark on Settings in the menu until About has been seen (`useUnseenRelease`), alongside the existing New badge in each app header. Palette: What’s new.
 
 ## #33 — Responsive Design
-**Status:** ⬜
+**Status:** 🟢
 Check every app on desktop, laptop, tablet and mobile: sidebars, tables, forms, modals, cards, filters,
 navigation, long text, countdowns.
-**Notes:**
+**Notes:** Automated sweep of all 18 pages at 1440, 1024, 768 and 390 px with sample data, reporting anything wider than the screen, plus the add popups. Found and fixed one: the renewals popup's Billed / Next renewal row spilled out at 390 px (now stacks). Earlier phases already fixed compact bookmarks on phones and the menu/palette sizing. Rechecked: clean at every width.
 
 ## #34 — Accessibility
-**Status:** ⬜
+**Status:** 🟢
 Keyboard navigation, visible focus, labels, accessible buttons, tooltips, screen-reader friendly controls,
 reduced motion, colour never the only status indicator.
-**Notes:**
-
----
+**Notes:** axe-core on all 18 pages, light and dark: from ~335 issues to 0 apart from one logo mark. Fixed: `--ink-3` raised to 4.5:1 in both themes; deeper button shades for orange/green/teal/pink/lime apps (`--*-btn`, stickers keep their colour); New badge contrast; accessible names that match visible text (version chip, example toggle, date picker); battery listbox headings and stats list structure; QR upload option; eat card heading level; EmptyState heading level; home cube no longer a button containing links. Remaining: Realme's "RM" logo badge in a faded option (logos are exempt; hidden from screen readers). Reduced motion, visible focus rings and keyboard paths for every gesture are in place.
 
 # PART B — BOOKMARK APP
 

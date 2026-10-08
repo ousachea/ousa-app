@@ -18,6 +18,10 @@ export interface Prefs {
   motion: MotionPreference
   /** Apps pinned to the top of the menu and home page, in order */
   pinnedApps: string[]
+  /** Button and highlight colour: each app's own ('apps'), or one colour everywhere (a palette name like 'blue') */
+  accent: string
+  /** List, grid or compact, for lists you haven't picked a view for yet */
+  defaultView: 'list' | 'grid' | 'compact'
 }
 
 const DEFAULTS: Prefs = {
@@ -26,7 +30,9 @@ const DEFAULTS: Prefs = {
   shortcuts: true,
   density: 'comfortable',
   motion: 'system',
-  pinnedApps: []
+  pinnedApps: [],
+  accent: 'apps',
+  defaultView: 'list'
 }
 
 const prefs = reactive<Prefs>({ ...DEFAULTS })

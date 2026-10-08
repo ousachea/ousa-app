@@ -2,6 +2,7 @@
 import { toast } from 'vue-sonner'
 import type { Bookmark } from '~/utils/bookmarks'
 import type { CsvColumn } from '~/utils/transfer'
+import type { MenuEntry } from '~/composables/useContextMenu'
 
 const { play } = useSound()
 // Demo: a few pinned daily sites, tagged reading, and a note
@@ -21,6 +22,12 @@ const { items, ready, sync, add, addMany, update, replace, remove, restore } = u
 
 // ---------- Save a link ----------
 const online = useOnline()
+
+// Pull down on a phone to sync again (CHECKLIST.md #26)
+usePullToRefresh(async () => {
+  await sync.retry()
+  toast(sync.signedIn.value ? 'Up to date with your account' : 'Refreshed', { duration: 1800 })
+})
 const linkInput = ref('')
 const linkField = ref<HTMLInputElement>()
 useAddAction(() => focusField(linkField.value))
@@ -42,7 +49,21 @@ function flash(id: string) {
   nextTick(() => document.getElementById(`bm-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
 }
 
-async function save() {
+// A link that's already saved asks first (CHECKLIST.md #29)
+const duplicateOf = ref<Bookmark>()
+watch(linkInput, () => (duplicateOf.value = undefined))
+const folderPath = (b: Bookmark) => b.tags.length ? b.tags.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') : undefined
+function showExisting() {
+  const b = duplicateOf.value
+  duplicateOf.value = undefined
+  if (!b) return
+  linkInput.value = ''
+  activeTag.value = undefined
+  query.value = ''
+  flash(b.id)
+}
+
+async function save(force = false) {
   const raw = linkInput.value.trim()
   if (!raw || saving.value) return
   const url = parseLink(raw)
@@ -51,13 +72,13 @@ async function save() {
     play('error')
     return
   }
-  const existing = items.value.find(b => urlKey(b.url) === urlKey(url.href))
+  const existing = force ? undefined : items.value.find(b => urlKey(b.url) === urlKey(url.href))
   if (existing) {
-    toast('Already saved', { description: existing.title, action: { label: 'Edit', onClick: () => edit(existing) } })
-    linkInput.value = ''
-    flash(existing.id)
+    duplicateOf.value = existing
+    play('warning')
     return
   }
+  duplicateOf.value = undefined
 
   saving.value = true
   // Read the page's title and icon; if the site won't say (or there's no internet), save it under its domain name
@@ -67,6 +88,9 @@ async function save() {
   saving.value = false
 
   const finalUrl = preview?.url || url.href
+  // Not filed yet: offer the folder this site usually goes in (CHECKLIST.md #30)
+  const filed = !!(activeTag.value && activeTag.value !== UNSORTED)
+  const suggested = filed ? undefined : suggestFolder(finalUrl, items.value)
   const record = add({
     url: finalUrl,
     title: preview?.title || hostOf(finalUrl),
@@ -82,7 +106,12 @@ async function save() {
   play('success')
   toast.success('Bookmark saved', {
     description: online.value ? record.title : 'Website details aren’t available offline, so it’s saved under its address. Edit it any time.',
-    action: { label: 'Add tags', onClick: () => edit(record) },
+    action: suggested
+      ? { label: `Add to ${capitalise(suggested)}`, onClick: () => {
+          update(record.id, { tags: [suggested] })
+          play('success')
+        } }
+      : { label: 'Add tags', onClick: () => edit(record) },
     cancel: { label: 'Undo', onClick: () => remove(record.id, { undoAdd: true }) }
   })
   flash(record.id)
@@ -121,7 +150,8 @@ const sort = useRemembered<Sort>('bookmarks-sort', 'newest', v => SORTS.some(s =
 // List, grid of cards, or compact one-line rows (CHECKLIST.md #15)
 type View = 'list' | 'grid' | 'compact'
 const VIEWS: View[] = ['list', 'grid', 'compact']
-const view = useRemembered<View>('bookmarks-view', 'list', v => VIEWS.includes(v as View))
+const { prefs } = usePrefs()
+const view = useRemembered<View>('bookmarks-view', 'list', v => VIEWS.includes(v as View), () => prefs.defaultView)
 // Earlier versions kept the view under its own key
 onMounted(() => {
   try {
@@ -149,7 +179,19 @@ watch([tags, activeTag], ([list]) => {
   if (ready.value && activeTag.value && activeTag.value !== UNSORTED && !list.some(t => t.name === activeTag.value)) activeTag.value = undefined
 })
 
-const pinned = computed(() => items.value.filter(b => b.pinned))
+// The pinned shelf keeps the order you drag it into; never-dragged ones follow, oldest first
+const pinned = computed(() => items.value
+  .filter(b => b.pinned)
+  .sort((a, b) => (a.pinOrder ?? Number.MAX_SAFE_INTEGER) - (b.pinOrder ?? Number.MAX_SAFE_INTEGER) || a.createdAt.localeCompare(b.createdAt)))
+const reorderPinned = useDragReorder<Bookmark>({
+  keyOf: b => b.id,
+  axis: 'x',
+  onMove(from, to) {
+    moved(pinned.value, from, to).forEach((b, i) => {
+      if (b.pinOrder !== i) update(b.id, { pinOrder: i }, { quiet: true })
+    })
+  }
+})
 
 const shown = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -203,6 +245,85 @@ function del(b: Bookmark) {
   toastDeleted(b.title, () => removed && restore(removed))
 }
 
+// ---------- Right-click / long-press menu (CHECKLIST.md #26, #27) ----------
+const menuFor = useRowMenu()
+const bookmarkMenu = (b: Bookmark): MenuEntry[] => [
+  { label: 'Open', icon: 'open', run: () => {
+    opened(b)
+    window.location.href = b.url
+  } },
+  { label: 'Open in new tab', icon: 'new-tab', run: () => {
+    opened(b)
+    window.open(b.url, '_blank', 'noopener')
+  } },
+  '-',
+  { label: 'Edit', icon: 'edit', run: () => edit(b) },
+  { label: b.pinned ? 'Unpin' : 'Pin to the top', icon: 'pin', run: () => togglePin(b) },
+  { label: 'Copy link', icon: 'copy', run: () => copyLink(b) },
+  { label: 'Refresh icon', icon: 'refresh', disabled: refreshing.value.has(b.id), run: () => refreshIcon(b) },
+  { label: 'Duplicate', icon: 'duplicate', run: () => duplicate(b) },
+  '-',
+  { label: 'Delete', icon: 'delete', danger: true, run: () => del(b) }
+]
+
+async function copyLink(b: Bookmark) {
+  try {
+    await navigator.clipboard.writeText(b.url)
+    play('copy')
+    toast.success('Link copied', { description: b.url })
+  } catch {
+    play('error')
+    toast.error('Couldn’t copy the link')
+  }
+}
+
+function duplicate(b: Bookmark) {
+  // Firestore refuses undefined values, so the per-copy fields are left out rather than cleared
+  const { id: _, updatedAt: _u, lastOpened: _l, ...rest } = b
+  const copy = add({ ...rest, title: `${b.title} (copy)`, pinned: false, visits: 0, createdAt: new Date().toISOString() })
+  play('success')
+  toast.success('Bookmark duplicated', { description: copy.title, action: { label: 'Undo', onClick: () => remove(copy.id, { undoAdd: true }) } })
+  flash(copy.id)
+}
+
+// Refresh favicon (CHECKLIST.md #42): ask the site again; keep the current icon unless a new one really loads
+const refreshing = ref(new Set<string>())
+const loadsAsImage = (src: string) => new Promise<boolean>((resolve) => {
+  const img = new Image()
+  img.referrerPolicy = 'no-referrer'
+  img.onload = () => resolve(img.naturalWidth > 0)
+  img.onerror = () => resolve(false)
+  img.src = src
+  setTimeout(() => resolve(false), 8000)
+})
+async function refreshIcon(b: Bookmark) {
+  if (!online.value) {
+    toast('Can’t refresh the icon offline', { description: 'The current icon stays. Try again when you’re back online.' })
+    return
+  }
+  refreshing.value = new Set(refreshing.value).add(b.id)
+  const loading = toast.loading(`Refreshing the icon for ${b.title}…`)
+  const preview = await $fetch('/api/link-preview', { query: { url: b.url } }).catch(() => undefined)
+  const candidate = preview?.icon || new URL('/favicon.ico', b.url).href
+  const ok = await loadsAsImage(candidate)
+  const next = new Set(refreshing.value)
+  next.delete(b.id)
+  refreshing.value = next
+  if (ok) {
+    brokenIcons.value.delete(candidate)
+    const before = update(b.id, { icon: candidate }, { quiet: true })
+    play('success')
+    toast.success(candidate === b.icon ? 'The icon is already up to date' : 'Icon updated', {
+      id: loading,
+      description: b.title,
+      action: before && candidate !== b.icon ? { label: 'Undo', onClick: () => replace(before) } : undefined
+    })
+  } else {
+    play('error')
+    toast.error('Couldn’t find a new icon', { id: loading, description: 'The site didn’t offer one. The current icon was kept.', action: { label: 'Try again', onClick: () => refreshIcon(b) } })
+  }
+}
+
 // Site icons load straight from each site; any that fail fall back to a letter tile
 const brokenIcons = ref(new Set<string>())
 const initial = (b: Bookmark) => (b.title.trim()[0] ?? hostOf(b.url)[0] ?? '?').toUpperCase()
@@ -220,9 +341,17 @@ function ago(iso?: string) {
 const editingId = ref<string>()
 const form = reactive({ url: '', title: '', note: '', tags: '', pinned: false })
 const formTags = computed(() => [...new Set(form.tags.split(',').map(normaliseTag).filter(Boolean))])
+// A folder suggestion while it has none (CHECKLIST.md #30); Ignore hides it for this bookmark
+const ignoredSuggestion = ref(false)
+const formSuggestion = computed(() => {
+  if (ignoredSuggestion.value || formTags.value.length) return undefined
+  const link = parseLink(form.url.trim())
+  return link ? suggestFolder(link.href, items.value.filter(b => b.id !== editingId.value)) : undefined
+})
 const suggestions = computed(() => tags.value.map(t => t.name).filter(t => !formTags.value.includes(t)).slice(0, 12))
 
 function edit(b: Bookmark) {
+  ignoredSuggestion.value = false
   editingId.value = b.id
   Object.assign(form, { url: b.url, title: b.title, note: b.note, tags: b.tags.join(', '), pinned: b.pinned })
   play('select')
@@ -330,7 +459,7 @@ async function enrich(list: Bookmark[]) {
     <template #actions><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
 
     <!-- The address bar: paste, press Enter, done -->
-    <form v-validate data-validate-target class="omnibox" aria-label="Save a link" @submit.prevent="save">
+    <form v-validate data-validate-target class="omnibox" aria-label="Save a link" @submit.prevent="save()">
       <span class="omni-icon" aria-hidden="true"><ToolIcon name="bookmarks" /></span>
       <input
         ref="linkField"
@@ -348,17 +477,28 @@ async function enrich(list: Bookmark[]) {
       >
       <button type="submit" class="btn" :disabled="saving">{{ saving ? 'Reading page…' : 'Save' }}</button>
     </form>
+    <DuplicateCard
+      v-if="duplicateOf"
+      class="dup-card"
+      :title="duplicateOf.title"
+      :where="folderPath(duplicateOf)"
+      :detail="duplicateOf.url"
+      @open="showExisting"
+      @keep="save(true)"
+      @cancel="duplicateOf = undefined"
+    />
 
     <ClientOnly>
       <!-- Pinned: the sites you open every day, as big tiles -->
-      <section v-if="pinned.length" class="shelf" aria-label="Pinned">
+      <section v-if="pinned.length" class="shelf drop-x" aria-label="Pinned. Drag to reorder, or Alt and the arrow keys.">
         <a
-          v-for="b in pinned"
+          v-for="(b, i) in pinned"
           :key="b.id"
           :href="b.url"
           target="_blank"
           rel="noopener"
           class="tile"
+          v-bind="{ ...menuFor(() => bookmarkMenu(b), b.title), ...reorderPinned.bind(b, i) }"
           @click="opened(b)"
         >
           <span class="ribbon" aria-hidden="true" />
@@ -426,7 +566,7 @@ async function enrich(list: Bookmark[]) {
           </div>
 
           <TransitionGroup v-if="shown.length" tag="ul" name="list" class="marks" :class="view === 'compact' ? ['list', 'compact'] : view">
-            <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" :class="{ flash: flashId === b.id }">
+            <li v-for="b in shown" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :class="{ flash: flashId === b.id }">
               <span class="mark-icon" aria-hidden="true">
                 <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
                 <span v-else>{{ initial(b) }}</span>
@@ -491,6 +631,7 @@ async function enrich(list: Bookmark[]) {
           <span class="field-head">Tags <span class="optional">Separate with commas</span></span>
           <input v-model="form.tags" class="input" placeholder="design, reading">
         </label>
+        <SuggestionChip v-if="formSuggestion" label="Suggested folder" :value="capitalise(formSuggestion)" @use="addSuggestion(formSuggestion)" @ignore="ignoredSuggestion = true" />
         <div v-if="suggestions.length" class="suggest" aria-label="Your tags">
           <button v-for="t in suggestions" :key="t" type="button" class="chip" :style="{ '--tag': tagColor(t) }" @click="addSuggestion(t)">+ {{ t }}</button>
         </div>
@@ -509,6 +650,11 @@ async function enrich(list: Bookmark[]) {
 
 <style scoped>
 /* ---------- Address bar ---------- */
+.dup-card {
+  width: min(100%, 760px);
+  margin: 0.75rem auto 0;
+}
+
 .empty-panel {
   margin-top: 1rem;
   background: var(--surface);
@@ -593,6 +739,7 @@ async function enrich(list: Bookmark[]) {
 
 .tile {
   position: relative;
+  -webkit-touch-callout: none;
   padding: 1.1rem 0.75rem 0.85rem;
   display: flex;
   flex-direction: column;
@@ -858,6 +1005,8 @@ kbd {
 .mark {
   position: relative;
   display: flex;
+  /* A long press opens the app's own menu, not the phone's link preview */
+  -webkit-touch-callout: none;
   align-items: flex-start;
   gap: 0.9rem;
   padding: 0.95rem 1rem;

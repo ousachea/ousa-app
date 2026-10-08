@@ -362,7 +362,7 @@ async function copyImage() {
                   v-html="icon.markup"
                 />
               </button>
-              <label class="logo-opt upload" :aria-checked="logoMode === 'upload'" :title="uploaded ? uploaded.name : 'Upload your own image'">
+              <label class="logo-opt upload" :data-checked="logoMode === 'upload'" :title="uploaded ? uploaded.name : 'Upload your own image'">
                 <input type="file" accept="image/*" aria-label="Upload a logo image" @change="onLogoPick">
                 <img v-if="uploaded" :src="uploaded.dataUrl" alt="">
                 <span v-else class="none">Upload</span>
@@ -608,7 +608,8 @@ async function copyImage() {
   border-color: var(--ink-3);
 }
 
-.logo-opt[aria-checked='true'] {
+.logo-opt[aria-checked='true'],
+.logo-opt[data-checked='true'] {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));

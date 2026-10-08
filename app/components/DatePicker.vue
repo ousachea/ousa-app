@@ -166,7 +166,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
       aria-haspopup="dialog"
       :aria-expanded="open"
       :aria-controls="`${uid}-panel`"
-      :aria-label="`${ariaLabel ?? 'Date'}: ${label || 'not set'}`"
+      :aria-label="`${ariaLabel ?? 'Date'}: ${label || placeholder || 'Pick a date'}`"
       @click="open ? close() : openPicker()"
     >
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>

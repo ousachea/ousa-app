@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import type { TrashEntry } from '~/composables/useTrash'
+import type { MenuEntry } from '~/composables/useContextMenu'
 
 // Recycle Bin for every tracker: restore things, or delete them for good (CHECKLIST.md #02, #41)
 const { entries, take, keepDays } = useTrash()
@@ -79,6 +80,15 @@ function deleteForGood() {
   toast(n === 1 ? `${one!.label} deleted for good` : `${n} items deleted for good`)
 }
 
+// Right-click / long-press (CHECKLIST.md #27)
+const menuFor = useRowMenu()
+const binMenu = (e: TrashEntry): MenuEntry[] => [
+  { label: 'Restore', icon: 'restore', run: () => restore([e]) },
+  { label: selected.value.has(e.id) ? 'Unselect' : 'Select', icon: 'copy', run: () => toggle(e.id) },
+  '-',
+  { label: 'Delete for good…', icon: 'delete', danger: true, run: () => askDelete([e]) }
+]
+
 function ago(iso: string) {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
   if (days <= 0) return 'today'
@@ -132,7 +142,7 @@ function daysLeft(iso: string) {
         </div>
 
         <TransitionGroup tag="ul" name="list" class="bin">
-          <li v-for="e in shown" :key="e.id" class="row" :class="{ checked: selected.has(e.id) }">
+          <li v-for="e in shown" :key="e.id" class="row" v-bind="menuFor(() => binMenu(e as TrashEntry), e.label)" :class="{ checked: selected.has(e.id) }">
             <label class="row-check">
               <input type="checkbox" :checked="selected.has(e.id)" :aria-label="`Select ${e.label}`" @change="toggle(e.id)">
             </label>
@@ -156,7 +166,7 @@ function daysLeft(iso: string) {
       </template>
 
       <div v-else class="panel">
-        <EmptyState title="The Recycle Bin is empty" icon="trash">
+        <EmptyState title="The Recycle Bin is empty" icon="trash" :level="2">
           When you delete a bookmark, a renewal, something you own or anything else you track, it waits here for {{ keepDays }} days so you can put it back.
         </EmptyState>
       </div>

@@ -106,6 +106,7 @@ const matches = (t: Tool) => {
 }
 // Pinned apps come first and leave their usual group (CHECKLIST.md #09)
 const hydrated = useHydrated()
+const unseenRelease = useUnseenRelease()
 const pins = computed(() => (hydrated.value ? prefs.pinnedApps : []))
 const pinnedTools = computed(() => pins.value.map(p => TOOLS.find(t => t.to === p)).filter((t): t is Tool => !!t))
 const unpinned = (t: Tool) => !pins.value.includes(t.to)
@@ -340,7 +341,9 @@ onBeforeUnmount(() => {
           <span class="foot-icon" aria-hidden="true"><ToolIcon name="trash" /></span>Recycle Bin
         </NuxtLink>
         <NuxtLink to="/settings" class="foot-link" :aria-current="route.path === '/settings' ? 'page' : undefined" :aria-keyshortcuts="LETTER.get('/settings')?.toUpperCase()">
-          <span class="foot-icon" aria-hidden="true"><ToolIcon name="sound" /></span>Settings<kbd v-if="LETTER.get('/settings')">{{ LETTER.get('/settings')!.toUpperCase() }}</kbd>
+          <span class="foot-icon" aria-hidden="true"><ToolIcon name="sound" /></span>Settings
+          <span v-if="hydrated && unseenRelease" class="new-dot" title="See what’s new in Settings → About">New</span>
+          <kbd v-if="LETTER.get('/settings')">{{ LETTER.get('/settings')!.toUpperCase() }}</kbd>
         </NuxtLink>
         <ClientOnly>
           <button v-if="canFullscreen" type="button" class="foot-link" :aria-pressed="isFullscreen" @click="toggleFullscreen">
@@ -578,6 +581,16 @@ onBeforeUnmount(() => {
 @keyframes live-ping {
   0% { opacity: 0.75; scale: 1; }
   80%, 100% { opacity: 0; scale: 2.6; }
+}
+
+/* What's new since you last looked (Settings → About) */
+.new-dot {
+  padding: 0.05rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--green);
+  border-radius: 999px;
 }
 
 /* ---------- Search everything / Add ---------- */

@@ -2,6 +2,7 @@
 import { toast } from 'vue-sonner'
 import type { Currency } from '~/utils/exchange'
 import type { CsvColumn } from '~/utils/transfer'
+import type { MenuEntry } from '~/composables/useContextMenu'
 
 interface Thing {
   id: string
@@ -56,6 +57,12 @@ const DEMO = (): Omit<Thing, 'id'>[] => [
 ]
 const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Thing>('things', undefined, { demo: DEMO })
 const rate = useMarketRate()
+
+// Pull down on a phone to sync again (CHECKLIST.md #26)
+usePullToRefresh(async () => {
+  await sync.retry()
+  toast(sync.signedIn.value ? 'Up to date with your account' : 'Refreshed', { duration: 1800 })
+})
 
 const today = () => new Date().toISOString().slice(0, 10)
 // New items start in the category and currency used last time (CHECKLIST.md #14)
@@ -146,8 +153,29 @@ const formatDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { day:
 
 const canSave = computed(() => form.name.trim() && form.price >= 0 && form.purchaseDate)
 
-function save() {
+// Adding something with the same name as one you have asks first (CHECKLIST.md #29)
+const duplicateOf = ref<Thing>()
+const sameName = (a: string, b: string) => a.trim().toLowerCase().replace(/\s+/g, ' ') === b.trim().toLowerCase().replace(/\s+/g, ' ')
+watch(() => form.name, () => (duplicateOf.value = undefined))
+function openDuplicate() {
+  const t = duplicateOf.value
+  duplicateOf.value = undefined
+  // The popup is already open: switch it to editing the one you have
+  if (t) edit(t)
+}
+
+function save(force = false) {
   if (!canSave.value) return
+  if (!editingId.value && !force) {
+    const existing = items.value.find(t => sameName(t.name, form.name))
+    if (existing) {
+      duplicateOf.value = existing
+      play('warning')
+      nextTick(() => document.querySelector('dialog[open] .dup')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+      return
+    }
+  }
+  duplicateOf.value = undefined
   const record = {
     ...form,
     name: form.name.trim(),
@@ -168,6 +196,20 @@ function save() {
   play('success')
   cancel()
 }
+
+// Right-click / long-press (CHECKLIST.md #27)
+const menuFor = useRowMenu()
+const thingMenu = (t: Thing): MenuEntry[] => [
+  { label: 'Edit', icon: 'edit', run: () => edit(t) },
+  { label: 'Duplicate', icon: 'duplicate', run: () => {
+    const { id: _, ...rest } = t
+    const copy = add({ ...rest, name: `${t.name} (copy)` })
+    play('success')
+    toast.success('Duplicated', { description: copy.name, action: { label: 'Undo', onClick: () => remove(copy.id, { undoAdd: true }) } })
+  } },
+  '-',
+  { label: 'Delete', icon: 'delete', danger: true, run: () => del(t) }
+]
 
 function edit(t: Thing) {
   editingId.value = t.id
@@ -241,8 +283,17 @@ function del(t: Thing) {
     />
 
     <Modal :open="formOpen" :title="editingId ? 'Edit item' : 'Add something you own'" @close="cancel">
-      <form v-validate class="form" @submit.prevent="save">
+      <form v-validate class="form" @submit.prevent="save()">
         <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
+        <DuplicateCard
+          v-if="duplicateOf"
+          :title="duplicateOf.name"
+          :detail="`${duplicateOf.category}, bought ${duplicateOf.purchaseDate}`"
+          open-label="Open it"
+          @open="openDuplicate"
+          @keep="save(true)"
+          @cancel="duplicateOf = undefined"
+        />
         <label class="field">
           <span class="field-head">What is it?</span>
           <input v-model="form.name" class="input" placeholder="iPhone 16 Pro Max" required data-error="Give it a name, like iPhone 16 Pro">
@@ -353,7 +404,7 @@ function del(t: Thing) {
 
             <!-- One card per thing: what it is, what you paid → what it's worth now, and how much of its price it keeps -->
             <TransitionGroup tag="ul" name="list" class="things">
-              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
+              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
                 <header class="thing-head">
                   <span class="thing-icon" aria-hidden="true"><CategoryIcon :name="t.category" /></span>
                   <span class="thing-title">
@@ -748,7 +799,8 @@ function del(t: Thing) {
 }
 
 .add-btn {
-  color: var(--accent);
+  /* The app colour, nudged toward the text colour so it reads on light and dark surfaces */
+  color: color-mix(in srgb, var(--accent) 55%, var(--ink));
   background: var(--surface);
 }
 
