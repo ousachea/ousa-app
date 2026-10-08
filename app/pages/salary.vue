@@ -924,6 +924,7 @@ function switchCurrency(next) {
 }
 
 .note {
+  max-width: 75ch;
   margin: 0;
   font-size: 0.875rem;
   color: var(--ink-2);

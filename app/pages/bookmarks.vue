@@ -830,47 +830,50 @@ async function enrich(list: Bookmark[]) {
             </div>
           </div>
 
-          <TransitionGroup v-if="shown.length" tag="ul" name="list" class="marks" :class="view === 'compact' ? ['list', 'compact'] : view">
-            <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :class="{ flash: flashId === b.id }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)">
-              <span class="mark-icon" aria-hidden="true">
-                <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
-                <span v-else>{{ initial(b) }}</span>
-              </span>
-              <div class="mark-body">
-                <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
-                <span class="mark-meta">
-                  {{ hostOf(b.url) }} · added {{ ago(b.createdAt) }}<template v-if="b.visits"> · opened {{ b.visits }}×</template>
+          <template v-if="shown.length">
+            <TransitionGroup tag="ul" name="list" class="marks" :class="view === 'compact' ? ['list', 'compact'] : view">
+              <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :class="{ flash: flashId === b.id }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)">
+                <span class="mark-icon" aria-hidden="true">
+                  <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
+                  <span v-else>{{ initial(b) }}</span>
                 </span>
-                <p v-if="b.description && !b.note" class="mark-desc">{{ b.description }}</p>
-                <p v-if="b.note" class="mark-note">{{ b.note }}</p>
-                <span v-if="foldersOf(b).length" class="mark-tags">
-                  <button
-                    v-for="id in foldersOf(b)"
-                    :key="id"
-                    type="button"
-                    class="chip"
-                    :style="{ '--tag': folderColor(folderById(id)) }"
-                    :title="`Show ${pathText(folders, id)}`"
-                    @click="activeFolder = id"
-                  >
-                    <FolderIcon :icon="folderById(id)?.icon" :color="folderById(id)?.color" />{{ folderById(id)?.name }}
+                <div class="mark-body">
+                  <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
+                  <span class="mark-meta">
+                    {{ hostOf(b.url) }} · added {{ ago(b.createdAt) }}<template v-if="b.visits"> · opened {{ b.visits }}×</template>
+                  </span>
+                  <p v-if="b.description && !b.note" class="mark-desc">{{ b.description }}</p>
+                  <p v-if="b.note" class="mark-note">{{ b.note }}</p>
+                  <span v-if="foldersOf(b).length" class="mark-tags">
+                    <button
+                      v-for="id in foldersOf(b)"
+                      :key="id"
+                      type="button"
+                      class="chip"
+                      :style="{ '--tag': folderColor(folderById(id)) }"
+                      :title="`Show ${pathText(folders, id)}`"
+                      @click="activeFolder = id"
+                    >
+                      <FolderIcon :icon="folderById(id)?.icon" :color="folderById(id)?.color" />{{ folderById(id)?.name }}
+                    </button>
+                  </span>
+                </div>
+                <div class="mark-actions">
+                  <button type="button" class="icon-btn" :class="{ on: b.pinned }" :aria-pressed="b.pinned" :aria-label="b.pinned ? `Unpin ${b.title}` : `Pin ${b.title}`" :title="b.pinned ? 'Unpin' : 'Pin to the top'" @click="togglePin(b)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1v16l-6-4.2-6 4.2v-16a1 1 0 0 1 1-1z" /></svg>
                   </button>
-                </span>
-              </div>
-              <div class="mark-actions">
-                <button type="button" class="icon-btn" :class="{ on: b.pinned }" :aria-pressed="b.pinned" :aria-label="b.pinned ? `Unpin ${b.title}` : `Pin ${b.title}`" :title="b.pinned ? 'Unpin' : 'Pin to the top'" @click="togglePin(b)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1v16l-6-4.2-6 4.2v-16a1 1 0 0 1 1-1z" /></svg>
-                </button>
-                <button type="button" class="icon-btn" :aria-label="`Edit ${b.title}`" title="Edit" @click="edit(b)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
-                </button>
-                <ConfirmDelete :name="b.title" @confirm="del(b)" />
-              </div>
-            </li>
-          </TransitionGroup>
-          <div v-if="shown.length > limit" ref="moreSentinel" class="more-sentinel">
-            <button type="button" class="btn btn-quiet btn-sm" @click="limit += PAGE">Show more ({{ shown.length - limit }} left)</button>
-          </div>
+                  <button type="button" class="icon-btn" :aria-label="`Edit ${b.title}`" title="Edit" @click="edit(b)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+                  </button>
+                  <ConfirmDelete :name="b.title" @confirm="del(b)" />
+                </div>
+              </li>
+            </TransitionGroup>
+            <!-- Long lists draw in pages (#70); this loads the next page as it scrolls into view -->
+            <div v-if="shown.length > limit" ref="moreSentinel" class="more-sentinel">
+              <button type="button" class="btn btn-quiet btn-sm" @click="limit += PAGE">Show more ({{ shown.length - limit }} left)</button>
+            </div>
+          </template>
 
           <div v-else-if="ready && items.length" class="empty">
             <p>Nothing matches{{ query ? ` “${query}”` : '' }}.</p>
