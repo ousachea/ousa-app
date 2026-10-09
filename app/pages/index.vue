@@ -78,12 +78,6 @@ useAppSeo({
       <p>Small tools for everyday jobs, and simple trackers for the things in your life. Click an icon on the cube to open it, or anywhere else to shuffle.</p>
     </div>
 
-    <!-- Your dashboard: greeting, quick add, what's coming up, favourites, recent (#64) -->
-    <ClientOnly>
-      <HomeDashboard />
-      <template #fallback><SkeletonList variant="cards" :count="3" label="Loading your dashboard" class="dash-skeleton" /></template>
-    </ClientOnly>
-
     <section v-for="group in GROUPS" :key="group.name" class="group" :aria-labelledby="`group-${group.name}`">
       <h2 :id="`group-${group.name}`">{{ group.name }}</h2>
       <nav class="tools" :class="{ 'drop-x': group.name === 'Pinned' }" :aria-label="group.name === 'Pinned' ? 'Pinned. Drag to reorder, or Alt and the arrow keys.' : group.name">
@@ -302,11 +296,6 @@ h1 {
 .summary {
   font-size: 0.925rem;
   color: var(--ink-2);
-}
-
-.dash-skeleton {
-  width: 100%;
-  max-width: 1200px;
 }
 
 .recent-panel {
