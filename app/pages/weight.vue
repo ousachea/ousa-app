@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
 
 interface Entry {
@@ -80,6 +81,22 @@ function save() {
   play('success')
   form.value = null
 }
+
+// ---------- Select several (useBulkSelect) ----------
+// Picked in the table, newest first; starting opens the table
+const tableRows = computed(() => [...sorted.value].reverse())
+const tableView = ref<HTMLDetailsElement>()
+const bulkText = (n: number) => `${n} ${n === 1 ? 'entry' : 'entries'}`
+const sel = useBulkSelect({ items, shown: tableRows, onDelete: () => deleteSelected() })
+function deleteSelected() {
+  sel.guard(`Delete ${bulkText(sel.selected.size)}?`, () => bulkRemove(sel.selectedItems as Entry[], remove, restore, bulkText))
+}
+watch(() => sel.selecting, (on) => {
+  if (on && tableView.value) tableView.value.open = true
+})
+const bulkActions = computed<BulkAction[]>(() => [
+  { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
+])
 
 function del(e: Entry) {
   const removed = remove(e.id)
@@ -200,7 +217,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
       </Step>
 
       <Step title="Your trend" class="chart-step">
-        <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
+        <template #aside><ClientOnly><span class="aside-tools"><BulkToggle v-if="items.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
             <section class="panel stats">
@@ -268,13 +285,13 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
               <p v-if="!visible.length" class="no-data">No entries in this range.</p>
             </figure>
 
-            <details class="table-view">
+            <details ref="tableView" class="table-view">
               <summary>Show as a table</summary>
               <table>
                 <thead><tr><th>Date</th><th>Weight</th><th><span class="sr-only">Actions</span></th></tr></thead>
                 <tbody>
-                  <tr v-for="e in [...sorted].reverse()" :key="e.id">
-                    <td>{{ formatDate(e.date, true) }}</td>
+                  <tr v-for="e in tableRows" :key="e.id" class="bulk-row" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, e.id)" :class="{ 'bulk-picked': sel.has(e.id) }">
+                    <td><span class="bulk-cell"><BulkCheck v-if="sel.selecting" inline :checked="sel.has(e.id)" :label="`Select ${formatDate(e.date, true)}`" @pick="sel.pick(e.id, $event)" />{{ formatDate(e.date, true) }}</span></td>
                     <td class="num">{{ fmt(e.kg) }}</td>
                     <td class="act"><ConfirmDelete :name="`the entry for ${formatDate(e.date, true)}`" @confirm="del(e)" /></td>
                   </tr>
@@ -293,6 +310,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
         </ClientOnly>
       </Step>
     </div>
+    <BulkBar :select="sel" :actions="bulkActions" label="Selected entries" noun="entries" />
   </ToolPage>
 </template>
 

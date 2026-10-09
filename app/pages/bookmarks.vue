@@ -4,6 +4,7 @@ import type { Bookmark, ImportedBookmark } from '~/utils/bookmarks'
 import type { Folder } from '~/utils/folders'
 import type { CsvColumn } from '~/utils/transfer'
 import type { MenuEntry } from '~/composables/useContextMenu'
+import type { BulkAction } from '~/composables/useBulkSelect'
 
 const { play } = useSound()
 
@@ -390,7 +391,8 @@ const shown = computed(() => {
     const mine = foldersOf(b)
     if (scope === UNFILED ? mine.length : scope && !mine.some(id => scope.has(id))) return false
     if (!q) return true
-    return [b.title, b.url, b.note, b.description, ...pathsOf(b)].some(f => f.toLowerCase().includes(q))
+    // Older or imported bookmarks may have no note or description
+    return [b.title, b.url, b.note, b.description, ...pathsOf(b)].some(f => f?.toLowerCase().includes(q))
   })
   if (sort.value === 'az') return list.sort((a, b) => a.title.localeCompare(b.title))
   if (sort.value === 'updated') return list.sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
@@ -455,6 +457,66 @@ function del(b: Bookmark) {
   toastDeleted(b.title, () => removed && restore(removed))
 }
 
+// ---------- Select several: pin, move, copy or delete them together (useBulkSelect) ----------
+const marksText = (n: number) => `${n} ${n === 1 ? 'bookmark' : 'bookmarks'}`
+const sel = useBulkSelect({ items, shown, accentFrom: searchInput, onDelete: () => deleteSelected() })
+const selectedMarks = computed(() => sel.selectedItems as Bookmark[])
+
+const selectionPinned = computed(() => selectedMarks.value.length > 0 && selectedMarks.value.every(b => b.pinned))
+function bulkPin(pinned = !selectionPinned.value) {
+  const targets = selectedMarks.value.filter(b => !!b.pinned !== pinned)
+  if (!targets.length) return
+  const before = targets.map(b => update(b.id, { pinned }, { quiet: true })).filter((b): b is Bookmark => !!b)
+  logActivity('edited', '/bookmarks', `${pinned ? 'Pinned' : 'Unpinned'} ${marksText(targets.length)}`)
+  play(pinned ? 'toggle-on' : 'toggle-off')
+  toast(`${marksText(targets.length)} ${pinned ? 'pinned' : 'unpinned'}`, { action: { label: 'Undo', onClick: () => before.forEach(b => replace(b)) } })
+}
+
+const movingMany = ref(false)
+function bulkMove(folderId: string) {
+  movingMany.value = false
+  const target = folderId === UNFILED || folderId === ALL_BOOKMARKS ? [] : [folderId]
+  const targets = selectedMarks.value.filter(b => JSON.stringify(foldersOf(b)) !== JSON.stringify(target))
+  if (!targets.length) return
+  const now = new Date().toISOString()
+  const before = targets.map(b => update(b.id, { folders: target, updatedAt: now }, { quiet: true })).filter((b): b is Bookmark => !!b)
+  const where = target.length ? `moved to ${pathText(folders.value, folderId)}` : 'taken out of their folders'
+  logActivity('edited', '/bookmarks', `${marksText(targets.length)} ${where}`)
+  play('success')
+  toast(`${marksText(targets.length)} ${where}`, { action: { label: 'Undo', onClick: () => before.forEach(b => replace(b)) } })
+}
+
+async function bulkCopy() {
+  const links = selectedMarks.value.map(b => b.url)
+  if (!links.length) return
+  try {
+    await navigator.clipboard.writeText(links.join('\n'))
+    play('copy')
+    toast.success(links.length === 1 ? 'Link copied' : `${links.length} links copied`, { description: 'One per line.' })
+  } catch {
+    toast.error('Could not copy')
+  }
+}
+
+// Everything goes to the Recycle Bin with one Undo; a big batch is asked first
+function deleteSelected() {
+  sel.guard(`Delete ${marksText(sel.selected.size)}?`, () => bulkRemove(selectedMarks.value, remove, restore, marksText))
+}
+
+const bulkActions = computed<BulkAction[]>(() => [
+  { label: selectionPinned.value ? 'Unpin' : 'Pin', icon: 'pin', run: () => bulkPin() },
+  { label: 'Move', icon: 'move', run: () => (movingMany.value = true) },
+  { label: 'Copy links', icon: 'copy', run: bulkCopy },
+  { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
+])
+
+// The Move dialog serves one bookmark (from its menu) or the selection
+function pickFolder(folderId: string) {
+  if (movingMany.value) bulkMove(folderId)
+  else if (moving.value) moveBookmark(moving.value.id, folderId)
+  moving.value = undefined
+}
+
 // Bookmarks drag onto folders in the sidebar (desktop; phones use Move to folder…)
 const finePointer = ref(false)
 onMounted(() => (finePointer.value = matchMedia('(pointer: fine)').matches))
@@ -466,7 +528,7 @@ function onBookmarkDrag(e: DragEvent, b: Bookmark) {
 
 // ---------- Right-click / long-press menu (CHECKLIST.md #26, #27) ----------
 const menuFor = useRowMenu()
-const bookmarkMenu = (b: Bookmark): MenuEntry[] => [
+const bookmarkMenu = (b: Bookmark): MenuEntry[] => sel.has(b.id) && sel.selected.size > 1 ? selectionMenu() : [
   { label: 'Open', icon: 'open', run: () => {
     opened(b)
     window.location.href = b.url
@@ -479,12 +541,25 @@ const bookmarkMenu = (b: Bookmark): MenuEntry[] => [
   { label: 'Edit', icon: 'edit', run: () => edit(b) },
   { label: 'Move to folder…', icon: 'folder', run: () => (moving.value = b) },
   { label: b.pinned ? 'Unpin' : 'Pin to the top', icon: 'pin', run: () => togglePin(b) },
+  { label: 'Select', icon: 'select', run: () => (sel.selecting ? sel.toggle(b.id) : sel.start(b.id)) },
   { label: 'Copy link', icon: 'copy', run: () => copyLink(b) },
   { label: 'Refresh icon', icon: 'refresh', disabled: refreshing.value.has(b.id), run: () => refreshIcon(b) },
   { label: 'Duplicate', icon: 'duplicate', run: () => duplicate(b) },
   '-',
   { label: 'Delete', icon: 'delete', danger: true, run: () => del(b) }
 ]
+
+// Right-click or long-press on a picked row while several are picked acts on all of them
+function selectionMenu(): MenuEntry[] {
+  const n = sel.selected.size
+  return [
+    { label: `${selectionPinned.value ? 'Unpin' : 'Pin'} ${n}`, icon: 'pin', run: () => bulkPin() },
+    { label: `Move ${n} to folder…`, icon: 'folder', run: () => (movingMany.value = true) },
+    { label: `Copy ${n} links`, icon: 'copy', run: bulkCopy },
+    '-',
+    { label: `Delete ${n}`, icon: 'delete', danger: true, run: deleteSelected }
+  ]
+}
 
 async function copyLink(b: Bookmark) {
   try {
@@ -755,7 +830,7 @@ async function enrich(list: Bookmark[]) {
 
     <ClientOnly>
       <!-- Pinned: the sites you open every day, as big tiles -->
-      <section v-if="pinned.length" class="shelf drop-x" aria-label="Pinned. Drag to reorder, or Alt and the arrow keys.">
+      <section v-if="pinned.length" class="shelf drop-x" :class="{ resting: sel.selecting }" :inert="sel.selecting || undefined" aria-label="Pinned. Drag to reorder, or Alt and the arrow keys.">
         <a
           v-for="(b, i) in pinned"
           :key="b.id"
@@ -813,6 +888,7 @@ async function enrich(list: Bookmark[]) {
               <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
+            <button v-if="items.length" type="button" class="btn btn-quiet btn-sm select-btn" :aria-pressed="sel.selecting" @click="sel.selecting ? sel.stop() : sel.start()">{{ sel.selecting ? 'Done' : 'Select' }}</button>
             <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             <div class="views" role="radiogroup" aria-label="View">
               <button type="button" role="radio" class="view-btn" :aria-checked="view === 'list'" title="List" @click="setView('list')">
@@ -831,11 +907,16 @@ async function enrich(list: Bookmark[]) {
           </div>
 
           <template v-if="shown.length">
-            <TransitionGroup tag="ul" name="list" class="marks" :class="view === 'compact' ? ['list', 'compact'] : view">
-              <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :class="{ flash: flashId === b.id }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)">
-                <span class="mark-icon" aria-hidden="true">
+            <TransitionGroup tag="ul" name="list" class="marks" :class="[view === 'compact' ? ['list', 'compact'] : view, { selecting: sel.selecting }]">
+              <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ flash: flashId === b.id, picked: sel.has(b.id) }" :draggable="finePointer && !sel.selecting ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @click.capture="sel.onRowClick($event, b.id)">
+                <!-- The icon doubles as the checkbox: always while selecting, and on hover with a mouse to start -->
+                <span class="mark-icon">
                   <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
-                  <span v-else>{{ initial(b) }}</span>
+                  <span v-else aria-hidden="true">{{ initial(b) }}</span>
+                  <label class="mark-pick">
+                    <input type="checkbox" class="pick-box" :checked="sel.has(b.id)" :tabindex="sel.selecting ? undefined : -1" :aria-label="`Select ${b.title}`" @click="sel.pick(b.id, $event)">
+                    <svg class="pick-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 12.5l3.5 3.5 7.5-8" /></svg>
+                  </label>
                 </span>
                 <div class="mark-body">
                   <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
@@ -928,10 +1009,14 @@ async function enrich(list: Bookmark[]) {
 
     <FolderEditor :open="folderEditor.open" :folders="folders" :folder="folderEditor.folder" :parent-id="folderEditor.parentId" @close="folderEditor.open = false" @save="saveFolder" />
 
+    <!-- Select several: the floating bar (BulkBar) -->
+    <BulkBar :select="sel" :actions="bulkActions" label="Selected bookmarks" noun="bookmarks" />
+
+
     <!-- Move to folder… (the menu way to do what dragging does) -->
-    <Modal :open="!!moving" :title="moving ? `Move ${moving.title}` : 'Move'" @close="moving = undefined">
+    <Modal :open="!!moving || movingMany" :title="movingMany ? `Move ${marksText(sel.selected.size)}` : moving ? `Move ${moving.title}` : 'Move'" @close="moving = undefined; movingMany = false">
       <div class="move-list" role="listbox" aria-label="Folders">
-        <button type="button" class="move-opt" @click="moveBookmark(moving!.id, UNFILED); moving = undefined">
+        <button type="button" class="move-opt" @click="pickFolder(UNFILED)">
           <ToolIcon name="bookmarks" /> Not in a folder
         </button>
         <button
@@ -939,13 +1024,13 @@ async function enrich(list: Bookmark[]) {
           :key="o.folder.id"
           type="button"
           class="move-opt"
-          :class="{ current: moving && foldersOf(moving).includes(o.folder.id) }"
+          :class="{ current: !movingMany && moving && foldersOf(moving).includes(o.folder.id) }"
           :style="{ paddingLeft: `${0.8 + o.depth * 1}rem` }"
-          @click="moveBookmark(moving!.id, o.folder.id); moving = undefined"
+          @click="pickFolder(o.folder.id)"
         >
           <FolderIcon :icon="o.folder.icon" :color="o.folder.color" /> {{ o.folder.name }}
         </button>
-        <button type="button" class="move-opt new" @click="moving = undefined; openNewFolder()">+ New folder…</button>
+        <button type="button" class="move-opt new" @click="moving = undefined; movingMany = false; openNewFolder()">+ New folder…</button>
       </div>
     </Modal>
   </ToolPage>
@@ -1390,6 +1475,118 @@ async function enrich(list: Bookmark[]) {
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
+}
+
+.select-btn[aria-pressed='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* The icon is the checkbox. Hidden until selecting (or hovering with a mouse), it covers the icon:
+   an outlined box when unpicked, the accent with a tick when picked. */
+.mark-icon {
+  position: relative;
+}
+
+.mark-pick {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out;
+}
+
+.marks.selecting .mark-pick,
+.mark-pick:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mark:hover .mark-pick {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.pick-box {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 35%, transparent);
+  cursor: pointer;
+  transition-property: background-color, box-shadow;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-out;
+}
+
+.pick-box:hover {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.pick-box:checked {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.pick-box:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pick-tick {
+  position: relative;
+  width: 58%;
+  height: 58%;
+  fill: none;
+  stroke: var(--on-accent, #fff);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.25;
+  filter: blur(4px);
+  transition-property: opacity, scale, filter;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.pick-box:checked + .pick-tick {
+  opacity: 1;
+  scale: 1;
+  filter: blur(0);
+}
+
+/* While selecting, the row is one big tap target: no link hover, no pointer on the title */
+.marks.selecting .mark {
+  cursor: pointer;
+  user-select: none;
+}
+
+.marks.selecting .mark-title {
+  pointer-events: none;
+}
+
+/* The pinned shelf rests while picking from the list */
+.shelf.resting {
+  opacity: 0.45;
+  transition: opacity 0.15s ease-out;
+}
+
+.marks.selecting .mark-actions {
+  visibility: hidden;
+}
+
+.mark.picked {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
 .toolbar h2 {

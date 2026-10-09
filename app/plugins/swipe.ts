@@ -27,6 +27,8 @@ function setOffset(el: HTMLElement, dx: number, animate = false) {
 function onDown(e: PointerEvent) {
   if (e.pointerType !== 'touch') return
   const el = e.currentTarget as HTMLElement
+  // data-swipe-off / data-bulk: paused for now (e.g. while picking several records)
+  if (el.dataset.swipeOff !== undefined || el.dataset.bulk !== undefined) return
   const s = rows.get(el)
   if (!s) return
   Object.assign(s, { startX: e.clientX, startY: e.clientY, dx: 0, mode: 'maybe', id: e.pointerId })

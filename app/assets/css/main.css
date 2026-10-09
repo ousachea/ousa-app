@@ -1036,3 +1036,33 @@ kbd {
 :root:root:not([data-density='comfortable']) .panel.summary {
   padding-block: calc(1.25rem * var(--density));
 }
+
+/* ---------- Selecting several (useBulkSelect, <BulkCheck>) ---------- */
+/* While picking, a row is one big tap target */
+.bulk-row {
+  position: relative;
+}
+
+.bulk-row[data-bulk] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.bulk-picked {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* A Step's aside with the Select button next to the sync badge */
+.aside-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* A table cell that gets a checkbox in front while selecting */
+.bulk-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}

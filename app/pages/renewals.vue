@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
 import type { Currency } from '~/utils/exchange'
 import type { Countdown, Cycle, Period } from '~/utils/renewals'
@@ -318,6 +319,17 @@ const renewalFromRow = (row: Record<string, string>) => renewalFrom(
 const renewalFromJSON = (r: Record<string, unknown>) => renewalFrom(String(r.name ?? ''), Number(r.price), String(r.currency ?? ''), String(r.cycle ?? ''), String(r.nextDate ?? ''), String(r.category ?? ''))
 const renewalKey = (r: Omit<Renewal, 'id'>) => `${r.name.toLowerCase()}|${r.price}|${r.cycle}`
 
+// ---------- Select several (useBulkSelect) ----------
+const bulkText = (n: number) => `${n} ${n === 1 ? 'renewal' : 'renewals'}`
+const sel = useBulkSelect({ items, shown: upcoming, onDelete: () => deleteSelected() })
+function deleteSelected() {
+  sel.guard(`Delete ${bulkText(sel.selected.size)}?`, () => bulkRemove(sel.selectedItems as Renewal[], remove, restore, bulkText))
+}
+const bulkActions = computed<BulkAction[]>(() => [
+  { label: allFavourite(sel.selectedItems as Renewal[]) ? 'Unfavourite' : 'Favourite', icon: 'star', run: () => bulkFavourite(sel.selectedItems as Renewal[], update, replace, bulkText) },
+  { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
+])
+
 function del(r: Renewal) {
   const removed = remove(r.id)
   if (editingId.value === r.id) cancel()
@@ -411,7 +423,7 @@ function del(r: Renewal) {
     <!-- Read like a billing statement: one centred column -->
     <div class="statement">
       <Step title="What you’re paying for" class="list-step">
-        <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
+        <template #aside><ClientOnly><span class="aside-tools"><BulkToggle v-if="items.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
             <section class="panel summary">
@@ -470,7 +482,8 @@ function del(r: Renewal) {
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             </div>
             <TransitionGroup tag="ul" name="list" class="renewals">
-              <li v-for="r in upcoming" :key="r.id" :data-item-id="r.id" class="panel renewal" v-bind="menuFor(() => renewalMenu(r), r.name)" v-swipe-delete="() => del(r)" :class="[`is-${r.status}`, { soon: r.status === 'soon' || r.status === 'due', editing: editingId === r.id }]">
+              <li v-for="r in upcoming" :key="r.id" :data-item-id="r.id" class="panel renewal bulk-row" v-bind="menuFor(() => renewalMenu(r), r.name)" v-swipe-delete="() => del(r)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, r.id)" :class="[`is-${r.status}`, { soon: r.status === 'soon' || r.status === 'due', editing: editingId === r.id, 'bulk-picked': sel.has(r.id) }]">
+                <BulkCheck v-if="sel.selecting" :checked="sel.has(r.id)" :label="`Select ${r.name}`" @pick="sel.pick(r.id, $event)" />
                 <!-- Countdown (#55): bigger units far away, down to seconds in the last hour -->
                 <div class="when" role="timer" :aria-label="whenText(r)" :title="whenText(r)">
                   <template v-if="r.status === 'expired'"><strong>✕</strong><span>ended</span></template>
@@ -518,6 +531,7 @@ function del(r: Renewal) {
         </ClientOnly>
       </Step>
     </div>
+    <BulkBar :select="sel" :actions="bulkActions" label="Selected renewals" noun="renewals" />
   </ToolPage>
 </template>
 

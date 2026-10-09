@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
 import type { Currency } from '~/utils/exchange'
 import type { CsvColumn } from '~/utils/transfer'
@@ -414,6 +415,17 @@ const thingFromJSON = (r: Record<string, unknown>) => thingFrom({
 })
 const thingKey = (t: Omit<Thing, 'id'>) => `${t.name.toLowerCase()}|${t.purchaseDate}`
 
+// ---------- Select several (useBulkSelect) ----------
+const bulkText = (n: number) => `${n} ${n === 1 ? 'thing' : 'things'}`
+const sel = useBulkSelect({ items, shown: visible, onDelete: () => deleteSelected() })
+function deleteSelected() {
+  sel.guard(`Delete ${bulkText(sel.selected.size)}?`, () => bulkRemove(sel.selectedItems as Thing[], remove, restore, bulkText))
+}
+const bulkActions = computed<BulkAction[]>(() => [
+  { label: allFavourite(sel.selectedItems as Thing[]) ? 'Unfavourite' : 'Favourite', icon: 'star', run: () => bulkFavourite(sel.selectedItems as Thing[], update, replace, bulkText) },
+  { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
+])
+
 function del(t: Thing) {
   const removed = remove(t.id)
   if (editingId.value === t.id) cancel()
@@ -618,6 +630,7 @@ function del(t: Thing) {
 
             <div v-sticky-bar class="toolbar">
               <DataSource :sync="sync" />
+              <BulkToggle v-if="items.length" :select="sel" />
               <input v-model="query" class="input search" type="search" placeholder="Search your things" aria-label="Search your things">
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
               <div class="views segmented" role="radiogroup" aria-label="View">
@@ -644,7 +657,8 @@ function del(t: Thing) {
 
             <!-- One card per thing: what it is, what you paid → what it's worth now, and how much of its price it keeps -->
             <TransitionGroup tag="ul" name="list" class="things" :class="view">
-              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :class="{ editing: editingId === t.id }" :style="categoryStyle(t.category)">
+              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing bulk-row" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)" :class="{ editing: editingId === t.id, 'bulk-picked': sel.has(t.id) }" :style="categoryStyle(t.category)">
+                <BulkCheck v-if="sel.selecting" :checked="sel.has(t.id)" :label="`Select ${t.name}`" @pick="sel.pick(t.id, $event)" />
                 <header class="thing-head">
                   <span class="thing-icon" :class="{ logo: logoOf(t) }" aria-hidden="true">
                     <img v-if="logoOf(t)" :src="logoOf(t)" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenLogos.add(logoOf(t)!)">
@@ -700,6 +714,7 @@ function del(t: Thing) {
           <SkeletonList v-else variant="cards" :count="3" label="Loading your things" />
           <template #fallback><SkeletonList variant="cards" :count="3" label="Loading your things" /></template>
         </ClientOnly>
+    <BulkBar :select="sel" :actions="bulkActions" label="Selected things" noun="things" />
   </ToolPage>
 </template>
 

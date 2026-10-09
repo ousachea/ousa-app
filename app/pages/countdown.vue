@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
 import type { Cached } from '~/utils/cache'
 import type { MenuEntry } from '~/composables/useContextMenu'
@@ -218,6 +219,19 @@ function cancel() {
   editingId.value = undefined
 }
 
+// ---------- Select several (useBulkSelect) ----------
+// In the order they're shown: next up, later ones, then the ones that already happened
+const allShown = computed(() => [...upcoming.value, ...past.value])
+const bulkText = (n: number) => `${n} ${n === 1 ? 'countdown' : 'countdowns'}`
+const sel = useBulkSelect({ items, shown: allShown, onDelete: () => deleteSelected() })
+function deleteSelected() {
+  sel.guard(`Delete ${bulkText(sel.selected.size)}?`, () => bulkRemove(sel.selectedItems as CountdownEvent[], remove, restore, bulkText))
+}
+const bulkActions = computed<BulkAction[]>(() => [
+  { label: allFavourite(sel.selectedItems as CountdownEvent[]) ? 'Unfavourite' : 'Favourite', icon: 'star', run: () => bulkFavourite(sel.selectedItems as CountdownEvent[], update, replace, bulkText) },
+  { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
+])
+
 function del(e: CountdownEvent) {
   const removed = remove(e.id)
   if (editingId.value === e.id) cancel()
@@ -265,11 +279,12 @@ function del(e: CountdownEvent) {
       </div>
 
       <Step title="Coming up" v-sticky-fit class="list-step">
-        <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
+        <template #aside><ClientOnly><span class="aside-tools"><BulkToggle v-if="items.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
             <!-- The next date gets the spotlight: name and date on the left, a live flip clock on the right -->
-            <section v-if="featured" :data-item-id="featured.id" class="panel featured" v-bind="menuFor(() => countdownMenu(featured!), featured.title)" :class="{ editing: editingId === featured.id }" aria-live="off">
+            <section v-if="featured" :data-item-id="featured.id" class="panel featured bulk-row" v-bind="menuFor(() => countdownMenu(featured!), featured.title)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, featured.id)" :class="{ editing: editingId === featured.id, 'bulk-picked': sel.has(featured.id) }" aria-live="off">
+              <BulkCheck v-if="sel.selecting" :checked="sel.has(featured.id)" :label="`Select ${featured.title}`" @pick="sel.pick(featured.id, $event)" />
               <div class="featured-text">
                 <span class="label">Next up</span>
                 <h2>{{ featured.title }}</h2>
@@ -297,7 +312,8 @@ function del(e: CountdownEvent) {
             <!-- Later dates: a date tile, how long to go (more exact as it nears) and how much of the wait is done -->
             <h3 v-if="later.length" class="later-head">After that</h3>
             <TransitionGroup v-if="later.length" tag="ul" name="list" class="pages">
-              <li v-for="e in later" :key="e.id" :data-item-id="e.id" class="page panel" v-bind="menuFor(() => countdownMenu(e), e.title)" v-swipe-delete="() => del(e)" :class="{ editing: editingId === e.id }">
+              <li v-for="e in later" :key="e.id" :data-item-id="e.id" class="page panel bulk-row" v-bind="menuFor(() => countdownMenu(e), e.title)" v-swipe-delete="() => del(e)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, e.id)" :class="{ editing: editingId === e.id, 'bulk-picked': sel.has(e.id) }">
+                <BulkCheck v-if="sel.selecting" :checked="sel.has(e.id)" :label="`Select ${e.title}`" @pick="sel.pick(e.id, $event)" />
                 <span class="date-tile" aria-hidden="true">
                   <span class="month">{{ monthOf(e).split(' ')[0]!.slice(0, 3) }}</span>
                   <strong class="day">{{ dayOf(e) }}</strong>
@@ -327,7 +343,8 @@ function del(e: CountdownEvent) {
             <section v-if="past.length" class="past">
               <h3>Already happened</h3>
               <ul>
-                <li v-for="e in past" :key="e.id" :data-item-id="e.id" v-bind="menuFor(() => countdownMenu(e), e.title)">
+                <li v-for="e in past" :key="e.id" :data-item-id="e.id" class="bulk-row" v-bind="menuFor(() => countdownMenu(e), e.title)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, e.id)" :class="{ 'bulk-picked': sel.has(e.id) }">
+                  <BulkCheck v-if="sel.selecting" inline :checked="sel.has(e.id)" :label="`Select ${e.title}`" @pick="sel.pick(e.id, $event)" />
                   <span>{{ e.title }}</span>
                   <span class="meta">{{ agoText(e.left) }}</span>
                   <ConfirmDelete :name="e.title" @confirm="del(e)" />
@@ -429,6 +446,7 @@ function del(e: CountdownEvent) {
         </div>
       </form>
     </Modal>
+    <BulkBar :select="sel" :actions="bulkActions" label="Selected countdowns" noun="countdowns" />
   </ToolPage>
 </template>
 

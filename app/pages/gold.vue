@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
 
 /* Gold tracker: live XAU spot in Cambodian units (chi, damlung, hun, li) and a purchase ledger.
@@ -374,6 +375,16 @@ function savePurchase() {
   formOpen.value = false
 }
 
+// ---------- Select several (useBulkSelect) ----------
+const bulkText = (n: number) => `${n} ${n === 1 ? 'purchase' : 'purchases'}`
+const sel = useBulkSelect({ items: purchases, shown: sorted, onDelete: () => deleteSelected() })
+function deleteSelected() {
+  sel.guard(`Delete ${bulkText(sel.selected.size)}?`, () => bulkRemove(sel.selectedItems as Purchase[], remove, restore, bulkText))
+}
+const bulkActions = computed<BulkAction[]>(() => [
+  { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
+])
+
 function del(p: Purchase) {
   const removed = remove(p.id)
   play('delete')
@@ -691,7 +702,7 @@ const PURITIES: { value: Purity, label: string }[] = [
         <!-- ===== Units and ledger ===== -->
         <div v-sticky-fit class="side">
           <Step :n="3" :title="w.step3" :hint="w.step3Hint" class="ledger-step">
-            <template #aside><DataSource :sync="sync" /></template>
+            <template #aside><span class="aside-tools"><BulkToggle v-if="purchases.length" :select="sel" /><DataSource :sync="sync" /></span></template>
 
             <div v-if="purchases.length" class="panel summary">
               <div><span>{{ w.invested }}</span><strong>{{ money(totals.paid) }}</strong></div>
@@ -724,8 +735,10 @@ const PURITIES: { value: Purity, label: string }[] = [
               <li
                 v-for="p in sorted"
                 :key="p.id"
-                class="purchase shine"
-                :class="spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : ''"
+                class="purchase shine bulk-row"
+                :class="[spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : '', { 'bulk-picked': sel.has(p.id) }]"
+                :data-bulk="sel.selecting || undefined"
+                @click.capture="sel.onRowClick($event, p.id)"
                 tabindex="0"
                 title="Click to edit"
                 :aria-label="`${fmtQty(p.weight)} ${w[p.unit]} bought ${formatDate(p.date)}. Press Enter to edit.`"
@@ -734,6 +747,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                 @pointermove="onShineMove"
                 @pointerleave="onShineLeave"
               >
+                <BulkCheck v-if="sel.selecting" :checked="sel.has(p.id)" :label="`Select ${fmtQty(p.weight)} ${w[p.unit]} bought ${formatDate(p.date)}`" @pick="sel.pick(p.id, $event)" />
                 <header class="p-head">
                   <span class="p-weight"><strong>{{ fmtQty(p.weight) }}</strong> {{ w[p.unit] }}</span>
                   <span class="p-date">{{ formatDate(p.date) }}</span>
@@ -862,6 +876,7 @@ const PURITIES: { value: Purity, label: string }[] = [
         </div>
       </Transition>
     </ClientOnly>
+    <BulkBar :select="sel" :actions="bulkActions" label="Selected purchases" noun="purchases" />
   </ToolPage>
 </template>
 
@@ -1723,5 +1738,15 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 @media (prefers-reduced-motion: reduce) {
   .spinning { animation: none; }
+}
+
+/* The card clips its shine, so while selecting the badge sits just inside the corner and the heading makes room */
+.purchase .bulk-check {
+  top: 0.85rem;
+  left: 0.85rem;
+}
+
+.purchase[data-bulk] .p-head {
+  padding-left: 2.2rem;
 }
 </style>

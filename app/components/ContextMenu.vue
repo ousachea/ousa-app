@@ -121,6 +121,7 @@ onBeforeUnmount(() => {
                 <path v-else-if="item.icon === 'refresh'" d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4" />
                 <path v-else-if="item.icon === 'folder'" d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />
                 <path v-else-if="item.icon === 'pin'" d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" />
+                <path v-else-if="item.icon === 'select'" d="M6 4.5h12A1.5 1.5 0 0 1 19.5 6v12a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5zM8.5 12l2.5 2.5 4.5-5" />
                 <path v-else-if="item.icon === 'calendar'" d="M4 6.5h16v13H4zM4 10.5h16M8.5 4v4M15.5 4v4" />
                 <path v-else-if="item.icon === 'star'" d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z" />
               </svg>

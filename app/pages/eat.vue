@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
 
 type Kind = 'food' | 'place'
@@ -246,6 +247,16 @@ async function setPhoto(spot: Spot, e: Event) {
     play('error')
   }
 }
+
+// ---------- Select several (useBulkSelect) ----------
+const bulkText = (n: number) => `${n} ${n === 1 ? 'place' : 'places'}`
+const sel = useBulkSelect({ items, shown: items, onDelete: () => deleteSelected() })
+function deleteSelected() {
+  sel.guard(`Delete ${bulkText(sel.selected.size)}?`, () => bulkRemove(sel.selectedItems as Spot[], remove, restore, bulkText))
+}
+const bulkActions = computed<BulkAction[]>(() => [
+  { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
+])
 
 function del(s: Spot) {
   const removed = remove(s.id)
@@ -621,7 +632,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     </section>
 
     <section class="manage" aria-labelledby="manage-title">
-      <h2 id="manage-title">Your foods and places</h2>
+      <div class="manage-head">
+        <h2 id="manage-title">Your foods and places</h2>
+        <ClientOnly><BulkToggle v-if="items.length" :select="sel" /></ClientOnly>
+      </div>
       <div class="manage-grid">
         <form v-validate class="panel form" @submit.prevent="save">
           <h3>Add one</h3>
@@ -670,7 +684,8 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
         <ClientOnly>
           <ul v-if="items.length" class="thumbs">
-            <li v-for="s in items" :key="s.id" :data-item-id="s.id" class="thumb" :class="{ editing: editingId === s.id }" :data-kind="s.kind">
+            <li v-for="s in items" :key="s.id" :data-item-id="s.id" class="thumb bulk-row" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, s.id)" :class="{ editing: editingId === s.id, 'bulk-picked': sel.has(s.id) }" :data-kind="s.kind">
+              <BulkCheck v-if="sel.selecting" :checked="sel.has(s.id)" :label="`Select ${s.name}`" @pick="sel.pick(s.id, $event)" />
               <!-- Click a thumbnail to add or replace its photo -->
               <label class="thumb-img" :style="photoStyle(s)" :title="s.image ? 'Replace photo' : 'Add a photo'">
                 <input type="file" accept="image/*" :aria-label="s.image ? `Replace photo of ${s.name}` : `Add a photo of ${s.name}`" @change="setPhoto(s, $event)">
@@ -734,10 +749,23 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
         </div>
       </form>
     </Modal>
+    <BulkBar :select="sel" :actions="bulkActions" label="Selected places" noun="places" />
   </ToolPage>
 </template>
 
 <style scoped>
+.manage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.manage-head h2 {
+  margin: 0;
+}
+
 .stage-area {
   display: flex;
   flex-direction: column;
@@ -783,8 +811,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   }
 }
 
-.manage > h2 {
-  margin-bottom: 1rem;
+.manage-head h2 {
   font-size: 1.25rem;
 }
 
@@ -1524,5 +1551,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     gap: 0.5rem;
     font-size: 0.8rem;
   }
+}
+
+/* A picked tile: the outline follows the photo's rounded corners, with a little room */
+.thumb.bulk-picked {
+  outline-offset: 4px;
+  border-radius: 16px;
 }
 </style>

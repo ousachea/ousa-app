@@ -368,6 +368,7 @@ CSV, JSON, copy to clipboard; meaningful filenames.
 **Status:** 🟢
 Favorite apps, quick actions, recent activity, upcoming renewals, active countdowns, recent bookmarks and devices.
 **Notes:** `HomeDashboard.vue` under the cube: greeting + date, Search everything (⌘K), quick-add buttons (Bookmark, Device, Renewal, Countdown, Contact → that app's form), Upcoming renewals (icons, status-coloured days), Counting down, Favourites (starred records across apps + pinned bookmarks), Recently added bookmarks and devices (logos), Recent activity. Reads this device's data (instant, offline), updates when another tab changes data; every row links to the record (highlighted on arrival). Welcome state for brand-new users. Pinned apps lead the app grid below. Tested desktop + mobile.
+**Update (2026-10-09):** Removed at the owner's request. `HomeDashboard.vue` is gone and the home page goes straight from the cube to the app grid; pinned apps still lead the grid and recent activity is still in the menu.
 
 # PART I — FINAL POLISH
 
@@ -429,7 +430,53 @@ Review every app as a new user (purpose, primary action, forms, errors, animatio
 empty/loading states, mobile, desktop, shortcuts, overlaps, broken icons, console errors, one product).
 **Notes:** Went through every app as a new user on a production build: 18 pages × desktop (1280), phone light and phone dark, plus 2560 wide; first-run empty states; no console errors, no broken images, no overlaps, no hydration warnings; axe clean apart from the Battery brand-logo badge noted earlier. **Fixed:** (1) every app took “today” from UTC, so in Cambodia between midnight and 7 am new weights, purchases, renewals and countdowns were dated yesterday (and export file names too); now the device's own date everywhere (tested at 1 am Phnom Penh time). (2) Countdown's rolling numbers now give screen readers the real number. (3) The orange “Soon” badge text is darker (4.9:1). (4) Renewals' Day…Year picker hid Year off the edge on phones; now two rows of three. (5) Settings and the palette's dark-mode command used a speaker icon; Settings now has a sliders icon. Checked and left as designed: Eat opens straight into the swipe cards when there's something to swipe; Bookmarks shows Add folder above and below the folders. Changelog: app 2.0.1 lists the fixes people will notice.
 
+# PART J — FIREBASE SYNC RELIABILITY & FREE-TIER PROTECTION
+
+Shared sync for every tracker: `app/utils/sync.ts` (the engine, plain TypeScript), `app/composables/useSync.ts`
+(one session per signed-in account, started by `plugins/sync.client.ts`), `useCollection` (pages, unchanged API),
+`components/SyncStatus.vue` (Settings). Tested against the Firebase emulators with this repo's `firestore.rules`:
+27 engine checks with two simulated devices, plus browser runs with a phone-sized and a desktop profile
+(and a second desktop tab) through the real UI. **Not yet tested against the real Firebase project or real phones:**
+that needs your Google sign-in, so the items below are 🔵 until you've tried them on your devices.
+
+## #76 — Diagnose the Existing Sync
+**Status:** 🟢
+**Notes:** Same project, account and paths on every device (config from env, data in `users/{uid}/items`, rules match). Causes found: (1) no listener anywhere: each page read Firestore once when it opened (`getDocsFromServer`), so a phone's change only showed on the desktop after reopening or reloading that page; (2) deletes came back: on load, any record cached locally but missing from Firestore was re-uploaded as "device-only", so a record deleted on the phone was resurrected by the desktop; (3) every page visit re-read the whole collection (3,000 bookmarks = 3,000 reads per visit); (4) writes were blind `set`s with a device-clock time, so an older offline edit silently overwrote newer data; (5) the vault re-read every entry after each save and had no listener; (6) the home dashboard and search only read this device's copy.
+
+## #77 — Reliable Cross-Device Synchronization
+**Status:** 🔵
+**Notes:** One listener per signed-in browser (Web Locks pick one tab; others follow through localStorage), kept for the whole session, not per page. It asks only for records changed since the newest one already seen (`syncedAt` = server time), so it never re-reads the whole database. Remote changes update open pages, search and the bin straight away. Deletes are kept as small "deleted" markers (no data), so devices that were away learn about them. The vault uses its own listener while unlocked and stops on lock. Emulator: create, update, rename, move (folder change), delete and restore all reach the other device without a refresh, both directions; vault entries too.
+
+## #78 — Local-First Updates and Offline Support
+**Status:** 🔵
+**Notes:** Changes show instantly and are written to this device first, noted as pending (with the record as it was) until Firestore confirms them. States: Saving, Synced (only once the server acknowledged), Offline, Sync error (new, with Try again), Needs setup. Retries back off exponentially with jitter (1 s → 60 s), at most 6 tries, then show Sync error until the connection returns, the tab is shown again, another change is made or Try again is pressed. Sends are serialised across tabs so nothing is written twice. Emulator: offline edit → Offline badge, pending kept through a reload, sent on reconnect.
+
+## #79 — Conflict Prevention and Data Integrity
+**Status:** 🔵
+**Notes:** Each record carries `rev` (write count), `by` (device) and `syncedAt` (server time). Changes are written in a transaction that compares the server's `rev` with the last one this device saw. If someone else changed it in between: fields only one side touched are merged; fields both changed keep the other device's version, and this device's version goes to the Recycle Bin with a "Keep mine" toast (nothing is thrown away silently). Deleted here but edited elsewhere afterwards keeps the edit; edited here but deleted elsewhere keeps the edit. Stale devices can't resurrect deletes. Existing data needs no migration: documents without `rev` count as revision 0, and each device does one full read the first time, then only changes. **Transition risk:** a device still running the old app version sees the new "deleted" markers as an error (it shows "Saved on this device" and keeps its own copy, no crash) and its edits aren't picked up by updated devices until it updates. Reload each device once after deploying.
+
+## #80 — Firebase Free-Tier Protection
+**Status:** 🔵
+**Notes:** Before: every page visit read the whole collection, and every vault save re-read the whole vault. After (measured on the emulator): a device's first sync reads everything once, after that a page load with no changes costs at most 1 read, each change is 1 read on each other device, an edit is 1 read + 1 write (the transaction check), and a new record is 1 write. 20 rapid edits to one record = 1 write (sends wait 0.8 s). Nothing pending = no writes. No polling, no heartbeat or global metadata documents, no extra copies of records, no server, Cloud Function, extension or paid feature. Background bookkeeping (bookmark visit counts) still writes once per click.
+
+## #81 — Usage Monitoring and Guardrails
+**Status:** 🔵
+**Notes:** Settings → Sync shows status, changes waiting to send, last time Firebase answered, whether this tab runs the listener, and today's reads/writes on this device against an internal budget of 15,000 reads and 5,000 writes a day (Firebase's free plan: 50,000 / 20,000 across all devices), warning at 80%. These are labelled as this app's estimate, not Firebase billing. No credentials, user data or config are shown. In development, `[sync]` logs go to the console and `window.__ousaSync` exposes state and the listener count. **Not done (needs you):** quota alerts are configured in the Firebase/Google Cloud console. On the free Spark plan, going over the limit pauses Firestore until the daily reset rather than charging; I couldn't check which plan the project is on. Client-side budgets can't guarantee the limits are never reached.
+
+## #82 — Sync Testing
+**Status:** 🔵
+**Notes:** Emulator + browser runs: phone creates → desktop shows without refresh; desktop rename, delete, restore → phone; offline edit + reload + reconnect; same record edited on both (different fields merge; same field → conflict toast + bin copy, both devices converge); delete vs edit; stale device returning; two desktop tabs → exactly one listener, one write per change; visiting 7 pages keeps one listener; locking the vault stops its listener; listeners return to 0 on shutdown. A mutation check (conflict detection switched off) makes 4 of these fail, so the tests catch the bugs they target. Also found and fixed during testing: edits to existing records weren't being queued (Vue proxies can't be `structuredClone`d). To run locally against the emulators: `NUXT_PUBLIC_FIREBASE_EMULATOR_HOST=127.0.0.1` (dev only). **Left for you:** try phone ↔ desktop on the real project.
+
+**Also this round (not numbered): select several, in every app with a list.** One shared kit: `useBulkSelect` (selection, Shift-click ranges, ⌘/Ctrl+A, Delete key, Esc, "N not shown" when a search or folder hides picked ones), `<BulkBar>` (the floating bar: a centred pill on desktop, a full-width panel with icon buttons on phones; takes the page's accent; one Undo for every action; asks first before deleting 10+ or when Confirm before delete is on), `<BulkCheck>` (a round tick badge on each card's corner, so nothing moves) and `<BulkToggle>` (Select / Done beside the sync badge). While selecting, a tap anywhere on a row picks it instead of opening or editing it, and swipe-to-delete is paused.
+- **Bookmarks:** the icon turns into the checkbox (hover with a mouse to start from a row), right-click → Select, a menu on picked rows that acts on all of them; Pin/Unpin, Move, Copy links, Delete.
+- **Things, Renewals, Countdown:** Favourite/Unfavourite (adapts to the selection) and Delete.
+- **Eat, Weight (in the table, which opens when you start), Gold:** Delete.
+- Contacts and the Recycle Bin already had their own select-and-act lists, so they're unchanged.
+
+Fixed along the way: Esc while selecting also ran the app-wide "Esc goes back"; Esc to close a menu ended select mode; clicking Gold's checkbox opened the Edit dialog; Bookmarks search crashed on bookmarks with no note or description; the favourite toast still said "It's on your home page now" after the dashboard was removed. Tested in the browser on desktop and phone sizes, light and dark: 102 Bookmarks checks plus 140 across the six other apps; no console errors, no sideways scroll.
+
 # Implementation order
 
 1. Foundation `#01–#05` · 2. Core navigation `#06–#16` · 3. Data safety `#17–#25` ·
-4. Advanced interaction `#26–#34` · 5. Individual apps `#35–#63` · 6. Ecosystem `#64–#69` · 7. Quality `#70–#75`
+4. Advanced interaction `#26–#34` · 5. Individual apps `#35–#63` · 6. Ecosystem `#64–#69` · 7. Quality `#70–#75` ·
+8. Sync `#76–#82`
