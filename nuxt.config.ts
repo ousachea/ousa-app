@@ -22,6 +22,9 @@ export default defineNuxtConfig({
       },
       // The one Google account this app signs in to; Google offers it first (NUXT_PUBLIC_OWNER_EMAIL)
       ownerEmail: '',
+      // Development only: run against the local Firebase emulators instead of the real project, e.g. 127.0.0.1
+      // (NUXT_PUBLIC_FIREBASE_EMULATOR_HOST; Firestore on 8089, Auth on 9099). Ignored in production builds.
+      firebaseEmulatorHost: '',
       // The site's public address for canonical links and share images, e.g. https://ousa.app (NUXT_PUBLIC_SITE_URL).
       // Empty uses whatever address the page was served from.
       siteUrl: ''

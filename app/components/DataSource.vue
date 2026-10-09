@@ -13,7 +13,8 @@ const COPY: Record<SyncState, { label: string, detail: string }> = {
   'device': { label: 'On this device', detail: 'Saved in this browser only. Sign in to keep it in Firebase and see it on your other devices.' },
   'saving': { label: 'Saving…', detail: 'Sending your latest change to Firebase.' },
   'synced': { label: 'Synced with Firebase', detail: 'Stored in your Firebase account and also kept on this device, so it works offline.' },
-  'offline': { label: 'Saved on this device', detail: 'Couldn’t reach Firebase, so your changes are saved in this browser for now.' },
+  'offline': { label: 'Offline', detail: 'Couldn’t reach Firebase, so your changes are saved in this browser for now. They’ll sync when the connection is back.' },
+  'error': { label: 'Sync error', detail: 'Firebase didn’t accept your latest changes after several tries. They’re safe on this device; details are in Settings → Sync.' },
   'needs-setup': { label: 'On this device', detail: 'You’re signed in, but Firebase needs a one-time setup before it can store this data.' },
   'demo': { label: 'Example data', detail: 'Example data to show how the app works. Changes here aren’t saved. Click the app icon again to go back to your own data.' }
 }
@@ -38,7 +39,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
       <p>{{ COPY[state].detail }}</p>
       <NuxtLink v-if="state === 'device'" to="/settings#sync" class="btn btn-sm">Sign in to sync</NuxtLink>
       <NuxtLink v-else-if="state === 'needs-setup'" to="/settings#sync" class="btn btn-sm">Set up Firebase</NuxtLink>
-      <button v-else-if="state === 'offline'" type="button" class="btn btn-sm" @click="sync.retry(); open = false">Try again</button>
+      <button v-else-if="state === 'offline' || state === 'error'" type="button" class="btn btn-sm" @click="sync.retry(); open = false">Try again</button>
     </div>
   </div>
 </template>
@@ -99,6 +100,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 }
 [data-state='saving'] .dot { background: var(--blue); animation: pulse 0.9s ease-in-out infinite alternate; }
 [data-state='demo'] .dot { background: var(--purple); }
+[data-state='error'] .dot { background: var(--red); }
 [data-state='offline'] .dot,
 [data-state='needs-setup'] .dot { background: var(--orange); }
 

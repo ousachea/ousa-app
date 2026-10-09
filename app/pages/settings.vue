@@ -230,7 +230,10 @@ const volume = computed({
             <template v-else>
               <p>Signed in as <strong>{{ vault.email }}</strong>.</p>
               <p v-if="table === 'checking'" class="small">Checking Firebase…</p>
-              <p v-else-if="table === 'ready'" class="ok">Your trackers sync to Firebase.</p>
+              <template v-else-if="table === 'ready'">
+                <p class="ok">Your trackers sync to Firebase.</p>
+                <SyncStatus />
+              </template>
               <p v-else-if="table === 'error'" class="small">Couldn’t reach Firebase right now. Your data is safe on this device.</p>
               <template v-else>
                 <p class="small">One-time setup: create a Firestore database in the Firebase console, then publish these rules. Each account can only see its own data.</p>

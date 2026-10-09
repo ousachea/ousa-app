@@ -1,6 +1,6 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app'
-import { getAuth, type Auth } from 'firebase/auth'
-import { initializeFirestore, type Firestore } from 'firebase/firestore'
+import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth'
+import { connectFirestoreEmulator, initializeFirestore, type Firestore } from 'firebase/firestore'
 
 interface FirebaseConfig {
   apiKey: string
@@ -31,6 +31,12 @@ export function useFirebase() {
       auth: getAuth(app),
       // Optional fields (a vault entry's notes, say) are left out rather than rejected
       db: initializeFirestore(app, { ignoreUndefinedProperties: true })
+    }
+    // Local testing against the Firebase emulators (CHECKLIST.md #82); never in a production build
+    const emulator = useRuntimeConfig().public.firebaseEmulatorHost as string
+    if (import.meta.dev && emulator) {
+      connectAuthEmulator(instance.auth, `http://${emulator}:9099`, { disableWarnings: true })
+      connectFirestoreEmulator(instance.db, emulator, 8089)
     }
   }
   return instance

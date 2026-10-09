@@ -1,5 +1,5 @@
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, type User } from 'firebase/auth'
-import { addDoc, collection, deleteDoc, doc, getDocFromServer, getDocsFromServer, orderBy, query, setDoc, updateDoc } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDocFromServer, onSnapshot, setDoc, updateDoc, type Unsubscribe } from 'firebase/firestore'
 
 // What's stored inside each encrypted blob. The database only ever sees ciphertext.
 export interface VaultEntry {
@@ -68,6 +68,7 @@ function resetLockTimer() {
 
 function lock() {
   key = undefined
+  stopVaultListener()
   state.items = []
   state.unreadable = 0
   clearTimeout(lockTimer)
@@ -85,34 +86,61 @@ async function checkSetup() {
   }
 }
 
-async function loadItems() {
-  if (!key) return checkSetup()
-  let docs
-  try {
-    docs = (await getDocsFromServer(query(vaultRef(), orderBy('updatedAt', 'desc')))).docs
-  } catch (e) {
-    if (needsFirestoreSetup(e)) {
-      state.status = 'needs-setup'
-      return
-    }
-    throw e
-  }
-  // Rules published since the setup screen showed up
-  if (state.status === 'needs-setup') state.status = 'unlocked'
+// While unlocked, one listener keeps the entries current: the first answer reads them all, then only
+// changes arrive, including ones made on other devices (CHECKLIST.md #77). Locking stops it.
+let stopListening: Unsubscribe | undefined
+const decrypted = new Map<string, VaultItem | null>()
 
-  const items: VaultItem[] = []
-  let unreadable = 0
-  for (const snap of docs) {
-    const row = snap.data() as VaultDoc
-    try {
-      const entry = await decryptJson<VaultEntry>(key, row)
-      items.push({ ...entry, id: snap.id, updatedAt: row.updatedAt })
-    } catch {
-      unreadable++
-    }
-  }
-  state.items = items.sort((a, b) => a.site.localeCompare(b.site))
-  state.unreadable = unreadable
+function stopVaultListener() {
+  if (!stopListening) return
+  stopListening()
+  stopListening = undefined
+  listeners.count--
+  decrypted.clear()
+}
+
+function loadItems(): Promise<void> {
+  if (!key) return checkSetup()
+  stopVaultListener()
+  const listenKey = key
+  return new Promise((resolve, reject) => {
+    let first = true
+    listeners.count++
+    stopListening = onSnapshot(vaultRef(), async (snap) => {
+      // Rules published since the setup screen showed up
+      if (state.status === 'needs-setup') state.status = 'unlocked'
+      for (const change of snap.docChanges()) {
+        if (change.type === 'removed') {
+          decrypted.delete(change.doc.id)
+          continue
+        }
+        const row = change.doc.data() as VaultDoc
+        try {
+          const entry = await decryptJson<VaultEntry>(listenKey, row)
+          decrypted.set(change.doc.id, { ...entry, id: change.doc.id, updatedAt: row.updatedAt })
+        } catch {
+          // Saved under another master password; counted, never shown
+          decrypted.set(change.doc.id, null)
+        }
+      }
+      if (key !== listenKey) return // locked meanwhile
+      const all = [...decrypted.values()]
+      state.items = all.filter((i): i is VaultItem => !!i).sort((a, b) => a.site.localeCompare(b.site))
+      state.unreadable = all.filter(i => !i).length
+      if (first) {
+        first = false
+        resolve()
+      }
+    }, (e) => {
+      stopVaultListener()
+      if (needsFirestoreSetup(e)) {
+        state.status = 'needs-setup'
+        resolve()
+      } else if (first) {
+        reject(e)
+      }
+    })
+  })
 }
 
 async function signedInAs(user: User) {
@@ -137,6 +165,7 @@ async function start() {
   onAuthStateChanged(auth, (user) => {
     if (!user) {
       key = undefined
+      stopVaultListener()
       state.items = []
       state.email = ''
       state.status = 'signed-out'
@@ -211,9 +240,9 @@ export function useVault() {
   async function save(entry: VaultEntry, id?: string) {
     if (!key) throw new Error('The vault is locked.')
     const row: VaultDoc = { ...(await encryptJson(key, entry)), updatedAt: new Date().toISOString() }
+    // The listener shows the change as soon as it's written
     if (id) await withTimeout(updateDoc(doc(vaultRef(), id), { ...row }))
     else await withTimeout(addDoc(vaultRef(), row))
-    await loadItems()
   }
 
   async function remove(id: string) {
