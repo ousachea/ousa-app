@@ -118,6 +118,8 @@ export interface CollectionOptions<T> {
   app?: string
   /** Deleted records go to the Recycle Bin (default true); off for background data like price history */
   trash?: boolean
+  /** Changes show in Recent activity (default true); off for bookkeeping like note versions */
+  activity?: boolean
 }
 
 export function useCollection<T extends StoredItem>(
@@ -132,7 +134,7 @@ export function useCollection<T extends StoredItem>(
   const trash = useBin ? useTrash() : undefined
   // Demo data is make-believe: it never reaches the activity log or the bin
   const record = (kind: ActivityKind, label: string) => {
-    if (!demoOn.value) logActivity(kind, app, label)
+    if (!demoOn.value && options.activity !== false) logActivity(kind, app, label)
   }
   const items = ref<T[]>([]) as Ref<T[]>
   const ready = ref(false)

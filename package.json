@@ -12,6 +12,13 @@
     "og:images": "npx -y -p playwright sh -c 'NODE_PATH=$(dirname $(which playwright))/../ node scripts/og-images.cjs'"
   },
   "dependencies": {
+    "@tiptap/core": "3.31.3",
+    "@tiptap/extension-image": "3.31.3",
+    "@tiptap/extension-list": "3.31.3",
+    "@tiptap/extensions": "3.31.3",
+    "@tiptap/pm": "3.31.3",
+    "@tiptap/starter-kit": "3.31.3",
+    "@tiptap/vue-3": "3.31.3",
     "animejs": "^4.5.0",
     "firebase": "^12.19.0",
     "jsqr": "^1.4.0",

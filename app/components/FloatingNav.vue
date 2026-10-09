@@ -27,6 +27,7 @@ const MENU_KEYS: Record<string, string> = {
   '/countdown': 'c',
   '/renewals': 'r',
   '/bookmarks': 'b',
+  '/notes': 'n',
   '/battery': 'a', // bAttery
   '/salary': 's',
   '/gold': 'g',

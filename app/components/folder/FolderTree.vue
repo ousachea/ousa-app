@@ -19,6 +19,11 @@ const props = defineProps<{
   unfiled: number
   active: string
   collapsed: readonly string[]
+  /** What the folders hold, for wording and drag and drop (Bookmarks by default; Notes uses its own) */
+  noun?: string
+  itemType?: string
+  /** Shown on phones as the current choice, for views that aren't folders (Notes: Favourites…) */
+  activeLabel?: string
 }>()
 const emit = defineEmits<{
   'select': [id: string]
@@ -72,7 +77,9 @@ function onMore(e: MouseEvent, f: Folder) {
 const drop = ref<{ id: string, zone: 'before' | 'into' | 'after' }>()
 let draggingFolder: string | undefined
 
-const isBookmarkDrag = (e: DragEvent) => e.dataTransfer?.types.includes('application/x-bookmark')
+const itemType = computed(() => props.itemType ?? 'application/x-bookmark')
+const noun = computed(() => props.noun ?? 'bookmarks')
+const isBookmarkDrag = (e: DragEvent) => !!e.dataTransfer?.types.includes(itemType.value)
 const isFolderDrag = (e: DragEvent) => e.dataTransfer?.types.includes('application/x-folder')
 
 function onDragStart(e: DragEvent, f: Folder) {
@@ -107,7 +114,7 @@ function onDrop(e: DragEvent, f: Folder | null) {
   e.preventDefault()
   const zone = drop.value?.zone ?? 'into'
   drop.value = undefined
-  const bookmarkId = e.dataTransfer?.getData('application/x-bookmark')
+  const bookmarkId = e.dataTransfer?.getData(itemType.value)
   if (bookmarkId) {
     emit('drop-bookmark', bookmarkId, f?.id ?? ALL)
     return
@@ -137,9 +144,10 @@ function onDragLeave(e: DragEvent) {
 // Phones: the tree folds away under the current folder's name
 const openOnPhone = ref(false)
 const activeName = computed(() => {
-  if (props.active === ALL) return 'All bookmarks'
+  if (props.activeLabel) return props.activeLabel
+  if (props.active === ALL) return `All ${noun.value}`
   if (props.active === UNFILED) return 'Not in a folder'
-  return pathText(props.folders, props.active) || 'All bookmarks'
+  return pathText(props.folders, props.active) || `All ${noun.value}`
 })
 watch(() => props.active, () => (openOnPhone.value = false))
 </script>
@@ -157,7 +165,10 @@ watch(() => props.active, () => (openOnPhone.value = false))
         <span aria-hidden="true">+</span> Add folder
       </button>
 
+      <!-- Notes puts its own views (All, Favourites, Recent…) here instead of All -->
+      <slot v-if="$slots.views" name="views" />
       <button
+        v-else
         type="button"
         class="row"
         :class="{ on: active === ALL, 'drop-into': drop?.id === ALL }"
@@ -226,7 +237,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
         @click="emit('select', UNFILED)"
         @dragover="(e: DragEvent) => { if (isBookmarkDrag(e)) { e.preventDefault(); drop = { id: UNFILED, zone: 'into' } } }"
         @dragleave="onDragLeave"
-        @drop="(e: DragEvent) => { e.preventDefault(); drop = undefined; const id = e.dataTransfer?.getData('application/x-bookmark'); if (id) emit('drop-bookmark', id, UNFILED) }"
+        @drop="(e: DragEvent) => { e.preventDefault(); drop = undefined; const id = e.dataTransfer?.getData(itemType); if (id) emit('drop-bookmark', id, UNFILED) }"
       >
         <span class="name">Not in a folder</span><b>{{ unfiled }}</b>
       </button>
@@ -234,7 +245,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
       <button type="button" class="add-folder bottom" @click="emit('add', '')">
         <span aria-hidden="true">+</span> Add folder
       </button>
-      <p v-if="folders.length" class="hint">Drag bookmarks onto a folder to move them. Drag folders to reorder or nest them.</p>
+      <p v-if="folders.length" class="hint">Drag {{ noun }} onto a folder to move them. Drag folders to reorder or nest them.</p>
     </div>
   </nav>
 </template>

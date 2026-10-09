@@ -1,7 +1,7 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
-  | 'trash' | 'activity' | 'plus' | 'search'
+  | 'trash' | 'activity' | 'plus' | 'search' | 'notes'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -152,6 +152,17 @@ export const TOOLS: Tool[] = [
     group: 'Life',
     seoTitle: 'Bookmark manager with folders',
     description: 'Save links in nested folders with notes, pin the sites you open every day, and import or export your browser bookmarks.',
+    demo: true
+  },
+  {
+    to: '/notes',
+    name: 'Notes',
+    summary: 'Write things down fast, then find them again.',
+    color: 'var(--sky)',
+    icon: 'notes',
+    group: 'Life',
+    seoTitle: 'Fast personal notes with folders, checklists and links',
+    description: 'Quick notes and longer ones with checklists, folders, tags, links between notes and version history. Works offline and syncs to your other devices.',
     demo: true
   },
   {

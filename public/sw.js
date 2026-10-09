@@ -7,12 +7,12 @@
 // - Icons, images and fonts: served from the cache straight away, refreshed in the background.
 // After installing, every app page and the files it needs are fetched once in the background,
 // so apps you haven't opened yet also work offline.
-const VERSION = 'v2'
+const VERSION = 'v3'
 const PAGES = `pages-${VERSION}`
 const ASSETS = `assets-${VERSION}`
 const STATIC = `static-${VERSION}`
 
-const APP_PAGES = ['/', '/qr', '/phone', '/compress', '/text', '/password', '/exchange', '/things', '/eat', '/weight', '/countdown', '/renewals', '/bookmarks', '/battery', '/salary', '/gold', '/settings', '/trash']
+const APP_PAGES = ['/', '/qr', '/phone', '/compress', '/text', '/password', '/exchange', '/things', '/eat', '/weight', '/countdown', '/renewals', '/bookmarks', '/notes', '/battery', '/salary', '/gold', '/settings', '/trash']
 const SHELL = ['/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png']
 
 self.addEventListener('install', (event) => {

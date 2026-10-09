@@ -1,5 +1,6 @@
 import { pathText, type Folder } from './folders'
 import { typeOf } from './devices'
+import { autoTitle } from './notes'
 // Universal search (CHECKLIST.md #06): one place that knows how to find records in every app.
 // Each source reads an app's saved list from this device (the same copy useCollection keeps), so
 // search works offline and never sends anything anywhere. Add a source here when a new app stores data.
@@ -41,6 +42,14 @@ const money = (price: number, currency: string) =>
   currency === 'KHR' ? `${Math.round(price).toLocaleString('en-US')} ៛` : `$${Number(price).toFixed(2).replace(/\.00$/, '')}`
 
 export const SEARCH_SOURCES: Source[] = [
+  {
+    collection: 'notes',
+    app: '/notes',
+    group: 'Notes',
+    title: n => (String(n.title ?? '').trim() || autoTitle(String(n.text ?? '')) || 'Untitled note'),
+    subtitle: n => [n.archived ? 'Archived' : '', n.folderPath, String(n.text ?? '').split('\n').slice(n.title ? 0 : 1).join(' ').slice(0, 90)].filter(Boolean).join(' · '),
+    text: n => [n.text, n.folderPath, ...(Array.isArray(n.tags) ? n.tags.map((t: string) => `#${t}`) : [])]
+  },
   {
     collection: 'bookmarks',
     app: '/bookmarks',
@@ -140,6 +149,11 @@ export function searchEverything(query: string, perGroup = 6): { group: string, 
 
   for (const src of SEARCH_SOURCES) {
     const items = readCollection(src.collection)
+    // Notes are found by their folder too
+    if (src.collection === 'notes') {
+      const folders = readCollection('note-folders') as unknown as Folder[]
+      for (const n of items) n.folderPath = n.folderId && folders.some(f => f.id === n.folderId) ? pathText(folders, n.folderId) : ''
+    }
     // Bookmarks are found by the names of their folders too
     if (src.collection === 'bookmarks') {
       const folders = readCollection('bookmark-folders')

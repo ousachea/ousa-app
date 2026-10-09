@@ -127,6 +127,12 @@ defineProps<{ name: ToolIconName }>()
       <path d="M15 11.3v2.2h-2.2" />
     </template>
 
+    <!-- Notes: a page with a folded corner and lines of writing -->
+    <template v-else-if="name === 'notes'">
+      <path d="M5.5 3.5h9l4 4v12a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z" />
+      <path d="M14.5 3.5v4h4M8 11.5h8M8 15h8M8 18.5h5" />
+    </template>
+
     <!-- Bookmarks: a ribbon bookmark with a notch -->
     <template v-else-if="name === 'bookmarks'">
       <path d="M6.5 3.5h11a1 1 0 0 1 1 1v16l-6.5-4.5-6.5 4.5v-16a1 1 0 0 1 1-1z" />

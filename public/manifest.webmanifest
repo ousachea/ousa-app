@@ -18,6 +18,8 @@
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
+    { "name": "New note", "short_name": "Note", "url": "/notes?add=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Quick note", "url": "/notes?capture=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Add a bookmark", "short_name": "Bookmark", "url": "/bookmarks?add=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Renewals", "url": "/renewals", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Countdown", "url": "/countdown", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },

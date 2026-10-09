@@ -11,7 +11,7 @@ import { toast } from 'vue-sonner'
 
 export interface BulkAction {
   label: string
-  icon: 'pin' | 'star' | 'move' | 'copy' | 'delete'
+  icon: 'pin' | 'star' | 'move' | 'copy' | 'delete' | 'archive'
   run: () => void
   danger?: boolean
   /** Ask first (with this title) for 10 or more, or when Confirm before delete is on */

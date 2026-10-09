@@ -30,6 +30,7 @@ export interface AddOption {
 
 // What Quick Add offers, in the order people reach for them (CHECKLIST.md #08)
 export const ADD_OPTIONS: AddOption[] = [
+  { label: 'Note', app: '/notes', hint: 'Write something down' },
   { label: 'Bookmark', app: '/bookmarks', hint: 'Save a link' },
   { label: 'Device', app: '/things', hint: 'Something you own' },
   { label: 'Renewal', app: '/renewals', hint: 'A subscription or bill' },
