@@ -355,8 +355,9 @@ async function reloadRate() {
 }
 
 .presets {
-  display: flex;
-  flex-wrap: wrap;
+  /* Even columns, so four amounts sit in one row instead of three and one */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.25rem, 1fr));
   gap: 0.4rem;
 }
 

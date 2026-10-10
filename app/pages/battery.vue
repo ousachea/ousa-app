@@ -1794,7 +1794,7 @@ onMounted(async () => {
 .stat.big { grid-column: 1 / -1; }
 .stat dt { font-size: 0.8rem; font-weight: 600; color: var(--gray); }
 .stat dd { margin: 0.25rem 0 0; font-family: var(--font-serif); font-weight: 700; font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.stat.big dd { font-size: 2.75rem; }
+.stat.big dd:not(.stat-note) { font-size: 2.75rem; }
 .stat dd em { font-family: var(--font-sans); font-weight: 400; font-style: normal; font-size: 0.8125rem; color: var(--gray); letter-spacing: 0; }
 .stat .stat-note { font-size: 0.75rem; color: var(--gray); margin: 0.25rem 0 0; line-height: 1.4; }
 

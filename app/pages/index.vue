@@ -105,7 +105,8 @@ useAppSeo({
 <style scoped>
 .home {
   min-height: 100dvh;
-  padding: 2rem 1rem 7rem;
+  /* The same side gutter as every app page (ToolPage): 1rem on phones up to 3rem on wide screens */
+  padding: 2rem clamp(1rem, 4vw, 3rem) 7rem;
   display: flex;
   flex-direction: column;
   align-items: center;

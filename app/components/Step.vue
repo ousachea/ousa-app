@@ -10,10 +10,13 @@ defineProps<{
 <template>
   <section class="step" :aria-label="n ? `Step ${n}: ${title}` : title">
     <header class="step-head">
-      <span v-if="n" class="num" aria-hidden="true">{{ n }}</span>
-      <div class="step-text">
-        <h2>{{ title }}</h2>
-        <p v-if="hint">{{ hint }}</p>
+      <!-- The number and title always stay together; only the aside drops below when it's tight -->
+      <div class="step-main">
+        <span v-if="n" class="num" aria-hidden="true">{{ n }}</span>
+        <div class="step-text">
+          <h2>{{ title }}</h2>
+          <p v-if="hint">{{ hint }}</p>
+        </div>
       </div>
       <!-- Optional extra on the right of the heading, e.g. a data-source badge -->
       <div v-if="$slots.aside" class="aside"><slot name="aside" /></div>
@@ -29,8 +32,9 @@ defineProps<{
 
 .step-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 0.6rem 0.75rem;
   margin-bottom: 0.9rem;
 }
 
@@ -58,6 +62,16 @@ h2 {
   letter-spacing: -0.015em;
 }
 
+.step-main {
+  /* With buttons beside the title (Select, the sync badge…), they drop below it on narrow screens
+     instead of squeezing the title into a thin column */
+  flex: 1 1 12rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
 .step-text {
   flex: 1;
   min-width: 0;
@@ -65,6 +79,7 @@ h2 {
 
 .aside {
   flex: none;
+  margin-left: auto;
 }
 
 .step-head p {

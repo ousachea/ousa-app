@@ -135,7 +135,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
             <div class="scale" role="img" :aria-label="`On a scale from instant to the age of the universe, this password sits at ${Math.round(scaleAt * 100)}%`">
               <div class="bands" :style="{ '--weak': `${bands.weak * 100}%`, '--fair': `${bands.fair * 100}%` }" />
               <span class="marker" :style="{ left: `${scaleAt * 100}%` }" />
-              <span v-for="t in CRACK_TICKS" :key="t.label" class="tick" :style="{ left: `${t.at * 100}%` }"><span>{{ t.label }}</span></span>
+              <span v-for="(t, i) in CRACK_TICKS" :key="t.label" class="tick" :class="{ minor: i === 0 || i === 3 }" :style="{ left: `${t.at * 100}%` }"><span>{{ t.label }}</span></span>
               <span class="end start">Instant</span>
               <span class="end finish">Age of the universe</span>
             </div>
@@ -429,7 +429,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 .scale {
   position: relative;
-  margin: 0.9rem 0 1.6rem;
+  /* Room for the Instant / Age of the universe labels above it */
+  margin: 1.6rem 0 1.6rem;
   height: 0.6rem;
 }
 
@@ -483,6 +484,11 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 .end.start { left: 0; }
 .end.finish { right: 0; }
+
+/* Narrow screens: every other label would run into the next one; the ticks stay */
+@media (max-width: 560px) {
+  .tick.minor span { display: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .marker { transition: none; }

@@ -1395,4 +1395,9 @@ function switchCurrency(next) {
   .lift { width: 100%; }
   .worked { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* "per month" stays on one line */
+.segmented.period label {
+  white-space: nowrap;
+}
 </style>

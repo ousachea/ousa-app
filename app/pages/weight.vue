@@ -418,6 +418,12 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
   max-width: 420px;
 }
 
+/* "3 months" stays on one line on a phone */
+.ranges label {
+  padding-inline: 0.35rem;
+  white-space: nowrap;
+}
+
 .chart {
   margin: 0;
   padding: 1rem 0.5rem 0.5rem;
