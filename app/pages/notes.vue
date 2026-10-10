@@ -905,7 +905,8 @@ watch(active, () => {
         <!-- ---------- 2: the list ---------- -->
         <Step :n="2" title="Pick a note" hint="Search, sort, or start a new one." class="list-step">
         <section class="list-pane" :aria-label="listTitle">
-          <div v-sticky-bar class="list-bar">
+          <!-- Sticks at the top of the list as it scrolls (the list scrolls on its own on a computer) -->
+          <div class="list-bar">
             <div class="list-head">
               <h2>{{ searching ? 'Search' : listTitle }}</h2>
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
@@ -1006,7 +1007,7 @@ watch(active, () => {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>Notes
               </button>
               <span class="status" :data-kind="status.kind" aria-live="polite">
-                <span class="dot" aria-hidden="true" />{{ status.text }}
+                <span class="dot" aria-hidden="true" /><span class="status-text">{{ status.text }}</span>
                 <button v-if="status.kind === 'error' || status.kind === 'offline'" type="button" class="link" @click="sync.retry()">Retry</button>
               </span>
               <span class="head-actions">
@@ -1190,29 +1191,37 @@ watch(active, () => {
 .view-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   width: 100%;
-  min-height: 2.4rem;
-  padding: 0.4rem 0.65rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.7rem;
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 0.925rem;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--ink-2);
   text-align: left;
   text-decoration: none;
   background: none;
   border: 0;
   border-radius: 10px;
   cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
+/* The same as a folder row (FolderTree), so views and folders read as one list */
 .view-row:hover {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--ink);
+  background: var(--surface);
 }
 
 .view-row.on {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1px var(--line);
+}
+
+.view-row.on svg {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
 
 .view-row svg {
@@ -1231,13 +1240,14 @@ watch(active, () => {
 }
 
 .view-row b {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
 
 .side-head {
-  margin: 0.25rem 0.65rem 0.25rem;
+  margin: 0.5rem 0.7rem 0.3rem;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1248,7 +1258,7 @@ watch(active, () => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  padding: 0 0.4rem;
+  padding: 0 0.45rem;
 }
 
 .tag {
@@ -1282,7 +1292,7 @@ watch(active, () => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 1rem;
-  padding: 0.5rem 0.65rem 1rem;
+  padding: 0.5rem 0.7rem 1rem;
   font-size: 0.85rem;
 }
 
@@ -1299,7 +1309,8 @@ watch(active, () => {
   z-index: 2;
   display: grid;
   gap: 0.55rem;
-  padding: 0.85rem 0.85rem 0.6rem;
+  /* Search lines up with the rows' highlight; the title, count and filters with the titles inside */
+  padding: 0.85rem 0.4rem 0.6rem;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   border-radius: 18px 18px 0 0;
@@ -1310,6 +1321,7 @@ watch(active, () => {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  padding-left: 0.75rem;
 }
 
 .list-head h2 {
@@ -1373,6 +1385,7 @@ watch(active, () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-left: 0.75rem;
 }
 
 .count {
@@ -1414,6 +1427,7 @@ watch(active, () => {
 
 .ops {
   margin: 0;
+  padding-inline: 0.75rem;
   font-size: 0.8rem;
   color: var(--ink-2);
 }
@@ -1634,8 +1648,20 @@ time {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  min-width: 0;
   font-size: 0.8rem;
   color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.status .dot {
+  flex: none;
+}
+
+.status-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status .dot {
@@ -1947,8 +1973,11 @@ kbd {
     display: none;
   }
 
+  /* On a phone the page scrolls instead: stop below the floating app pill and menu */
   .list-bar {
-    top: 0;
+    top: 5rem;
+    border-radius: 18px;
+    box-shadow: 0 0 0 1px var(--line);
   }
 
   .editor-pane {
@@ -1960,6 +1989,11 @@ kbd {
 
   .back {
     display: inline-flex;
+  }
+
+  /* Opening a note scrolls here; stop below the floating app pill and menu button */
+  .editor-step {
+    scroll-margin-top: 5.75rem;
   }
 
   .status {

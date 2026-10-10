@@ -329,7 +329,8 @@ defineExpose({
   flex-wrap: wrap;
   align-items: center;
   gap: 0.15rem;
-  padding: 0.35rem;
+  /* The first button's label (centred in its 2.25rem button) lines up with the text at 1.25rem */
+  padding: 0.35rem 0.95rem 0.35rem 0.55rem;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
@@ -403,7 +404,8 @@ defineExpose({
 
 /* ---------- The note itself ---------- */
 .content :deep(.note-body) {
-  min-height: 50vh;
+  /* Enough room to click into an empty note, without a big gap under a short one */
+  min-height: 14rem;
   padding: 1rem 1.25rem 2rem;
   font-size: var(--note-size, 1.0625rem);
   line-height: var(--note-leading, 1.65);
@@ -492,7 +494,7 @@ defineExpose({
 
 .content :deep(ul[data-type='taskList'] > li > label) {
   flex: none;
-  margin-top: 0.3em;
+  margin-top: 0.25em;
   user-select: none;
 }
 
@@ -553,6 +555,8 @@ defineExpose({
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
+    /* Wider phone buttons: the first label still lines up with the text at 1rem */
+    padding-left: 0.1rem;
     padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
     border-top: 1px solid var(--line);
     border-bottom: 0;
@@ -566,11 +570,12 @@ defineExpose({
 
   .counts {
     order: -1;
+    padding-inline: 1rem;
   }
 
   .content :deep(.note-body) {
     padding: 0.75rem 1rem 2rem;
-    min-height: 60vh;
+    min-height: 40vh;
   }
 
   /* Room for the fixed bar under the last lines */
