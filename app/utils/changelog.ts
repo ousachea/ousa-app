@@ -77,6 +77,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Make images smaller without uploading them.', 'Dark mode.'] }
   ],
   '/text': [
+    { version: '2.1.0', date: '2026-10-10', changes: ['A Slider view for Compare texts: the original and the changed version in one box, split by a line you drag (or move with the arrow keys), like a before-and-after photo.'] },
     { version: '2.0.0', date: '2026-10-08', changes: ['Now called Text tools.', 'Compare two versions of a text and see every word added, removed or changed, side by side on wide screens and stacked on phones.', 'Ignore capital letters or extra spaces when comparing, and swap the two sides.'] },
     { version: '1.2.0', date: '2026-10-07', changes: [WIDE] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Dark mode and its own design.', EXAMPLE] },
