@@ -1387,7 +1387,7 @@ async function enrich(list: Bookmark[]) {
 .side {
   min-width: 0;
   position: sticky;
-  top: 5rem;
+  top: var(--pin-top);
 }
 
 .tags {

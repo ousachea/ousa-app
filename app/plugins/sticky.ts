@@ -4,7 +4,7 @@
 // it pins by its bottom edge instead of its top, so every part of it can still be scrolled into view.
 // CSS stays in charge of when a column is sticky (usually only on wide screens); this only adjusts `top`.
 //
-// v-sticky-bar, on a search/sort/filter bar: keeps it pinned under the back and menu buttons while a long
+// v-sticky-bar, on a search/sort/filter bar: keeps it pinned at the top while a long
 // list scrolls past, and adds `is-stuck` once it's pinned so it can show a backing (see .sticky-bar in main.css).
 
 const BOTTOM_GAP = 16

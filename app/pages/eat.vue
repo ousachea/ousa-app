@@ -802,7 +802,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
   .stage-area {
     position: sticky;
-    top: 5.5rem; /* clear of the menu button */
+    top: var(--pin-top);
   }
 
   .manage {

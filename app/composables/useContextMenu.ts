@@ -49,31 +49,43 @@ export function useContextMenu() {
 
 // One long press at a time: where it started, its timer, and whether it already opened the menu
 const press = { timer: 0 as ReturnType<typeof setTimeout> | 0, x: 0, y: 0, fired: false }
-const LONG_PRESS_MS = 480
+const LONG_PRESS_MS = 450
+function cancelPress() {
+  clearTimeout(press.timer || undefined)
+  press.timer = 0
+}
+/** Fields inside a row keep normal text selection */
+const TYPING = 'input, textarea, select, [contenteditable]:not([contenteditable=false])'
 
 /**
  * Right-click and long-press handlers for a row: `v-bind="menuFor(() => items, title)"`.
  * Shift + right-click keeps the browser's own menu (handy on links). A long press opens the sheet on
  * every touch screen (iPhone Safari never sends contextmenu); moving the finger, i.e. scrolling, cancels it.
+ * `data-press-menu` switches off the browser's own text selection and callout on the row (main.css), so
+ * holding a row opens the menu instead of highlighting its text.
  */
 export function useRowMenu() {
   const { openMenu } = useContextMenu()
   return (items: () => MenuEntry[], title = '') => ({
+    'data-press-menu': '',
     onContextmenu(e: MouseEvent) {
-      if (e.shiftKey) return
+      if (e.shiftKey || (e.target as HTMLElement).closest(TYPING)) return
       e.preventDefault()
       if (press.fired) return // already opened by the long press
       openMenu(matchMedia('(pointer: coarse)').matches ? null : e, items(), title)
     },
     onTouchstart(e: TouchEvent) {
       const t = e.touches[0]
-      if (!t || e.touches.length > 1) return
       press.fired = false
+      cancelPress()
+      if (!t || e.touches.length > 1 || (e.target as HTMLElement).closest(TYPING)) return
       press.x = t.clientX
       press.y = t.clientY
-      clearTimeout(press.timer || undefined)
       press.timer = setTimeout(() => {
+        press.timer = 0
         press.fired = true
+        // Anything the browser highlighted while the finger was down goes, so only the sheet shows
+        window.getSelection()?.removeAllRanges()
         navigator.vibrate?.(8)
         useSound().play('open')
         openMenu(null, items(), title)
@@ -81,15 +93,19 @@ export function useRowMenu() {
     },
     onTouchmove(e: TouchEvent) {
       const t = e.touches[0]
-      if (t && Math.hypot(t.clientX - press.x, t.clientY - press.y) > 10) clearTimeout(press.timer || undefined)
+      if (t && Math.hypot(t.clientX - press.x, t.clientY - press.y) > 10) cancelPress()
     },
     onTouchend(e: TouchEvent) {
-      clearTimeout(press.timer || undefined)
+      cancelPress()
       // The finger lifting after a long press mustn't also tap whatever is under it
       if (press.fired) e.preventDefault()
     },
     onTouchcancel() {
-      clearTimeout(press.timer || undefined)
+      cancelPress()
+    },
+    // Belt and braces for browsers that still start a selection despite user-select: none
+    onSelectstart(e: Event) {
+      if ((press.timer || press.fired) && !(e.target as HTMLElement).closest?.(TYPING)) e.preventDefault()
     }
   })
 }

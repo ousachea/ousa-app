@@ -355,7 +355,7 @@ const volume = computed({
 
 .side {
   position: sticky;
-  top: 5.5rem; /* clear of the menu button in the top-right corner */
+  top: var(--pin-top);
 }
 
 .appearance {
@@ -386,7 +386,7 @@ const volume = computed({
 
 .data-step {
   margin-bottom: 2rem;
-  scroll-margin-top: 6rem;
+  scroll-margin-top: calc(var(--pin-top) + 1rem);
 }
 
 .accents {
@@ -457,7 +457,7 @@ const volume = computed({
 .about-step {
   margin-top: 2rem;
   margin-bottom: 2rem;
-  scroll-margin-top: 6rem;
+  scroll-margin-top: calc(var(--pin-top) + 1rem);
 }
 
 .behaviour {
@@ -466,7 +466,7 @@ const volume = computed({
 
 .sync-step {
   margin-top: 2rem;
-  scroll-margin-top: 6rem;
+  scroll-margin-top: calc(var(--pin-top) + 1rem);
 }
 
 .sync {

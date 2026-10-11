@@ -1198,7 +1198,7 @@ onMounted(async () => {
 /* keep the battery and numbers in view while browsing the model grid */
 .results {
   position: sticky;
-  top: 5.5rem;
+  top: var(--pin-top);
 }
 
 @media (min-width: 1001px) {

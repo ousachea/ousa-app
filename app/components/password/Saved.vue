@@ -485,7 +485,7 @@ dd.secret {
 
 .editor-side {
   position: sticky;
-  top: 5.5rem; /* clear of the menu button in the top-right corner */
+  top: var(--pin-top);
 }
 
 .how {

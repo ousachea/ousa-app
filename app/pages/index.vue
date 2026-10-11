@@ -60,6 +60,7 @@ useAppSeo({
 
 <template>
   <main class="home">
+    <SiteBar />
     <div class="hero">
       <RubikCube :size="60" follow-pointer interactive :links="TOOLS" :app-colors="appColors" class="hero-cube" />
       <div class="segmented cube-colors" role="radiogroup" aria-label="Icon sticker colours">
@@ -106,11 +107,10 @@ useAppSeo({
 .home {
   min-height: 100dvh;
   /* The same side gutter as every app page (ToolPage): 1rem on phones up to 3rem on wide screens */
-  padding: 2rem clamp(1rem, 4vw, 3rem) 7rem;
+  padding: 1rem clamp(1rem, 4vw, 3rem) 7rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 3rem;
   overflow: hidden;
 }
@@ -306,7 +306,7 @@ h1 {
 
 .recent {
   max-width: 720px;
-  scroll-margin-top: 5rem;
+  scroll-margin-top: var(--pin-top);
 }
 
 @media (max-width: 720px) {

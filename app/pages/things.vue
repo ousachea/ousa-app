@@ -24,6 +24,7 @@ interface Thing {
   ram?: number | null // GB
   display?: number | null // inches
   createdAt?: string // when it was added here (ISO); older items fall back to the purchase date
+  updatedAt?: string // when it was last edited here (ISO)
   favorite?: boolean // starred: shown on the home page (#66)
 }
 
@@ -38,8 +39,8 @@ const categoryStyle = (category: string) => {
   return { '--cat': color, '--cat-ink': contrastRatio(color, '#ffffff') < 3 ? '#1b1f2a' : '#ffffff' }
 }
 const SORTS = [
+  { value: 'added', label: 'Recently added or updated' },
   { value: 'value', label: 'Highest value' },
-  { value: 'added', label: 'Recently added' },
   { value: 'newest', label: 'Newest purchase' },
   { value: 'oldest', label: 'Oldest purchase' },
   { value: 'company', label: 'Company' },
@@ -201,7 +202,7 @@ const filtersOpen = ref(false)
 // Cards or a compact list (#15)
 const view = useRemembered<'cards' | 'list'>('things-view', 'cards', v => v === 'cards' || v === 'list')
 
-const sort = useRemembered<(typeof SORTS)[number]['value']>('things-sort', 'value', v => SORTS.some(s => s.value === v))
+const sort = useRemembered<(typeof SORTS)[number]['value']>('things-sort', 'added', v => SORTS.some(s => s.value === v))
 
 // Today's value: what the owner entered, otherwise an age-and-category estimate
 const isEstimate = (t: Thing) => t.currentValue == null
@@ -219,12 +220,15 @@ const paidUsd = (t: Thing) => usd(t.price, t.currency)
 // Live estimate shown in the popup while typing
 const formEstimate = computed(() => (form.price > 0 ? estimateValue(form.price, form.category, form.purchaseDate) : 0))
 
+// Last added or edited here; older items fall back to the purchase date
+const touchedAt = (t: Thing) => t.updatedAt ?? t.createdAt ?? t.purchaseDate
+
 const visible = computed(() => {
   const q = query.value.trim().toLowerCase()
   const list = items.value.filter(t => matchesFilters(t) && (!q || [t.name, typeLabel(t.category), t.company, t.model, t.generation, t.notes].join(' ').toLowerCase().includes(q)))
   return [...list].sort((a, b) => {
     if (sort.value === 'value') return worthUsd(b) - worthUsd(a)
-    if (sort.value === 'added') return (b.createdAt ?? b.purchaseDate).localeCompare(a.createdAt ?? a.purchaseDate)
+    if (sort.value === 'added') return touchedAt(b).localeCompare(touchedAt(a))
     if (sort.value === 'newest') return b.purchaseDate.localeCompare(a.purchaseDate)
     if (sort.value === 'oldest') return a.purchaseDate.localeCompare(b.purchaseDate)
     // Things without a company or year go last
@@ -313,7 +317,7 @@ function save(force = false) {
     currentValue: typeof form.currentValue === 'number' ? form.currentValue : null
   }
   if (editingId.value) {
-    const before = update(editingId.value, record)
+    const before = update(editingId.value, { ...record, updatedAt: new Date().toISOString() })
     toastSaved(before && (() => replace(before)))
   } else {
     const added = add({ ...record, createdAt: new Date().toISOString() })

@@ -24,6 +24,8 @@ const props = defineProps<{
   itemType?: string
   /** Shown on phones as the current choice, for views that aren't folders (Notes: Favourites…) */
   activeLabel?: string
+  /** Phones: always show the whole tree instead of folding it under the current folder (Notes' Folders screen) */
+  expanded?: boolean
 }>()
 const emit = defineEmits<{
   'select': [id: string]
@@ -63,10 +65,8 @@ const folderMenu = (f: Folder): MenuEntry[] => [
   { label: 'Delete folder', icon: 'delete', danger: true, run: () => emit('delete', f) }
 ]
 
-function onContext(e: MouseEvent, f: Folder) {
-  e.preventDefault()
-  openMenu(matchMedia('(pointer: coarse)').matches ? null : e, folderMenu(f), f.name)
-}
+// Right-click, or long-press on a phone
+const menuFor = useRowMenu()
 
 function onMore(e: MouseEvent, f: Folder) {
   const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -153,8 +153,8 @@ watch(() => props.active, () => (openOnPhone.value = false))
 </script>
 
 <template>
-  <nav class="folder-tree" :class="{ 'phone-open': openOnPhone }" aria-label="Folders">
-    <button type="button" class="phone-toggle" :aria-expanded="openOnPhone" @click="openOnPhone = !openOnPhone">
+  <nav class="folder-tree" :class="{ 'phone-open': openOnPhone || expanded, expanded }" aria-label="Folders">
+    <button v-if="!expanded" type="button" class="phone-toggle" :aria-expanded="openOnPhone" @click="openOnPhone = !openOnPhone">
       <FolderIcon icon="folder" />
       <span class="phone-current">{{ activeName }}</span>
       <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
@@ -213,7 +213,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
             :title="pathText(folders, r.folder.id)"
             draggable="true"
             @click="emit('select', r.folder.id)"
-            @contextmenu="onContext($event, r.folder)"
+            v-bind="menuFor(() => folderMenu(r.folder), r.folder.name)"
             @dragstart="onDragStart($event, r.folder)"
             @dragend="draggingFolder = undefined; drop = undefined"
             @dragover="onDragOver($event, r.folder)"
@@ -522,6 +522,12 @@ watch(() => props.active, () => (openOnPhone.value = false))
 
   .phone-open .tree-body {
     display: flex;
+  }
+
+  .expanded .tree-body {
+    margin-top: 0;
+    padding: 0;
+    background: none;
   }
 
   .row {

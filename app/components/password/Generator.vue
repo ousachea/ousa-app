@@ -192,7 +192,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
   .result-step {
     position: sticky;
-    top: 5.5rem; /* clear of the menu button */
+    top: var(--pin-top);
   }
 
   .settings {

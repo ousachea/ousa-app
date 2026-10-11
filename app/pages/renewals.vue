@@ -233,6 +233,10 @@ const canSave = computed(() => form.name.trim() && form.price > 0 && form.nextDa
 function save() {
   if (!canSave.value) return
   const record = { ...form, name: form.name.trim() }
+  // The form shows the next renewal, rolled forward. Left as it was, keep the date first entered: it holds
+  // the billing day, which a short month or a non-leap year clamps (31 Jan → 28 Feb would bill on the 28th
+  // from then on, and a 29 Feb yearly plan on the 28th)
+  if (editingId.value && shownEdit && record.nextDate === shownEdit.next && record.cycle === shownEdit.cycle) record.nextDate = shownEdit.anchor
   if (editingId.value) {
     const before = update(editingId.value, record)
     toastSaved(before && (() => replace(before)))
@@ -273,9 +277,13 @@ async function copyText(text: string) {
   }
 }
 
+// What the edit form opened with, so an untouched date keeps its billing day (see save)
+let shownEdit: { next: string, anchor: string, cycle: Cycle } | undefined
 function edit(r: Renewal) {
   editingId.value = r.id
-  Object.assign(form, { name: r.name, price: r.price, currency: r.currency, cycle: r.cycle, nextDate: nextRenewal(r.nextDate, r.cycle), category: r.category ?? '', icon: r.icon ?? '' })
+  const next = nextRenewal(r.nextDate, r.cycle)
+  shownEdit = { next, anchor: r.nextDate, cycle: r.cycle }
+  Object.assign(form, { name: r.name, price: r.price, currency: r.currency, cycle: r.cycle, nextDate: next, category: r.category ?? '', icon: r.icon ?? '' })
   iconText.value = textFromIcon(r.icon)
   formOpen.value = true
   play('open')
@@ -283,6 +291,7 @@ function edit(r: Renewal) {
 
 function cancel() {
   editingId.value = undefined
+  shownEdit = undefined
   formOpen.value = false
   Object.assign(form, blank())
   iconText.value = ''

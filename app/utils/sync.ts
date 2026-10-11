@@ -243,6 +243,8 @@ export class SyncEngine {
   readonly uid: string
   status: EngineStatus = 'starting'
   lastError = ''
+  /** Why Firebase couldn't be reached, while it says Offline: the error code, or "timeout" */
+  offlineReason = ''
   errors: { at: string, message: string }[] = []
   /** Whether this tab currently runs the listener (one tab per browser does) */
   listening = false
@@ -666,6 +668,7 @@ export class SyncEngine {
       this.failure = 'setup'
     } else {
       this.failure = isOffline(e) || !this.o.online() ? 'offline' : 'error'
+      if (this.failure === 'offline') this.offlineReason = !this.o.online() ? 'no-connection' : errorCode(e) || message
       if (this.failure === 'error') {
         this.lastError = message
         this.errors = [{ at: new Date().toISOString(), message }, ...this.errors].slice(0, 10)
@@ -698,6 +701,7 @@ export class SyncEngine {
               : this.flushing || pending
                 ? 'saving'
                 : 'synced'
+    if (this.status !== 'offline') this.offlineReason = ''
     if (prev !== this.status) this.log(`status ${this.status}`)
     this.o.onStatus?.()
   }

@@ -521,12 +521,12 @@ async function copyResults() {
   }
 
   /* The checker and the prefix list stay in view while a long address book scrolls. They're one
-     sticky column (pinned under the back and menu buttons, or by its bottom when taller than the
+     sticky column (pinned at the top, or by its bottom when taller than the
      window), so the checker can't slide over the list below it. */
   .left {
     grid-area: left;
     position: sticky;
-    top: 5.5rem;
+    top: var(--pin-top);
     z-index: 1;
     display: flex;
     flex-direction: column;

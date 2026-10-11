@@ -91,7 +91,7 @@ export const TOOLS: Tool[] = [
     to: '/things',
     name: 'Things I own',
     summary: 'Keep track of what you own, what you paid and what it’s all worth.',
-    color: 'var(--brown)',
+    color: 'var(--plum)',
     icon: 'things',
     group: 'Life',
     seoTitle: 'Things I own: track what your stuff is worth',

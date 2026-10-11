@@ -66,15 +66,18 @@ onMounted(() => {
 const releases = computed(() => releasesFor(route.path))
 const latest = computed(() => releases.value[0])
 const whatsNewOpen = ref(false)
-// "New" for a week after an app's latest release
+// "New" for a week after an app's latest release, until you open What's new to see it
 const NEW_FOR_MS = 7 * 86_400_000
-const isNew = ref(false)
+const seenVersions = useRemembered<Record<string, string>>('whats-new-seen', {}, v => !!v && typeof v === 'object' && !Array.isArray(v))
+const recent = ref(false)
 onMounted(() => {
-  if (latest.value) isNew.value = Date.now() - new Date(`${latest.value.date}T00:00:00`).getTime() < NEW_FOR_MS
+  if (latest.value) recent.value = Date.now() - new Date(`${latest.value.date}T00:00:00`).getTime() < NEW_FOR_MS
 })
+const isNew = computed(() => recent.value && !!latest.value && seenVersions.value[route.path] !== latest.value.version)
 const releaseDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 function openWhatsNew() {
   whatsNewOpen.value = true
+  if (latest.value) seenVersions.value = { ...seenVersions.value, [route.path]: latest.value.version }
   play('open')
 }
 
@@ -96,33 +99,11 @@ function toggleDemo() {
   play(demo.active.value ? 'toggle-on' : 'toggle-off')
 }
 
-// Back to wherever you came from in the app (same as Esc); straight in from outside, it goes home.
-// It stays pinned to the top-left like the menu button; once the page scrolls it gets a backing so it reads over content.
-const scrolled = ref(false)
-const onScroll = () => (scrolled.value = window.scrollY > 8)
-onMounted(() => {
-  onScroll()
-  window.addEventListener('scroll', onScroll, { passive: true })
-})
-onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
-
-const router = useRouter()
-function goBack(e: MouseEvent) {
-  // Let cmd/ctrl-click open home in a new tab as a normal link would
-  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-  if (window.history.state?.back) {
-    e.preventDefault()
-    router.back()
-  }
-}
 </script>
 
 <template>
   <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--accent-btn': tool.buttonColor, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
-    <NuxtLink to="/" class="home" :class="{ scrolled }" aria-label="Back, Ousa’s Apps" title="Back (Esc)" @click="goBack">
-      <svg class="back" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
-      <AppLogo class="home-logo" />Ousa’s Apps
-    </NuxtLink>
+    <SiteBar back />
 
     <header class="head">
       <button
@@ -137,7 +118,9 @@ function goBack(e: MouseEvent) {
         @click="toggleDemo"
       >
         <ToolIcon :name="tool.icon" />
-        <span class="demo-tag" aria-hidden="true">{{ demo.active.value ? 'Example on' : 'See example' }}</span>
+        <span class="demo-tag" aria-hidden="true">
+          <svg viewBox="0 0 12 12"><path v-if="demo.active.value" d="M3.5 2.5h1.75v7H3.5zM6.75 2.5H8.5v7H6.75z" /><path v-else d="M4 2.25v7.5L9.75 6z" /></svg>
+        </span>
       </button>
       <span v-else ref="stickerEl" class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
       <div class="head-text">
@@ -166,6 +149,8 @@ function goBack(e: MouseEvent) {
         </div>
       </div>
       <div v-if="$slots.actions" class="head-actions"><slot name="actions" /></div>
+      <!-- The band's artwork: the app's icon drawn large and faint behind the header -->
+      <ToolIcon v-if="header === 'band'" :name="tool.icon" class="band-art" aria-hidden="true" />
     </header>
 
     <Modal :open="whatsNewOpen" :title="`What’s new in ${tool.name}`" @close="whatsNewOpen = false">
@@ -198,68 +183,10 @@ function goBack(e: MouseEvent) {
 .tool {
   --gutter: clamp(1rem, 4vw, 3rem);
   min-height: 100dvh;
-  padding: 1.25rem var(--gutter) 7rem;
+  padding: 1rem var(--gutter) 7rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.home {
-  /* Sticky rather than fixed so it keeps its place above the header; lines up with the menu button */
-  position: sticky;
-  top: calc(max(1rem, env(safe-area-inset-top)) + 0.5rem);
-  z-index: 99;
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.5rem;
-  padding: 0.35rem 0.8rem 0.35rem 0.3rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--ink-2);
-  text-decoration: none;
-  border-radius: 999px;
-  transition: background-color 0.15s, color 0.15s, box-shadow 0.2s;
-}
-
-.home.scrolled {
-  color: var(--ink);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  box-shadow: 0 0 0 1px var(--line), 0 8px 22px rgb(var(--shadow) / 0.18);
-  backdrop-filter: blur(12px);
-}
-
-/* Lite effects: no blur behind it, just a solid backing */
-:root[data-effects='lite'] .home.scrolled {
-  background: var(--surface);
-  backdrop-filter: none;
-}
-
-.home-logo {
-  font-size: 1.4rem;
-}
-
-.back {
-  width: 1.1rem;
-  height: 1.1rem;
-  margin-right: -0.2rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: translate 0.2s cubic-bezier(0.2, 0, 0, 1);
-}
-
-/* The arrow nudges left on hover, pointing the way you'll go */
-.home:hover .back {
-  translate: -2px 0;
-}
-
-.home:hover {
-  color: var(--ink);
-  background: var(--surface);
 }
 
 .head {
@@ -311,27 +238,36 @@ function goBack(e: MouseEvent) {
   outline-offset: 7px;
 }
 
-/* A small tag hanging off the icon says it can be pressed */
+/* A small play / pause badge on the icon's corner says it can be pressed: play shows the example, pause stops it */
 .demo-tag {
   position: absolute;
-  left: 50%;
-  bottom: -0.85rem;
-  translate: -50% 0;
-  padding: 0.1rem 0.45rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1.3;
-  white-space: nowrap;
+  right: -0.55rem;
+  bottom: -0.55rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  display: grid;
+  place-items: center;
   color: var(--ink);
   background: var(--surface);
   border-radius: 999px;
   box-shadow: 0 0 0 1px var(--line), 0 2px 6px rgb(var(--shadow) / 0.15);
+  transition: scale 0.15s;
+}
+
+.demo-tag svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  fill: currentColor;
+}
+
+.demo-toggle:hover .demo-tag {
+  scale: 1.1;
 }
 
 .demo-toggle.on .demo-tag {
   color: #fff;
   background: var(--purple);
-  box-shadow: 0 2px 6px rgb(var(--shadow) / 0.2);
+  box-shadow: 0 0 0 2px var(--bg), 0 2px 6px rgb(var(--shadow) / 0.2);
 }
 
 /* While the demo is on, the icon gets a dashed ring so it reads as "switched" */
@@ -386,13 +322,18 @@ h1 {
   align-items: inherit;
 }
 
-/* Version and Pin sit side by side */
+/* Version and Pin sit side by side, the same height */
 .head-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: inherit;
   gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.header-bar .head-meta {
+  margin-top: 0.45rem;
 }
 
 .head-meta:empty {
@@ -403,8 +344,8 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  margin-top: 0.6rem;
-  padding: 0.1rem 0.55rem 0.1rem 0.4rem;
+  height: 1.6rem;
+  padding: 0 0.6rem 0 0.45rem;
   font: inherit;
   font-size: 0.75rem;
   font-weight: 700;
@@ -492,20 +433,49 @@ h1 {
   margin-left: auto;
 }
 
-/* ---------- Band: full-width colour band; content overlaps its lower edge ---------- */
+/* ---------- Band: full-width colour band; content overlaps its lower edge ----------
+   Depth from two soft glows on the app colour, a fine dot grid fading in from the right, and the
+   app's icon drawn large and faint behind it. */
 .header-band .head {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   width: calc(100% + var(--gutter) * 2);
   max-width: none;
   margin: 1rem calc(var(--gutter) * -1) 0;
-  padding: 2.5rem max(var(--gutter), calc((100% + var(--gutter) * 2 - var(--width)) / 2)) 4.5rem;
+  padding: 3rem max(var(--gutter), calc((100% + var(--gutter) * 2 - var(--width)) / 2)) 5rem;
   flex-direction: row;
-  align-items: flex-end;
-  gap: 1.25rem;
+  align-items: center;
+  gap: 1.5rem;
   text-align: left;
   color: var(--on-accent);
   background:
-    radial-gradient(circle at 85% -20%, rgb(255 255 255 / 0.22), transparent 50%),
+    radial-gradient(90% 140% at 100% 0%, color-mix(in srgb, var(--accent) 70%, #fff) 0%, transparent 55%),
+    radial-gradient(70% 120% at 0% 100%, color-mix(in srgb, var(--accent) 60%, #000) 0%, transparent 65%),
     var(--accent);
+}
+
+.header-band .head::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1.6px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(100deg, transparent 35%, #000 85%);
+  pointer-events: none;
+}
+
+.band-art {
+  position: absolute;
+  z-index: -1;
+  right: max(var(--gutter), calc((100% - var(--width)) / 2 + 2rem));
+  bottom: -2.5rem;
+  font-size: 15rem;
+  color: #fff;
+  opacity: 0.1;
+  rotate: -12deg;
+  pointer-events: none;
 }
 
 .header-band .head-text {
@@ -514,6 +484,9 @@ h1 {
 
 .header-band .sticker {
   flex: none;
+  width: 4.25rem;
+  height: 4.25rem;
+  font-size: 2.4rem;
   color: var(--accent);
   background: var(--surface);
 }
@@ -521,26 +494,45 @@ h1 {
 .header-band h1 {
   margin-top: 0;
   font-size: clamp(2.25rem, 6vw, 3.75rem);
+  line-height: 1.05;
 }
 
 .header-band .head p {
-  margin-top: 0.4rem;
+  margin-top: 0.5rem;
   color: inherit;
-  opacity: 0.88;
+  opacity: 0.9;
+}
+
+.header-band .head-actions {
+  align-self: center;
+}
+
+/* The page's quiet buttons turn to frosted glass on the colour */
+.header-band .head-actions :deep(.btn-quiet) {
+  color: var(--on-accent);
+  background: rgb(255 255 255 / 0.14);
+  border-color: rgb(255 255 255 / 0.3);
+  box-shadow: none;
+  backdrop-filter: blur(6px);
+}
+
+.header-band .head-actions :deep(.btn-quiet:hover) {
+  background: rgb(255 255 255 / 0.24);
 }
 
 .header-band .body {
-  margin-top: -2.5rem;
+  /* Above the band (it's a stacking context for its artwork), overlapping its lower edge */
+  position: relative;
+  z-index: 1;
+  margin-top: -2.75rem;
 }
 
 /* ---------- Version: a small pill under the summary that opens what's new ---------- */
 .version {
-  align-self: inherit;
-  margin-top: 0.7rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0.65rem 0.2rem 0.55rem;
+  height: 1.6rem;
+  padding: 0 0.6rem;
   font: inherit;
   font-size: 0.78rem;
   font-weight: 600;
@@ -564,6 +556,10 @@ h1 {
 }
 
 /* "What's new" only appears on hover, so the pill stays small */
+.version-new {
+  margin-left: 0.4rem;
+}
+
 .version-more {
   max-width: 0;
   overflow: hidden;
@@ -575,6 +571,7 @@ h1 {
 .version:hover .version-more,
 .version:focus-visible .version-more {
   max-width: 6rem;
+  margin-left: 0.4rem;
   opacity: 1;
 }
 
@@ -597,9 +594,6 @@ h1 {
   opacity: 1;
 }
 
-.header-bar .version {
-  margin-top: 0.4rem;
-}
 
 /* ---------- What's new list ---------- */
 .releases {
@@ -683,14 +677,79 @@ h1 {
   .version-more { transition: none; }
 }
 
+/* Phones: one compact header for every style. The icon sits beside the name, the summary and
+   pills run underneath, and the page's own buttons follow, so the app starts on the first screen. */
 @media (max-width: 640px) {
+  .head,
   .header-bar .head,
   .header-band .head {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0 0.9rem;
+    text-align: left;
+  }
+
+  .head {
+    width: 100%;
+    margin: 1rem 0 1.75rem;
+  }
+
+  .header-band .head {
+    width: calc(100% + var(--gutter) * 2);
+    margin-top: 0.75rem;
+    padding: 1.75rem var(--gutter) 4rem;
+  }
+
+  .band-art {
+    right: -1.5rem;
+    bottom: auto;
+    top: -1.5rem;
+    font-size: 10rem;
+  }
+
+  /* Name, summary and pills join the header's grid */
+  .head-text {
+    display: contents;
+  }
+
+  .sticker,
+  .header-bar .sticker,
+  .header-band .sticker {
+    grid-column: 1;
+    grid-row: 1;
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.5rem;
+    border-radius: 11px;
+  }
+
+  h1,
+  .header-bar h1,
+  .header-band h1 {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+    line-height: 1.1;
+  }
+
+  .head p,
+  .header-bar .head p,
+  .header-band .head p {
+    grid-column: 1 / -1;
+    margin-top: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .head-meta,
+  .head-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 
   .head-actions {
-    margin-left: 0;
+    margin: 1rem 0 0;
   }
 }
 </style>

@@ -1047,7 +1047,7 @@ function switchCurrency(next) {
 /* ---------- Results ---------- */
 .results {
   position: sticky;
-  top: 5.5rem;
+  top: var(--pin-top);
   display: flex;
   flex-direction: column;
   gap: 1rem;

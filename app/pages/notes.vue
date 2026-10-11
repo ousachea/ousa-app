@@ -194,8 +194,15 @@ watch(moreSentinel, (el) => {
 })
 onBeforeUnmount(() => moreObserver?.disconnect())
 
-// Recent is grouped by day: Today, Yesterday…
-const groupOf = (n: Note) => (active.value === NOTES_RECENT && !searching.value ? dayGroup(n.updatedAt) : '')
+// Recent is grouped by day: Today, Yesterday… On a phone every list sorted by date is, like Apple Notes,
+// with favourites in their own group on top
+const groupOf = (n?: Note) => {
+  if (!n || searching.value) return ''
+  if (active.value === NOTES_RECENT) return dayGroup(n.updatedAt)
+  if (!isPhone.value || (sort.value !== 'modified' && sort.value !== 'created')) return ''
+  if (n.favorite && active.value !== NOTES_FAVORITES) return 'Favourites'
+  return dayGroup(sort.value === 'created' ? n.createdAt : n.updatedAt)
+}
 
 const counts = computed(() => {
   const live = notes.value.filter(n => !n.archived)
@@ -217,6 +224,7 @@ const allTags = computed(() => {
 function filterTag(t: string) {
   query.value = `tag:${t}`
   searchText.value = query.value
+  if (pane.value === 'folders') pane.value = 'list'
 }
 
 function timeAgo(iso: string) {
@@ -256,8 +264,49 @@ const pendingSave = ref(false)
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 const editor = ref<InstanceType<typeof NoteEditor>>()
 const titleInput = ref<HTMLTextAreaElement>()
-// Phones show one panel at a time
-const pane = ref<'list' | 'editor'>('list')
+// Phones show one screen at a time, like Apple Notes: Folders → a folder's notes → the note (full screen)
+const pane = ref<'folders' | 'list' | 'editor'>('list')
+const isPhone = ref(false)
+let phoneQuery: MediaQueryList | undefined
+const onPhoneChange = () => (isPhone.value = !!phoneQuery?.matches)
+onMounted(() => {
+  phoneQuery = matchMedia('(max-width: 760px)')
+  onPhoneChange()
+  phoneQuery.addEventListener('change', onPhoneChange)
+})
+onBeforeUnmount(() => phoneQuery?.removeEventListener('change', onPhoneChange))
+// The open note covers the page on a phone: the page underneath mustn't scroll
+watch(() => isPhone.value && pane.value === 'editor', (on) => {
+  document.documentElement.classList.toggle('notes-note-open', on)
+})
+onBeforeUnmount(() => document.documentElement.classList.remove('notes-note-open'))
+
+function showFolders() {
+  pane.value = 'folders'
+  nextTick(() => window.scrollTo({ top: 0 }))
+}
+function showList(id?: string) {
+  if (id !== undefined) {
+    active.value = id
+    query.value = ''
+  }
+  pane.value = 'list'
+  if (isPhone.value) nextTick(() => window.scrollTo({ top: 0 }))
+}
+
+// While typing on a phone, Done puts the keyboard away (Apple Notes' Done)
+const editingText = ref(false)
+const editorPane = ref<HTMLElement>()
+function onEditorFocus() {
+  editingText.value = typing(document.activeElement)
+}
+function doneEditing() {
+  (document.activeElement as HTMLElement | null)?.blur()
+  editingText.value = false
+  flushSave()
+}
+// On a phone, opening a note is a step in the browser's history, so Back (and the swipe) closes it
+let pushedNote = false
 
 function loadDraft(n?: Note) {
   draft.id = n?.id ?? ''
@@ -273,14 +322,21 @@ function openNoteById(id: string, focus: 'title' | 'body' | false = false) {
   leaveNote()
   const n = byId(id)
   if (!n) return
+  const deeper = isPhone.value && !openId.value && !pushedNote
   openId.value = id
   loadDraft(n)
   pane.value = 'editor'
-  router.replace({ query: { ...route.query, note: id, focus: undefined } })
+  const to = { query: { ...route.query, note: id, focus: undefined } }
+  if (deeper) {
+    pushedNote = true
+    router.push(to)
+  } else {
+    router.replace(to)
+  }
   nextTick(() => {
     sizeTitle()
-    // Phones: the note replaces the list, so start at its top
-    if (matchMedia('(max-width: 760px)').matches) document.querySelector('.editor-step')?.scrollIntoView({ block: 'start' })
+    // Phones: the note covers the screen, so start at its top
+    if (editorPane.value) editorPane.value.scrollTop = 0
     // The title catches any keys typed while the editor is still getting ready, so none of them
     // run a shortcut instead (A would start another note)
     if (focus) titleInput.value?.focus()
@@ -296,12 +352,26 @@ function leaveNote() {
 }
 
 function closeNote() {
+  // Opened as a history step: going back closes it (the route watcher below does the rest)
+  if (pushedNote && route.query.note) {
+    router.back()
+    return
+  }
+  pushedNote = false
   leaveNote()
   openId.value = ''
   loadDraft()
+  editingText.value = false
   pane.value = 'list'
-  router.replace({ query: { ...route.query, note: undefined } })
+  if (route.query.note) router.replace({ query: { ...route.query, note: undefined } })
 }
+// Browser Back (or the phone's back swipe) with a note open closes it
+watch(() => route.query.note, (id) => {
+  if (!id && openId.value) {
+    pushedNote = false
+    closeNote()
+  }
+})
 
 function onEdit() {
   pendingSave.value = true
@@ -830,8 +900,21 @@ watch(ready, (ok) => {
 
 // Switching view on a phone shows the list
 watch(active, () => {
-  pane.value = 'list'
+  if (pane.value === 'folders') pane.value = 'list'
 })
+
+// The list's … on a phone: sort, view and Select, which sit in the list's header on a computer
+function listMenu() {
+  openMenu(null, [
+    ...SORTS.map(o => ({ label: o.label, hint: sort.value === o.value ? '✓' : '', run: () => (sort.value = o.value) })),
+    '-',
+    ...VIEWS.map(v => ({ label: `View as ${v === 'list' ? 'list' : v === 'grid' ? 'cards' : 'compact list'}`, hint: view.value === v ? '✓' : '', run: () => (view.value = v) })),
+    '-',
+    { label: 'Select notes', icon: 'select', disabled: !shown.value.length, run: () => sel.start() },
+    { label: 'Import / Export…', icon: 'open', run: () => (transferOpen.value = true) },
+    { label: 'Notes settings…', icon: 'edit', run: () => (settingsOpen.value = true) }
+  ], 'Sort and view')
+}
 </script>
 
 <template>
@@ -845,6 +928,7 @@ watch(active, () => {
         <!-- ---------- 1: views, folders, tags ---------- -->
         <Step :n="1" title="Choose a folder" hint="Or a view: favourites, recent, archived." class="side-step">
         <aside class="side">
+          <h2 class="phone-title">Folders</h2>
           <div class="new-row">
             <button type="button" class="btn new-btn" title="New note (A, Alt+N)" @click="newNote()">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>New note
@@ -864,7 +948,8 @@ watch(active, () => {
             noun="notes"
             item-type="application/x-note"
             :active-label="listTitle"
-            @select="id => active = id"
+            :expanded="isPhone"
+            @select="showList"
             @toggle="toggleFolder"
             @add="openNewFolder"
             @edit="f => Object.assign(folderEditor, { open: true, folder: f, parentId: f.parentId })"
@@ -874,7 +959,7 @@ watch(active, () => {
           >
             <template #views>
               <nav class="views-nav" aria-label="Notes">
-                <button v-for="v in ([[NOTES_ALL, 'All notes', counts.all, 'M5 4.5h10l4 4v11H5zM14.5 4.5V9h4.5M8.5 12.5h7M8.5 16h5'], [NOTES_FAVORITES, 'Favourites', counts.favorites, 'M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z'], [NOTES_RECENT, 'Recent', 0, 'M12 4.5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15zM12 8v4l2.5 2'], [NOTES_ARCHIVED, 'Archived', counts.archived, 'M4 5h16v4H4zM5.5 9v10h13V9M10 13h4']] as const)" :key="v[0]" type="button" class="view-row" :class="{ on: active === v[0] && !searching }" :aria-current="active === v[0] ? 'true' : undefined" @click="active = v[0]; query = ''">
+                <button v-for="v in ([[NOTES_ALL, 'All notes', counts.all, 'M5 4.5h10l4 4v11H5zM14.5 4.5V9h4.5M8.5 12.5h7M8.5 16h5'], [NOTES_FAVORITES, 'Favourites', counts.favorites, 'M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z'], [NOTES_RECENT, 'Recent', 0, 'M12 4.5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15zM12 8v4l2.5 2'], [NOTES_ARCHIVED, 'Archived', counts.archived, 'M4 5h16v4H4zM5.5 9v10h13V9M10 13h4']] as const)" :key="v[0]" type="button" class="view-row" :class="{ on: active === v[0] && !searching }" :aria-current="active === v[0] ? 'true' : undefined" @click="showList(v[0])">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="v[3]" /></svg>
                   <span>{{ v[1] }}</span>
                   <b v-if="v[2]">{{ v[2] }}</b>
@@ -899,6 +984,17 @@ watch(active, () => {
             <button type="button" class="link" @click="transferOpen = true">Import / Export</button>
             <button type="button" class="link" @click="settingsOpen = true">Notes settings</button>
           </div>
+
+          <!-- Phones: Apple Notes' bottom bar -->
+          <div class="phone-bar">
+            <button type="button" class="bar-btn" aria-label="New folder" title="New folder" @click="openNewFolder()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5zM12 11v5M9.5 13.5h5" /></svg>
+            </button>
+            <span class="bar-count">{{ counts.all }} {{ counts.all === 1 ? 'note' : 'notes' }}</span>
+            <button type="button" class="bar-btn" aria-label="New note" title="New note" @click="newNote()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5v-6" /><path d="M17.6 4.4a1.4 1.4 0 0 1 2 2L12 14l-2.7.7.7-2.7z" /></svg>
+            </button>
+          </div>
         </aside>
         </Step>
 
@@ -907,6 +1003,14 @@ watch(active, () => {
         <section class="list-pane" :aria-label="listTitle">
           <!-- Sticks at the top of the list as it scrolls (the list scrolls on its own on a computer) -->
           <div class="list-bar">
+            <div class="phone-nav">
+              <button type="button" class="back phone-back" @click="showFolders">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>Folders
+              </button>
+              <button type="button" class="icon-btn" aria-label="Sort, view and select" title="Sort and view" @click="listMenu">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><circle cx="8.3" cy="12" r=".9" /><circle cx="12" cy="12" r=".9" /><circle cx="15.7" cy="12" r=".9" /></svg>
+              </button>
+            </div>
             <div class="list-head">
               <h2>{{ searching ? 'Search' : listTitle }}</h2>
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
@@ -995,16 +1099,26 @@ watch(active, () => {
               <button type="button" class="btn btn-sm" @click="newNote()">+ New note</button>
             </template>
           </div>
+
+          <div class="phone-bar">
+            <button type="button" class="bar-btn" aria-label="New from a template, or a quick note" title="Templates" @click="newMenu">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 4h8l4 4v10.5A1.5 1.5 0 0 1 17 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4zM9 12h6M9 15.5h4" /></svg>
+            </button>
+            <span class="bar-count">{{ shown.length }} {{ shown.length === 1 ? 'note' : 'notes' }}</span>
+            <button type="button" class="bar-btn" aria-label="New note" title="New note" @click="newNote()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5v-6" /><path d="M17.6 4.4a1.4 1.4 0 0 1 2 2L12 14l-2.7.7.7-2.7z" /></svg>
+            </button>
+          </div>
         </section>
         </Step>
 
         <!-- ---------- 3: the editor ---------- -->
         <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step">
-        <section class="editor-pane" aria-label="Note">
+        <section ref="editorPane" class="editor-pane" aria-label="Note" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
           <template v-if="openNote">
             <header class="editor-head">
-              <button type="button" class="back" aria-label="Back to notes" @click="closeNote">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>Notes
+              <button type="button" class="back" :aria-label="`Back to ${searching ? 'search' : listTitle}`" @click="closeNote">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg><span class="back-label">{{ searching ? 'Search' : listTitle }}</span>
               </button>
               <span class="status" :data-kind="status.kind" aria-live="polite">
                 <span class="dot" aria-hidden="true" /><span class="status-text">{{ status.text }}</span>
@@ -1014,11 +1128,15 @@ watch(active, () => {
                 <button type="button" class="icon-btn" :class="{ on: openNote.favorite }" :aria-pressed="!!openNote.favorite" :aria-label="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" :title="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" @click="toggleFavorite(openNote)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z" /></svg>
                 </button>
-                <button type="button" class="icon-btn" aria-label="Version history" title="Version history" @click="historyOpen = true">
+                <button type="button" class="icon-btn history-btn" aria-label="Version history" title="Version history" @click="historyOpen = true">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v3h3M12 8v4l2.5 2" /></svg>
                 </button>
                 <button type="button" class="icon-btn" aria-label="More actions" title="More" @click="moreMenu">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="18.5" cy="12" r="1.3" /></svg>
+                </button>
+                <button v-if="isPhone && editingText" type="button" class="done" @pointerdown.prevent @click="doneEditing">Done</button>
+                <button v-else-if="isPhone" type="button" class="icon-btn compose" aria-label="New note" title="New note" @click="newNote()">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5v-6" /><path d="M17.6 4.4a1.4 1.4 0 0 1 2 2L12 14l-2.7.7.7-2.7z" /></svg>
                 </button>
               </span>
             </header>
@@ -1729,6 +1847,24 @@ time {
   margin: 0 auto;
 }
 
+/* The note fills the panel, so its details can sit at the bottom however short it is */
+.editor-pane:has(> .sheet) {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-pane > .sheet {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* The writing area takes the spare height, so its word count sits at the bottom too, just above the details */
+.sheet :deep(.note-editor) {
+  flex: 1 0 auto;
+}
+
 .title-input {
   display: block;
   width: 100%;
@@ -1849,8 +1985,9 @@ time {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: 0.5rem 1rem;
-  margin: 0 1.25rem 1.25rem;
-  padding-top: 0.75rem;
+  /* Pinned to the bottom of the panel, with room under it */
+  margin: auto 1.25rem 0;
+  padding: 0.9rem 0 1.75rem;
   font-size: 0.78rem;
   color: var(--ink-3);
   border-top: 1px solid var(--line);
@@ -1941,10 +2078,28 @@ kbd {
   }
 }
 
-/* Phones: one panel at a time — the list, then the note full screen */
+/* Phone-only parts (Apple Notes' large titles, bottom bars, Done) */
+.phone-title,
+.phone-nav,
+.phone-bar,
+.done,
+.compose {
+  display: none;
+}
+
+/* ---------- Phones: one screen at a time, like Apple Notes ----------
+   Folders → a folder's notes → the note, full screen. Back buttons say where they go. */
 @media (max-width: 760px) {
   .notes-app {
     display: block;
+  }
+
+  /* No numbered steps: the screens themselves are the flow */
+  .notes-app :deep(.step-head),
+  .new-row,
+  .sort,
+  .list-tools {
+    display: none;
   }
 
   .side-step,
@@ -1958,52 +2113,260 @@ kbd {
     overflow: visible;
   }
 
-  .side-step {
-    margin-bottom: 1.25rem;
-  }
-
-  .notes-app[data-pane='editor'] .side-step,
-  .notes-app[data-pane='editor'] .list-step,
-  .notes-app[data-pane='list'] .editor-step {
+  .notes-app:not([data-pane='folders']) .side-step,
+  .notes-app[data-pane='folders'] .list-step,
+  .notes-app:not([data-pane='editor']) .editor-step {
     display: none;
   }
 
-  /* The note gets the whole screen: its step heading would only push it down */
-  .editor-step :deep(.step-head) {
-    display: none;
+  .phone-title {
+    display: block;
+    margin: 0 0 0.25rem;
+    padding-inline: 0.25rem;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
   }
 
-  /* On a phone the page scrolls instead: stop below the floating app pill and menu */
-  .list-bar {
-    top: 5rem;
-    border-radius: 18px;
+  /* ----- Folders ----- */
+  /* The whole tree shows; the page scrolls (mid-size screens cap it) */
+  .side :deep(.tree-body) {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .views-nav {
+    padding: 0.3rem;
+    background: var(--surface);
+    border-radius: 14px;
     box-shadow: 0 0 0 1px var(--line);
   }
 
+  .view-row {
+    min-height: 2.9rem;
+    font-size: 1rem;
+  }
+
+  .view-row.on {
+    box-shadow: none;
+  }
+
+  /* Bottom bar: new folder · count · new note */
+  .phone-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0.75rem -1rem 0;
+    padding: 0.35rem 0.75rem max(0.35rem, env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+  }
+
+  .bar-btn {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    color: var(--accent);
+    background: none;
+    border: 0;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+
+  .bar-btn:active {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .bar-btn svg,
+  .compose svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .bar-count {
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-3);
+  }
+
+  /* ----- A folder's notes ----- */
+  .list-pane {
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .list-bar {
+    position: static;
+    padding: 0 0 0.5rem;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .phone-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-left: -0.35rem;
+  }
+
+  .phone-back {
+    display: inline-flex;
+  }
+
+  .list-head {
+    padding-left: 0.25rem;
+  }
+
+  .list-head h2 {
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+  }
+
+  /* Rows in rounded groups with hairlines between them; group names above (Favourites, Today…) */
+  .note-list:not(.grid) .group-head {
+    padding: 1rem 0.25rem 0.4rem;
+    font-size: 1.1rem;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: var(--ink);
+  }
+
+  .note-list:not(.grid) .note-row {
+    background: var(--surface);
+    border-radius: 0;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  .note-list:not(.grid) .note-row + .note-row {
+    margin-top: 1px;
+  }
+
+  .note-list:not(.grid) > .note-row:first-child,
+  .note-list:not(.grid) .group-head + .note-row {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+
+  .note-list:not(.grid) .note-row:last-child,
+  .note-list:not(.grid) .note-row:has(+ .group-head) {
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+  }
+
+  .note-list:not(.grid) .note-open {
+    padding: 0.75rem 1rem;
+    border-radius: inherit;
+  }
+
+  .note-list:not(.grid) .note-title {
+    font-size: 1rem;
+  }
+
+  .note-list.list .note-preview {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  /* The list's bar sits at the screen's bottom */
+  .list-pane .phone-bar {
+    margin-top: 1rem;
+  }
+
+  /* ----- The note: covers the screen ----- */
+  .editor-step {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    background: var(--surface);
+  }
+
   .editor-pane {
-    margin: 0 -1rem;
-    min-height: calc(100dvh - 6rem);
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding-top: env(safe-area-inset-top);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border-radius: 0;
     box-shadow: none;
   }
 
+  .editor-head {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    gap: 0.25rem;
+    padding: 0.4rem 0.5rem 0.4rem 0.6rem;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
   .back {
     display: inline-flex;
+    min-width: 0;
+    min-height: 2.75rem;
   }
 
-  /* Opening a note scrolls here; stop below the floating app pill and menu button */
-  .editor-step {
-    scroll-margin-top: 5.75rem;
+  .back-label {
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
+  /* Just the dot: the words stay for screen readers, and errors still say what's wrong */
   .status {
     flex: 1;
     min-width: 0;
   }
 
+  .status:not([data-kind='error'], [data-kind='offline']) .status-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  /* Version history is in the … menu */
+  .history-btn {
+    display: none;
+  }
+
+  .compose {
+    display: inline-flex;
+    color: var(--accent);
+  }
+
+  .done {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 0.6rem;
+    font: inherit;
+    font-weight: 700;
+    color: var(--accent);
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
   .title-input {
     padding-inline: 1rem;
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .note-place,
@@ -2018,5 +2381,16 @@ kbd {
     padding-inline: 1rem;
     margin-inline: 0;
   }
+
+  /* Clear of the formatting bar fixed along the bottom */
+  .details {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* The open note covers the page on a phone: the page underneath stays put */
+:global(html.notes-note-open),
+:global(html.notes-note-open body) {
+  overflow: hidden;
 }
 </style>

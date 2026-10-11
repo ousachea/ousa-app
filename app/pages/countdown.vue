@@ -915,7 +915,7 @@ function del(e: CountdownEvent) {
   .list-step,
   .holiday-step {
     position: sticky;
-    top: 5.5rem;
+    top: var(--pin-top);
   }
 }
 

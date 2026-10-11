@@ -1725,7 +1725,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   .market,
   .side {
     position: sticky;
-    top: 5.5rem;
+    top: var(--pin-top);
   }
 }
 

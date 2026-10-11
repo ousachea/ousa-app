@@ -13,6 +13,7 @@ const state = reactive({
   listening: false,
   lastSyncAt: '',
   lastError: '',
+  offlineReason: '',
   errors: [] as { at: string, message: string }[]
 })
 
@@ -47,6 +48,7 @@ function refresh() {
   state.pending = e ? e.pending() : 0
   state.listening = !!e?.listening
   state.lastError = e?.lastError ?? ''
+  state.offlineReason = e?.offlineReason ?? ''
   state.errors = e ? [...e.errors] : []
   try {
     state.lastSyncAt = localStorage.getItem(LAST_SYNC_KEY) ?? ''
@@ -176,6 +178,17 @@ export function startSync() {
     if (e.key?.startsWith('ousa-app:')) refresh()
   })
   if (import.meta.dev) (window as unknown as { __ousaSync: unknown }).__ousaSync = { state, engine: () => engine, listeners }
+}
+
+/**
+ * Why sync says Offline, in plain words. The internet being on while Firebase can't be reached almost
+ * always means something in between is blocking it: an ad blocker or privacy shield, a VPN, or a firewall.
+ */
+export function offlineHelp(reason: string) {
+  if (!reason) return ''
+  if (reason === 'no-connection') return 'This device has no internet connection.'
+  const what = reason === 'timeout' ? 'Firebase took too long to answer' : `Firebase couldn’t be reached (${reason})`
+  return `${what}, though your internet is on. An ad blocker or privacy shield (uBlock, Brave Shields, AdGuard), a VPN or a firewall blocking firestore.googleapis.com is the usual cause: allow it for this site, then Try again.`
 }
 
 /** Resolves once the account is known and, when signed in, this device has caught up (or couldn't) */

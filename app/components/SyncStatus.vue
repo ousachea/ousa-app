@@ -53,6 +53,7 @@ const nearBudget = computed(() => meters.value.some(m => m.pct >= 80))
       <div><dt>Live updates</dt><dd>{{ state.listening ? 'On in this tab' : 'Handled by another tab, or paused' }}</dd></div>
     </dl>
 
+    <p v-if="state.status === 'offline' && state.offlineReason" class="err">{{ offlineHelp(state.offlineReason) }}</p>
     <p v-if="state.status === 'error'" class="err">{{ state.lastError || 'Firebase didn’t accept the latest changes.' }} They’re kept on this device.</p>
     <button v-if="state.status === 'offline' || state.status === 'error'" type="button" class="btn btn-sm" @click="retry">Try again</button>
 

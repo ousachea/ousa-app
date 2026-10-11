@@ -320,7 +320,7 @@ async function reloadRate() {
 
   .result-step {
     position: sticky;
-    top: 5.5rem; /* clear of the menu button */
+    top: var(--pin-top);
   }
 }
 

@@ -31,6 +31,7 @@
   --cyan: #0e7490;
   --slate: #4b5b78;
   --gold: #c9971c;
+  --plum: #7d2e6f;
 
   /* The black plastic of the cube: sticker rims, the menu button, toasts. Stays dark in both themes. */
   --plastic: #1b1f2a;
@@ -69,6 +70,8 @@
   --radius-xl: 20px; /* panels */
   --radius-pill: 999px;
 
+  /* Where sticky bars and columns pin: the back link and menu button scroll away with the page */
+  --pin-top: max(0.75rem, env(safe-area-inset-top));
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -298,21 +301,19 @@ textarea.input {
   :root:root .link,
   :root:root .calendar-add .trigger,
   :root:root .confirm-delete,
-  :root:root .pin {
+  :root:root .pin,
+  :root:root .version {
     position: relative;
   }
 
   :root:root .link::before,
   :root:root .calendar-add .trigger::before,
   :root:root .confirm-delete::before,
-  :root:root .pin::before {
+  :root:root .pin::before,
+  :root:root .version::before {
     content: '';
     position: absolute;
     inset: -0.6rem -0.3rem;
-  }
-
-  :root:root .version {
-    min-height: 2.25rem;
   }
 
   /* On/off switches: the same invisible margin around them */
@@ -350,11 +351,11 @@ textarea.input {
   }
 }
 
-/* Search, sort and filter bars on long lists stay pinned under the back and menu buttons
+/* Search, sort and filter bars on long lists stay pinned at the top as the page scrolls
    (v-sticky-bar, plugins/sticky.ts). Once pinned they get a frosted backing so the list can pass beneath. */
 .sticky-bar {
   position: sticky;
-  top: 5rem;
+  top: var(--pin-top);
   z-index: 30;
   margin-inline: -0.5rem;
   padding: 0.5rem;
@@ -1035,6 +1036,22 @@ kbd {
 
 :root:root:not([data-density='comfortable']) .panel.summary {
   padding-block: calc(1.25rem * var(--density));
+}
+
+/* ---------- Long press (useRowMenu) ---------- */
+/* On touch, holding a row opens its menu: no text highlight, iOS callout or magnifier on top of it */
+@media (pointer: coarse) {
+  [data-press-menu] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  [data-press-menu] :is(input, textarea, [contenteditable]:not([contenteditable='false'])) {
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 /* ---------- Selecting several (useBulkSelect, <BulkCheck>) ---------- */

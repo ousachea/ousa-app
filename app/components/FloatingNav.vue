@@ -53,7 +53,8 @@ for (const t of TOOLS.filter(t => !LETTER.has(t.to))) {
   BY_LETTER.set(letter, t)
 }
 
-const open = ref(false)
+// Opened from the Apps button in the top bar (SiteBar), or with M
+const { open, toggleMenu } = useAppMenu()
 const { play } = useSound()
 const root = ref<HTMLElement>()
 const searchInput = ref<HTMLInputElement>()
@@ -129,13 +130,25 @@ watch(open, (isOpen) => {
   if (!isOpen) query.value = ''
 })
 
-function toggleMenu() {
-  open.value = !open.value
-  play(open.value ? 'open' : 'close')
+// The menu drops down under the Apps button; if that's scrolled away, it opens at the top of the window
+const place = reactive({ top: 16, right: 16 })
+const trigger = () => document.querySelector<HTMLElement>('[data-app-menu-trigger]')
+watch(open, (isOpen) => {
+  if (!isOpen) return
+  const r = trigger()?.getBoundingClientRect()
+  place.top = Math.max(12, r ? r.bottom + 8 : 16)
+  place.right = Math.max(12, r ? window.innerWidth - r.right : 16)
+})
+// Closing with Esc puts the keyboard back on the button that opened it
+function closeMenu() {
+  open.value = false
+  if (document.activeElement && root.value?.contains(document.activeElement)) trigger()?.focus()
 }
 
 function onPointerDown(e: PointerEvent) {
-  if (open.value && !root.value?.contains(e.target as Node)) open.value = false
+  const t = e.target as Element
+  // The Apps button toggles on its own click
+  if (open.value && !root.value?.contains(t) && !t.closest?.('[data-app-menu-trigger]')) open.value = false
 }
 
 function goTo(index: number) {
@@ -169,7 +182,7 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     // Something on the page (e.g. a chart) already handled it, or a popup is closing itself
     if (e.defaultPrevented || document.querySelector('dialog[open]')) return
-    if (open.value) open.value = false
+    if (open.value) closeMenu()
     // Leave a text field so the shortcuts work again
     else if (isTyping(e.target)) (e.target as HTMLElement).blur()
     else goBack()
@@ -238,25 +251,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <nav ref="root" class="fab" :class="{ open }" aria-label="Site navigation">
-    <button
-      type="button"
-      class="toggle"
-      :class="{ live: signedIn }"
-      :aria-expanded="open"
-      aria-controls="fab-menu"
-      :aria-label="open ? 'Close navigation' : 'Open navigation'"
-      aria-keyshortcuts="M"
-      :title="open ? 'Close menu (M)' : 'Open menu (M)'"
-      @click="toggleMenu"
-    >
-      <span class="bars" aria-hidden="true" />
-      <!-- Signed in and syncing: the whole button turns live green and pulses -->
-      <ClientOnly>
-        <span v-if="signedIn" class="visually-hidden">, synced with Firebase</span>
-      </ClientOnly>
-    </button>
-
+  <nav ref="root" class="fab" :class="{ open }" aria-label="Apps" :style="{ 'top': `${place.top}px`, 'right': `${place.right}px`, '--menu-top': `${place.top}px` }">
     <div id="fab-menu" class="sheet" :inert="!open">
       <!-- Account: live sync status, or a way to sign in -->
       <ClientOnly>
@@ -363,7 +358,7 @@ onBeforeUnmount(() => {
     </div>
   </nav>
 
-  <!-- Outside the nav: the nav ignores pointer events so the page underneath stays clickable -->
+  <!-- Outside the nav: the closed nav ignores pointer events so the page underneath stays clickable -->
   <Modal :open="signInOpen" title="Sign in to sync" @close="signInOpen = false">
     <p class="intro">
       Save everything you add (things, bookmarks, countdowns, gold…) to Firebase and see it on all your devices.
@@ -375,10 +370,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .fab {
+  /* A dropdown under the Apps button in the top bar; top and right are set when it opens */
   position: fixed;
-  /* Top-right corner; the menu drops down below the button */
-  top: max(1rem, env(safe-area-inset-top));
-  right: max(1.25rem, env(safe-area-inset-right));
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -388,82 +381,11 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-.toggle {
-  position: relative;
-  width: 3.5rem;
-  height: 3.5rem;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: var(--plastic);
-  border: 0;
-  border-radius: 18px;
-  box-shadow: inset 0 0 0 1px var(--plastic-edge), 0 8px 22px rgb(var(--shadow) / 0.3);
-  cursor: pointer;
-  pointer-events: auto;
-  transition: transform 0.2s, background-color 0.15s;
-}
-
-.toggle:hover { background: var(--plastic-hover); }
-
-/* Live: signed in and syncing. Green button (white lines stay readable) with a ring pulsing out */
-.toggle.live {
-  background: #15803d;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15), 0 8px 22px rgb(21 128 61 / 0.4);
-}
-
-.toggle.live:hover {
-  background: #166534;
-}
-
-.toggle.live::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: #22c55e;
-  z-index: -1;
-  animation: live-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-@keyframes live-pulse {
-  0% { opacity: 0.55; scale: 1; }
-  70%, 100% { opacity: 0; scale: 1.45; }
-}
-.toggle:active { transform: scale(0.96); }
-
-/* Hamburger that morphs into an X */
-.bars,
-.bars::before,
-.bars::after {
-  display: block;
-  width: 20px;
-  height: 2px;
-  background: currentColor;
-  border-radius: 2px;
-  transition: transform 0.25s, background-color 0.2s;
-}
-
-.bars { position: relative; }
-
-.bars::before,
-.bars::after {
-  content: '';
-  position: absolute;
-  left: 0;
-}
-
-.bars::before { transform: translateY(-6px); }
-.bars::after { transform: translateY(6px); }
-
-.open .bars { background: transparent; }
-.open .bars::before { transform: rotate(45deg); }
-.open .bars::after { transform: rotate(-45deg); }
 
 /* ---------- The sheet: one card that unfolds from the button ---------- */
 .sheet {
-  width: min(34rem, calc(100vw - 2rem));
-  max-height: calc(100dvh - 6.5rem);
+  width: min(46rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - var(--menu-top, 4rem) - 1rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.75rem;
@@ -712,7 +634,7 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.25rem;
 }
 
@@ -873,7 +795,6 @@ kbd {
   }
 }
 
-.toggle:focus-visible,
 .tile:focus-visible,
 .foot-link:focus-visible,
 .chip:focus-visible {
@@ -897,23 +818,32 @@ kbd {
   white-space: nowrap;
 }
 
-/* Narrow phones: one column of tiles is easier to tap */
-@media (max-width: 380px) {
-  .group ul {
-    grid-template-columns: minmax(0, 1fr);
+/* Phones: still three across, each tile its icon over its name, like a home screen */
+@media (max-width: 640px) {
+  .tile {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    padding: 0.6rem 0.25rem 0.5rem;
+    text-align: center;
+  }
+
+  .name {
+    flex: none;
+    font-size: 0.8rem;
+  }
+
+  .tile kbd {
+    display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sheet,
-  .bars,
-  .bars::before,
-  .bars::after {
+  .sheet {
     transition: none;
   }
 
-  .live-dot::after,
-  .toggle.live::after {
+  .live-dot::after {
     animation: none;
   }
 }
