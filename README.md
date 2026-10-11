@@ -5,6 +5,8 @@ Everything works on this device without an account; sign in with Google to sync 
 
 Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google sign-in and Firestore).
 
+![The home page: a Rubik’s cube whose stickers open the apps, with the apps listed below](docs/screenshots/home.png)
+
 ## The apps
 
 **Tools**
@@ -29,13 +31,38 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 | Weight | Log your weight and see the trend |
 | Countdown | Count down to dates, with Cambodian public holidays |
 | Renewals | What your subscriptions cost and when they renew |
-| Bookmarks | Save links in folders, and pin the ones you open every day |
+| Bookmarks | Save links in folders and pin the ones you open every day; each site’s preview image, description and icon fill in, and duplicates are flagged |
 | Notes | Fast notes with folders, checklists, links between notes and version history |
 | Gold tracker | Live gold price in chi and damlung, and what your gold is worth now |
 
+### Screenshots
+
+Every app with saved data has example data: click its icon to try it without touching your own.
+
+| | |
+|---|---|
+| ![Things I own: what everything is worth, and where the value is](docs/screenshots/things.png) | ![Notes: folders, the list and the editor side by side](docs/screenshots/notes.png) |
+| **Things I own** | **Notes** |
+| ![Renewals: monthly cost and the next 30 days of renewals](docs/screenshots/renewals.png) | ![Gold tracker: the live price and what your gold is worth](docs/screenshots/gold.png) |
+| **Renewals** | **Gold tracker** |
+| ![Bookmarks: save a link, pinned links, folders and the list with each site's preview image](docs/screenshots/bookmarks.png) | ![Weight: latest weigh-in and the trend chart](docs/screenshots/weight.png) |
+| **Bookmarks** | **Weight** |
+| ![QR code: a live preview with colour and shape options](docs/screenshots/qr.png) | ![Renewals in dark mode](docs/screenshots/renewals-dark.png) |
+| **QR code** | **Dark mode** |
+
+On a phone, Notes works like Apple Notes (folders, a folder’s notes, then the note full screen), and the
+apps menu opens from the top bar:
+
+<p>
+  <img src="docs/screenshots/phone-notes-list.png" width="200" alt="Notes on a phone: the list grouped by Favourites, Today and Yesterday">
+  <img src="docs/screenshots/phone-notes-note.png" width="200" alt="Notes on a phone: a note open full screen with the formatting bar">
+  <img src="docs/screenshots/phone-things.png" width="200" alt="Things I own on a phone">
+  <img src="docs/screenshots/phone-menu.png" width="200" alt="The apps menu on a phone, three apps to a row">
+</p>
+
 Shared across the apps: search everything (⌘K / Ctrl K), the apps menu (M), example data from each app’s icon,
-each app’s own settings (the Settings button in its header), right-click or long-press menus, select several
-and act on them together, a Recycle Bin that keeps deleted things for 30 days, import and export, light and dark
+each app’s own settings (the Settings button in its header), right-click or long-press menus (rows don’t repeat
+their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, import and export, light and dark
 themes, sounds, and installing it as an app on a phone or computer.
 
 ## Getting started

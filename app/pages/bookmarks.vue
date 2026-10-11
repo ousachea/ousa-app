@@ -63,6 +63,69 @@ watch([ready, folderStore.ready], ([a, b]) => {
   toast.success('Tags are folders now', { description: `${pending.length} ${pending.length === 1 ? 'bookmark was' : 'bookmarks were'} put in folders named after their tags.` })
 }, { immediate: true })
 
+// ---------- Duplicate folders ----------
+// Two folders with the same name (any capitalisation) in the same place are one folder: the first
+// keeps its place, the other's bookmarks and sub-folders move into it, and the copy goes. Merging
+// sub-folders can make new pairs inside, so it repeats until none are left. One Undo puts it all back.
+const sameName = (a: string, b: string) => folderName(a).toLowerCase() === folderName(b).toLowerCase()
+function duplicatePairs() {
+  const pairs: [keep: Folder, copy: Folder][] = []
+  const groups = new Map<string, Folder[]>()
+  for (const f of [...folders.value].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))) {
+    const key = `${f.parentId}\u0000${folderName(f.name).toLowerCase()}`
+    const g = groups.get(key)
+    if (g) pairs.push([g[0]!, f])
+    else groups.set(key, [f])
+  }
+  return pairs
+}
+function mergeDuplicateFolders(quietIfNone = true) {
+  const removed: Folder[] = []
+  const bookmarksBefore = new Map<string, Bookmark>()
+  const foldersBefore = new Map<string, Folder>()
+  for (let round = 0; round < 10; round++) {
+    const pairs = duplicatePairs()
+    if (!pairs.length) break
+    for (const [keep, copy] of pairs) {
+      for (const b of items.value.filter(x => x.folders?.includes(copy.id))) {
+        const before = update(b.id, { folders: [...new Set((b.folders ?? []).map(id => (id === copy.id ? keep.id : id)))] }, { quiet: true })
+        if (before && !bookmarksBefore.has(b.id)) bookmarksBefore.set(b.id, before)
+      }
+      for (const c of folders.value.filter(x => x.parentId === copy.id)) {
+        const before = folderStore.update(c.id, { parentId: keep.id, order: childrenOf(folders.value, keep.id).length }, { quiet: true })
+        if (before && !foldersBefore.has(c.id)) foldersBefore.set(c.id, before)
+      }
+      if (activeFolder.value === copy.id) activeFolder.value = keep.id
+      folderStore.remove(copy.id)
+      removed.push(copy)
+    }
+  }
+  if (!removed.length) {
+    if (!quietIfNone) toast('No duplicate folders')
+    return 0
+  }
+  const names = [...new Set(removed.map(f => f.name))]
+  toast.success(`Merged ${removed.length} duplicate ${removed.length === 1 ? 'folder' : 'folders'}`, {
+    description: `${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}: their bookmarks are in the folder with the same name.`,
+    duration: 8000,
+    action: { label: 'Undo', onClick: () => {
+      for (const f of removed) folderStore.restore(f)
+      for (const f of foldersBefore.values()) folderStore.replace(f)
+      for (const b of bookmarksBefore.values()) replace(b)
+    } }
+  })
+  return removed.length
+}
+// Check once the page is up and both lists have loaded, and whenever folders arrive from another device
+function checkDuplicateFolders() {
+  if (!ready.value || !folderStore.ready.value || useDemoState('/bookmarks').active.value) return
+  if (duplicatePairs().length) mergeDuplicateFolders()
+}
+onMounted(() => {
+  checkDuplicateFolders()
+  watch([ready, folderStore.ready, () => folders.value.length], checkDuplicateFolders)
+})
+
 // Open and closed folders in the sidebar, remembered (#14)
 const collapsed = useRemembered<string[]>('bookmarks-collapsed', [], Array.isArray)
 function toggleFolder(id: string) {
@@ -83,9 +146,18 @@ function openEditFolder(f: Folder) {
 function saveFolder(data: Pick<Folder, 'name' | 'parentId' | 'icon' | 'color'>) {
   const f = folderEditor.folder
   folderEditor.open = false
+  // A folder with this name is already there: use it rather than making a second one
+  const twin = folders.value.find(x => x.id !== f?.id && x.parentId === data.parentId && sameName(x.name, data.name))
+  if (twin && !f) {
+    activeFolder.value = twin.id
+    toast(`${twin.name} already exists`, { description: 'Opened it instead of making a second one.' })
+    return
+  }
   if (f) {
     const before = folderStore.update(f.id, { ...data, ...(data.parentId !== f.parentId ? { order: childrenOf(folders.value, data.parentId).length } : {}) })
-    toastSaved(before && (() => folderStore.replace(before)), `${data.name} saved`)
+    // Renamed or moved onto a folder with the same name: the two become one
+    if (twin) mergeDuplicateFolders()
+    else toastSaved(before && (() => folderStore.replace(before)), `${data.name} saved`)
   } else {
     const created = folderStore.add({ ...data, order: childrenOf(folders.value, data.parentId).length })
     activeFolder.value = created.id
@@ -151,7 +223,10 @@ const moving = ref<Bookmark>()
 // Duplicate and similar finder; the sidebar shows how many duplicate groups there are
 const dupesOpen = ref(false)
 const ignoredDupes = useRemembered<string[]>('bookmarks-not-dupes', [], Array.isArray)
-const duplicateCount = computed(() => findDuplicates(items.value, new Set(ignoredDupes.value)).filter(g => g.kind === 'duplicate').length)
+const duplicateGroups = computed(() => findDuplicates(items.value, new Set(ignoredDupes.value)).filter(g => g.kind === 'duplicate'))
+const duplicateCount = computed(() => duplicateGroups.value.length)
+// Bookmarks saved more than once get a Duplicate badge on their card, which opens Find duplicates
+const duplicateIds = computed(() => new Set(duplicateGroups.value.flatMap(g => g.items.map(b => b.id))))
 
 // ---------- Save a link ----------
 const online = useOnline()
@@ -735,6 +810,65 @@ async function enrich(list: Bookmark[]) {
   }
   await Promise.all(Array.from({ length: 4 }, worker))
 }
+
+// ---------- Site details for every bookmark (one button) ----------
+// Reads each page's preview image, description, icon and site name again, four at a time, with a
+// running count. Titles you've typed stay; only a title that's still just the address is replaced.
+// One Undo puts every bookmark back as it was.
+const fetchingDetails = ref(false)
+const brokenImages = ref(new Set<string>())
+async function refreshAllDetails() {
+  if (fetchingDetails.value) return
+  if (!online.value) {
+    toast('Can’t get site details offline', { description: 'Try again when you’re back online.' })
+    return
+  }
+  const list = [...items.value]
+  if (!list.length) return
+  fetchingDetails.value = true
+  const loading = toast.loading(`Getting site details… 0 of ${list.length}`)
+  const befores: Bookmark[] = []
+  let done = 0
+  let changed = 0
+  let failed = 0
+  const queue = [...list]
+  const worker = async () => {
+    for (let b = queue.shift(); b; b = queue.shift()) {
+      const preview = await $fetch('/api/link-preview', { query: { url: b.url } }).catch(() => undefined)
+      done++
+      toast.loading(`Getting site details… ${done} of ${list.length}`, { id: loading })
+      const current = items.value.find(i => i.id === b!.id)
+      if (!preview || !current) {
+        failed++
+        continue
+      }
+      const bareTitle = !current.title.trim() || current.title === current.url || current.title === hostOf(current.url)
+      const patch: Partial<Bookmark> = {
+        ...(preview.icon ? { icon: preview.icon } : {}),
+        ...(preview.description ? { description: preview.description } : {}),
+        ...(preview.image ? { image: preview.image } : {}),
+        ...(preview.siteName ? { siteName: preview.siteName } : {}),
+        ...(bareTitle && preview.title ? { title: preview.title } : {})
+      }
+      const differs = (Object.keys(patch) as (keyof Bookmark)[]).some(k => patch[k] !== current[k])
+      if (!differs) continue
+      const before = update(current.id, patch, { quiet: true })
+      if (before) {
+        befores.push(before)
+        changed++
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: 4 }, worker))
+  fetchingDetails.value = false
+  brokenImages.value = new Set()
+  play(changed ? 'success' : 'select')
+  toast.success(changed ? `Updated ${changed} ${changed === 1 ? 'bookmark' : 'bookmarks'}` : 'Everything was already up to date', {
+    id: loading,
+    description: failed ? `${failed} ${failed === 1 ? 'site' : 'sites'} couldn’t be reached; they kept their details.` : undefined,
+    action: befores.length ? { label: 'Undo', onClick: () => befores.forEach(b => replace(b)) } : undefined
+  })
+}
 </script>
 
 <template>
@@ -881,6 +1015,10 @@ async function enrich(list: Bookmark[]) {
           />
 
           <div class="side-tools">
+            <button v-if="items.length" type="button" class="btn btn-quiet btn-sm details-btn" :disabled="fetchingDetails" title="Read every site’s preview image, description, icon and name again" @click="refreshAllDetails">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4.5v4h-4" /></svg>
+              {{ fetchingDetails ? 'Getting site details…' : 'Get site details' }}
+            </button>
             <button type="button" class="link" @click="dupesOpen = true">Find duplicates<template v-if="duplicateCount"> <span class="count-pill">{{ duplicateCount }}</span></template></button>
             <button type="button" class="link" @click="transferOpen = true">Import / Export</button>
             <NuxtLink to="/trash?app=/bookmarks" class="link">Recycle Bin</NuxtLink>
@@ -918,7 +1056,9 @@ async function enrich(list: Bookmark[]) {
 
           <template v-if="shown.length">
             <TransitionGroup tag="ul" name="list" class="marks" :class="[view === 'compact' ? ['list', 'compact'] : view, { selecting: sel.selecting }]">
-              <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ flash: flashId === b.id, picked: sel.has(b.id) }" :draggable="finePointer && !sel.selecting ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @click.capture="sel.onRowClick($event, b.id)">
+              <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ 'flash': flashId === b.id, 'picked': sel.has(b.id), 'is-pinned': b.pinned, 'is-dupe': duplicateIds.has(b.id) }" :draggable="finePointer && !sel.selecting ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @click.capture="sel.onRowClick($event, b.id)">
+                <!-- The page's own preview image: a cover on cards, a thumbnail in the list -->
+                <img v-if="b.image && view !== 'compact' && !brokenImages.has(b.image)" class="mark-image" :src="b.image" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenImages = new Set(brokenImages).add(b.image!)">
                 <!-- The icon doubles as the checkbox: always while selecting, and on hover with a mouse to start -->
                 <span class="mark-icon">
                   <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
@@ -929,9 +1069,10 @@ async function enrich(list: Bookmark[]) {
                   </label>
                 </span>
                 <div class="mark-body">
-                  <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
+                  <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<svg v-if="b.pinned" class="pin-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg><span v-if="b.pinned" class="sr-only"> (pinned)</span><svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
                   <span class="mark-meta">
-                    {{ hostOf(b.url) }} · added {{ ago(b.createdAt) }}<template v-if="b.visits"> · opened {{ b.visits }}×</template>
+                    <template v-if="b.siteName && b.siteName.toLowerCase() !== b.title.toLowerCase()">{{ b.siteName }} · </template>{{ hostOf(b.url) }} · added {{ ago(b.createdAt) }}<template v-if="b.visits"> · opened {{ b.visits }}×</template>
+                    <button v-if="duplicateIds.has(b.id)" type="button" class="dupe-badge" title="Saved more than once. Open Find duplicates to merge them." @click="dupesOpen = true">Duplicate</button>
                   </span>
                   <p v-if="b.description && !b.note" class="mark-desc">{{ b.description }}</p>
                   <p v-if="b.note" class="mark-note">{{ b.note }}</p>
@@ -1048,6 +1189,14 @@ async function enrich(list: Bookmark[]) {
 </template>
 
 <style scoped>
+/* ---------- Two markers, two colours ----------
+   Pinned is blue everywhere (tiles, rows, cards, the pin button); Duplicate is amber, a heads-up */
+.pinned-step,
+.library-step {
+  --pin-color: var(--blue);
+  --dupe-color: var(--orange);
+}
+
 /* ---------- Steps: save, pinned, find ---------- */
 .pinned-step,
 .library-step {
@@ -1339,7 +1488,7 @@ async function enrich(list: Bookmark[]) {
   right: 1rem;
   width: 0.75rem;
   height: 1.3rem;
-  background: var(--accent);
+  background: var(--pin-color, var(--accent));
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%);
 }
 
@@ -1490,6 +1639,11 @@ async function enrich(list: Bookmark[]) {
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
+}
+
+/* As tall as the search box beside it */
+.select-btn {
+  min-height: 2.75rem;
 }
 
 .select-btn[aria-pressed='true'] {
@@ -1728,6 +1882,116 @@ kbd {
   background: var(--accent);
   opacity: var(--hl);
   transition: opacity 0.15s;
+}
+
+/* Pinned: the accent edge stays on (list) or the card wears an accent border (grid), and a small pin
+   follows the title so it doesn't rest on colour alone */
+.marks.list .mark.is-pinned::before {
+  opacity: 1;
+  background: var(--pin-color);
+}
+
+.marks.grid .mark.is-pinned {
+  box-shadow: 0 0 0 2px var(--pin-color);
+}
+
+/* Saved more than once: an amber edge or border and a Duplicate badge that opens Find duplicates */
+.marks.list .mark.is-dupe:not(.is-pinned)::before {
+  opacity: 1;
+  background: var(--dupe-color);
+}
+
+.marks.grid .mark.is-dupe:not(.is-pinned) {
+  box-shadow: 0 0 0 2px var(--dupe-color);
+}
+
+/* Both: blue edge for the pin, with an amber one just inside it */
+.marks.list .mark.is-pinned.is-dupe {
+  box-shadow: inset 6px 0 0 -3px var(--dupe-color);
+}
+
+.marks.grid .mark.is-pinned.is-dupe {
+  box-shadow: 0 0 0 2px var(--pin-color), 0 0 0 4px var(--dupe-color);
+}
+
+.dupe-badge {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.45rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--warn-ink);
+  background: color-mix(in srgb, var(--dupe-color) 14%, var(--surface));
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dupe-badge:hover {
+  background: color-mix(in srgb, var(--dupe-color) 24%, var(--surface));
+}
+
+/* ---------- Preview images ---------- */
+/* List: a thumbnail at the row's right end */
+.mark-image {
+  order: 3;
+  flex: none;
+  width: 7.5rem;
+  aspect-ratio: 1.91;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+/* Cards: a cover across the top */
+.marks.grid .mark-image {
+  order: -1;
+  width: calc(100% + 2rem);
+  margin: -1rem -1rem 0;
+  border-radius: 18px 18px 0 0;
+  box-shadow: none;
+}
+
+/* The site icon sits on the cover's lower edge */
+.marks.grid .mark-image + .mark-icon {
+  margin-top: -2.2rem;
+  box-shadow: 0 0 0 3px var(--surface);
+}
+
+@media (max-width: 640px) {
+  .marks.list .mark-image {
+    width: 5rem;
+  }
+}
+
+.details-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-self: start;
+  margin-bottom: 0.35rem;
+}
+
+.details-btn svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pin-mark {
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.35em;
+  vertical-align: -0.05em;
+  fill: var(--pin-color);
+  stroke: var(--pin-color);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
 }
 
 .ext {
@@ -2080,7 +2344,7 @@ kbd {
 
 /* Pinned: the ribbon fills in */
 .icon-btn.on {
-  color: var(--accent);
+  color: var(--pin-color, var(--accent));
 }
 
 .icon-btn.on svg {

@@ -9,6 +9,7 @@ export interface Bookmark {
   tags: string[] // older versions' free-text tags; turned into folders on first open, then left as they were
   folders?: string[] // ids of the folders it's in (CHECKLIST.md #35)
   image?: string // the page's preview image (og:image), when it has one
+  siteName?: string // the site's own name (og:site_name), when it gives one
   icon: string // site icon URL ('' to use the letter tile)
   pinned: boolean
   visits: number

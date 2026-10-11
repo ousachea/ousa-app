@@ -1085,7 +1085,7 @@ function listMenu() {
             <button type="button" class="btn btn-quiet btn-sm" @click="query = ''">Clear search</button>
           </div>
           <div v-else-if="!notes.length" class="empty-panel">
-            <EmptyState title="No notes yet" icon="notes" action="New note" @action="newNote()">
+            <EmptyState title="No notes yet" icon="notes">
               Capture an idea, a meeting, a task, or anything you want to remember. Press <kbd>A</kbd> for a new note or <kbd>Q</kbd> for a quick one.
             </EmptyState>
           </div>
@@ -1214,7 +1214,6 @@ function listMenu() {
             <ToolIcon name="notes" class="big-icon" />
             <p><strong>Pick a note, or start a new one</strong></p>
             <p class="small">Press <kbd>A</kbd> for a new note, <kbd>Q</kbd> for a quick one, <kbd>/</kbd> to search.</p>
-            <button type="button" class="btn" @click="newNote()">+ New note</button>
           </div>
         </section>
         </Step>

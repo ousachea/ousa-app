@@ -1,10 +1,16 @@
 <script setup lang="ts">
-// The Ousa’s Apps mark: one face of a scrambled cube, using the same sticker colours as the tools.
-const STICKERS = [
+// The Ousa’s Apps mark: one face of a scrambled cube. The server draws this fixed face; once the page
+// is running it shows the same random scramble as the favicon, a fresh one each load (utils/cubeFavicon.ts).
+const FIXED = [
   ['var(--blue)', 'var(--red)', 'var(--yellow)'],
   ['var(--green)', '#ffffff', 'var(--orange)'],
   ['var(--orange)', 'var(--yellow)', 'var(--blue)']
 ]
+const STICKERS = ref(FIXED)
+onMounted(() => {
+  const face = pageCubeFace()
+  STICKERS.value = [face.slice(0, 3), face.slice(3, 6), face.slice(6, 9)]
+})
 </script>
 
 <template>

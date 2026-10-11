@@ -711,8 +711,9 @@ const PURITIES: { value: Purity, label: string }[] = [
               <div><span>{{ w.weight }}</span><strong>{{ fmtQty(totals.chi) }} {{ w.chi }}</strong><small>{{ fmtQty(totals.grams) }} g</small></div>
             </div>
 
-            <div class="ledger-bar">
-              <button type="button" class="btn" @click="openAdd">{{ w.add }}</button>
+            <!-- With nothing added yet, the empty card below has the one Add button -->
+            <div v-if="purchases.length" class="ledger-bar">
+              <button type="button" class="btn add-btn" @click="openAdd">{{ w.add }}</button>
               <AppSelect v-if="purchases.length > 1" v-model="sort" class="sort" aria-label="Sort purchases" :options="SORTS" />
             </div>
 
@@ -781,7 +782,7 @@ const PURITIES: { value: Purity, label: string }[] = [
               </li>
             </ul>
 
-            <div v-else-if="ready" class="panel">
+            <div v-else-if="ready" class="panel empty-panel">
               <EmptyState :title="w.noGold" icon="gold" :action="w.add" @action="openAdd">{{ w.noGoldText }}</EmptyState>
             </div>
             <SkeletonList v-else variant="cards" :count="2" label="Loading your gold" />
@@ -827,7 +828,7 @@ const PURITIES: { value: Purity, label: string }[] = [
       <Modal :open="formOpen" :title="editingId ? 'Edit purchase' : 'Add a purchase'" @close="formOpen = false">
         <form v-validate class="form" @submit.prevent="savePurchase">
           <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
-          <div class="form-row">
+          <div class="form-row amount-row">
             <label class="field">
               <span class="field-head">{{ w.weight }}</span>
               <input v-model.number="form.weight" class="input" type="number" min="0" step="any" inputmode="decimal" required v-check="Number(form.weight) > 0 ? '' : 'Enter how much gold'">
@@ -1371,10 +1372,20 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .ledger-bar {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+/* The same height as the sort dropdown beside it */
+.ledger-bar .add-btn {
+  min-height: 2.75rem;
+}
+
+.empty-panel {
+  margin-top: 1rem;
 }
 
 .sort {
@@ -1383,7 +1394,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .purchases {
   list-style: none;
-  margin: 1rem 0 0;
+  margin: 1.25rem 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
@@ -1625,7 +1636,8 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .csv {
-  margin: 0.9rem 0 0;
+  margin: 1.25rem 0 0;
+  padding-inline: 0.25rem;
   display: flex;
   gap: 1rem;
 }
@@ -1634,13 +1646,18 @@ const PURITIES: { value: Purity, label: string }[] = [
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1.15rem;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 1.15rem 1rem;
+}
+
+/* Weight and its unit belong together, so they share a row even on a phone */
+.form-row.amount-row {
+  grid-template-columns: minmax(0, 1fr) 9rem;
 }
 
 .form-note {
@@ -1650,14 +1667,17 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .import-note {
-  padding-top: 0.9rem;
+  padding-top: 1.1rem;
   font-size: 0.85rem;
+  line-height: 1.5;
   border-top: 1px solid var(--line);
 }
 
+/* A little more room above the buttons than between fields, so they read as the end of the form */
 .form-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
 }
 
 /* ---------- Screensaver ---------- */
@@ -1715,6 +1735,8 @@ const PURITIES: { value: Purity, label: string }[] = [
   .units { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .summary { grid-template-columns: 1fr 1fr; }
   .form-row { grid-template-columns: minmax(0, 1fr); }
+  .form-row.amount-row { grid-template-columns: minmax(0, 1fr) 7.5rem; }
+  .form-actions .btn[type='submit'] { flex: 1; }
   .convert-row { grid-template-columns: 1fr 7.5rem; }
 }
 

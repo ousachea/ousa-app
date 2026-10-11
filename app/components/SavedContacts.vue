@@ -171,7 +171,8 @@ const contactMenu = (c: Contact): MenuEntry[] => [
       <ClientOnly><DataSource :sync="sync" /></ClientOnly>
       <div class="saved-actions">
         <button type="button" class="btn btn-quiet btn-sm" @click="transferOpen = true">Import / Export</button>
-        <button type="button" class="btn btn-sm" @click="openAdd()">+ Add contact</button>
+        <!-- With none saved yet, the empty card has the one Add button -->
+        <button v-if="items.length" type="button" class="btn btn-sm" @click="openAdd()">+ Add contact</button>
       </div>
     </div>
 

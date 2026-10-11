@@ -869,6 +869,11 @@ function del(t: Thing) {
   gap: 0.5rem;
 }
 
+/* Select is as tall as the search box beside it */
+.toolbar :deep(.bulk-toggle) {
+  align-self: stretch;
+}
+
 .toolbar .search {
   flex: 1;
 }
