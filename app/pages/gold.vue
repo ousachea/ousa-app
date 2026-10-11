@@ -542,6 +542,20 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice v-model="autoRefresh" title="Refresh the price" :options="[{ value: 0, label: 'Off' }, { value: 30, label: 'Every 30 seconds' }, { value: 60, label: 'Every minute' }, { value: 300, label: 'Every 5 minutes' }]" />
+      <SettingChoice v-model="sort" title="Sort purchases by" :options="SORTS" />
+      <label class="setting-field">
+        <span class="title">Riel per dollar</span>
+        <span class="desc">Used when prices show in riel.</span>
+        <input v-model.number="khrRate" class="input" type="number" min="1000" step="10">
+      </label>
+      <label class="setting-field">
+        <span class="title">goldapi.io key <span class="optional">Optional backup</span></span>
+        <span class="desc">Only used if the free price fails. Spot price only: shops add their own premium and buy/sell spread.</span>
+        <input v-model="apiKey" class="input" type="text" autocomplete="off" spellcheck="false" placeholder="Paste a key">
+      </label>
+    </template>
     <template #actions>
       <div class="toggles">
         <div class="segmented small" role="radiogroup" aria-label="Language">
@@ -679,24 +693,6 @@ const PURITIES: { value: Purity, label: string }[] = [
             </div>
           </Step>
 
-          <details class="panel settings">
-            <summary>Price settings</summary>
-            <div class="settings-body">
-              <label class="field">
-                <span class="field-head">Refresh automatically</span>
-                <AppSelect v-model="autoRefresh" aria-label="Refresh automatically" :options="[{ value: 0, label: 'Off' }, { value: 30, label: 'Every 30 seconds' }, { value: 60, label: 'Every minute' }, { value: 300, label: 'Every 5 minutes' }]" />
-              </label>
-              <label class="field">
-                <span class="field-head">goldapi.io key <span class="optional">Optional backup</span></span>
-                <input v-model="apiKey" class="input" type="text" autocomplete="off" spellcheck="false" placeholder="Only used if the free price fails">
-              </label>
-              <label v-if="showKHR" class="field">
-                <span class="field-head">Riel per dollar</span>
-                <input v-model.number="khrRate" class="input" type="number" min="1000" step="10">
-              </label>
-              <p class="muted">Spot price only. Shops add their own premium, workmanship and buy/sell spread.</p>
-            </div>
-          </details>
         </div>
 
         <!-- ===== Units and ledger ===== -->
@@ -1251,20 +1247,6 @@ const PURITIES: { value: Purity, label: string }[] = [
   font-size: 0.8rem;
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
-}
-
-/* ---------- Settings ---------- */
-.settings summary {
-  padding: 1rem 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.settings-body {
-  padding: 0 1.1rem 1.1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
 }
 
 /* ---------- Price by unit ---------- */

@@ -349,6 +349,13 @@ function del(r: Renewal) {
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
+      <SettingChoice v-model="period" title="Show what it costs per" description="The totals and the “≈ … a month” under each subscription." :options="PERIODS.map(p => ({ value: p.value, label: p.label }))" />
+      <SettingChoice v-model="showIn" title="Show totals in" :options="[{ value: 'both', label: 'Both' }, { value: 'USD', label: 'Dollars' }, { value: 'KHR', label: 'Riel' }]" />
+      <SettingChoice v-model="lastCurrency" title="New subscriptions in" :options="[{ value: 'USD', label: 'Dollars' }, { value: 'KHR', label: 'Riel' }]" />
+      <SettingChoice v-model="lastCycle" title="New subscriptions are billed" :options="CYCLES.map(c => ({ value: c.value, label: c.label }))" />
+    </template>
     <template #actions>
       <div class="head-buttons">
         <ClientOnly><button type="button" class="btn btn-quiet" @click="transferOpen = true">Import / Export</button></ClientOnly>
@@ -523,8 +530,8 @@ function del(r: Renewal) {
                     :details="`${formatMoney(r.price, r.currency)} ${cycleLabel(r.cycle)}. From Renewals in Ousa’s Apps.`"
                     label="Calendar"
                   />
-                  <button type="button" class="link" @click="edit(r)">Edit</button>
-                  <ConfirmDelete text :name="r.name" @confirm="del(r)" />
+                  <span class="menu-dup"><button type="button" class="link" @click="edit(r)">Edit</button>
+                    <ConfirmDelete text :name="r.name" @confirm="del(r)" /></span>
                 </span>
               </li>
             </TransitionGroup>

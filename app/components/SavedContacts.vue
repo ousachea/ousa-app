@@ -204,7 +204,7 @@ const contactMenu = (c: Contact): MenuEntry[] => [
             </button>
             <span v-if="checkOf(c).valid" class="net-tag" :style="{ '--op': checkOf(c).operator?.color ?? 'var(--ink-3)' }">{{ checkOf(c).operator?.name ?? checkOf(c).region }}</span>
             <span v-else class="net-tag bad">{{ checkOf(c).match ? 'Wrong length' : 'Invalid' }}</span>
-            <span class="row-actions">
+            <span class="row-actions menu-dup">
               <button type="button" class="icon-btn" :aria-label="`Edit ${c.name || c.phone}`" title="Edit" @click="openEdit(c)">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
               </button>

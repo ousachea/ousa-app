@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import Modal from '~/components/Modal.vue'
 import type { Folder } from '~/utils/folders'
 
 // Notes → Settings (#49): how the editor looks and behaves, remembered on this device (useNotePrefs)
-defineProps<{ open: boolean, folders: readonly Folder[] }>()
+// `inline`: just the options, for the gear in the Notes header (ToolPage's settings dialog)
+defineProps<{ open?: boolean, folders: readonly Folder[], inline?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 const { prefs, reset } = useNotePrefs()
 
@@ -13,7 +15,7 @@ const PREVIEW = [{ value: 0, label: 'None' }, { value: 80, label: 'Short' }, { v
 </script>
 
 <template>
-  <Modal :open="open" title="Notes settings" @close="emit('close')">
+  <component :is="inline ? 'div' : Modal" v-bind="inline ? {} : { open, title: 'Notes settings' }" :class="{ 'inline-settings': inline }" @close="emit('close')">
     <div class="settings">
       <h3>Editor</h3>
       <div class="row">
@@ -57,10 +59,14 @@ const PREVIEW = [{ value: 0, label: 'None' }, { value: 80, label: 'Short' }, { v
 
       <button type="button" class="link reset" @click="reset">Reset Notes settings</button>
     </div>
-  </Modal>
+  </component>
 </template>
 
 <style scoped>
+.inline-settings {
+  padding-top: 0.85rem;
+}
+
 .settings {
   display: grid;
   gap: 0.7rem;

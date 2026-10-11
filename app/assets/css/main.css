@@ -1054,6 +1054,24 @@ kbd {
   }
 }
 
+/* ---------- Buttons the row's menu already has (useRowMenu) ----------
+   Edit, Delete, Pin… are in the right-click / long-press menu, so the row doesn't repeat them. They stay
+   in the tab order and appear while one has keyboard focus, so nothing needs a mouse. */
+.menu-dup {
+  display: inline-flex;
+  align-items: center;
+  gap: inherit;
+}
+
+[data-press-menu] .menu-dup:not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ---------- Selecting several (useBulkSelect, <BulkCheck>) ---------- */
 /* While picking, a row is one big tap target */
 .bulk-row {

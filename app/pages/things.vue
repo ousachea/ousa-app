@@ -128,11 +128,12 @@ function pickModel(name: string) {
   if (found && !form.company) form.company = found.company
 }
 
-// The name writes itself from company, model and generation until you type your own
-const nameTouched = ref(false)
+// The name writes itself from company, model and generation, when adding or editing, as long as it's
+// empty or still the written-for-you one. A name you've typed yourself is left alone.
 const autoName = computed(() => [form.company, form.model, form.generation].map(x => x?.trim()).filter(Boolean).join(' '))
-watch(autoName, (n) => {
-  if (!nameTouched.value) form.name = n
+watch(autoName, (n, before) => {
+  const name = form.name.trim()
+  if (!name || name === (before ?? '').trim()) form.name = n
 })
 
 const specSuggestion = computed(() => {
@@ -351,7 +352,6 @@ function edit(t: Thing) {
     name: t.name, category: t.category, purchaseDate: t.purchaseDate, price: t.price, currency: t.currency, currentValue: t.currentValue ?? null, notes: t.notes,
     company: t.company ?? '', model: t.model ?? '', generation: t.generation ?? '', year: t.year ?? null, storage: t.storage ?? null, ram: t.ram ?? null, display: t.display ?? null
   })
-  nameTouched.value = true
   step.value = 'details'
   formOpen.value = true
   play('open')
@@ -360,7 +360,6 @@ function edit(t: Thing) {
 function cancel() {
   editingId.value = undefined
   formOpen.value = false
-  nameTouched.value = false
   Object.assign(form, blank())
 }
 
@@ -440,6 +439,12 @@ function del(t: Thing) {
 
 <template>
   <ToolPage header="band">
+    <template #settings>
+      <SettingChoice v-model="sort" title="Sort by" description="How the list is ordered when you open it." :options="SORTS" />
+      <SettingChoice v-model="view" title="Show as" :options="[{ value: 'cards', label: 'Cards' }, { value: 'list', label: 'List' }]" />
+      <SettingChoice v-model="lastCurrency" title="New items in" description="The currency a new item starts in." :options="[{ value: 'USD', label: 'Dollars' }, { value: 'KHR', label: 'Riel' }]" />
+      <SettingChoice v-model="lastCategory" title="New items are" description="The kind a new item starts as." :options="NEW_TYPES.map(t => ({ value: t.key, label: t.label }))" />
+    </template>
     <template #actions>
       <div class="head-buttons">
         <ClientOnly><button type="button" class="btn btn-quiet" @click="transferOpen = true">Import / Export</button></ClientOnly>
@@ -524,7 +529,7 @@ function del(t: Thing) {
 
           <label class="field">
             <span class="field-head">Name</span>
-            <input v-model="form.name" class="input" :placeholder="autoName || 'iPhone 16 Pro Max'" required data-error="Give it a name, like iPhone 16 Pro" @input="nameTouched = true">
+            <input v-model="form.name" class="input" :placeholder="autoName || 'iPhone 16 Pro Max'" required data-error="Give it a name, like iPhone 16 Pro">
           </label>
         <label class="field">
           <span class="field-head">Bought on</span>
@@ -698,7 +703,7 @@ function del(t: Thing) {
 
                 <p v-if="t.notes" class="thing-notes">{{ t.notes }}</p>
 
-                <footer class="links">
+                <footer class="links menu-dup">
                   <button type="button" class="link" @click="edit(t)">Edit</button>
                   <ConfirmDelete text :name="t.name" @confirm="del(t)" />
                 </footer>

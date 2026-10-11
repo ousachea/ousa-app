@@ -919,6 +919,11 @@ function listMenu() {
 
 <template>
   <ToolPage header="bar" width="1560px">
+    <template #settings>
+      <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
+      <SettingChoice v-model="view" title="Show notes as" :options="VIEWS.map(v => ({ value: v, label: v === 'grid' ? 'Cards' : v[0]!.toUpperCase() + v.slice(1) }))" />
+      <NoteSettings inline :folders="folders" />
+    </template>
     <template #actions>
       <ClientOnly><span class="aside-tools"><BulkToggle v-if="notes.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly>
     </template>

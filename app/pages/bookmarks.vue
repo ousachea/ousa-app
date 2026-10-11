@@ -739,6 +739,10 @@ async function enrich(list: Bookmark[]) {
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
+      <SettingChoice v-model="view" title="Show as" :options="VIEWS.map(v => ({ value: v, label: v === 'grid' ? 'Cards' : v[0]!.toUpperCase() + v.slice(1) }))" />
+    </template>
     <TransferDialog
       :open="transferOpen"
       title="Bookmarks"
@@ -757,7 +761,8 @@ async function enrich(list: Bookmark[]) {
     />
     <template #actions><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
 
-    <!-- The address bar: paste, press Enter, done -->
+    <!-- 1: the address bar. Paste, press Enter, done -->
+    <Step :n="1" title="Save a link" hint="Paste any link and press Enter. Its title and icon fill in by themselves." class="save-step">
     <form v-validate data-validate-target class="omnibox" aria-label="Save a link" @submit.prevent="save()">
       <span class="omni-icon" aria-hidden="true"><ToolIcon name="bookmarks" /></span>
       <input
@@ -827,9 +832,11 @@ async function enrich(list: Bookmark[]) {
         </div>
       </form>
     </Transition>
+    </Step>
 
     <ClientOnly>
-      <!-- Pinned: the sites you open every day, as big tiles -->
+      <!-- 2: pinned, the sites you open every day, as big tiles -->
+      <Step v-if="pinned.length" :n="2" title="Pinned" hint="The links you open every day. Drag to reorder; right-click or long-press one to unpin it." class="pinned-step">
       <section v-if="pinned.length" class="shelf drop-x" :class="{ resting: sel.selecting }" :inert="sel.selecting || undefined" aria-label="Pinned. Drag to reorder, or Alt and the arrow keys.">
         <a
           v-for="(b, i) in pinned"
@@ -850,7 +857,10 @@ async function enrich(list: Bookmark[]) {
           <span class="tile-host">{{ hostOf(b.url) }}</span>
         </a>
       </section>
+      </Step>
 
+      <!-- Then: find one. Folders down the side, the list beside them -->
+      <Step :n="pinned.length ? 3 : 2" title="Find a bookmark" hint="Pick a folder, then search or sort. Click to open; right-click or long-press for more." class="library-step">
       <div class="library">
         <!-- Folders down the side, like the spines on a shelf -->
         <aside v-sticky-fit class="side" aria-label="Folders">
@@ -939,9 +949,9 @@ async function enrich(list: Bookmark[]) {
                     </button>
                   </span>
                 </div>
-                <div class="mark-actions">
+                <div class="mark-actions menu-dup">
                   <button type="button" class="icon-btn" :class="{ on: b.pinned }" :aria-pressed="b.pinned" :aria-label="b.pinned ? `Unpin ${b.title}` : `Pin ${b.title}`" :title="b.pinned ? 'Unpin' : 'Pin to the top'" @click="togglePin(b)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1v16l-6-4.2-6 4.2v-16a1 1 0 0 1 1-1z" /></svg>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg>
                   </button>
                   <button type="button" class="icon-btn" :aria-label="`Edit ${b.title}`" title="Edit" @click="edit(b)">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
@@ -972,6 +982,7 @@ async function enrich(list: Bookmark[]) {
           <SkeletonList v-else label="Loading your bookmarks" />
         </section>
       </div>
+      </Step>
       <template #fallback><SkeletonList label="Loading your bookmarks" /></template>
     </ClientOnly>
 
@@ -1037,6 +1048,12 @@ async function enrich(list: Bookmark[]) {
 </template>
 
 <style scoped>
+/* ---------- Steps: save, pinned, find ---------- */
+.pinned-step,
+.library-step {
+  margin-top: 2.25rem;
+}
+
 /* ---------- Address bar ---------- */
 .more-sentinel {
   display: flex;
@@ -1223,7 +1240,7 @@ async function enrich(list: Bookmark[]) {
 
 .omnibox {
   width: min(100%, 760px);
-  margin: 0 auto;
+  margin: 0;
   padding: 0.4rem 0.4rem 0.4rem 0.9rem;
   display: flex;
   align-items: center;
@@ -1285,7 +1302,6 @@ async function enrich(list: Bookmark[]) {
 /* ---------- Pinned tiles ---------- */
 .shelf {
   width: 100%;
-  margin-top: 2rem;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
   gap: 0.75rem;
@@ -1377,7 +1393,6 @@ async function enrich(list: Bookmark[]) {
 /* ---------- Library: tags | list ---------- */
 .library {
   width: 100%;
-  margin-top: 2.25rem;
   display: grid;
   grid-template-columns: 13rem minmax(0, 1fr);
   gap: 2rem;

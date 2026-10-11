@@ -791,6 +791,10 @@ onMounted(async () => {
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice v-model="mode" title="Check by" :options="[{ value: 'health', label: 'Health %' }, { value: 'mah', label: 'Measured mAh' }]" />
+      <SettingChoice v-model="usage" title="How you use your phone" description="Used to estimate hours of screen time." :options="USAGE.map(u => ({ value: u.id, label: u.label }))" />
+    </template>
     <div class="pb">
       <div class="layout">
         <!-- INPUTS -->

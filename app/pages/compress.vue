@@ -39,6 +39,17 @@ const pdfMaxPx = ref(2000)
 const quality = ref(75)
 const format = ref<Format>('image/webp')
 const maxWidth = ref(0) // 0 = keep original size
+
+// Compressor settings (the gear in the header): what each new batch starts with
+const { prefs: cPrefs } = useAppPrefs('compress', { quality: 75, format: 'image/webp', maxWidth: 0, pdfDpi: 150 })
+onMounted(() => {
+  quality.value = cPrefs.quality
+  format.value = cPrefs.format as Format
+  maxWidth.value = cPrefs.maxWidth
+  pdfDpi.value = cPrefs.pdfDpi
+})
+const WIDTHS = [{ value: 0, label: 'Keep original size' }, { value: 3840, label: '3840 px (4K)' }, { value: 2560, label: '2560 px' }, { value: 1920, label: '1920 px (Full HD)' }, { value: 1280, label: '1280 px' }, { value: 800, label: '800 px' }]
+const DPIS = [{ value: 200, label: 'Sharp · 200 dpi' }, { value: 150, label: 'Clear · 150 dpi' }, { value: 110, label: 'Smaller · 110 dpi' }, { value: 80, label: 'Smallest · 80 dpi' }]
 const items = ref<Item[]>([])
 const dragging = ref(false)
 let nextId = 0
@@ -370,6 +381,12 @@ onBeforeUnmount(clearAll)
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice v-model="cPrefs.format" title="Save as" :options="FORMATS.map(f => ({ value: f.value, label: f.label }))" />
+      <SettingChoice v-model="cPrefs.quality" title="Quality" description="Lower is smaller. 75% looks the same to most eyes." :options="[{ value: 60, label: '60%' }, { value: 75, label: '75%' }, { value: 85, label: '85%' }, { value: 95, label: '95%' }]" />
+      <SettingChoice v-model="cPrefs.maxWidth" title="Max width" :options="WIDTHS" />
+      <SettingChoice v-model="cPrefs.pdfDpi" title="PDF page sharpness" :options="DPIS" />
+    </template>
     <div class="top">
     <Step :n="1" title="Add images or PDFs" class="fill">
     <div class="drop-wrap">
@@ -411,7 +428,7 @@ onBeforeUnmount(clearAll)
 
       <label class="field">
         <span class="field-head">Max width</span>
-        <AppSelect v-model="maxWidth" aria-label="Max width" :options="[{ value: 0, label: 'Keep original size' }, { value: 3840, label: '3840 px (4K)' }, { value: 2560, label: '2560 px' }, { value: 1920, label: '1920 px (Full HD)' }, { value: 1280, label: '1280 px' }, { value: 800, label: '800 px' }]" />
+        <AppSelect v-model="maxWidth" aria-label="Max width" :options="WIDTHS" />
       </label>
 
       <p v-if="format === 'image/png' && hasImage" class="hint">PNG keeps every pixel, so images only get smaller if you lower the max width.</p>
@@ -435,7 +452,7 @@ onBeforeUnmount(clearAll)
         </label>
         <label v-else class="field">
           <span class="field-head">Page sharpness</span>
-          <AppSelect v-model="pdfDpi" aria-label="Page sharpness" :options="[{ value: 200, label: 'Sharp · 200 dpi' }, { value: 150, label: 'Clear · 150 dpi' }, { value: 110, label: 'Smaller · 110 dpi' }, { value: 80, label: 'Smallest · 80 dpi' }]" />
+          <AppSelect v-model="pdfDpi" aria-label="Page sharpness" :options="DPIS" />
         </label>
         <p class="hint">
           <template v-if="pdfMode === 'keep-text'">Text stays sharp and selectable; only the photos inside get smaller. Best for documents.</template>

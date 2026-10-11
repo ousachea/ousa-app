@@ -16,6 +16,13 @@ function setTab(next: Tab) {
 
 const input = ref('')
 const mode = ref<CaseMode>('sentence')
+
+// Text tools settings (the gear in the header): the tool and the case it opens on
+const { prefs: textPrefs } = useAppPrefs('text', { tab: 'case', mode: 'sentence' })
+onMounted(() => {
+  mode.value = textPrefs.mode as CaseMode
+  if (!route.query.tab && textPrefs.tab === 'compare') router.replace({ query: { tab: 'compare' } })
+})
 const copied = ref(false)
 
 const output = computed(() => convertCase(input.value, mode.value))
@@ -82,6 +89,10 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice v-model="textPrefs.tab" title="Open on" :options="[{ value: 'case', label: 'Change case' }, { value: 'compare', label: 'Compare' }]" />
+      <SettingChoice v-model="textPrefs.mode" title="Change text to" description="The case picked when you open the app." :options="CASE_MODES" />
+    </template>
     <div class="tabs segmented" role="radiogroup" aria-label="Text tools">
       <label :class="{ active: tab === 'case' }">
         <input type="radio" name="text-tool" :checked="tab === 'case'" @change="setTab('case')">Change case

@@ -105,7 +105,10 @@ function del(e: Entry) {
 }
 
 // ---------- Data for the chart ----------
+// Weight settings (the gear in the header): the chart's starting range; the unit is remembered as you switch
+const { prefs: weightPrefs } = useAppPrefs('weight', { range: 90 })
 const range = ref(90)
+onMounted(() => (range.value = weightPrefs.range))
 const sorted = computed(() => [...items.value].sort((a, b) => a.date.localeCompare(b.date)))
 const visible = computed(() => {
   if (!range.value) return sorted.value
@@ -190,6 +193,10 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice v-model="unit" title="Unit" :options="[{ value: 'kg', label: 'Kilograms' }, { value: 'lb', label: 'Pounds' }]" />
+      <SettingChoice v-model="weightPrefs.range" title="Chart shows" :options="RANGES" />
+    </template>
     <div class="workspace">
       <Step title="Log your weight" class="form-step">
         <form v-validate class="panel form" @submit.prevent="save">

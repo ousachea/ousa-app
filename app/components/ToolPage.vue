@@ -75,6 +75,14 @@ onMounted(() => {
 })
 const isNew = computed(() => recent.value && !!latest.value && seenVersions.value[route.path] !== latest.value.version)
 const releaseDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+// This app's own settings, when the page has any (#settings slot)
+const slots = useSlots()
+const settingsOpen = ref(false)
+function openSettings() {
+  settingsOpen.value = true
+  play('open')
+}
+
 function openWhatsNew() {
   whatsNewOpen.value = true
   if (latest.value) seenVersions.value = { ...seenVersions.value, [route.path]: latest.value.version }
@@ -146,12 +154,23 @@ function toggleDemo() {
             {{ pinned ? 'Pinned' : 'Pin' }}
           </button>
         </ClientOnly>
+        <button v-if="slots.settings" type="button" class="pin gear" :title="`${tool.name} settings`" @click="openSettings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6L18 18M6 18l1.4-1.4M16.6 7.4L18 6" /></svg>
+          Settings
+        </button>
         </div>
       </div>
       <div v-if="$slots.actions" class="head-actions"><slot name="actions" /></div>
       <!-- The band's artwork: the app's icon drawn large and faint behind the header -->
       <ToolIcon v-if="header === 'band'" :name="tool.icon" class="band-art" aria-hidden="true" />
     </header>
+
+    <Modal v-if="slots.settings" :open="settingsOpen" :title="`${tool.name} settings`" @close="settingsOpen = false">
+      <div class="app-settings">
+        <slot name="settings" />
+      </div>
+      <p class="app-settings-note">Saved on this device. They set where {{ tool.name }} starts; you can still change things on the page.</p>
+    </Modal>
 
     <Modal :open="whatsNewOpen" :title="`What’s new in ${tool.name}`" @close="whatsNewOpen = false">
       <ol class="releases">
@@ -379,6 +398,68 @@ h1 {
 
 .pin.on svg {
   fill: currentColor;
+}
+
+/* ---------- This app's settings ---------- */
+.app-settings {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Rows (SettingRow, SettingChoice) with a hairline between them */
+.app-settings > :deep(* + *) {
+  border-top: 1px solid var(--line);
+}
+
+.app-settings :deep(.settings-head) {
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.app-settings :deep(.settings-head:first-child) {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.app-settings :deep(.settings-head + *) {
+  border-top: 0;
+}
+
+/* A typed setting (a number, a key): title, explanation, then the field */
+.app-settings :deep(.setting-field) {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 0;
+}
+
+.app-settings :deep(.setting-field .title) {
+  font-weight: 600;
+}
+
+.app-settings :deep(.setting-field .desc) {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.app-settings :deep(.setting-field .input) {
+  margin-top: 0.35rem;
+}
+
+.app-settings :deep(.setting-field input[type='color']) {
+  width: 4.5rem;
+  height: 2.5rem;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.app-settings-note {
+  margin: 0.75rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
 }
 
 .header-band .pin {

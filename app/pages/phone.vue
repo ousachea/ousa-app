@@ -56,7 +56,10 @@ const importing = ref<'' | 'google' | 'file' | 'picker'>('')
 const fileInput = ref<HTMLInputElement>()
 const contactQuery = ref('')
 const networkFilter = ref('All')
+// Phone checker settings (the gear in the header)
+const { prefs: phonePrefs } = useAppPrefs('phone', { showCount: 100 })
 const showCount = ref(100)
+onMounted(() => (showCount.value = phonePrefs.showCount))
 
 // The Contact Picker API exists on Android Chrome; feature-checked after mount so SSR matches
 const canPick = ref(false)
@@ -93,7 +96,7 @@ function loadContacts(list: RawContact[], source: string, { quiet = false } = {}
   contactSource.value = source
   networkFilter.value = 'All'
   contactQuery.value = ''
-  showCount.value = 100
+  showCount.value = phonePrefs.showCount
   if (quiet) return
   if (!out.length) {
     toast(`No Cambodian numbers in ${source}`, { description: foreign ? `${foreign} numbers from other countries were skipped.` : undefined })
@@ -277,6 +280,9 @@ async function copyResults() {
 
 <template>
   <ToolPage>
+    <template #settings>
+      <SettingChoice v-model="phonePrefs.showCount" title="Contacts shown at first" description="When you check an address book. Scroll for more." :options="[{ value: 50, label: '50' }, { value: 100, label: '100' }, { value: 250, label: '250' }, { value: 1000, label: '1,000' }]" />
+    </template>
     <div class="workspace">
     <!-- The left column (checker + prefix reference) moves as one piece, so nothing slides over anything (#61) -->
     <div v-sticky-fit class="left">

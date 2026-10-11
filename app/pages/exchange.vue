@@ -19,6 +19,14 @@ const DIRECTIONS: { value: Direction, label: string }[] = [
 const mode = ref<Mode>('check')
 const direction = ref<Direction>('usd-khr')
 const amount = ref<number | null>(100)
+
+// Exchange settings (the gear in the header): where the converter starts
+const { prefs: xPrefs } = useAppPrefs('exchange', { mode: 'check', direction: 'usd-khr', amount: 100 })
+onMounted(() => {
+  mode.value = xPrefs.mode as Mode
+  direction.value = xPrefs.direction as Direction
+  amount.value = xPrefs.amount || null
+})
 const rate = ref<number | null>(4000) // the rate you're offered, or the one you got before
 
 // Market rate: live from the server, or the visitor's own (e.g. the NBC official rate)
@@ -123,6 +131,15 @@ async function reloadRate() {
 
 <template>
   <ToolPage>
+    <template #settings>
+      <SettingChoice v-model="xPrefs.mode" title="Open on" :options="MODES" />
+      <SettingChoice v-model="xPrefs.direction" title="Change" :options="DIRECTIONS" />
+      <label class="setting-field">
+        <span class="title">Starting amount</span>
+        <span class="desc">In the currency you hand over. Leave empty to start blank.</span>
+        <input :value="xPrefs.amount || ''" class="input" type="number" min="0" inputmode="decimal" @input="xPrefs.amount = Number(($event.target as HTMLInputElement).value) || 0">
+      </label>
+    </template>
     <div class="tabs" role="tablist" aria-label="What do you want to do?">
       <button
         v-for="m in MODES"

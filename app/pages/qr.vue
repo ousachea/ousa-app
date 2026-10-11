@@ -38,6 +38,15 @@ const frameTextColor = ref('#ffffff')
 // Export
 const size = ref(1024)
 
+// QR settings (the gear in the header): where a new code starts
+const { prefs: qrPrefs } = useAppPrefs('qr', { start: 'example', fg: '#1b1f2a', level: 'M', size: 1024 })
+onMounted(() => {
+  if (qrPrefs.start === 'empty') text.value = ''
+  fg.value = qrPrefs.fg
+  level.value = qrPrefs.level as Level
+  size.value = qrPrefs.size
+})
+
 const DOTS: { value: DotStyle, label: string }[] = [
   { value: 'square', label: 'Square' },
   { value: 'rounded', label: 'Rounded' },
@@ -244,6 +253,16 @@ async function copyImage() {
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice v-model="qrPrefs.start" title="Start with" :options="[{ value: 'example', label: 'Example link' }, { value: 'empty', label: 'Empty' }]" />
+      <label class="setting-field">
+        <span class="title">Code colour</span>
+        <span class="desc">The colour a new code starts in.</span>
+        <input v-model="qrPrefs.fg" class="input" type="color">
+      </label>
+      <SettingChoice v-model="qrPrefs.level" title="Error correction" description="Higher survives scratches and logos, but packs more dots." :options="LEVELS" />
+      <SettingChoice v-model="qrPrefs.size" title="PNG size" :options="[{ value: 512, label: '512' }, { value: 1024, label: '1024' }, { value: 2048, label: '2048' }]" />
+    </template>
     <div class="workspace">
       <Step :n="1" title="Enter your link or text" class="text">
         <textarea

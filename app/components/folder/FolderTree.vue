@@ -161,12 +161,9 @@ watch(() => props.active, () => (openOnPhone.value = false))
     </button>
 
     <div class="tree-body">
-      <!-- Notes puts its own views (All, Favourites, Recent…) first, instead of All; its folders
-           then have just the Add folder button under them -->
+      <!-- Notes puts its own views (All, Favourites, Recent…) first, instead of All. One Add folder
+           button, under the folders -->
       <slot v-if="$slots.views" name="views" />
-      <button v-else type="button" class="add-folder top" @click="emit('add', '')">
-        <span aria-hidden="true">+</span> Add folder
-      </button>
 
       <button
         v-if="!$slots.views"
@@ -451,10 +448,6 @@ watch(() => props.active, () => (openOnPhone.value = false))
 .add-folder:hover {
   color: var(--ink);
   border-color: var(--ink-3);
-}
-
-.add-folder.top {
-  margin-bottom: 0.35rem;
 }
 
 .add-folder.bottom {

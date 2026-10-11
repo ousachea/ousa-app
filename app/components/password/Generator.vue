@@ -30,7 +30,13 @@ function regenerate() {
   copied.value = false
 }
 
-onMounted(regenerate)
+// Passwords settings (the gear in the header, pages/password.vue): what a new password starts as
+const { prefs: genPrefs } = useAppPrefs('password', { tab: 'generate', length: 20, avoidLookAlikes: false })
+onMounted(() => {
+  length.value = genPrefs.length
+  avoidLookAlikes.value = genPrefs.avoidLookAlikes
+  regenerate()
+})
 watch(options, regenerate)
 
 function toggleSet(set: CharsetName) {

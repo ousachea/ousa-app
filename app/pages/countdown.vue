@@ -89,6 +89,8 @@ const holidays = computed(() => (holidayData.value?.holidays ?? [])
 
 const nextHoliday = computed(() => holidays.value[0])
 const showAllHolidays = ref(false)
+// Countdown settings (the gear in the header)
+const { prefs: cdPrefs } = useAppPrefs('countdown', { clock: true, holidays: true })
 const laterHolidays = computed(() => holidays.value.slice(1, showAllHolidays.value ? undefined : 7))
 
 const holidayDateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' })
@@ -242,9 +244,13 @@ function del(e: CountdownEvent) {
 
 <template>
   <ToolPage header="band">
+    <template #settings>
+      <SettingRow v-model="cdPrefs.clock" title="Phnom Penh clock" description="The time and today’s date, in English and Khmer, in the header." />
+      <SettingRow v-model="cdPrefs.holidays" title="Cambodian public holidays" description="The list of official days off beside your countdowns." />
+    </template>
     <template #actions>
       <ClientOnly>
-        <div class="now" role="timer" aria-live="off" :aria-label="`Cambodia time ${clock.time} ${clock.period}, ${todayText}`">
+        <div v-if="cdPrefs.clock" class="now" role="timer" aria-live="off" :aria-label="`Cambodia time ${clock.time} ${clock.period}, ${todayText}`">
           <span class="now-place">Phnom Penh time</span>
           <span class="now-time">{{ clock.time }}<small>:{{ clock.seconds }}</small> <span class="now-period">{{ clock.period }}</span></span>
           <span class="now-date">{{ todayText }}</span>
@@ -253,7 +259,7 @@ function del(e: CountdownEvent) {
       </ClientOnly>
     </template>
 
-    <div class="workspace">
+    <div class="workspace" :class="{ 'no-holidays': !cdPrefs.holidays }">
       <!-- One-row add bar resting on the band -->
       <div class="form-step">
         <form v-validate class="panel form" aria-label="Add a date" @submit.prevent="save">
@@ -297,8 +303,8 @@ function del(e: CountdownEvent) {
                 </div>
                 <span class="links">
                   <CalendarAdd :title="featured.title" :date="featured.date" :time="featured.time" details="Counting down in Ousa’s Apps" />
-                  <button type="button" class="link" @click="edit(featured)">Edit</button>
-                  <ConfirmDelete text :name="featured.title" @confirm="del(featured)" />
+                  <span class="menu-dup"><button type="button" class="link" @click="edit(featured)">Edit</button>
+                    <ConfirmDelete text :name="featured.title" @confirm="del(featured)" /></span>
                 </span>
               </div>
               <div class="clock" role="timer" :aria-label="`${parts(featured.left).days} days left`">
@@ -331,10 +337,10 @@ function del(e: CountdownEvent) {
                 </span>
                 <span class="links page-actions">
                   <CalendarAdd :title="e.title" :date="e.date" :time="e.time" details="Counting down in Ousa’s Apps" label="Calendar" />
-                  <button type="button" class="icon-btn" :aria-label="`Edit ${e.title}`" title="Edit" @click="edit(e)">
+                  <span class="menu-dup"><button type="button" class="icon-btn" :aria-label="`Edit ${e.title}`" title="Edit" @click="edit(e)">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
                   </button>
-                  <ConfirmDelete :name="e.title" @confirm="del(e)" />
+                    <ConfirmDelete :name="e.title" @confirm="del(e)" /></span>
                 </span>
               </li>
             </TransitionGroup>
@@ -347,7 +353,7 @@ function del(e: CountdownEvent) {
                   <BulkCheck v-if="sel.selecting" inline :checked="sel.has(e.id)" :label="`Select ${e.title}`" @pick="sel.pick(e.id, $event)" />
                   <span>{{ e.title }}</span>
                   <span class="meta">{{ agoText(e.left) }}</span>
-                  <ConfirmDelete :name="e.title" @confirm="del(e)" />
+                  <span class="menu-dup"><ConfirmDelete :name="e.title" @confirm="del(e)" /></span>
                 </li>
               </ul>
             </section>
@@ -363,7 +369,7 @@ function del(e: CountdownEvent) {
         </ClientOnly>
       </Step>
 
-      <Step title="Cambodian public holidays" hint="Official days off. Lunar dates move every year, so they’re fetched fresh." v-sticky-fit class="holiday-step">
+      <Step v-if="cdPrefs.holidays" title="Cambodian public holidays" hint="Official days off. Lunar dates move every year, so they’re fetched fresh." v-sticky-fit class="holiday-step">
         <ClientOnly>
           <div v-if="holidayStatus === 'error' && !holidayData" class="panel holiday-msg">
             <p><strong>Couldn’t load the holiday list</strong></p>
@@ -905,6 +911,11 @@ function del(e: CountdownEvent) {
     grid-template-columns: minmax(0, 1fr) 380px;
     align-items: start;
     column-gap: 2rem;
+  }
+
+  /* Holidays switched off in settings: the countdowns take the full width */
+  .workspace.no-holidays {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .form-step {

@@ -390,6 +390,19 @@ function switchCurrency(next) {
 
 <template>
   <ToolPage header="bar">
+    <template #settings>
+      <SettingChoice :model-value="currency" title="Currency" description="Switching converts the amounts you’ve entered." :options="[{ value: 'USD', label: 'Dollars' }, { value: 'KHR', label: 'Riel' }]" @update:model-value="pickCurrency" />
+      <SettingChoice v-model="period" title="Enter salary per" :options="[{ value: 'month', label: 'Month' }, { value: 'year', label: 'Year' }]" />
+      <label class="setting-field">
+        <span class="title">Working hours a month</span>
+        <span class="desc">For the hourly rate and overtime. 208 is the Cambodian standard (48 hours a week).</span>
+        <input v-model.number="hoursPerMonth" class="input" type="number" min="1" step="1">
+      </label>
+      <label class="setting-field">
+        <span class="title">Riel per dollar</span>
+        <input v-model.number="khrPerUsd" class="input" type="number" min="1000" step="10">
+      </label>
+    </template>
     <template #actions>
       <div class="segmented currency" role="radiogroup" aria-label="Currency">
         <label v-for="c in ['USD', 'KHR']" :key="c" :class="{ active: currency === c }">

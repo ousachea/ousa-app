@@ -270,7 +270,10 @@ function del(s: Spot) {
 }
 
 // ---------- Deck ----------
+// Eat settings (the gear in the header): what the deck shows when you open it
+const { prefs: eatPrefs } = useAppPrefs('eat', { filter: 'all' })
 const filter = ref<'all' | Kind>('all')
+onMounted(() => (filter.value = eatPrefs.filter as 'all' | Kind))
 const deck = ref<string[]>([])
 const chosen = ref<Spot>()
 
@@ -392,7 +395,8 @@ function onFocusKey(e: KeyboardEvent) {
     setFocus(false)
   }
 }
-onMounted(() => window.addEventListener('keydown', onFocusKey))
+// Capture, so Esc closes focus mode before the app-wide Esc (go back) sees it
+onMounted(() => window.addEventListener('keydown', onFocusKey, true))
 
 // Opening the app goes straight into focus mode, once there's something to swipe.
 // With nothing saved yet it stays on the page, where foods and places are added.
@@ -403,7 +407,7 @@ watch([ready, () => items.value.length], ([r, count]) => {
   if (count) setFocus(true)
 }, { immediate: true })
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onFocusKey)
+  window.removeEventListener('keydown', onFocusKey, true)
   document.documentElement.style.overflow = ''
 })
 const next = computed(() => byId(deck.value[1]))
@@ -500,6 +504,9 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 <template>
   <ToolPage>
+    <template #settings>
+      <SettingChoice v-model="eatPrefs.filter" title="Show" description="What the deck deals when you open the app." :options="[{ value: 'all', label: 'Both' }, { value: 'food', label: 'Foods' }, { value: 'place', label: 'Places' }]" />
+    </template>
     <!-- Centre stage: the deck. Managing the list lives underneath (beside it on wide screens). -->
     <div class="eat-layout">
     <section v-sticky-fit class="stage-area" :class="{ focus }" :role="focus ? 'dialog' : undefined" :aria-modal="focus || undefined" aria-label="Swipe to decide">

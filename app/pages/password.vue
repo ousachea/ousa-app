@@ -20,6 +20,12 @@ function selectTab(value: Tab) {
   play('select')
 }
 
+// Passwords settings (the gear in the header); the generator reads the same ones
+const { prefs: pwPrefs } = useAppPrefs('password', { tab: 'generate', length: 20, avoidLookAlikes: false })
+onMounted(() => {
+  if (!route.query.tab && pwPrefs.tab === 'saved') router.replace({ query: { tab: 'saved' } })
+})
+
 function saveToVault(password: string) {
   pending.value = password
   selectTab('saved')
@@ -28,6 +34,11 @@ function saveToVault(password: string) {
 
 <template>
   <ToolPage>
+    <template #settings>
+      <SettingChoice v-model="pwPrefs.tab" title="Open on" :options="TABS" />
+      <SettingChoice v-model="pwPrefs.length" title="New password length" description="20 characters is very hard to crack." :options="[{ value: 12, label: '12' }, { value: 16, label: '16' }, { value: 20, label: '20' }, { value: 32, label: '32' }]" />
+      <SettingRow v-model="pwPrefs.avoidLookAlikes" title="Avoid look-alike characters" description="Leaves out 0 and O, 1, l and I, so a password is easy to type from a screen." />
+    </template>
     <div class="tabs" role="tablist" aria-label="Passwords">
       <button
         v-for="t in TABS"
