@@ -7,6 +7,10 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 
 ![The home page: a Rubik’s cube whose stickers open the apps, with the apps listed below](docs/screenshots/home.png)
 
+**Watch the 20-second tour** (click to play):
+
+[![The launch video: the cube shuffling next to “17 apps. One cube.”](docs/launch.jpg)](docs/launch.mp4)
+
 ## The apps
 
 **Tools**

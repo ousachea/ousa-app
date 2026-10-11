@@ -28,3 +28,6 @@ Ousa-App/
 
 # Local HTTPS certificate for npm run dev:lan
 .certs
+
+# /brag render output (the video itself is in docs/launch.mp4)
+brag-output/
