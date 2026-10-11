@@ -26,7 +26,7 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 
 | App | What it does |
 |---|---|
-| Things I own | What you own, what you paid and what it’s worth today |
+| Things I own | What you own, what you paid and what it’s worth today; filter from the summary, hide categories, or leave items out of the totals |
 | What should I eat? | Swipe through your saved foods and places until one sounds good |
 | Weight | Log your weight and see the trend |
 | Countdown | Count down to dates, with Cambodian public holidays |
@@ -34,6 +34,7 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 | Bookmarks | Save links in folders and pin the ones you open every day; each site’s preview image, description and icon fill in, and duplicates are flagged |
 | Notes | Fast notes with folders, checklists, links between notes and version history |
 | Gold tracker | Live gold price in chi and damlung, and what your gold is worth now |
+| Ambient Studio | Play your YouTube Music playlists and liked songs, over ambient scenes, a rain/fire/noise mixer made in the browser, and focus or sleep timers |
 
 ### Screenshots
 
@@ -62,8 +63,13 @@ apps menu opens from the top bar:
 
 Shared across the apps: search everything (⌘K / Ctrl K), the apps menu (M), example data from each app’s icon,
 each app’s own settings (the Settings button in its header), right-click or long-press menus (rows don’t repeat
-their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, import and export, light and dark
-themes, sounds, and installing it as an app on a phone or computer.
+their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, light and dark themes, sounds, and installing it as an app
+on a phone or computer.
+
+**Import and export** live in Settings: each app’s settings popup has Import & export for that app’s data and
+settings (with CSV, browser bookmarks or Markdown where the app has them, under More formats), and the main
+Settings page backs up and restores everything at once. Restores always show a preview first, and a full backup can
+be imported into a single app.
 
 ## Getting started
 
@@ -104,6 +110,20 @@ browser; sign-in and sync stay off.
 
 `.env` is only read in development. A deployed site needs the same variables set in its host’s environment.
 
+### YouTube Music (Ambient Studio)
+
+Ambient Studio reads your playlists and liked songs with the official YouTube Data API, using the same Google
+sign-in (read-only access, asked for only when you press Connect). In the Google Cloud project behind your
+Firebase app:
+
+1. Enable **YouTube Data API v3** (APIs & Services → Library).
+2. Under **OAuth consent screen → Data access**, add the `https://www.googleapis.com/auth/youtube.readonly` scope.
+   While the app is in Testing, add your Google account under Test users.
+
+Songs play in the visible YouTube player (YouTube requires it), so there’s no background audio. YouTube Music has
+no public API of its own, so uploads and radio mixes aren’t available, and a few songs whose owners block playback
+on other sites are skipped. The scenes, the sound mixer and the timers work without any of this.
+
 If the app says **Offline** while your internet works, something is blocking `firestore.googleapis.com`
 (an ad blocker or privacy shield, a VPN or a firewall). The Offline badge and Settings → Sync show the reason.
 
@@ -130,7 +150,8 @@ accept the certificate warning.
 | `npm run generate` | Pre-render a static site |
 | `npm run og:images` | Re-render the share images in `public/og/` (needs a production server; see the script) |
 
-`scripts/pwa-icons.cjs` re-renders the install icons in `public/icons/` from `public/favicon.svg`.
+`scripts/pwa-icons.cjs` re-renders the install icons in `public/icons/` from `public/favicon.svg`, and
+`node scripts/ambient-studio-scenes.cjs` redraws Ambient Studio’s scene artwork in `public/ambient-studio/scenes/`.
 
 ## How it fits together
 
@@ -141,7 +162,8 @@ app/
                   CommandPalette, ContextMenu, BulkBar, Modal, SettingRow / SettingChoice, …
   composables/    shared behaviour: useCollection (a synced list), useSync, useVault, usePrefs,
                   useAppPrefs (each app's settings), useRowMenu, useBulkSelect, useDraft, …
-  utils/          the app list (tools.ts), sync engine (sync.ts), money, dates, per-app logic
+  utils/          the app list (tools.ts), sync engine (sync.ts), backups (backup.ts), money, dates, per-app logic
+  */ambient-studio/  Ambient Studio keeps its components, composables, utils, data and types in folders of its own
   assets/css/     main.css: colours, spacing and shared styles for every app
 server/
   api/            exchange rate, holidays, link previews, site logos, food photos

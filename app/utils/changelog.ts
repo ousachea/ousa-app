@@ -30,6 +30,17 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.1.0',
+    date: '2026-10-11',
+    changes: [
+      'Every app’s settings now have Import & export: save that app’s data and settings to a file, and bring them back with a preview first. A full backup works there too.',
+      'Import and export live only in Settings now. Apps with extra formats (CSV, browser bookmarks, Markdown) open them from there with More formats.',
+      'Full backups now include each app’s own settings.',
+      'Unpinning an app now sticks after a refresh. Pins (and some app settings) stopped saving after you’d moved between apps.',
+      'New app: Ambient Studio, for rain, fire, lo-fi and noise to focus or fall asleep to.'
+    ]
+  },
+  {
     version: '2.0.1',
     date: '2026-10-09',
     changes: [
@@ -106,6 +117,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Work out what a raise is really worth after Cambodian salary tax.'] }
   ],
   '/things': [
+    { version: '3.1.0', date: '2026-10-11', changes: ['Tap a category under “Where the value is” to see only those things; tap it again to see everything.', 'Hide a category from the list with the eye beside it; tap its chip above the list to bring it back.', 'Leave something out of the totals (a work laptop, something lent out) from its right-click menu or by selecting several. It stays in the list, marked Not counted.', 'Import and export are now in Settings.'] },
     { version: '3.0.1', date: '2026-10-08', changes: ['Logos now show for Sony, Samsung, Google, Honor, Redmi, RedMagic and more brands.'] },
     { version: '3.0.0', date: '2026-10-08', changes: ['Adding starts with what kind of thing it is: phone, tablet, laptop, desktop, monitor, TV, keyboard, mouse, headphones and more.', 'Company, model and generation suggest as you type, from a list of common devices; anything else can be typed in.', 'Known models suggest their release year, RAM and screen size, and the storage sizes they came in.', 'Each item shows its company’s logo and details like 2023 · 256 GB · 8 GB RAM.', 'Filter by type, company, year, storage and generation; sort by recently added, company, type or release year.', 'A compact list view alongside the cards.', 'Adding the same device twice asks first.'] },
     { version: '2.1.0', date: '2026-10-08', changes: [TRANSFER, 'Adding something with the same name as one you have asks first.', 'Worth now and notes tuck under More details until you need them.', 'New items start in the category and currency you used last.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
@@ -114,6 +126,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Keep track of what you own, what you paid and what it’s worth now.'] }
   ],
   '/eat': [
+    { version: '1.5.1', date: '2026-10-11', changes: ['On phones, the card you picked in “Which sounds better?” no longer stays highlighted in the next round.'] },
     { version: '1.5.0', date: '2026-10-08', changes: [BIN, UNDO, DRAFTS, CHECK] },
     { version: '1.4.0', date: '2026-10-07', changes: ['Focus mode: swipe full screen with bigger cards and nothing else in the way. The app opens in it; Done or Esc takes you back.', 'A big, centred Narrow it down button under your shortlist.', 'When you’ve gone through every card, narrowing down starts on its own, or your only pick is chosen.'] },
     { version: '1.3.1', date: '2026-10-07', changes: ['The Everything / Foods / Places filter fits on a phone, and your foods show three across.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
@@ -162,6 +175,10 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '2.0.0', date: '2026-10-07', changes: ['Each purchase shows what you paid, what it’s worth now, and your gain or loss.', 'Sign in with Google to keep purchases and the price history on all your devices.', 'Import a CSV from “Add a purchase”; purchases already in your list are skipped.', 'The price card and purchases catch the light as you move the mouse.', PICKERS, TWO_CLICK] },
     { version: '1.1.0', date: '2026-10-05', changes: [EXAMPLE] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Live gold price per chi, damlung and gram, a unit converter, and what your gold is worth now.'] }
+  ],
+  '/ambient-studio': [
+    { version: '2.0.0', date: '2026-10-11', changes: ['Your YouTube Music: connect your Google account to play your playlists and liked songs here.', 'A queue with play all, shuffle, next and previous; songs that can’t play outside YouTube are marked and skipped.', 'Scenes, the sound mixer and the timers now sit alongside your music.'] },
+    { version: '1.0.0', date: '2026-10-11', changes: ['Scenes for focus, rain, fireplaces, forests, the ocean, night cities, sci-fi, lo-fi, sleep and plain noise, each with its own artwork and effect.', 'Play YouTube videos and playlists in the scene, or paste any public YouTube or YouTube Music link.', 'A sound mixer made in your browser: rain, thunder, wind, fire, waves, birds, a fan and white, pink and brown noise. It works offline.', 'Save your own mixes, favourite scenes and pick up where you left off.', 'Focus rounds with breaks, a countdown, and a sleep timer that fades the sound out.'] }
   ],
   '/settings': [
     { version: '3.0.0', date: '2026-10-08', changes: ['Density and animation settings.', 'Behaviour: keyboard shortcuts, confirm before delete and autosave.', 'Your data: export everything to one file and restore it with a preview.', 'About: what’s new across every app, and install it as an app.'] },

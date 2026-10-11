@@ -167,6 +167,13 @@ defineProps<{ name: ToolIconName }>()
       <circle cx="17" cy="17" r="2" />
     </template>
 
+    <!-- Ambient Studio: a crescent moon over gentle sound waves -->
+    <template v-else-if="name === 'ambient'">
+      <path d="M14.5 3.5a5 5 0 1 0 5 6.2A4 4 0 0 1 14.5 3.5z" />
+      <path d="M3 16.5c1.5-1.3 3-1.3 4.5 0s3 1.3 4.5 0 3-1.3 4.5 0 3 1.3 4.5 0" />
+      <path d="M5 20.5c1.2-1 2.5-1 3.7 0s2.5 1 3.7 0 2.5-1 3.6 0" />
+    </template>
+
     <!-- Sound effects: a speaker with two sound waves -->
     <template v-else-if="name === 'sound'">
       <path d="M3.5 9.5h3l5-4v13l-5-4h-3z" />

@@ -2,18 +2,25 @@
 import { toast } from 'vue-sonner'
 import type { ParsedBackup } from '~/utils/backup'
 
-// Settings → Your data: export everything to one file, and restore it with a preview first (CHECKLIST.md #17)
+// Settings → Your data: export everything to one file, and restore it with a preview first (CHECKLIST.md #17).
+// With `app` (each app's own settings), the same thing for just that app: its records and its settings.
+// A full backup can be imported there too; only that app's part is used.
+const props = defineProps<{ app?: string, appName?: string }>()
 const { play } = useSound()
 const LAST_KEY = 'ousa-app:last-backup'
 
+const sections = computed(() => (props.app ? appSections(props.app) : BACKUP_SECTIONS))
+const onlyKeys = computed(() => (props.app ? appSettingKeys(props.app) : undefined))
+const id = useId()
+
 // ---------- Export ----------
 const counts = ref<Record<string, number>>({})
-const chosen = ref(new Set(BACKUP_SECTIONS.map(s => s.name)))
+const chosen = ref(new Set(sections.value.map(s => s.name)))
 const withSettings = ref(true)
 const lastBackup = ref<string>()
 
 function refreshCounts() {
-  counts.value = Object.fromEntries(BACKUP_SECTIONS.map(s => [s.name, readCollection(s.name).length]))
+  counts.value = Object.fromEntries(sections.value.map(s => [s.name, readCollection(s.name).length]))
 }
 onMounted(() => {
   refreshCounts()
@@ -32,8 +39,15 @@ function toggleSection(name: string) {
 const exportTotal = computed(() => [...chosen.value].reduce((n, s) => n + (counts.value[s] ?? 0), 0))
 
 function exportBackup() {
-  const backup = makeBackup([...chosen.value], withSettings.value)
-  downloadFile(dated('ousa-apps-backup', 'json'), JSON.stringify(backup, null, 2), 'application/json')
+  const backup = makeBackup([...chosen.value], withSettings.value, onlyKeys.value)
+  const slug = props.app ? props.app.replace(/^\//, '') : ''
+  downloadFile(dated(slug ? `ousa-apps-${slug}` : 'ousa-apps-backup', 'json'), JSON.stringify(backup, null, 2), 'application/json')
+  if (props.app) {
+    logActivity('exported', props.app, `${props.appName ?? slug}: ${exportTotal.value} items${withSettings.value ? ' and settings' : ''}`)
+    play('copy')
+    toast.success(`${props.appName ?? 'App'} exported`, { description: 'Import the file here, on any device, to bring it back.' })
+    return
+  }
   const now = new Date().toISOString()
   lastBackup.value = now
   try {
@@ -65,8 +79,8 @@ async function pickFile(e: Event) {
   input.value = ''
   if (!file) return
   try {
-    const result = parseBackup(await readTextFile(file))
-    if (!result.plans.length) throw new Error('That backup doesn’t have anything this app can restore.')
+    const result = parseBackup(await readTextFile(file), props.app)
+    if (!result.plans.length && !result.settings) throw new Error(props.app ? `That file has nothing for ${props.appName ?? 'this app'}.` : 'That backup doesn’t have anything this app can restore.')
     parsed.value = result
     fileName.value = file.name
     included.value = new Set(result.plans.filter(p => p.records.length || p.onlyHere).map(p => p.section.name))
@@ -127,7 +141,7 @@ async function restore() {
   parsed.value = undefined
   refreshCounts()
   play('success')
-  toast.success('Backup restored', {
+  toast.success(props.app ? `${props.appName ?? 'App'} imported` : 'Backup restored', {
     description: [
       `${added} added, ${changed} updated${removed ? `, ${removed} moved to the Recycle Bin` : ''}.`,
       cloudOk ? '' : 'Saved on this device; your account will catch up next time you open each app.'
@@ -145,11 +159,12 @@ const exportedOn = computed(() => parsed.value?.exportedAt
 <template>
   <div class="data">
     <!-- Export -->
-    <section class="panel block" aria-labelledby="export-title">
-      <h3 id="export-title">Export everything</h3>
-      <p class="note">One file with everything you’ve saved. Your password vault isn’t included; it’s encrypted and syncs on its own.</p>
+    <section class="panel block" :aria-labelledby="`${id}-export`">
+      <h3 :id="`${id}-export`">{{ app ? 'Export' : 'Export everything' }}</h3>
+      <p v-if="app" class="note">{{ sections.length ? `One file with what you’ve saved in ${appName} and its settings.` : `One file with ${appName}’s settings.` }}<template v-if="app === '/password'"> Saved passwords aren’t included; they’re encrypted and sync on their own.</template></p>
+      <p v-else class="note">One file with everything you’ve saved. Your password vault isn’t included; it’s encrypted and syncs on its own.</p>
       <ul class="sections">
-        <li v-for="s in BACKUP_SECTIONS" :key="s.name">
+        <li v-for="s in sections" :key="s.name">
           <label class="check">
             <input type="checkbox" :checked="chosen.has(s.name)" @change="toggleSection(s.name)">
             <span>{{ s.label }}</span>
@@ -160,36 +175,40 @@ const exportedOn = computed(() => parsed.value?.exportedAt
           <label class="check">
             <input v-model="withSettings" type="checkbox">
             <span>Settings</span>
-            <span class="count">theme, sound, preferences</span>
+            <span class="count">{{ app ? 'this app’s settings' : 'theme, sound, preferences' }}</span>
           </label>
         </li>
       </ul>
       <div class="actions">
-        <button type="button" class="btn" :disabled="!chosen.size && !withSettings" @click="exportBackup">Export backup</button>
-        <span class="note">{{ lastBackup ? `Last backup ${ago(lastBackup)}` : 'No backup made on this device yet' }}</span>
+        <button type="button" class="btn" :disabled="!chosen.size && !withSettings" @click="exportBackup">{{ app ? 'Export file' : 'Export backup' }}</button>
+        <span v-if="!app" class="note">{{ lastBackup ? `Last backup ${ago(lastBackup)}` : 'No backup made on this device yet' }}</span>
       </div>
     </section>
 
     <!-- Import -->
-    <section class="panel block" aria-labelledby="import-title">
-      <h3 id="import-title">Restore from a backup</h3>
-      <p class="note">Pick a backup file. You’ll see exactly what changes before anything is touched.</p>
+    <section class="panel block" :aria-labelledby="`${id}-import`">
+      <h3 :id="`${id}-import`">{{ app ? 'Import' : 'Restore from a backup' }}</h3>
+      <p v-if="app" class="note">A file exported here, or a full backup from Settings; only the {{ appName }} part is used. You’ll see what changes first.</p>
+      <p v-else class="note">Pick a backup file. You’ll see exactly what changes before anything is touched.</p>
       <div class="actions">
-        <button type="button" class="btn btn-quiet" @click="fileInput?.click()">Choose backup file…</button>
+        <button type="button" class="btn btn-quiet" @click="fileInput?.click()">{{ app ? 'Choose file…' : 'Choose backup file…' }}</button>
         <input ref="fileInput" type="file" accept=".json,application/json" hidden @change="pickFile">
       </div>
 
       <div v-if="parsed" class="preview" role="region" aria-label="What the backup would change">
         <p class="from"><strong>{{ fileName }}</strong><template v-if="exportedOn"> · made {{ exportedOn }}</template></p>
 
+        <template v-if="parsed.plans.length">
         <div class="segmented mode" role="radiogroup" aria-label="How to restore">
           <label :class="{ active: mode === 'merge' }"><input v-model="mode" type="radio" value="merge">Merge</label>
           <label :class="{ active: mode === 'replace' }"><input v-model="mode" type="radio" value="replace">Replace</label>
         </div>
         <p class="note">
           <template v-if="mode === 'merge'">Adds what’s new and updates what changed. Nothing on this device is removed.</template>
+          <template v-else-if="app">{{ appName }} ends up exactly like the file.</template>
           <template v-else>Each app ends up exactly like the backup. Anything not in it goes to the Recycle Bin, so you can still get it back.</template>
         </p>
+        </template>
 
         <ul class="plans">
           <li v-for="p in parsed.plans" :key="p.section.name" :class="{ off: !included.has(p.section.name) }">
@@ -209,7 +228,7 @@ const exportedOn = computed(() => parsed.value?.exportedAt
               <input v-model="restoreSettingsToo" type="checkbox">
               <span>Settings</span>
             </label>
-            <span class="diff"><span class="badge">theme, sound, preferences</span></span>
+            <span class="diff"><span class="badge">{{ app ? 'this app’s settings' : 'theme, sound, preferences' }}</span></span>
           </li>
         </ul>
         <p v-if="parsed.unknown.length" class="note">Skipped, not part of this app: {{ parsed.unknown.join(', ') }}.</p>

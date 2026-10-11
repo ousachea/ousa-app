@@ -542,6 +542,12 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 <template>
   <ToolPage header="bar">
+    <template #transfer>
+      <button type="button" class="btn btn-quiet btn-sm" @click="fileInput?.click()">Import CSV</button>
+      <button type="button" class="btn btn-quiet btn-sm" :disabled="!purchases.length" @click="exportCSV">Export CSV</button>
+      <span>With Weight, Unit, Paid and Date columns, for spreadsheets.</span>
+      <input ref="fileInput" type="file" accept=".csv,text/csv" hidden @change="importCSV">
+    </template>
     <template #settings>
       <SettingChoice v-model="autoRefresh" title="Refresh the price" :options="[{ value: 0, label: 'Off' }, { value: 30, label: 'Every 30 seconds' }, { value: 60, label: 'Every minute' }, { value: 300, label: 'Every 5 minutes' }]" />
       <SettingChoice v-model="sort" title="Sort purchases by" :options="SORTS" />
@@ -787,11 +793,6 @@ const PURITIES: { value: Purity, label: string }[] = [
             </div>
             <SkeletonList v-else variant="cards" :count="2" label="Loading your gold" />
 
-            <p class="csv">
-              <button type="button" class="link" @click="fileInput?.click()">Import CSV</button>
-              <button v-if="purchases.length" type="button" class="link" @click="exportCSV">Export CSV</button>
-              <input ref="fileInput" type="file" accept=".csv,text/csv" hidden @change="importCSV">
-            </p>
           </Step>
 
           <Step :title="w.byUnit">
@@ -856,11 +857,6 @@ const PURITIES: { value: Purity, label: string }[] = [
             <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add purchase' }}</button>
             <button type="button" class="btn btn-quiet" @click="formOpen = false">Cancel</button>
           </div>
-          <p v-if="!editingId" class="form-note import-note">
-            Have a list already?
-            <button type="button" class="link" @click="fileInput?.click()">Import a CSV file</button>
-            with Weight, Unit, Paid and Date columns, like the one Export CSV makes.
-          </p>
         </form>
       </Modal>
 
@@ -1635,13 +1631,6 @@ const PURITIES: { value: Purity, label: string }[] = [
   margin: 0.4rem 0 0;
 }
 
-.csv {
-  margin: 1.25rem 0 0;
-  padding-inline: 0.25rem;
-  display: flex;
-  gap: 1rem;
-}
-
 /* ---------- Form ---------- */
 .form {
   display: flex;
@@ -1664,13 +1653,6 @@ const PURITIES: { value: Purity, label: string }[] = [
   margin: 0;
   font-size: 0.9rem;
   color: var(--ink-2);
-}
-
-.import-note {
-  padding-top: 1.1rem;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  border-top: 1px solid var(--line);
 }
 
 /* A little more room above the buttons than between fields, so they read as the end of the form */

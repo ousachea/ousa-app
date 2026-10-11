@@ -708,7 +708,6 @@ function moreMenu(e: MouseEvent) {
     { label: 'Duplicate', icon: 'duplicate', run: () => duplicate(n) },
     { label: 'Save as template', icon: 'list', run: () => saveAsTemplate(n) },
     { label: 'Copy link', icon: 'copy', run: () => copyLink(n) },
-    { label: 'Export…', icon: 'open', run: () => (transferOpen.value = true) },
     '-',
     { label: n.archived ? 'Unarchive' : 'Archive', icon: 'folder', run: () => setArchived(n, !n.archived) },
     { label: 'Delete', icon: 'delete', danger: true, run: () => del(n) }
@@ -750,7 +749,8 @@ function selectionMenu(): MenuEntry[] {
 
 // ---------- Import / export (#39) ----------
 const transferOpen = ref(false)
-const settingsOpen = ref(false)
+// The app's settings popup (ToolPage), with Import & export at the bottom
+const settingsOpen = useAppSettingsOpen()
 
 const exportedNote = (n: Note) => ({ title: displayTitle(n), html: n.html, markdown: htmlToMarkdown(n.html), folder: folderPath(n), tags: n.tags, favorite: !!n.favorite, archived: !!n.archived, createdAt: n.createdAt, updatedAt: n.updatedAt })
 function exportNotes(scope: 'current' | 'all' | 'one', format: 'md' | 'txt' | 'html' | 'json', one?: Note) {
@@ -911,7 +911,6 @@ function listMenu() {
     ...VIEWS.map(v => ({ label: `View as ${v === 'list' ? 'list' : v === 'grid' ? 'cards' : 'compact list'}`, hint: view.value === v ? '✓' : '', run: () => (view.value = v) })),
     '-',
     { label: 'Select notes', icon: 'select', disabled: !shown.value.length, run: () => sel.start() },
-    { label: 'Import / Export…', icon: 'open', run: () => (transferOpen.value = true) },
     { label: 'Notes settings…', icon: 'edit', run: () => (settingsOpen.value = true) }
   ], 'Sort and view')
 }
@@ -923,6 +922,10 @@ function listMenu() {
       <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
       <SettingChoice v-model="view" title="Show notes as" :options="VIEWS.map(v => ({ value: v, label: v === 'grid' ? 'Cards' : v[0]!.toUpperCase() + v.slice(1) }))" />
       <NoteSettings inline :folders="folders" />
+    </template>
+    <template #transfer>
+      <button type="button" class="btn btn-quiet btn-sm" @click="transferOpen = true">More formats…</button>
+      <span>Markdown, text, HTML or JSON.</span>
     </template>
     <template #actions>
       <ClientOnly><span class="aside-tools"><BulkToggle v-if="notes.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly>
@@ -986,7 +989,6 @@ function listMenu() {
           </section>
 
           <div class="side-tools">
-            <button type="button" class="link" @click="transferOpen = true">Import / Export</button>
             <button type="button" class="link" @click="settingsOpen = true">Notes settings</button>
           </div>
 
@@ -1236,7 +1238,6 @@ function listMenu() {
     <QuickNote :open="quickOpen" @close="quickOpen = false" @save="saveQuick" />
     <NoteHistory :open="historyOpen" :versions="openNote ? versionsOf(openNote.id) : []" :note-title="openNote ? displayTitle(openNote) : ''" @close="historyOpen = false" @restore="restoreVersion" />
     <NoteTransfer :open="transferOpen" :has-current="!!openNote" :count="notes.length" @close="transferOpen = false" @export="(s, f) => exportNotes(s, f)" @import="importFiles" />
-    <NoteSettings :open="settingsOpen" :folders="folders" @close="settingsOpen = false" />
     <BulkBar :select="sel" :actions="bulkActions" label="Selected notes" noun="notes" />
   </ToolPage>
 </template>

@@ -12,7 +12,7 @@ const PAGES = `pages-${VERSION}`
 const ASSETS = `assets-${VERSION}`
 const STATIC = `static-${VERSION}`
 
-const APP_PAGES = ['/', '/qr', '/phone', '/compress', '/text', '/password', '/exchange', '/things', '/eat', '/weight', '/countdown', '/renewals', '/bookmarks', '/notes', '/battery', '/salary', '/gold', '/settings', '/trash']
+const APP_PAGES = ['/', '/qr', '/phone', '/compress', '/text', '/password', '/exchange', '/things', '/eat', '/weight', '/countdown', '/renewals', '/bookmarks', '/notes', '/battery', '/salary', '/gold', '/ambient-studio', '/settings', '/trash']
 const SHELL = ['/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png']
 
 self.addEventListener('install', (event) => {

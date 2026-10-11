@@ -1,7 +1,7 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
-  | 'trash' | 'activity' | 'plus' | 'search' | 'notes'
+  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'ambient'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -194,6 +194,16 @@ export const TOOLS: Tool[] = [
     seoTitle: 'Gold price in chi and damlung today',
     description: 'Live gold price per chi, damlung and gram for Cambodia, a gold unit converter, and what your gold purchases are worth now.',
     demo: true
+  },
+  {
+    to: '/ambient-studio',
+    name: 'Ambient Studio',
+    summary: 'Play your YouTube Music playlists over rain, fire and noise, with focus and sleep timers.',
+    color: '#4b4a8f',
+    icon: 'ambient',
+    group: 'Life',
+    seoTitle: 'YouTube Music player with ambient sounds and focus timer',
+    description: 'Play your YouTube Music playlists and liked songs, mix in rain, fire, ocean or brown noise, and use a focus or sleep timer. Ambient scenes included.'
   }
 ]
 

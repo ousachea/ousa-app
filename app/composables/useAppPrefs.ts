@@ -17,11 +17,12 @@ export function useAppPrefs<T extends Record<string, unknown>>(app: string, defa
           if (saved[k] !== undefined && typeof saved[k] === typeof defaults[k]) prefs[k] = saved[k]
         }
       } catch {}
-      watch(prefs, () => {
+      // Its own scope, so it keeps saving after the page that first asked has unmounted
+      effectScope(true).run(() => watch(prefs, () => {
         try {
           localStorage.setItem(key, JSON.stringify(prefs))
         } catch {}
-      }, { deep: true })
+      }, { deep: true }))
     }
   }
   const { prefs } = store

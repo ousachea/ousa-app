@@ -77,7 +77,11 @@ const isNew = computed(() => recent.value && !!latest.value && seenVersions.valu
 const releaseDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 // This app's own settings, when the page has any (#settings slot)
 const slots = useSlots()
-const settingsOpen = ref(false)
+// Shared so a page can open its own settings too (Notes' "Notes settings" link); closed when the page goes
+const settingsOpen = useAppSettingsOpen()
+onBeforeUnmount(() => (settingsOpen.value = false))
+// Listed apps always have settings, if only Import & export
+const hasSettings = computed(() => !!slots.settings || TOOLS.some(t => t.to === route.path))
 function openSettings() {
   settingsOpen.value = true
   play('open')
@@ -154,7 +158,7 @@ function toggleDemo() {
             {{ pinned ? 'Pinned' : 'Pin' }}
           </button>
         </ClientOnly>
-        <button v-if="slots.settings" type="button" class="pin gear" :title="`${tool.name} settings`" @click="openSettings">
+        <button v-if="hasSettings" type="button" class="pin gear" :title="`${tool.name} settings`" @click="openSettings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6L18 18M6 18l1.4-1.4M16.6 7.4L18 6" /></svg>
           Settings
         </button>
@@ -165,11 +169,22 @@ function toggleDemo() {
       <ToolIcon v-if="header === 'band'" :name="tool.icon" class="band-art" aria-hidden="true" />
     </header>
 
-    <Modal v-if="slots.settings" :open="settingsOpen" :title="`${tool.name} settings`" @close="settingsOpen = false">
-      <div class="app-settings">
-        <slot name="settings" />
-      </div>
-      <p class="app-settings-note">Saved on this device. They set where {{ tool.name }} starts; you can still change things on the page.</p>
+    <Modal v-if="hasSettings" :open="settingsOpen" :title="`${tool.name} settings`" @close="settingsOpen = false">
+      <template v-if="slots.settings">
+        <div class="app-settings">
+          <slot name="settings" />
+        </div>
+        <p class="app-settings-note">Saved on this device. They set where {{ tool.name }} starts; you can still change things on the page.</p>
+      </template>
+      <!-- Every app can take its data and settings out to a file and bring them back -->
+      <section v-if="pinnable" class="app-data" aria-label="Import and export">
+        <h3 class="app-data-head">Import &amp; export</h3>
+        <DataPanel v-if="settingsOpen" :app="route.path" :app-name="tool.name" />
+        <!-- Apps with formats of their own (CSV, browser bookmarks, Markdown) open them from here -->
+        <div v-if="slots.transfer" class="app-data-more">
+          <slot name="transfer" />
+        </div>
+      </section>
     </Modal>
 
     <Modal :open="whatsNewOpen" :title="`What’s new in ${tool.name}`" @close="whatsNewOpen = false">
@@ -459,6 +474,36 @@ h1 {
 .app-settings-note {
   margin: 0.75rem 0 0;
   font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+.app-data {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.app-data:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.app-data-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 1rem;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.app-data-head {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--ink-3);
 }
 

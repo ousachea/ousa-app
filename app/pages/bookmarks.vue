@@ -877,6 +877,10 @@ async function refreshAllDetails() {
       <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
       <SettingChoice v-model="view" title="Show as" :options="VIEWS.map(v => ({ value: v, label: v === 'grid' ? 'Cards' : v[0]!.toUpperCase() + v.slice(1) }))" />
     </template>
+    <template #transfer>
+      <button type="button" class="btn btn-quiet btn-sm" @click="transferOpen = true">More formats…</button>
+      <span>Your browser’s bookmarks file, CSV or JSON.</span>
+    </template>
     <TransferDialog
       :open="transferOpen"
       title="Bookmarks"
@@ -1020,7 +1024,6 @@ async function refreshAllDetails() {
               {{ fetchingDetails ? 'Getting site details…' : 'Get site details' }}
             </button>
             <button type="button" class="link" @click="dupesOpen = true">Find duplicates<template v-if="duplicateCount"> <span class="count-pill">{{ duplicateCount }}</span></template></button>
-            <button type="button" class="link" @click="transferOpen = true">Import / Export</button>
             <NuxtLink to="/trash?app=/bookmarks" class="link">Recycle Bin</NuxtLink>
           </div>
         </aside>
@@ -1116,7 +1119,7 @@ async function refreshAllDetails() {
             <EmptyState title="No bookmarks yet" icon="bookmarks" action="Save your first link" @action="focusField(linkField)">
               Paste a link and its title and icon are filled in for you. Pin the ones you open every day.
               <template #extra>
-                <p class="import-hint">Already have bookmarks in your browser? <button type="button" class="link" @click="transferOpen = true">Import them</button>.</p>
+                <p class="import-hint">Already have bookmarks in your browser? Import them in Settings, under Import &amp; export.</p>
               </template>
             </EmptyState>
           </div>

@@ -55,12 +55,14 @@ function start() {
     }
   } catch {}
   apply()
-  watch(prefs, () => {
+  // In a scope of its own: started from inside a component, the watch would otherwise stop when that
+  // component unmounts, and later changes (unpinning an app, say) would quietly stop being saved
+  effectScope(true).run(() => watch(prefs, () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(prefs))
     } catch {}
     apply()
-  }, { deep: true })
+  }, { deep: true }))
   // Another tab changed them
   window.addEventListener('storage', (e) => {
     if (e.key !== KEY || !e.newValue) return

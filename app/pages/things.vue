@@ -26,6 +26,7 @@ interface Thing {
   createdAt?: string // when it was added here (ISO); older items fall back to the purchase date
   updatedAt?: string // when it was last edited here (ISO)
   favorite?: boolean // starred: shown on the home page (#66)
+  excluded?: boolean // left out of the totals (a work laptop, something lent out) but still listed
 }
 
 // The kind of thing is the old `category` field; the list of kinds lives in utils/devices.ts (#44, #48, #49)
@@ -187,18 +188,36 @@ const filterOptions = computed(() => {
 const FILTER_LABELS = { type: 'All types', company: 'All companies', year: 'Any year', storage: 'Any storage', generation: 'Any generation' } as const
 type FilterKey = keyof typeof FILTER_LABELS
 const filterKeys = computed(() => (Object.keys(FILTER_LABELS) as FilterKey[]).filter(k => filterOptions.value[k].length > (k === 'type' ? 1 : 0) || filters.value[k]))
-const activeFilters = computed(() => (Object.keys(FILTER_LABELS) as FilterKey[]).filter(k => filters.value[k]).length)
+const activeFilters = computed(() => (Object.keys(FILTER_LABELS) as FilterKey[]).filter(k => filters.value[k]).length + hiddenTypes.value.length)
 function clearFilters() {
   filters.value = { type: '', company: '', year: '', storage: '', generation: '' }
+  hiddenTypes.value = []
   play('select')
+}
+// Categories hidden from the list (the summary's eye buttons); totals still count them
+const hiddenTypes = useRemembered<string[]>('things-hidden-types', [], v => Array.isArray(v) && v.every(x => typeof x === 'string'))
+function toggleHidden(category: string) {
+  const hide = !hiddenTypes.value.includes(category)
+  hiddenTypes.value = hide ? [...hiddenTypes.value, category] : hiddenTypes.value.filter(c => c !== category)
+  // Showing only a category and hiding it at once would leave an empty list
+  if (hide && filters.value.type === category) filters.value = { ...filters.value, type: '' }
+  play(hide ? 'toggle-off' : 'toggle-on')
 }
 const matchesFilters = (t: Thing) => {
   const f = filters.value
-  return (!f.type || t.category === f.type) && (!f.company || t.company === f.company) && (!f.year || String(t.year) === f.year)
+  return !hiddenTypes.value.includes(t.category) && (!f.type || t.category === f.type) && (!f.company || t.company === f.company) && (!f.year || String(t.year) === f.year)
     && (!f.storage || String(t.storage) === f.storage) && (!f.generation || t.generation === f.generation)
 }
 
 const filtersOpen = ref(false)
+
+// The summary's categories double as a type filter: tap one to see only those, again for everything
+function filterByCategory(category: string) {
+  const on = filters.value.type === category
+  filters.value = { ...filters.value, type: on ? '' : category }
+  if (!on) hiddenTypes.value = hiddenTypes.value.filter(c => c !== category)
+  play(on ? 'toggle-off' : 'toggle-on')
+}
 
 // Cards or a compact list (#15)
 const view = useRemembered<'cards' | 'list'>('things-view', 'cards', v => v === 'cards' || v === 'list')
@@ -240,15 +259,19 @@ const visible = computed(() => {
   })
 })
 
+// Things left out of the totals still show in the list, dimmed
+const counted = computed(() => items.value.filter(t => !t.excluded))
+const excludedCount = computed(() => items.value.length - counted.value.length)
+
 const totals = computed(() => {
-  const now = items.value.reduce((n, t) => n + worthUsd(t), 0)
-  const paid = items.value.reduce((n, t) => n + paidUsd(t), 0)
-  return { now, paid, change: paid ? now / paid - 1 : 0, estimates: items.value.filter(isEstimate).length }
+  const now = counted.value.reduce((n, t) => n + worthUsd(t), 0)
+  const paid = counted.value.reduce((n, t) => n + paidUsd(t), 0)
+  return { now, paid, change: paid ? now / paid - 1 : 0, estimates: counted.value.filter(isEstimate).length }
 })
 
 const byCategory = computed(() => {
   const map = new Map<string, { count: number, usd: number }>()
-  for (const t of items.value) {
+  for (const t of counted.value) {
     const entry = map.get(t.category) ?? { count: 0, usd: 0 }
     entry.count++
     entry.usd += worthUsd(t)
@@ -336,6 +359,7 @@ const menuFor = useRowMenu()
 const thingMenu = (t: Thing): MenuEntry[] => [
   { label: 'Edit', icon: 'edit', run: () => edit(t) },
   { label: t.favorite ? 'Remove from favourites' : 'Add to favourites', icon: 'star', run: () => toggleFavourite(t, t.name, update, replace) },
+  { label: t.excluded ? 'Count in totals' : 'Leave out of totals', icon: 'restore', run: () => setExcluded([t], !t.excluded) },
   { label: 'Duplicate', icon: 'duplicate', run: () => {
     const { id: _, ...rest } = t
     const copy = add({ ...rest, name: `${t.name} (copy)` })
@@ -345,6 +369,17 @@ const thingMenu = (t: Thing): MenuEntry[] => [
   '-',
   { label: 'Delete', icon: 'delete', danger: true, run: () => del(t) }
 ]
+
+/** Leave things out of the totals (or count them again), with Undo */
+function setExcluded(list: Thing[], excluded: boolean) {
+  const before = list.map(t => update(t.id, { excluded })).filter((b): b is Thing => !!b)
+  play(excluded ? 'toggle-off' : 'toggle-on')
+  const what = list.length === 1 ? list[0]!.name : bulkText(list.length)
+  toast(excluded ? `${what} left out of the totals` : `${what} counted in the totals`, {
+    description: excluded ? 'Still in your list, just not added up.' : undefined,
+    action: before.length ? { label: 'Undo', onClick: () => before.forEach(b => replace(b)) } : undefined
+  })
+}
 
 function edit(t: Thing) {
   editingId.value = t.id
@@ -426,6 +461,10 @@ function deleteSelected() {
 }
 const bulkActions = computed<BulkAction[]>(() => [
   { label: allFavourite(sel.selectedItems as Thing[]) ? 'Unfavourite' : 'Favourite', icon: 'star', run: () => bulkFavourite(sel.selectedItems as Thing[], update, replace, bulkText) },
+  { label: (sel.selectedItems as Thing[]).every(t => t.excluded) ? 'Count in totals' : 'Leave out of totals', icon: 'archive', run: () => {
+    const list = sel.selectedItems as Thing[]
+    setExcluded(list, !list.every(t => t.excluded))
+  } },
   { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
 ])
 
@@ -445,9 +484,12 @@ function del(t: Thing) {
       <SettingChoice v-model="lastCurrency" title="New items in" description="The currency a new item starts in." :options="[{ value: 'USD', label: 'Dollars' }, { value: 'KHR', label: 'Riel' }]" />
       <SettingChoice v-model="lastCategory" title="New items are" description="The kind a new item starts as." :options="NEW_TYPES.map(t => ({ value: t.key, label: t.label }))" />
     </template>
+    <template #transfer>
+      <button type="button" class="btn btn-quiet btn-sm" @click="transferOpen = true">More formats…</button>
+      <span>CSV for spreadsheets, or JSON.</span>
+    </template>
     <template #actions>
       <div class="head-buttons">
-        <ClientOnly><button type="button" class="btn btn-quiet" @click="transferOpen = true">Import / Export</button></ClientOnly>
         <button type="button" class="btn add-btn" @click="openAdd">+ Add item</button>
       </div>
     </template>
@@ -605,33 +647,60 @@ function del(t: Thing) {
                       <small>{{ pct(totals.change) }}</small>
                     </dd>
                   </div>
-                  <div><dt>Items</dt><dd>{{ items.length }}</dd></div>
+                  <div><dt>Items</dt><dd>{{ counted.length }}</dd></div>
                 </dl>
+                <p v-if="excludedCount" class="note">
+                  {{ excludedCount }} {{ excludedCount === 1 ? 'thing is' : 'things are' }} left out of these totals. Right-click or long-press one to count it again.
+                </p>
                 <p v-if="rateInfo.from === 'fallback' && items.some(t => t.currency === 'KHR')" class="note">
                   Couldn’t get today’s exchange rate, so riel prices are counted at about {{ FALLBACK_RATE.toLocaleString('en-US') }} ៛ to the dollar.
                 </p>
                 <p v-if="totals.estimates" class="note">
-                  {{ totals.estimates === items.length ? 'All values are estimates' : `${totals.estimates} of ${items.length} values are estimates` }} from age and category. Edit an item to enter its real value.
+                  {{ totals.estimates === counted.length ? 'All values are estimates' : `${totals.estimates} of ${counted.length} values are estimates` }} from age and category. Edit an item to enter its real value.
                 </p>
               </div>
 
               <!-- Where the value is: one bar split by category, then each category with its share -->
               <div class="breakdown">
                 <span class="label">Where the value is</span>
-                <div class="stack" role="img" :aria-label="byCategory.map(c => `${typeLabel(c.category)} ${Math.round((c.usd / (totals.now || 1)) * 100)}%`).join(', ')">
+                <div class="stack" :class="{ filtered: !!filters.type }" role="img" :aria-label="byCategory.map(c => `${typeLabel(c.category)} ${Math.round((c.usd / (totals.now || 1)) * 100)}%`).join(', ')">
                   <span
                     v-for="c in byCategory"
                     :key="c.category"
+                    :class="{ on: filters.type === c.category }"
                     :style="{ ...categoryStyle(c.category), flexGrow: c.usd || 0.0001 }"
                     :title="`${typeLabel(c.category)}: ${formatMoney(c.usd, 'USD')}`"
                   />
                 </div>
-                <ul class="cats">
-                  <li v-for="c in byCategory" :key="c.category" :style="categoryStyle(c.category)">
-                    <span class="cat-dot" aria-hidden="true"><CategoryIcon :name="typeOf(c.category).icon" /></span>
-                    <span class="cat-name">{{ typeLabel(c.category) }}<small>{{ c.count }} {{ c.count === 1 ? 'item' : 'items' }}</small></span>
-                    <span class="cat-share">{{ Math.round((c.usd / (totals.now || 1)) * 100) }}%</span>
-                    <b>{{ formatMoney(c.usd, 'USD') }}</b>
+                <!-- Each category filters the list below; tap it again to show everything -->
+                <ul class="cats" :class="{ filtered: !!filters.type }">
+                  <li v-for="c in byCategory" :key="c.category" :class="{ hidden: hiddenTypes.includes(c.category) }" :style="categoryStyle(c.category)">
+                    <button
+                      type="button"
+                      class="cat-btn"
+                      :class="{ on: filters.type === c.category }"
+                      :aria-pressed="filters.type === c.category"
+                      :title="filters.type === c.category ? 'Show everything' : `Show only ${typeLabel(c.category)}`"
+                      @click="filterByCategory(c.category)"
+                    >
+                      <span class="cat-dot" aria-hidden="true"><CategoryIcon :name="typeOf(c.category).icon" /></span>
+                      <span class="cat-name">{{ typeLabel(c.category) }}<small>{{ c.count }} {{ c.count === 1 ? 'item' : 'items' }}</small></span>
+                      <span class="cat-share">{{ Math.round((c.usd / (totals.now || 1)) * 100) }}%</span>
+                      <b>{{ formatMoney(c.usd, 'USD') }}</b>
+                    </button>
+                    <button
+                      type="button"
+                      class="cat-hide"
+                      :aria-pressed="hiddenTypes.includes(c.category)"
+                      :aria-label="hiddenTypes.includes(c.category) ? `Show ${typeLabel(c.category)} in the list` : `Hide ${typeLabel(c.category)} from the list`"
+                      :title="hiddenTypes.includes(c.category) ? 'Show in the list' : 'Hide from the list'"
+                      @click="toggleHidden(c.category)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <template v-if="hiddenTypes.includes(c.category)"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4 9.5 6-.4.8-1.2 2-2.3 3.1M6.6 6.6C4.6 7.9 3.2 9.8 2.5 12c1 2 4.5 6 9.5 6 1.7 0 3.2-.5 4.5-1.2" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></template>
+                        <template v-else><path d="M2.5 12C3.5 10 7 6 12 6s8.5 4 9.5 6c-1 2-4.5 6-9.5 6s-8.5-4-9.5-6z" /><circle cx="12" cy="12" r="3" /></template>
+                      </svg>
+                    </button>
                   </li>
                 </ul>
               </div>
@@ -663,10 +732,16 @@ function del(t: Thing) {
                 <button v-if="activeFilters" type="button" class="link" @click="clearFilters">Clear filters</button>
               </div>
             </div>
+            <p v-if="hiddenTypes.length" class="hidden-types">
+              <span>Hidden from the list:</span>
+              <button v-for="c in hiddenTypes" :key="c" type="button" class="hidden-chip" :aria-label="`Show ${typeLabel(c)} again`" @click="toggleHidden(c)">
+                {{ typeLabel(c) }} <span aria-hidden="true">×</span>
+              </button>
+            </p>
 
             <!-- One card per thing: what it is, what you paid → what it's worth now, and how much of its price it keeps -->
             <TransitionGroup tag="ul" name="list" class="things" :class="view">
-              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing bulk-row" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)" :class="{ editing: editingId === t.id, 'bulk-picked': sel.has(t.id) }" :style="categoryStyle(t.category)">
+              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing bulk-row" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)" :class="{ editing: editingId === t.id, 'bulk-picked': sel.has(t.id), excluded: t.excluded }" :style="categoryStyle(t.category)">
                 <BulkCheck v-if="sel.selecting" :checked="sel.has(t.id)" :label="`Select ${t.name}`" @pick="sel.pick(t.id, $event)" />
                 <header class="thing-head">
                   <span class="thing-icon" :class="{ logo: logoOf(t) }" aria-hidden="true">
@@ -674,7 +749,7 @@ function del(t: Thing) {
                     <CategoryIcon v-else :name="typeOf(t.category).icon" />
                   </span>
                   <span class="thing-title">
-                    <strong>{{ t.name }}<span v-if="t.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span></strong>
+                    <strong>{{ t.name }}<span v-if="t.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span><span v-if="t.excluded" class="not-counted">Not counted</span></strong>
                     <span>{{ [typeLabel(t.category), t.company && !t.name.toLowerCase().includes(t.company.toLowerCase()) ? t.company : ''].filter(Boolean).join(' · ') }} · {{ owned(t.purchaseDate) }}</span>
                     <span v-if="specLine(t)" class="spec-line">{{ specLine(t) }}</span>
                   </span>
@@ -806,6 +881,11 @@ function del(t: Thing) {
 .stack span {
   min-width: 4px;
   background: var(--cat);
+  transition: opacity var(--dur-fast);
+}
+
+.stack.filtered span:not(.on) {
+  opacity: 0.3;
 }
 
 .cats {
@@ -818,13 +898,146 @@ function del(t: Thing) {
 }
 
 .cats li {
-  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cat-btn {
+  /* Text lines up where it was; the highlight reaches a little past it */
+  width: calc(100% + 1rem);
+  margin: 0.15rem -0.5rem;
+  padding: 0.3rem 0.5rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.6rem;
+  font: inherit;
   font-size: 0.9rem;
-  border-bottom: 1px solid var(--line);
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast), opacity var(--dur-fast);
+}
+
+@media (hover: hover) {
+  .cat-btn:hover {
+    background: var(--surface-2);
+  }
+}
+
+.cat-btn:active {
+  scale: 0.99;
+}
+
+.cat-btn.on {
+  background: color-mix(in srgb, var(--cat) 14%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cat) 55%, transparent);
+}
+
+/* While one category is chosen, the others step back */
+.cats.filtered .cat-btn:not(.on) {
+  opacity: 0.55;
+}
+
+/* The eye beside each category hides it from the list */
+.cats li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cats .cat-btn {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin-right: 0;
+}
+
+.cat-hide {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--dur-fast), background-color var(--dur-fast);
+}
+
+.cat-hide svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (hover: hover) {
+  .cat-hide:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+  }
+}
+
+.cat-hide[aria-pressed='true'] {
+  color: var(--ink);
+}
+
+.cats li.hidden .cat-btn {
+  opacity: 0.45;
+}
+
+.hidden-types {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.hidden-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.9rem;
+  padding: 0 0.7rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.hidden-chip span {
+  color: var(--ink-3);
+}
+
+/* Left out of the totals: still listed, quieter */
+.thing.excluded {
+  opacity: 0.6;
+}
+
+.not-counted {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
 }
 
 .cat-dot {

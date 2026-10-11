@@ -37,11 +37,12 @@ function start() {
       if (saved[k] !== undefined && typeof saved[k] === typeof DEFAULTS[k]) (prefs as Record<string, unknown>)[k] = saved[k]
     }
   } catch {}
-  watch(prefs, () => {
+  // Its own scope, so it keeps saving after the component that first asked has unmounted
+  effectScope(true).run(() => watch(prefs, () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(prefs))
     } catch {}
-  }, { deep: true })
+  }, { deep: true }))
   window.addEventListener('storage', (e) => {
     if (e.key !== KEY || !e.newValue) return
     try {

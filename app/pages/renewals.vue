@@ -356,9 +356,12 @@ function del(r: Renewal) {
       <SettingChoice v-model="lastCurrency" title="New subscriptions in" :options="[{ value: 'USD', label: 'Dollars' }, { value: 'KHR', label: 'Riel' }]" />
       <SettingChoice v-model="lastCycle" title="New subscriptions are billed" :options="CYCLES.map(c => ({ value: c.value, label: c.label }))" />
     </template>
+    <template #transfer>
+      <button type="button" class="btn btn-quiet btn-sm" @click="transferOpen = true">More formats…</button>
+      <span>CSV for spreadsheets, or JSON.</span>
+    </template>
     <template #actions>
       <div class="head-buttons">
-        <ClientOnly><button type="button" class="btn btn-quiet" @click="transferOpen = true">Import / Export</button></ClientOnly>
         <button type="button" class="btn" @click="openAdd">+ Add subscription</button>
       </div>
     </template>

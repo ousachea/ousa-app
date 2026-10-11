@@ -872,8 +872,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   transition: border-color 0.15s;
 }
 
-.photo-pick:hover {
-  border-color: var(--accent);
+@media (hover: hover) {
+  .photo-pick:hover {
+    border-color: var(--accent);
+  }
 }
 
 .photo-pick.filled {
@@ -1295,9 +1297,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   cursor: pointer;
 }
 
-.chip-x:hover {
-  color: var(--ink);
-  background: var(--surface-2);
+@media (hover: hover) {
+  .chip-x:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+  }
 }
 
 /* A new chip pops in; removed ones fade */
@@ -1449,9 +1453,13 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     var(--photo) center / cover;
 }
 
-.duel-card:hover {
-  translate: 0 -3px;
-  box-shadow: 0 0 0 3px var(--plastic), 0 0 0 7px var(--green), 0 18px 34px -16px rgb(var(--shadow) / 0.55);
+/* Only with a mouse: on a phone the tapped card kept its hover ring into the next round,
+   so the card you'd just picked looked selected */
+@media (hover: hover) {
+  .duel-card:hover {
+    translate: 0 -3px;
+    box-shadow: 0 0 0 3px var(--plastic), 0 0 0 7px var(--green), 0 18px 34px -16px rgb(var(--shadow) / 0.55);
+  }
 }
 
 .duel-card:active {

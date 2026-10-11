@@ -26,9 +26,31 @@ export const BACKUP_SECTIONS: BackupSection[] = [
   { name: 'gold-prices', label: 'Gold price history', app: '/gold' }
 ]
 
-// Settings that travel with a backup: preferences, theme, effects, sound and remembered choices.
-// Drafts, the activity log and the Recycle Bin stay on the device they belong to.
-const SETTING_KEYS = /^ousa-app:(prefs|theme|effects|sound|cube-colors|remember:.+)$/
+// Settings that travel with a backup: preferences, theme, effects, sound, remembered choices and each
+// app's own settings and saved inputs. Drafts, the activity log and the Recycle Bin stay on the device
+// they belong to.
+const SETTING_KEYS = /^ousa-app:(prefs|theme|effects|sound|cube-colors|remember:.+|app-prefs:.+|ambient-studio|salary|battery|weight-unit|notes-prefs|gold-settings|bookmarks-view)$/
+
+// Settings that belong to one app, for Import / Export in that app's own settings
+const APP_SETTING_EXTRAS: Record<string, string[]> = {
+  '/text': ['remember:compare-.+'],
+  '/notes': ['notes-prefs'],
+  '/gold': ['gold-settings'],
+  '/weight': ['weight-unit'],
+  '/bookmarks': ['bookmarks-view'],
+  '/salary': ['salary'],
+  '/battery': ['battery'],
+  '/ambient-studio': ['ambient-studio']
+}
+
+/** The localStorage keys holding one app's settings: its own settings, remembered choices and extras */
+export function appSettingKeys(app: string) {
+  const slug = app.replace(/^\//, '')
+  return new RegExp(`^ousa-app:(app-prefs:${slug}|remember:${slug}-.+|${(APP_SETTING_EXTRAS[app] ?? []).join('|') || '$^'})$`)
+}
+
+/** What one app has to export: its collections and its settings */
+export const appSections = (app: string) => BACKUP_SECTIONS.filter(s => s.app === app)
 
 export interface Backup {
   app: 'ousa-app'
@@ -39,7 +61,8 @@ export interface Backup {
   settings?: Record<string, string>
 }
 
-export function makeBackup(sections: string[], withSettings: boolean): Backup {
+/** `onlyKeys` limits the settings to one app's (see appSettingKeys) */
+export function makeBackup(sections: string[], withSettings: boolean, onlyKeys?: RegExp): Backup {
   const collections: Backup['collections'] = {}
   for (const name of sections) collections[name] = readCollection(name)
   const backup: Backup = { app: 'ousa-app', kind: 'backup', version: 1, exportedAt: new Date().toISOString(), collections }
@@ -47,7 +70,7 @@ export function makeBackup(sections: string[], withSettings: boolean): Backup {
     const settings: Record<string, string> = {}
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
-      if (k && SETTING_KEYS.test(k)) settings[k] = localStorage.getItem(k) ?? ''
+      if (k && SETTING_KEYS.test(k) && (!onlyKeys || onlyKeys.test(k))) settings[k] = localStorage.getItem(k) ?? ''
     }
     backup.settings = settings
   }
@@ -73,8 +96,9 @@ export interface ParsedBackup {
   unknown: string[]
 }
 
-/** Read a backup file and compare it with what's on this device. Throws a readable message if it isn't one. */
-export function parseBackup(text: string): ParsedBackup {
+/** Read a backup file and compare it with what's on this device. Throws a readable message if it isn't one.
+ *  With `app`, only that app's part of the file is read (a full backup works too). */
+export function parseBackup(text: string, app?: string): ParsedBackup {
   let data: unknown
   try {
     data = JSON.parse(text)
@@ -88,6 +112,7 @@ export function parseBackup(text: string): ParsedBackup {
   const unknown: string[] = []
   for (const [name, list] of Object.entries(data.collections)) {
     const section = BACKUP_SECTIONS.find(s => s.name === name)
+    if (section && app && section.app !== app) continue
     if (!section || !Array.isArray(list)) {
       unknown.push(name)
       continue
@@ -107,9 +132,11 @@ export function parseBackup(text: string): ParsedBackup {
     const onlyHere = [...here.keys()].filter(id => !ids.has(id)).length
     plans.push({ section, records, added, changed, same, onlyHere })
   }
-  const settings = isRecord(data.settings)
-    ? Object.fromEntries(Object.entries(data.settings).filter(([k, v]) => SETTING_KEYS.test(k) && typeof v === 'string')) as Record<string, string>
+  const appKeys = app ? appSettingKeys(app) : undefined
+  const picked = isRecord(data.settings)
+    ? Object.fromEntries(Object.entries(data.settings).filter(([k, v]) => SETTING_KEYS.test(k) && (!appKeys || appKeys.test(k)) && typeof v === 'string')) as Record<string, string>
     : undefined
+  const settings = picked && Object.keys(picked).length ? picked : undefined
   return { exportedAt: typeof data.exportedAt === 'string' ? data.exportedAt : undefined, plans, settings, unknown }
 }
 
