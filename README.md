@@ -67,7 +67,7 @@ apps menu opens from the top bar:
 
 Shared across the apps: search everything (⌘K / Ctrl K), the apps menu (M), example data from each app’s icon,
 each app’s own settings (the Settings button in its header), right-click or long-press menus (rows don’t repeat
-their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, light and dark themes, sounds, and installing it as an app
+their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, each app’s own keyboard on phones (a keypad with its amounts, steps or network prefixes for numbers, and its own keys above the phone’s keyboard for text), light and dark themes, sounds, and installing it as an app
 on a phone or computer.
 
 **Import and export** live in Settings: each app’s settings popup has Import & export for that app’s data and

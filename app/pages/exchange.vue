@@ -180,7 +180,7 @@ async function reloadRate() {
               <span class="field-head">{{ mode === 'check' ? 'Amount you’ll hand over' : 'Amount you handed over' }} <span class="optional">or type any amount</span></span>
               <span class="money input">
                 <span class="unit" aria-hidden="true">{{ from === 'USD' ? '$' : '៛' }}</span>
-                <input v-model.number="amount" type="number" inputmode="decimal" min="0" :step="from === 'USD' ? 0.01 : 100" :aria-label="`Amount in ${from}`">
+                <input v-model.number="amount" type="number" :data-keys="from === 'KHR' ? 'riel' : undefined" inputmode="decimal" min="0" :step="from === 'USD' ? 0.01 : 100" :aria-label="`Amount in ${from}`">
               </span>
             </label>
             <p v-if="amount && amount > 0 && market" class="preview-line">
@@ -199,7 +199,7 @@ async function reloadRate() {
             <label class="field">
               <span class="field-head">1 USD =</span>
               <span class="money input">
-                <input v-model.number="rate" type="number" inputmode="decimal" min="0" step="1" aria-label="Exchange rate in riel per dollar">
+                <input v-model.number="rate" type="number" data-keys="rate" inputmode="decimal" min="0" step="1" aria-label="Exchange rate in riel per dollar">
                 <span class="unit" aria-hidden="true">៛</span>
               </span>
             </label>
@@ -233,7 +233,7 @@ async function reloadRate() {
           <label v-if="useOwnRate" class="field">
             <span class="field-head">1 USD =</span>
             <span class="money input">
-              <input v-model.number="ownRate" type="number" inputmode="decimal" min="0" step="1" aria-label="Your market rate in riel per dollar">
+              <input v-model.number="ownRate" type="number" data-keys="rate" inputmode="decimal" min="0" step="1" aria-label="Your market rate in riel per dollar">
               <span class="unit" aria-hidden="true">៛</span>
             </span>
           </label>

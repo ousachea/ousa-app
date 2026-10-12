@@ -203,6 +203,7 @@ const volume = computed({
         <Step id="behaviour" :n="2" title="Behaviour" hint="How the apps respond when you work in them." class="sync-step">
           <div class="panel behaviour">
             <SettingRow v-model="prefs.shortcuts" title="Keyboard shortcuts" description="Single keys like A to add, D for dark mode and M for the menu. ⌘K / Ctrl+K always works." />
+            <SettingRow v-model="prefs.phoneKeyboard" title="App keyboards on phones" description="Each app’s own keypad for numbers and prices, and its own keys (like .com or network prefixes) above the phone’s keyboard." />
             <SettingRow v-model="prefs.confirmDelete" title="Confirm before delete" description="Ask for a second click before something goes to the Recycle Bin." />
             <SettingRow v-model="prefs.autosave" title="Autosave forms" description="Keep what you’ve typed into an Add form if you close it, so you can continue later." />
             <div class="setting-choice">

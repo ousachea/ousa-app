@@ -592,22 +592,22 @@ function del(t: Thing) {
         <div v-if="formType.specs.length" class="specs">
           <label v-if="formType.specs.includes('year')" class="field">
             <span class="field-head">Release year <span class="optional">Optional</span></span>
-            <input v-model.number="form.year" class="input" type="number" inputmode="numeric" min="1970" :max="new Date().getFullYear() + 1" placeholder="2024">
+            <input v-model.number="form.year" class="input" data-keys="year" type="number" inputmode="numeric" min="1970" :max="new Date().getFullYear() + 1" placeholder="2024">
           </label>
           <div v-if="formType.specs.includes('storage')" class="field">
             <span class="field-head">Storage <span class="optional">GB</span></span>
-            <input v-model.number="form.storage" class="input" type="number" inputmode="numeric" min="1" placeholder="256" aria-label="Storage in GB">
+            <input v-model.number="form.storage" class="input" data-keys="gb" type="number" inputmode="numeric" min="1" placeholder="256" aria-label="Storage in GB">
             <span v-if="storageChoices.length" class="quick-picks" aria-label="Sizes it came in">
               <button v-for="g in storageChoices" :key="g" type="button" class="pick" :aria-pressed="form.storage === g" @click="form.storage = g">{{ storageLabel(g) }}</button>
             </span>
           </div>
           <label v-if="formType.specs.includes('ram')" class="field">
             <span class="field-head">RAM <span class="optional">GB</span></span>
-            <input v-model.number="form.ram" class="input" type="number" inputmode="numeric" min="1" placeholder="8">
+            <input v-model.number="form.ram" class="input" data-keys="ram" type="number" inputmode="numeric" min="1" placeholder="8">
           </label>
           <label v-if="formType.specs.includes('display')" class="field">
             <span class="field-head">Screen <span class="optional">inches</span></span>
-            <input v-model.number="form.display" class="input" type="number" inputmode="decimal" min="1" step="0.1" placeholder="6.1">
+            <input v-model.number="form.display" class="input" data-keys="inch" type="number" inputmode="decimal" min="1" step="0.1" placeholder="6.1">
           </label>
         </div>
         <MoreFields :filled="!!form.currentValue || !!form.notes">

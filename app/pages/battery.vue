@@ -955,7 +955,7 @@ onMounted(async () => {
           <label class="field">
             <span>Capacity when new</span>
             <div class="input-wrap">
-              <input v-model.number="designMah" type="number" min="0" step="50" inputmode="numeric">
+              <input v-model.number="designMah" data-keys="mah" type="number" min="0" step="50" inputmode="numeric">
               <em>mAh</em>
             </div>
             <small>The rated capacity from the spec sheet, e.g. 5000 mAh.</small>
@@ -983,7 +983,7 @@ onMounted(async () => {
           <label v-else class="field">
             <span>Current full-charge capacity</span>
             <div class="input-wrap">
-              <input v-model.number="measuredMah" type="number" min="0" step="10" inputmode="numeric">
+              <input v-model.number="measuredMah" data-keys="mah" type="number" min="0" step="10" inputmode="numeric">
               <em>mAh</em>
             </div>
             <small>The measured capacity a battery app reports today.</small>

@@ -31,14 +31,17 @@ onMounted(() => {
   if (props.open) show()
 })
 
-// Clicking the dimmed backdrop (the dialog element itself, outside the panel) closes it
+// Clicking the dimmed backdrop (the dialog element itself, outside the panel) closes it, but only when the
+// press started there too: a tap whose layout moves under the finger (the phone keypad opening and pushing
+// the popup up) ends on the backdrop without meaning to close anything
+let pressedBackdrop = false
 function onClick(e: MouseEvent) {
-  if (e.target === dialog.value) emit('close')
+  if (e.target === dialog.value && pressedBackdrop) emit('close')
 }
 </script>
 
 <template>
-  <dialog ref="dialog" class="modal" :class="{ wide }" :aria-label="title" @close="emit('close')" @click="onClick">
+  <dialog ref="dialog" class="modal" :class="{ wide }" :aria-label="title" @close="emit('close')" @pointerdown="pressedBackdrop = $event.target === dialog" @click="onClick">
     <div class="panel-inner">
       <header class="modal-head">
         <h2>{{ title }}</h2>

@@ -1101,3 +1101,14 @@ kbd {
   align-items: center;
   gap: 0.6rem;
 }
+
+/* The phone keypad (MobileKeyboard.vue) takes the bottom of the screen: the page and any open popup
+   move up out of its way, so the field being typed in stays in sight */
+html.keypad-open body {
+  padding-bottom: var(--keypad, 0px);
+}
+
+html.keypad-open dialog[open] {
+  bottom: var(--keypad, 0px);
+  max-height: calc(100dvh - var(--keypad, 0px) - 1rem);
+}

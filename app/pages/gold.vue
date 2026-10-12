@@ -627,7 +627,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                   <span class="field-head">Price you were quoted</span>
                   <span class="money input">
                     <span class="unit" aria-hidden="true">$</span>
-                    <input v-model.number="customPrice" type="number" inputmode="decimal" min="0" step="0.01" aria-label="Your gold price in dollars">
+                    <input v-model.number="customPrice" data-keys="price" type="number" inputmode="decimal" min="0" step="0.01" aria-label="Your gold price in dollars">
                   </span>
                 </label>
                 <div class="segmented" role="radiogroup" aria-label="Price is per">
@@ -842,7 +842,7 @@ const PURITIES: { value: Purity, label: string }[] = [
           <div class="form-row">
             <label class="field">
               <span class="field-head">{{ w.paid }} (USD)</span>
-              <input v-model.number="form.price" class="input" type="number" min="0" step="any" inputmode="decimal" required v-check="Number(form.price) > 0 ? '' : 'Enter what you paid'">
+              <input v-model.number="form.price" data-keys="price" class="input" type="number" min="0" step="any" inputmode="decimal" required v-check="Number(form.price) > 0 ? '' : 'Enter what you paid'">
             </label>
             <label class="field">
               <span class="field-head">{{ w.date }}</span>

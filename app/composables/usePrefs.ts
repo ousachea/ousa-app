@@ -14,6 +14,8 @@ export interface Prefs {
   autosave: boolean
   /** Single-letter shortcuts like A (add) and D (dark mode) */
   shortcuts: boolean
+  /** On phones: each app's own keypad for numbers, and its own keys above the keyboard for text */
+  phoneKeyboard: boolean
   density: Density
   motion: MotionPreference
   /** Apps pinned to the top of the menu and home page, in order */
@@ -28,6 +30,7 @@ const DEFAULTS: Prefs = {
   confirmDelete: false,
   autosave: true,
   shortcuts: true,
+  phoneKeyboard: true,
   density: 'comfortable',
   motion: 'system',
   pinnedApps: [],

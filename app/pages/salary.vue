@@ -455,7 +455,7 @@ function switchCurrency(next) {
               <div class="grid2">
                 <label class="field">
                   <span class="field-head">{{ otMode === 'amount' ? `${otUnitPlural} worked a month` : 'Overtime hours a month' }}</span>
-                  <input v-model.number="otHours" class="input" type="number" min="0" step="0.5" inputmode="decimal">
+                  <input v-model.number="otHours" data-keys="hours" class="input" type="number" min="0" step="0.5" inputmode="decimal">
                 </label>
                 <label v-if="otMode === 'amount'" class="field">
                   <span class="field-head">Paid per {{ otUnit }}</span>
@@ -467,7 +467,7 @@ function switchCurrency(next) {
                 <label v-else class="field">
                   <span class="field-head">Overtime rate</span>
                   <span class="money input">
-                    <input v-model.number="otMultiplier" type="number" min="0" step="0.1" inputmode="decimal" aria-label="Overtime multiplier">
+                    <input v-model.number="otMultiplier" data-keys="multiplier" type="number" min="0" step="0.1" inputmode="decimal" aria-label="Overtime multiplier">
                     <span class="unit" aria-hidden="true">×</span>
                   </span>
                 </label>
@@ -546,7 +546,7 @@ function switchCurrency(next) {
                 <label class="field">
                   <span class="field-head">Exact percentage</span>
                   <span class="money input">
-                    <input v-model.number="raisePct" type="number" min="-100" step="0.1" inputmode="decimal" aria-label="Raise percentage">
+                    <input v-model.number="raisePct" data-keys="percent" type="number" min="-100" step="0.1" inputmode="decimal" aria-label="Raise percentage">
                     <span class="unit" aria-hidden="true">%</span>
                   </span>
                 </label>
