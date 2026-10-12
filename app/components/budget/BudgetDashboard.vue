@@ -6,6 +6,10 @@ import { addDays, daysInMonth, formatDay, inRange, monthRange, today, weekRange,
 const store = useBudget()
 const { transactions, settings, conv, money, categoryById, go } = store
 
+// The how-to guide: shown until hidden (starts hidden so it never flashes for people who closed it)
+const guideHidden = useRemembered<boolean>('budget-guide-hidden', true, v => typeof v === 'boolean', () => false)
+const showGuide = computed(() => !guideHidden.value && !store.demo.value)
+
 const mode = ref<RangeMode>('month')
 const range = ref<DateRange>(monthRange(today()))
 const all = computed(() => transactions.items.value)
@@ -77,16 +81,19 @@ const showTxs = (r: DateRange, extra: Record<string, string> = {}) => go('transa
   <div class="dash">
     <div class="b-head">
       <h2>Dashboard</h2>
+      <button v-if="guideHidden && !store.demo.value" type="button" class="btn btn-quiet btn-sm how" @click="guideHidden = false">How to use</button>
       <BudgetRangePicker v-model="range" v-model:mode="mode" :week-start="settings.weekStart" />
     </div>
 
-    <div v-if="!all.length" class="panel">
+    <BudgetGuide v-if="showGuide" @hide="guideHidden = true" />
+
+    <div v-if="!all.length && !showGuide" class="panel">
       <EmptyState title="Nothing logged yet" icon="budget" action="Add your first expense" @action="store.openEntry()">
         Log what you spend as it happens, add your income, and set a monthly budget to see what’s left. Tap the app icon to try it with example data first.
       </EmptyState>
     </div>
 
-    <template v-else>
+    <template v-else-if="all.length">
       <section v-if="w.totals" class="cards" aria-label="Totals">
         <button type="button" class="panel card" @click="showTxs({ from: day, to: day }, { kind: 'expense' })">
           <span class="label">Spent today</span>
@@ -189,6 +196,10 @@ const showTxs = (r: DateRange, extra: Record<string, string> = {}) => go('transa
 </template>
 
 <style scoped>
+.how {
+  margin-right: auto;
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr));

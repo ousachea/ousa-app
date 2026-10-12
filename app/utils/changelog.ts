@@ -112,6 +112,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['See how much of your phone battery is really left compared with when it was new.'] }
   ],
   '/budget': [
+    { version: '1.1.0', date: '2026-10-12', changes: ['A numbered “How to use Budget” guide on the dashboard ticks off each step as you do it. Hide it any time, and bring it back with How to use.', 'Every subcategory has its own icon.'] },
     { version: '1.0.0', date: '2026-10-12', changes: [
       'Log expenses in a few taps, with categories like Food › Breakfast, Lunch and Dinner, in dollars or riel.',
       'Budgets for everything, a category or a subcategory, by month, week or day, with warnings before you hit the limit.',

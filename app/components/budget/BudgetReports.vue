@@ -10,6 +10,10 @@ const store = useBudget()
 const { transactions, settings, conv, money, categoryById, methodName, go } = store
 const day = today()
 
+// Opening Reports ticks the last step of the how-to guide
+const reportsSeen = useRemembered<boolean>('budget-guide-reports', false, v => typeof v === 'boolean')
+onMounted(() => nextTick(() => (reportsSeen.value = true)))
+
 const mode = ref<RangeMode>('month')
 const range = ref<DateRange>(monthRange(day))
 const all = computed(() => transactions.items.value)
