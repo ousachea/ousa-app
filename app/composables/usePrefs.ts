@@ -16,6 +16,10 @@ export interface Prefs {
   shortcuts: boolean
   /** On phones: each app's own keypad for numbers, and its own keys above the keyboard for text */
   phoneKeyboard: boolean
+  /** On phones: the app's own keyboard for text too (its 🌐 key switches a field to the phone's) */
+  textKeyboard: boolean
+  /** On phones: go full screen with the first tap (browsers don't allow it before one) */
+  phoneFullscreen: boolean
   density: Density
   motion: MotionPreference
   /** Apps pinned to the top of the menu and home page, in order */
@@ -31,6 +35,8 @@ const DEFAULTS: Prefs = {
   autosave: true,
   shortcuts: true,
   phoneKeyboard: true,
+  textKeyboard: true,
+  phoneFullscreen: true,
   density: 'comfortable',
   motion: 'system',
   pinnedApps: [],

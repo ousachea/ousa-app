@@ -345,7 +345,7 @@ onBeforeUnmount(() => {
           <kbd v-if="LETTER.get('/settings')">{{ LETTER.get('/settings')!.toUpperCase() }}</kbd>
         </NuxtLink>
         <ClientOnly>
-          <button v-if="canFullscreen" type="button" class="foot-link" :aria-pressed="isFullscreen" @click="toggleFullscreen">
+          <button v-if="canFullscreen" type="button" class="foot-link" data-fullscreen-toggle :aria-pressed="isFullscreen" @click="toggleFullscreen">
             <span class="foot-icon screen" aria-hidden="true">
               <svg v-if="isFullscreen" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
               <svg v-else viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>

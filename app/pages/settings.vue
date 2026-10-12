@@ -203,7 +203,9 @@ const volume = computed({
         <Step id="behaviour" :n="2" title="Behaviour" hint="How the apps respond when you work in them." class="sync-step">
           <div class="panel behaviour">
             <SettingRow v-model="prefs.shortcuts" title="Keyboard shortcuts" description="Single keys like A to add, D for dark mode and M for the menu. ⌘K / Ctrl+K always works." />
-            <SettingRow v-model="prefs.phoneKeyboard" title="App keyboards on phones" description="Each app’s own keypad for numbers and prices, and its own keys (like .com or network prefixes) above the phone’s keyboard." />
+            <SettingRow v-model="prefs.phoneKeyboard" title="App keyboards on phones" description="Each app’s own keypad for numbers and prices, with its own keys (like amounts or network prefixes) on top." />
+            <SettingRow v-if="prefs.phoneKeyboard" v-model="prefs.textKeyboard" title="App keyboard for text too" description="Type words on the app’s keyboard as well. Its 🌐 key switches to your phone’s keyboard for Khmer, emoji or voice." />
+            <SettingRow v-model="prefs.phoneFullscreen" title="Full screen on phones" description="Fill the whole screen, without the browser’s bars, from your first tap. Swipe back or use the menu to leave it for this visit." />
             <SettingRow v-model="prefs.confirmDelete" title="Confirm before delete" description="Ask for a second click before something goes to the Recycle Bin." />
             <SettingRow v-model="prefs.autosave" title="Autosave forms" description="Keep what you’ve typed into an Add form if you close it, so you can continue later." />
             <div class="setting-choice">

@@ -7,9 +7,9 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 
 ![The home page: a Rubik’s cube whose stickers open the apps, with the apps listed below](docs/screenshots/home.png)
 
-**Watch the 20-second tour** (click to play):
+**Watch the 25-second tour** (click to play):
 
-[![The launch video: the cube shuffling next to “17 apps. One cube.”](docs/launch.jpg)](docs/launch.mp4)
+[![The launch video: the cube shuffling next to “18 apps. One cube.”](docs/launch.jpg)](docs/launch.mp4)
 
 ## The apps
 
@@ -68,18 +68,18 @@ apps menu opens from the top bar:
   <img src="docs/screenshots/phone-menu.png" width="200" alt="The apps menu on a phone, three apps to a row">
 </p>
 
-Each app has its own keyboard on a phone: number fields get a keypad with the app’s own keys above the digits,
-and text fields get the app’s keys above the phone’s keyboard:
+Each app has its own keyboard on a phone: number fields get a keypad and text fields a full keyboard, each with the
+app’s own keys on top. The 🌐 key switches a field to the phone’s keyboard, for Khmer, emoji or voice:
 
 <p>
   <img src="docs/screenshots/phone-keypad.png" width="200" alt="Phone checker’s keypad, with Cambodian network prefixes above the digits">
   <img src="docs/screenshots/phone-things-keypad.png" width="200" alt="Things I own’s Add form with the price keypad, with price keys like 99 and 499">
-  <img src="docs/screenshots/phone-bookmarks-keys.png" width="200" alt="Bookmarks with link keys like https:// and .com above the phone’s keyboard">
+  <img src="docs/screenshots/phone-bookmarks-keys.png" width="200" alt="Bookmarks with the app’s keyboard: link keys like https:// and .com above the letters, with / and . beside the space bar">
 </p>
 
 Shared across the apps: search everything (⌘K / Ctrl K), the apps menu (M), example data from each app’s icon,
 each app’s own settings (the Settings button in its header), right-click or long-press menus (rows don’t repeat
-their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, each app’s own keyboard on phones (a keypad with its amounts, steps or network prefixes for numbers, and its own keys above the phone’s keyboard for text), light and dark themes, sounds, and installing it as an app
+their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, each app’s own keyboard on phones (a keypad with its amounts, steps or network prefixes for numbers, and a full keyboard with its own keys for text), full screen on phones from your first tap, light and dark themes, sounds, and installing it as an app
 on a phone or computer.
 
 **Import and export** live in Settings: each app’s settings popup has Import & export for that app’s data and

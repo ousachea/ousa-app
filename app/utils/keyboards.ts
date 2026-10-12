@@ -1,6 +1,6 @@
 // Each app's own keys for the phone keyboard (MobileKeyboard.vue). Number fields get a keypad in place of
-// the phone's own keyboard, with the app's keys in a row above the digits; text fields keep the phone's
-// keyboard and get the app's keys in a bar above it.
+// the phone's own keyboard, and text fields a full keyboard of letters; either way the app's keys sit in a
+// row on top.
 //
 // A key either types its text where the caret is (`insert`), replaces the whole field (`set`), works
 // out a new value from the current one (`apply`), or types something only known when pressed (`action`).

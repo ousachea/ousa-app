@@ -1,7 +1,9 @@
 <script setup lang="ts">
 // Each app's own keyboard on phones (app/utils/keyboards.ts has the keys). Number and phone fields get a
-// keypad in place of the phone's keyboard: the digits, plus the app's keys (amounts, steps, prefixes) in a
-// row above them. Text fields keep the phone's keyboard and get the app's keys in a bar on top of it.
+// keypad: the digits, plus the app's keys (amounts, steps, prefixes) in a row above them. Text fields get
+// a full keyboard (letters, numbers and symbols) with the app's keys above it. Its 🌐 key hands a field to
+// the phone's own keyboard, for Khmer, emoji or voice; the app's keys then sit in a bar on top of that,
+// with a key to come back. Password fields always keep the phone's keyboard, so password managers work.
 // It shows in the top layer (a manual popover inside whichever popup holds the field), so it sits above
 // Add forms and stays clickable while they make the page behind inert. Off in Settings, or per field
 // with data-keys="off".
@@ -20,8 +22,14 @@ const root = ref<HTMLElement>()
 const barTop = ref<number | null>(null)
 // Each claimed field's own attributes, put back when it loses focus
 const originals = new WeakMap<Field, { type: string, inputmode: string | null }>()
+// Fields switched to the phone's keyboard with 🌐 stay on it while the page is open
+const nativeFields = new WeakSet<Field>()
+const native = ref(false)
 
 const isPad = computed(() => kind.value === 'number' || kind.value === 'tel')
+const isText = computed(() => !isPad.value && prefs.textKeyboard && !native.value)
+/** The app's keyboard fills the bottom of the screen; otherwise it's a bar on the phone's keyboard */
+const sheet = computed(() => isPad.value || isText.value)
 const tool = computed(() => pageFor(route.path))
 const keySet = computed(() => keySetFor(route.path, kind.value, field.value?.dataset.keys))
 const decimal = computed(() => {
@@ -38,10 +46,12 @@ const phone = () => matchMedia('(hover: none) and (pointer: coarse)').matches
 function kindOf(el: EventTarget | null): FieldKind | null {
   if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return null
   if (el.readOnly || el.disabled || el.dataset.keys === 'off') return null
-  const mode = el.getAttribute('inputmode')
+  // While claimed, a field has inputmode=none (and number and email fields are type=text); what they
+  // were is in `originals`
+  const original = originals.get(el)
+  const mode = original ? original.inputmode : el.getAttribute('inputmode')
   if (el instanceof HTMLTextAreaElement) return mode === 'tel' ? 'tel' : 'text'
-  // While claimed, a number field is type=text; what it was is in `originals`
-  const type = originals.get(el)?.type ?? el.type
+  const type = original?.type ?? el.type
   if (type === 'number') return 'number'
   if (type === 'tel' || mode === 'tel') return 'tel'
   if (type === 'text' && (mode === 'decimal' || mode === 'numeric')) return 'number'
@@ -52,15 +62,17 @@ function kindOf(el: EventTarget | null): FieldKind | null {
   return null
 }
 
-// The phone decides whether to show its keyboard as the field gets focus, so the keypad's fields are told
-// not to want one on the touch that focuses them, before focus arrives
+// The phone decides whether to show its keyboard as the field gets focus, so fields the app's keyboard
+// types into are told not to want one on the touch that focuses them, before focus arrives
 function claim(el: Field, k: FieldKind) {
   if (originals.has(el)) return
+  const pad = k === 'number' || k === 'tel'
+  if (!pad && (!prefs.textKeyboard || nativeFields.has(el))) return
   originals.set(el, { type: el.type, inputmode: el.getAttribute('inputmode') })
-  if (k !== 'number' && k !== 'tel') return
   el.setAttribute('inputmode', 'none')
-  // A number field won't hold “12.” while the next digit is on its way, or say where the caret is
-  if (el.type === 'number') el.type = 'text'
+  // Number and email fields don't say where the caret is (and a number field won't hold “12.” while the
+  // next digit is on its way), so while the app's keyboard has them they're plain text fields
+  if (el.type === 'number' || el.type === 'email') el.type = 'text'
 }
 
 function release(el: Field) {
@@ -75,6 +87,8 @@ function release(el: Field) {
     if (changed) el.value = tidy
     el.type = 'number'
     if (changed) el.dispatchEvent(new Event('input', { bubbles: true }))
+  } else if (el instanceof HTMLInputElement && el.type !== type) {
+    el.type = type
   }
   if (inputmode === null) el.removeAttribute('inputmode')
   else el.setAttribute('inputmode', inputmode)
@@ -104,8 +118,12 @@ function attach(el: Field, k: FieldKind) {
   claim(el, k)
   field.value = el
   kind.value = k
+  native.value = nativeFields.has(el)
+  layer.value = 'abc'
+  shift.value = 'off'
   host.value = el.closest('dialog[open]') ?? document.body
   next.value = nextField(el)
+  autoShift()
   nextTick(open)
 }
 
@@ -127,7 +145,7 @@ function open() {
     if (!el.matches(':popover-open')) el.showPopover()
   } catch {}
   place()
-  if (isPad.value) requestAnimationFrame(() => field.value?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+  if (sheet.value) requestAnimationFrame(() => field.value?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
 }
 
 function close() {
@@ -139,13 +157,13 @@ function close() {
   document.documentElement.style.removeProperty('--keypad')
 }
 
-// The keypad sits at the bottom of the screen and pushes the page (and popups) up out of its way; the
-// bar follows the top of the phone's keyboard, which only the visual viewport knows about
+// The app's keyboard sits at the bottom of the screen and pushes the page (and popups) up out of its way;
+// the bar follows the top of the phone's keyboard, which only the visual viewport knows about
 function place() {
   const el = root.value
   if (!el || !field.value) return
   const docEl = document.documentElement
-  if (isPad.value) {
+  if (sheet.value) {
     barTop.value = null
     docEl.classList.add('keypad-open')
     docEl.style.setProperty('--keypad', `${el.offsetHeight}px`)
@@ -157,9 +175,10 @@ function place() {
   barTop.value = vv ? vv.offsetTop + vv.height - el.offsetHeight : null
 }
 
-// The fields after this one, in page order, for the Next key
+// The field after this one, for the Next key: within its form if it has one (the form's last field sends
+// it instead, like Enter does), else within its popup or the page
 function nextField(el: Field): HTMLElement | null {
-  const scope = el.closest('dialog[open]') ?? document
+  const scope = el.form ?? el.closest('dialog[open]') ?? document
   const all = [...scope.querySelectorAll<HTMLElement>('input:not([type=hidden],[type=checkbox],[type=radio],[type=file],[type=range],[type=button],[type=submit],[type=color]), textarea, select')]
     .filter(f => !(f as HTMLInputElement).disabled && !(f as HTMLInputElement).readOnly && f.getClientRects().length > 0 && f.tabIndex >= 0)
   return all[all.indexOf(el) + 1] ?? null
@@ -183,7 +202,8 @@ function insert(text: string) {
   const el = field.value
   if (!el) return
   const [start, end] = caret(el)
-  if (text === '.' && el.value.slice(0, start).concat(el.value.slice(end)).includes('.')) return
+  // One decimal point in a number; text and links can have as many dots as they like
+  if (kind.value === 'number' && text === '.' && el.value.slice(0, start).concat(el.value.slice(end)).includes('.')) return
   try {
     el.setRangeText(text, start, end, 'end')
   } catch {
@@ -214,6 +234,7 @@ function backspace() {
     el.value = el.value.slice(0, from) + el.value.slice(end)
   }
   emit(el, null, 'deleteContentBackward')
+  autoShift()
 }
 
 function feedback() {
@@ -277,6 +298,128 @@ function done() {
   field.value?.blur()
 }
 
+// ---------- The text keyboard ----------
+
+type Layer = 'abc' | '123' | 'sym'
+const ROWS: Record<Layer, string[]> = {
+  abc: ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'],
+  123: ['1234567890', '-/:;()$&@"', '.,?!\''],
+  sym: ['[]{}#%^*+=', '_\\|~<>€£¥•', '.,?!\'']
+}
+const layer = ref<Layer>('abc')
+const shift = ref<'off' | 'once' | 'lock'>('off')
+const pressed = ref<string | null>(null)
+const rows = computed(() => ROWS[layer.value].map(row => [...row]))
+const upper = computed(() => layer.value === 'abc' && shift.value !== 'off')
+const show = (c: string) => (upper.value ? c.toUpperCase() : c)
+
+// Capitals at the start of a sentence, in fields for writing (not links, emails or searches), unless the
+// field says otherwise
+function autoShift() {
+  const el = field.value
+  if (!el || !isText.value || shift.value === 'lock') return
+  const writing = kind.value === 'text' && !/^(off|none)$/.test(el.getAttribute('autocapitalize') ?? '')
+  shift.value = writing && /(^|[.!?]\s+|\n)$/.test(el.value.slice(0, caret(el)[0])) ? 'once' : 'off'
+}
+
+// Letters type as the finger lands, like the phone's own keyboard, and show a bubble above the key
+function keyDown(c: string) {
+  pressed.value = c
+  // Lifting the finger anywhere clears the bubble, even if it slid off the key first
+  window.addEventListener('pointerup', keyUp, { once: true })
+  window.addEventListener('touchend', keyUp, { once: true })
+  typeChar(c)
+}
+function keyUp() {
+  pressed.value = null
+}
+
+function typeChar(c: string) {
+  feedback()
+  insert(show(c))
+  if (shift.value === 'once') shift.value = 'off'
+  // An apostrophe ends a symbol, like don’t or it’s, so the letters come back
+  if (layer.value !== 'abc' && c === '\'') layer.value = 'abc'
+  autoShift()
+}
+
+function space() {
+  feedback()
+  insert(' ')
+  if (layer.value !== 'abc') layer.value = 'abc'
+  autoShift()
+}
+
+// Tap for one capital; tap twice quickly for caps lock
+let lastShift = 0
+function toggleShift() {
+  feedback()
+  const now = performance.now()
+  if (shift.value === 'once' && now - lastShift < 350) shift.value = 'lock'
+  else shift.value = shift.value === 'off' ? 'once' : 'off'
+  lastShift = now
+}
+
+function switchLayer(to: Layer) {
+  feedback()
+  layer.value = to
+  if (to === 'abc') autoShift()
+}
+
+const returnLabel = computed(() => {
+  if (field.value instanceof HTMLTextAreaElement) return 'return'
+  if (next.value) return 'Next'
+  if (field.value?.form || kind.value === 'search' || kind.value === 'url') return 'Go'
+  return 'Done'
+})
+
+// Return tells the page first (searches and quick-add fields listen for Enter), then does what the
+// phone's own key would: a new line, the next field, or send the form
+function enter() {
+  feedback()
+  const el = field.value
+  if (!el) return
+  const ev = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true })
+  el.dispatchEvent(ev)
+  if (ev.defaultPrevented) return
+  if (el instanceof HTMLTextAreaElement) {
+    insert('\n')
+    autoShift()
+    return
+  }
+  if (next.value) return next.value.focus()
+  const form = el.form
+  done()
+  form?.requestSubmit()
+}
+
+// 🌐: this field moves to the phone's keyboard (Khmer, emoji, voice). Focusing it again inside the tap is
+// what lets the phone bring its keyboard up.
+function usePhoneKeyboard() {
+  const el = field.value
+  if (!el) return
+  feedback()
+  nativeFields.add(el)
+  native.value = true
+  release(el)
+  el.blur()
+  el.focus()
+  nextTick(place)
+}
+
+function useAppKeyboard() {
+  const el = field.value
+  if (!el) return
+  feedback()
+  nativeFields.delete(el)
+  native.value = false
+  claim(el, kind.value)
+  el.blur()
+  el.focus()
+  autoShift()
+  nextTick(open)
+}
+
 // ---------- Lifecycle ----------
 
 let ro: ResizeObserver | undefined
@@ -309,6 +452,12 @@ watch(() => prefs.phoneKeyboard, (on) => {
   release(field.value)
   close()
 })
+// Letters switched off in Settings with a text field focused: hand it back to the phone
+watch(() => prefs.textKeyboard, (on) => {
+  if (on || !field.value || isPad.value) return
+  release(field.value)
+  field.value.blur()
+})
 // Leaving the page
 watch(() => route.path, () => field.value && close())
 </script>
@@ -319,11 +468,11 @@ watch(() => route.path, () => field.value && close())
       ref="root"
       popover="manual"
       class="app-keyboard"
-      :class="isPad ? 'pad' : 'bar'"
+      :class="isPad ? 'pad' : isText ? 'pad text' : 'bar'"
       :style="{
         '--accent': tool?.buttonColor ?? tool?.color ?? 'var(--accent)',
         '--on-accent': tool?.onColor ?? '#fff',
-        top: !isPad && barTop !== null ? `${barTop}px` : undefined
+        top: !sheet && barTop !== null ? `${barTop}px` : undefined
       }"
       role="group"
       :aria-label="`${tool?.name ?? 'App'} keyboard`"
@@ -331,7 +480,7 @@ watch(() => route.path, () => field.value && close())
     >
       <template v-if="field">
         <div class="keys-row">
-          <span v-if="keySet.title && isPad" class="set-title">{{ keySet.title }}</span>
+          <span v-if="keySet.title && sheet" class="set-title">{{ keySet.title }}</span>
           <div class="chips">
             <button
               v-for="key in keySet.keys"
@@ -345,9 +494,85 @@ watch(() => route.path, () => field.value && close())
               {{ key.label }}
             </button>
           </div>
-          <button v-if="!isPad" type="button" tabindex="-1" class="chip done" @click="done">
+          <!-- On the phone's keyboard: a way back to the app's -->
+          <button v-if="!sheet && prefs.textKeyboard" type="button" tabindex="-1" class="chip" aria-label="Use the app keyboard" @click="useAppKeyboard">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" /></svg>
+          </button>
+          <button v-if="!sheet" type="button" tabindex="-1" class="chip done" @click="done">
             Done
           </button>
+          <button v-if="isText" type="button" tabindex="-1" class="chip hide" aria-label="Hide keyboard" @click="done">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </button>
+        </div>
+
+        <div v-if="isText" class="text-grid" :class="`layer-${layer}`">
+          <div v-for="(row, r) in rows" :key="`${layer}-${r}`" class="trow">
+            <template v-if="r === 2">
+              <button
+                v-if="layer === 'abc'"
+                type="button"
+                tabindex="-1"
+                class="key fn shift"
+                :class="shift"
+                :aria-label="shift === 'lock' ? 'Caps lock on' : 'Shift'"
+                :aria-pressed="shift !== 'off'"
+                @pointerdown="toggleShift"
+                @click="$event.detail === 0 && toggleShift()"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l7.5 8H15v5H9v-5H4.5z" /><path v-if="shift === 'lock'" d="M8.5 20.5h7" /></svg>
+              </button>
+              <button v-else type="button" tabindex="-1" class="key fn small" @pointerdown="switchLayer(layer === '123' ? 'sym' : '123')" @click="$event.detail === 0 && switchLayer(layer === '123' ? 'sym' : '123')">
+                {{ layer === '123' ? '#+=' : '123' }}
+              </button>
+            </template>
+            <button
+              v-for="c in row"
+              :key="c"
+              type="button"
+              tabindex="-1"
+              class="key letter"
+              :class="{ pressed: pressed === c }"
+              :data-k="show(c)"
+              @pointerdown="keyDown(c)"
+              @pointerup="keyUp"
+              @pointerleave="keyUp"
+              @pointercancel="keyUp"
+              @click="$event.detail === 0 && typeChar(c)"
+            >
+              {{ show(c) }}
+            </button>
+            <button
+              v-if="r === 2"
+              type="button"
+              tabindex="-1"
+              class="key fn shift"
+              aria-label="Delete"
+              @pointerdown="holdBackspace"
+              @pointerup="stopBackspace"
+              @pointerleave="stopBackspace"
+              @pointercancel="stopBackspace"
+              @click="$event.detail === 0 && backspace()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11v14H9l-6-7z" /><path d="M12.5 9.5l5 5M17.5 9.5l-5 5" /></svg>
+            </button>
+          </div>
+          <div class="trow bottom">
+            <button type="button" tabindex="-1" class="key fn small" @pointerdown="switchLayer(layer === 'abc' ? '123' : 'abc')" @click="$event.detail === 0 && switchLayer(layer === 'abc' ? '123' : 'abc')">
+              {{ layer === 'abc' ? '123' : 'ABC' }}
+            </button>
+            <button type="button" tabindex="-1" class="key fn" aria-label="Use your phone’s keyboard, for Khmer, emoji or voice" title="Phone keyboard: Khmer, emoji, voice" @click="usePhoneKeyboard">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.4 2.4 3.4 5.2 3.4 8.5s-1 6.1-3.4 8.5c-2.4-2.4-3.4-5.2-3.4-8.5s1-6.1 3.4-8.5z" /></svg>
+            </button>
+            <button v-if="kind === 'email'" type="button" tabindex="-1" class="key letter" :class="{ pressed: pressed === '@' }" data-k="@" @pointerdown="keyDown('@')" @pointerup="keyUp" @pointerleave="keyUp" @pointercancel="keyUp">@</button>
+            <button v-if="kind === 'url'" type="button" tabindex="-1" class="key letter" :class="{ pressed: pressed === '/' }" data-k="/" @pointerdown="keyDown('/')" @pointerup="keyUp" @pointerleave="keyUp" @pointercancel="keyUp">/</button>
+            <button type="button" tabindex="-1" class="key space" aria-label="Space" @pointerdown="space" @click="$event.detail === 0 && space()">space</button>
+            <button v-if="kind === 'email' || kind === 'url'" type="button" tabindex="-1" class="key letter" :class="{ pressed: pressed === '.' }" data-k="." @pointerdown="keyDown('.')" @pointerup="keyUp" @pointerleave="keyUp" @pointercancel="keyUp">.</button>
+            <button type="button" tabindex="-1" class="key done ret" @click="enter">
+              <svg v-if="returnLabel === 'return'" viewBox="0 0 24 24" aria-label="Return"><path d="M19 6v5a3 3 0 0 1-3 3H6" /><path d="M9.5 10.5L6 14l3.5 3.5" /></svg>
+              <template v-else>{{ returnLabel }}</template>
+            </button>
+          </div>
         </div>
 
         <div v-if="isPad" class="pad-grid">
@@ -489,6 +714,21 @@ watch(() => route.path, () => field.value && close())
   white-space: nowrap;
 }
 
+.chip svg {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chip.hide {
+  padding: 0 0.55rem;
+}
+
 .chip:active,
 .key:active {
   transform: scale(0.96);
@@ -552,5 +792,108 @@ watch(() => route.path, () => field.value && close())
   background: var(--accent);
   font-size: var(--text-sm);
   font-weight: 700;
+}
+
+/* ---------- Text keyboard ---------- */
+
+.text-grid {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.1rem 0.25rem 0.25rem;
+}
+
+.trow {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+}
+
+/* The middle letter row is a key shorter, so it sits half a key in, like a real keyboard */
+.layer-abc .trow:nth-child(2) {
+  padding-inline: 5%;
+}
+
+.text-grid .key {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 2.9rem;
+  padding: 0;
+  border-radius: 9px;
+  font-size: 1.35rem;
+  font-weight: 450;
+}
+
+.text-grid .key.small {
+  font-size: 0.95rem;
+}
+
+.text-grid .key.shift {
+  flex: 1.45 1 0;
+}
+
+.layer-abc .trow:nth-child(3) .key.shift + .letter {
+  margin-left: 0.35rem;
+}
+
+.layer-abc .trow:nth-child(3) .letter:last-of-type {
+  margin-right: 0.35rem;
+}
+
+.text-grid .bottom .key.fn {
+  flex: 1.25 1 0;
+}
+
+.text-grid .key.space {
+  flex: 5 1 0;
+  font-size: 0.95rem;
+  color: var(--ink-2);
+}
+
+.text-grid .key.ret {
+  flex: 2.2 1 0;
+  font-size: 0.95rem;
+}
+
+.text-grid .key.ret svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+/* Shift lights up while on, and fills in for caps lock */
+.key.shift.once,
+.key.shift.lock {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.key.shift.lock svg {
+  fill: currentColor;
+}
+
+/* The letter under your finger, shown bigger above it */
+.letter.pressed {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+.letter.pressed::after {
+  content: attr(data-k);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.3rem);
+  min-width: 2.7rem;
+  height: 3.1rem;
+  padding: 0 0.4rem;
+  display: grid;
+  place-items: center;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.22), 0 0 0 1px var(--line);
+  color: var(--ink);
+  font-size: 1.75rem;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 1;
 }
 </style>
