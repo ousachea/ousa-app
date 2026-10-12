@@ -153,6 +153,13 @@ defineProps<{ name: ToolIconName }>()
       <path d="M14 10h2v2" />
     </template>
 
+    <!-- Speed test: a speed dial with its needle pushed up -->
+    <template v-else-if="name === 'speed'">
+      <path d="M4.2 17.5a9 9 0 1 1 15.6 0" />
+      <path d="M12 14l4.5-5" />
+      <circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none" />
+    </template>
+
     <!-- Gold tracker: a stacked gold bar -->
     <template v-else-if="name === 'gold'">
       <path d="M7 10.5h10l3 7.5H4z" />

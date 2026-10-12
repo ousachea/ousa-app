@@ -23,7 +23,9 @@ let authResolved: Promise<void> | undefined
 let authKnown = false
 const changeHandlers = new Set<(names: string[]) => void>()
 
-const COLLECTIONS = BACKUP_SECTIONS.map(s => s.name)
+// Read when sync starts, not at import: backup.ts and this file import each other through useCollection,
+// so BACKUP_SECTIONS can still be undefined while this module first runs
+const collections = () => BACKUP_SECTIONS.map(s => s.name)
 const appOf = (name: string) => BACKUP_SECTIONS.find(s => s.name === name)?.app ?? `/${name}`
 
 function deviceId() {
@@ -117,7 +119,7 @@ function begin(uid: string) {
     db,
     uid,
     deviceId: deviceId(),
-    collections: COLLECTIONS,
+    collections: collections(),
     store: localStorage,
     online: () => navigator.onLine,
     lock,

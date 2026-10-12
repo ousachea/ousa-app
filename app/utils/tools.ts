@@ -1,7 +1,7 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
-  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'ambient'
+  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'ambient' | 'speed'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -182,6 +182,15 @@ export const TOOLS: Tool[] = [
     icon: 'salary',
     seoTitle: 'Cambodia salary tax and raise calculator',
     description: 'Work out your take-home pay under Cambodian Tax on Salary, and how much of a raise you really keep after tax, overtime and deductions.'
+  },
+  {
+    to: '/speed',
+    name: 'Speed test',
+    summary: 'Test your internet download, upload and ping, and see what it’s good for.',
+    color: '#a21caf',
+    icon: 'speed',
+    seoTitle: 'Internet speed test',
+    description: 'Test your internet speed: download, upload, ping and jitter in Mbps, what your connection is good for, and how close you get to your plan.'
   },
   {
     to: '/gold',

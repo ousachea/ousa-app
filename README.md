@@ -25,6 +25,7 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 | KHR/USD exchange | See whether an exchange rate makes you gain or lose money |
 | Phone battery | See how much of your battery is left compared with when it was new |
 | Salary & raise | Work out what a raise is really worth after Cambodian salary tax |
+| Speed test | Test your download, upload, ping and jitter on a live dial, see what it’s good for and how close you get to your plan |
 
 **Life**
 
@@ -54,6 +55,8 @@ Every app with saved data has example data: click its icon to try it without tou
 | **Bookmarks** | **Weight** |
 | ![QR code: a live preview with colour and shape options](docs/screenshots/qr.png) | ![Renewals in dark mode](docs/screenshots/renewals-dark.png) |
 | **QR code** | **Dark mode** |
+| ![Speed test: the dial after a test, with ping, download, upload and what the connection is good for](docs/screenshots/speed.png) | ![Speed test in dark mode, testing download](docs/screenshots/speed-dark.png) |
+| **Speed test** | **Speed test, mid-test** |
 
 On a phone, Notes works like Apple Notes (folders, a folder’s notes, then the note full screen), and the
 apps menu opens from the top bar:
@@ -63,6 +66,15 @@ apps menu opens from the top bar:
   <img src="docs/screenshots/phone-notes-note.png" width="200" alt="Notes on a phone: a note open full screen with the formatting bar">
   <img src="docs/screenshots/phone-things.png" width="200" alt="Things I own on a phone">
   <img src="docs/screenshots/phone-menu.png" width="200" alt="The apps menu on a phone, three apps to a row">
+</p>
+
+Each app has its own keyboard on a phone: number fields get a keypad with the app’s own keys above the digits,
+and text fields get the app’s keys above the phone’s keyboard:
+
+<p>
+  <img src="docs/screenshots/phone-keypad.png" width="200" alt="Phone checker’s keypad, with Cambodian network prefixes above the digits">
+  <img src="docs/screenshots/phone-things-keypad.png" width="200" alt="Things I own’s Add form with the price keypad, with price keys like 99 and 499">
+  <img src="docs/screenshots/phone-bookmarks-keys.png" width="200" alt="Bookmarks with link keys like https:// and .com above the phone’s keyboard">
 </p>
 
 Shared across the apps: search everything (⌘K / Ctrl K), the apps menu (M), example data from each app’s icon,

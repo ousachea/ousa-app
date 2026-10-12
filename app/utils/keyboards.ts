@@ -77,6 +77,9 @@ interface AppKeyboard {
   named?: Record<string, KeySet>
 }
 
+// Search on Home and in the Recycle Bin: tap an app's name to find it, or what was deleted from it
+const APP_NAMES: KeySet = { title: 'Apps', keys: words('Notes', 'Bookmarks', 'Things', 'Renewals', 'Countdown', 'Gold', 'Weight', 'Speed') }
+
 const APPS: Record<string, AppKeyboard> = {
   '/qr': {
     kinds: {
@@ -138,7 +141,8 @@ const APPS: Record<string, AppKeyboard> = {
           { label: 'Now', aria: 'Type the time', action: 'now' },
           ...words('• ', '☐ ', '→', '✓', '#')
         ]
-      }
+      },
+      search: { title: 'Find', keys: words('folder:', 'tag:', 'is:favorite', 'is:archived', 'before:', 'after:') }
     }
   },
   '/battery': {
@@ -153,10 +157,15 @@ const APPS: Record<string, AppKeyboard> = {
       multiplier: { title: 'Multiplier', keys: amounts(1.5, 2, 3) }
     }
   },
+  '/speed': {
+    kinds: { number: { title: 'Plan speed (Mbps)', keys: amounts(10, 20, 30, 50, 100, 200, 500, 1000) } }
+  },
   '/gold': {
     kinds: { number: { title: 'Gold', keys: [step(-0.5), step(0.5), ...amounts(1, 2, 5, 10), times(10)] } },
     named: { price: SETS.money }
   },
+  '/': { kinds: { search: APP_NAMES } },
+  '/trash': { kinds: { search: APP_NAMES } },
   '/ambient-studio': {
     kinds: { number: SETS.minutes, url: SETS.url, text: SETS.url }
   }

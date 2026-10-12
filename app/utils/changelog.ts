@@ -111,6 +111,9 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.1.0', date: '2026-10-07', changes: [WIDE, 'The results stay in view, and fully reachable, while you scroll.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['See how much of your phone battery is really left compared with when it was new.'] }
   ],
+  '/speed': [
+    { version: '1.0.0', date: '2026-10-12', changes: ['Test your download, upload, ping and jitter, with a dial that follows the live speed.', 'See what your connection is good for, and how close you get to your plan’s speed.', 'Your last 30 tests stay on this device.'] }
+  ],
   '/salary': [
     { version: '1.1.1', date: '2026-10-07', changes: ['The raise-every-year table fits a phone screen without scrolling sideways.', 'The tax band boxes no longer make iPhones zoom in, and the switches are easier to tap.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.1.0', date: '2026-10-07', changes: [WIDE, 'The pay statement stays in view, and fully reachable, while you scroll.'] },
