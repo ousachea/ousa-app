@@ -648,7 +648,7 @@ watch(() => route.path, () => field.value && close())
 }
 
 .app-keyboard.pad {
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  padding-bottom: calc(max(0.5rem, env(safe-area-inset-bottom)) + 18px);
   animation: rise 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
