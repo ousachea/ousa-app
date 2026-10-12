@@ -78,7 +78,7 @@ interface AppKeyboard {
 }
 
 // Search on Home and in the Recycle Bin: tap an app's name to find it, or what was deleted from it
-const APP_NAMES: KeySet = { title: 'Apps', keys: words('Notes', 'Bookmarks', 'Things', 'Renewals', 'Countdown', 'Gold', 'Weight', 'Speed') }
+const APP_NAMES: KeySet = { title: 'Apps', keys: words('Notes', 'Bookmarks', 'Things', 'Renewals', 'Countdown', 'Gold', 'Weight', 'Budget', 'Speed') }
 
 const APPS: Record<string, AppKeyboard> = {
   '/qr': {
@@ -156,6 +156,9 @@ const APPS: Record<string, AppKeyboard> = {
       hours: { title: 'Hours', keys: [step(-0.5), step(0.5), ...amounts(1, 2, 4, 8)] },
       multiplier: { title: 'Multiplier', keys: amounts(1.5, 2, 3) }
     }
+  },
+  '/budget': {
+    kinds: { number: SETS.money, text: { title: 'Notes', keys: words('Breakfast', 'Lunch', 'Dinner', 'Coffee', 'Fuel', 'Groceries', 'Top-up', 'Rent', 'Salary') } }
   },
   '/speed': {
     kinds: { number: { title: 'Plan speed (Mbps)', keys: amounts(10, 20, 30, 50, 100, 200, 500, 1000) } }

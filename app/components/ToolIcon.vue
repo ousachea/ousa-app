@@ -160,6 +160,12 @@ defineProps<{ name: ToolIconName }>()
       <circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none" />
     </template>
 
+    <!-- Budget: a wallet with its clasp -->
+    <template v-else-if="name === 'budget'">
+      <path d="M18 7.5V5.5a1.5 1.5 0 0 0-1.5-1.5H5a2 2 0 0 0 0 4h14a1.5 1.5 0 0 1 1.5 1.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6" />
+      <path d="M20.5 12H17a2 2 0 0 0 0 4h3.5" />
+    </template>
+
     <!-- Gold tracker: a stacked gold bar -->
     <template v-else-if="name === 'gold'">
       <path d="M7 10.5h10l3 7.5H4z" />

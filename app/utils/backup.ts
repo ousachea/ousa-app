@@ -22,6 +22,13 @@ export const BACKUP_SECTIONS: BackupSection[] = [
   { name: 'contacts', label: 'Contacts', app: '/phone' },
   { name: 'eat', label: 'Foods & places', app: '/eat' },
   { name: 'weight', label: 'Weight', app: '/weight' },
+  { name: 'budget-transactions', label: 'Budget transactions', app: '/budget' },
+  { name: 'budget-categories', label: 'Budget categories', app: '/budget' },
+  { name: 'budget-limits', label: 'Budgets', app: '/budget' },
+  { name: 'budget-recurring', label: 'Recurring bills', app: '/budget' },
+  { name: 'budget-goals', label: 'Savings goals', app: '/budget' },
+  { name: 'budget-contributions', label: 'Savings contributions', app: '/budget' },
+  { name: 'budget-settings', label: 'Budget settings', app: '/budget' },
   { name: 'gold', label: 'Gold purchases', app: '/gold' },
   { name: 'gold-prices', label: 'Gold price history', app: '/gold' }
 ]

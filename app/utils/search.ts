@@ -28,6 +28,8 @@ interface Source {
   subtitle?: (item: Record<string, any>) => string
   /** Extra text that should match but isn't shown */
   text?: (item: Record<string, any>) => string[]
+  /** Where a result opens, when it's more than the app plus ?focus= */
+  to?: (item: Record<string, any>) => string
 }
 
 const host = (url: string) => {
@@ -73,6 +75,16 @@ export const SEARCH_SOURCES: Source[] = [
     title: r => r.name,
     subtitle: r => `${money(r.price, r.currency)} · ${CYCLES.find(c => c.value === r.cycle)?.label.toLowerCase() ?? r.cycle}`,
     text: r => [r.category]
+  },
+  {
+    collection: 'budget-transactions',
+    app: '/budget',
+    group: 'Budget',
+    title: t => String(t.note || t.merchant || (t.kind === 'income' ? 'Income' : 'Expense')),
+    subtitle: t => `${t.kind === 'income' ? '+' : '−'}${money(t.amount, t.currency)} · ${new Date(`${t.date}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+    text: t => [t.merchant, ...(Array.isArray(t.tags) ? t.tags : [])],
+    // Its day in Transactions, where the budget app highlights the row (?hl=)
+    to: t => `/budget?tab=transactions&from=${t.date}&to=${t.date}&hl=${encodeURIComponent(t.id)}`
   },
   {
     collection: 'countdown',
@@ -167,7 +179,7 @@ export function searchEverything(query: string, perGroup = 6): { group: string, 
       const subtitle = src.subtitle?.(item)
       const rest = [subtitle, ...(src.text?.(item) ?? [])].filter(Boolean).join(' ')
       const score = scoreOf(words, title, rest)
-      if (score) hits.push({ key: `${src.collection}:${item.id}`, group: src.group, title, subtitle, to: `${src.app}?focus=${encodeURIComponent(item.id)}`, app: src.app, score })
+      if (score) hits.push({ key: `${src.collection}:${item.id}`, group: src.group, title, subtitle, to: src.to ? src.to(item) : `${src.app}?focus=${encodeURIComponent(item.id)}`, app: src.app, score })
     }
     if (hits.length) groups.push({ group: src.group, hits: hits.sort((a, b) => b.score - a.score).slice(0, perGroup) })
 

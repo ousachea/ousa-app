@@ -111,6 +111,14 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.1.0', date: '2026-10-07', changes: [WIDE, 'The results stay in view, and fully reachable, while you scroll.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['See how much of your phone battery is really left compared with when it was new.'] }
   ],
+  '/budget': [
+    { version: '1.0.0', date: '2026-10-12', changes: [
+      'Log expenses in a few taps, with categories like Food › Breakfast, Lunch and Dinner, in dollars or riel.',
+      'Budgets for everything, a category or a subcategory, by month, week or day, with warnings before you hit the limit.',
+      'Recurring bills that show what’s due and overdue, and are only marked paid when you confirm.',
+      'Income, savings goals, reports, CSV import and export, and a dashboard for the month.'
+    ] }
+  ],
   '/speed': [
     { version: '1.0.0', date: '2026-10-12', changes: ['Test your download, upload, ping and jitter, with a dial that follows the live speed.', 'See what your connection is good for, and how close you get to your plan’s speed.', 'Your last 30 tests stay on this device.'] }
   ],

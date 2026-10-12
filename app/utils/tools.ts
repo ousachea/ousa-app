@@ -1,7 +1,7 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
-  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'ambient' | 'speed'
+  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'ambient' | 'speed' | 'budget'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -120,6 +120,17 @@ export const TOOLS: Tool[] = [
     group: 'Life',
     seoTitle: 'Weight tracker with trend chart',
     description: 'Log your weight and see the trend over weeks and months on a clear chart, with your progress toward a goal.',
+    demo: true
+  },
+  {
+    to: '/budget',
+    name: 'Budget',
+    summary: 'Track spending, budgets, bills, income and savings goals, in dollars or riel.',
+    color: '#047857',
+    icon: 'budget',
+    group: 'Life',
+    seoTitle: 'Budget planner and expense tracker in dollars and riel',
+    description: 'Log daily expenses and income in dollars or riel, set monthly budgets, track recurring bills and savings goals, and see where your money goes.',
     demo: true
   },
   {
