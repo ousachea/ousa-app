@@ -2,8 +2,9 @@ import type { BudgetCategory, BudgetSettings, ColorSlot, PaymentMethod, Widget }
 
 // The categories a new account starts with. Ids are fixed ("food-drinks", "food-drinks.breakfast"), so two
 // devices setting up at once create the same records instead of duplicates, and a later version can add
-// what's missing by id (see missingDefaults). Bump DEFAULTS_VERSION whenever this list grows.
-export const DEFAULTS_VERSION = 1
+// what's missing by id (see missingDefaults). Bump DEFAULTS_VERSION whenever this list changes.
+// 2: every built-in subcategory got its own icon (see subIconUpdates)
+export const DEFAULTS_VERSION = 2
 
 interface Def {
   key: string
@@ -61,6 +62,28 @@ const EXPENSES: Def[] = [
   }
 ]
 
+// Each built-in subcategory's own icon; anything not listed uses its category's
+const SUB_ICONS: Record<string, string> = {
+  'Breakfast': '🍳', 'Lunch': '🍱', 'Dinner': '🍽️', 'Other Food': '🥡',
+  'Coffee': '☕', 'Tea': '🍵', 'Beer': '🍺', 'Soft Drinks': '🥤', 'Juice': '🧃', 'Other Drinks': '🧋',
+  'Water': '💧', 'Snacks': '🍿',
+  'Car Wash': '🧽', 'Motorcycle Wash': '🫧', 'Motorcycle Gasoline': '🏍️', 'Car Gasoline': '⛽', 'Parking': '🅿️',
+  'Vehicle Accessories': '🪖', 'Vehicle Repairs & Maintenance': '🔧', 'Public Transportation': '🚌', 'Ride-hailing': '🚕',
+  'Other Transportation': '🛣️',
+  'Phone Top-up': '📲', 'Mobile Plan': '📶', 'Subscriptions': '🔁', 'Wi-Fi / Internet': '📡', 'Laptop & Computer': '💻',
+  'Device Repairs': '🛠️', 'Accessories': '🎧', 'Software & Apps': '🧩', 'Other Technology': '🔌',
+  'Rent': '🔑', 'Electricity': '💡', 'Water Bill': '🚰', 'Home Internet': '🌐', 'Waste Collection': '🗑️',
+  'Household Supplies': '🧻', 'Household Accessories': '🛋️', 'Home Repairs & Maintenance': '🔨', 'Other Housing Expenses': '🏡',
+  'Medicine & Healthcare': '💊', 'Clothes': '👕', 'Body Wash & Toiletries': '🧼', 'Haircut': '💇', 'Skincare': '🧖',
+  'Grooming': '🪒', 'Personal Accessories': '👜', 'Other Personal Expenses': '🙂',
+  'Gym Membership': '🎫', 'Sportswear': '👟', 'Protein Powder': '💪', 'Supplements': '🫙', 'Sports Equipment': '⚽',
+  'Fitness Activities': '🏃', 'Other Fitness Expenses': '🤸',
+  'Birthday Gifts': '🎂', 'Family Gifts': '👪', 'Friends’ Gifts': '🤝', 'Special Occasions': '💐', 'Donations': '🙏', 'Other Gifts': '🛍️',
+  'Movies & Events': '🎟️', 'Gaming': '🎮', 'Streaming Services': '📺', 'Music Services': '🎵', 'Outings & Activities': '🎳',
+  'Travel & Leisure': '✈️', 'Hobbies': '🎨', 'Other Entertainment': '🎉',
+  'Unexpected Expenses': '⚠️', 'Other Expenses': '📦'
+}
+
 const INCOME: { key: string, name: string, icon: string }[] = [
   { key: 'salary', name: 'Salary', icon: '💼' },
   { key: 'freelance', name: 'Freelance Income', icon: '🧑‍💻' },
@@ -81,7 +104,7 @@ export function defaultCategories(now = new Date().toISOString()): BudgetCategor
     let n = 0
     for (const [group, names] of d.subs) {
       for (const name of names) {
-        out.push({ id: `exp.${d.key}.${slug(name)}`, kind: 'expense', name, parentId: `exp.${d.key}`, group: group || undefined, icon: d.icon, color: d.color, order: n++, ...stamp })
+        out.push({ id: `exp.${d.key}.${slug(name)}`, kind: 'expense', name, parentId: `exp.${d.key}`, group: group || undefined, icon: SUB_ICONS[name] ?? d.icon, color: d.color, order: n++, ...stamp })
       }
     }
   })
@@ -93,6 +116,18 @@ export function defaultCategories(now = new Date().toISOString()): BudgetCategor
 export const missingDefaults = (existing: { id: string }[]) => {
   const have = new Set(existing.map(c => c.id))
   return defaultCategories().filter(c => !have.has(c.id))
+}
+
+/**
+ * Version 2: built-in subcategories that still wear their category's original icon (the way version 1
+ * made them) get their own. An icon someone picked themselves is left alone.
+ */
+export function subIconUpdates(existing: BudgetCategory[]) {
+  const parentIcon = new Map(EXPENSES.map(d => [`exp.${d.key}`, d.icon]))
+  const wanted = new Map(defaultCategories().filter(c => c.parentId).map(c => [c.id, c.icon]))
+  return existing
+    .filter(c => c.builtin && c.parentId && wanted.has(c.id) && c.icon === parentIcon.get(c.parentId) && wanted.get(c.id) !== c.icon)
+    .map(c => ({ id: c.id, icon: wanted.get(c.id)! }))
 }
 
 export const DEFAULT_METHODS: PaymentMethod[] = [
@@ -142,4 +177,13 @@ export const COLOR_SLOTS: { value: ColorSlot, label: string }[] = [
   { value: 'gray', label: 'Grey' }
 ]
 
-export const ICONS = ['🍜', '☕', '🛵', '🚗', '⛽', '📱', '💻', '🏠', '💡', '🧴', '💊', '👕', '🏋️', '🎁', '🎬', '🎮', '✈️', '🐶', '👶', '📚', '🎓', '⛪', '💇', '🧾', '💼', '🧑‍💻', '🏪', '📈', '🎀', '➕', '🛒', '🍺', '🏥', '🔧', '🌱', '💰']
+export const ICONS = [
+  '🍜', '🍳', '🍱', '🍽️', '☕', '🍵', '🍺', '🥤', '🧃', '🧋', '💧', '🍿', '🛒',
+  '🛵', '🏍️', '🚗', '⛽', '🅿️', '🚌', '🚕', '🔧', '🧽',
+  '📱', '📲', '📶', '💻', '🎧', '🔌', '📡',
+  '🏠', '🏡', '🔑', '💡', '🚰', '🌐', '🗑️', '🧻', '🛋️', '🔨',
+  '🧴', '🧖', '💊', '👕', '🧼', '💇', '🪒', '👜',
+  '🏋️', '👟', '💪', '⚽', '🏃',
+  '🎁', '🛍️', '🎂', '💐', '🙏', '🎬', '🎟️', '🎫', '🎮', '📺', '🎵', '🎨', '✈️', '🎉',
+  '🐶', '👶', '📚', '🎓', '⛪', '🏥', '🌱', '⚠️', '🧾', '📦', '💼', '🧑‍💻', '🏪', '📈', '🎀', '➕', '💰'
+]

@@ -215,7 +215,7 @@ const nameOf = (id: string) => categoryById.value.get(id)?.name ?? ''
         <ul v-if="kind === 'expense' && open.has(c.id)" class="subs">
           <li v-for="(s, j) in kids(c.id)" :key="s.id" class="sub" :class="{ archived: s.archived }">
             <span class="name">
-              <span>{{ s.name }}<span v-if="s.group" class="b-muted"> · {{ s.group }}</span></span>
+              <span><span class="sub-icon" aria-hidden="true">{{ s.icon }}</span>{{ s.name }}<span v-if="s.group" class="b-muted"> · {{ s.group }}</span></span>
               <span class="b-muted">{{ used(s.id) }}<template v-if="s.archived"> · Archived</template></span>
             </span>
             <span class="tools">
@@ -424,6 +424,11 @@ ul {
   padding: 0.35rem 0;
   border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
   font-size: var(--text-sm);
+}
+
+.sub-icon {
+  display: inline-block;
+  width: 1.6rem;
 }
 
 .add-sub {

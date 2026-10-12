@@ -4,7 +4,7 @@ import type {
 } from '~/utils/budget/types'
 import { converter, type Rate } from '~/utils/budget/calc'
 import { addDays, monthOf, today } from '~/utils/budget/dates'
-import { DEFAULTS_VERSION, SETTINGS_ID, defaultCategories, defaultSettings, missingDefaults } from '~/utils/budget/defaults'
+import { DEFAULTS_VERSION, SETTINGS_ID, defaultCategories, defaultSettings, missingDefaults, subIconUpdates } from '~/utils/budget/defaults'
 
 // The budget planner's data: one synced collection per kind of record, all named budget-*, kept on this
 // device and in step with Firestore through the shared sync engine (useCollection / utils/sync.ts).
@@ -140,6 +140,7 @@ function createStore() {
     if ((settingsRecord.value?.defaultsVersion ?? 0) >= DEFAULTS_VERSION) return
     const missing = missingDefaults(categories.items.value)
     if (missing.length) void writeToCollection('budget-categories', missing)
+    for (const u of subIconUpdates(categories.items.value)) categories.update(u.id, { icon: u.icon }, { quiet: true })
     updateSettings({ defaultsVersion: DEFAULTS_VERSION })
   }, { immediate: true })
 

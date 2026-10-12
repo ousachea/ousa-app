@@ -303,7 +303,7 @@ function del() {
           <div v-for="g in subGroups" :key="g.name" class="sub-group">
             <span v-if="g.name" class="mini-head">{{ g.name }}</span>
             <div class="chips">
-              <button v-for="s in g.items" :key="s.id" type="button" class="chip" :aria-pressed="form.subcategoryId === s.id" @click="form.subcategoryId = s.id; play('select')">{{ s.name }}</button>
+              <button v-for="s in g.items" :key="s.id" type="button" class="chip" :aria-pressed="form.subcategoryId === s.id" @click="form.subcategoryId = s.id; play('select')"><span aria-hidden="true">{{ s.icon }}</span>{{ s.name }}</button>
             </div>
           </div>
           <div class="chips">
