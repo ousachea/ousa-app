@@ -282,7 +282,7 @@ const suggestFor = (url: string, exceptId?: string) => {
 
 // Review before saving (CHECKLIST.md #43): what the page says about itself, editable, with folders.
 // Enter in the link box reads the page; Enter again (or Save) keeps it.
-const review = ref<{ url: string, title: string, description: string, icon: string, image: string, siteName: string, folders: string[], suggestion?: string, offline: boolean }>()
+const review = ref<{ url: string, title: string, description: string, note: string, pinned: boolean, icon: string, image: string, siteName: string, folders: string[], suggestion?: string, offline: boolean }>()
 const reviewTitle = ref<HTMLInputElement>()
 const reviewImageBroken = ref(false)
 
@@ -303,6 +303,7 @@ async function save(force = false) {
     return
   }
   duplicateOf.value = undefined
+  review.value = undefined
 
   saving.value = true
   // Read the page's title, description, image and icon; if the site won't say (or there's no internet), use its address
@@ -319,6 +320,8 @@ async function save(force = false) {
     url: finalUrl,
     title: preview?.title || hostOf(finalUrl),
     description: preview?.description ?? '',
+    note: '',
+    pinned: false,
     icon: preview?.icon || new URL('/favicon.ico', finalUrl).href,
     image: preview?.image ?? '',
     siteName: preview?.siteName || preview?.domain || hostOf(finalUrl),
@@ -337,12 +340,12 @@ function keepReviewed() {
     url: r.url,
     title: r.title.trim() || hostOf(r.url),
     description: r.description.trim(),
-    note: '',
+    note: r.note.trim(),
     tags: [],
     folders: r.folders,
     icon: r.icon,
     ...(r.image && !reviewImageBroken.value ? { image: r.image } : {}),
-    pinned: false,
+    pinned: r.pinned,
     visits: 0,
     createdAt: new Date().toISOString()
   })
@@ -360,6 +363,40 @@ function keepReviewed() {
 function cancelReview() {
   review.value = undefined
   nextTick(() => linkField.value?.focus())
+}
+
+// Pasting a link into an empty box reads the page straight away; no Enter needed
+function onLinkPaste(e: ClipboardEvent) {
+  const text = e.clipboardData?.getData('text').trim()
+  if (!text || linkInput.value.trim() || !parseLink(text)) return
+  e.preventDefault()
+  linkInput.value = text
+  save()
+}
+
+// A Paste button that reads the clipboard itself (the browser may ask once). Only shown where the browser allows it.
+const canReadClipboard = ref(false)
+onMounted(() => (canReadClipboard.value = !!navigator.clipboard?.readText))
+async function pasteFromClipboard() {
+  let text = ''
+  try {
+    text = (await navigator.clipboard.readText()).trim()
+  } catch {
+    toast.error('Couldn’t read the clipboard', { description: 'Allow clipboard access for this site, or paste with ⌘V / Ctrl+V.' })
+    play('error')
+    return focusField(linkField.value)
+  }
+  if (!text) {
+    toast('The clipboard is empty', { description: 'Copy a link first, then press Paste.' })
+    return focusField(linkField.value)
+  }
+  linkInput.value = text
+  if (parseLink(text)) save()
+  else {
+    toast.error('The clipboard doesn’t hold a link', { description: text.length > 60 ? `${text.slice(0, 60)}…` : text })
+    play('error')
+    focusField(linkField.value)
+  }
 }
 
 // ---------- Browse ----------
@@ -899,8 +936,8 @@ async function refreshAllDetails() {
     />
     <template #actions><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
 
-    <!-- 1: the address bar. Paste, press Enter, done -->
-    <Step :n="1" title="Save a link" hint="Paste any link and press Enter. Its title and icon fill in by themselves." class="save-step">
+    <!-- 1: the address bar. Paste a link, check what the page says, add a note or folder, save -->
+    <Step :n="1" title="Save a link" hint="Paste a link and the page’s title, picture and description fill in. Add a note, a folder or pin it, then save." class="save-step">
     <form v-validate data-validate-target class="omnibox" aria-label="Save a link" @submit.prevent="save()">
       <span class="omni-icon" aria-hidden="true"><ToolIcon name="bookmarks" /></span>
       <input
@@ -916,8 +953,16 @@ async function refreshAllDetails() {
         data-error="Paste a link first"
         v-check="linkInput.trim() && !parseLink(linkInput.trim()) ? 'That doesn’t look like a link. Try something like nuxt.com' : ''"
         :disabled="saving"
+        @paste="onLinkPaste"
       >
-      <button type="submit" class="btn" :disabled="saving">{{ saving ? 'Reading page…' : 'Save' }}</button>
+      <button v-if="canReadClipboard && !linkInput.trim() && !saving" type="button" class="omni-paste" title="Paste a link from the clipboard" @click="pasteFromClipboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9zM9 5.5H6.5A1.5 1.5 0 0 0 5 7v12.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5H15" /></svg>
+        Paste
+      </button>
+      <button type="submit" class="btn" :disabled="saving">
+        <span v-if="saving" class="omni-spinner" aria-hidden="true" />
+        {{ saving ? 'Reading page…' : 'Add' }}
+      </button>
     </form>
     <DuplicateCard
       v-if="duplicateOf"
@@ -930,7 +975,20 @@ async function refreshAllDetails() {
       @cancel="duplicateOf = undefined"
     />
 
-    <!-- Review before saving (#43): what the page says about itself, editable, plus folders -->
+    <!-- While the page is read: the shape of the card that's coming -->
+    <Transition name="slide-down">
+      <div v-if="saving" class="review panel review-loading" role="status" aria-label="Reading the page">
+        <div class="review-media"><span class="skeleton review-icon" /></div>
+        <div class="review-fields">
+          <span class="skeleton sk-line" style="width: 40%" />
+          <span class="skeleton sk-line sk-title" />
+          <span class="skeleton sk-line sk-desc" />
+          <span class="skeleton sk-line" style="width: 60%" />
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Review before saving (#43): what the page says about itself, editable, plus a note, folders and pin -->
     <Transition name="slide-down">
       <form v-if="review" class="review panel" aria-label="Review the bookmark before saving" @submit.prevent="keepReviewed" @keydown.esc.stop="cancelReview">
         <div class="review-media">
@@ -941,6 +999,7 @@ async function refreshAllDetails() {
           </span>
         </div>
         <div class="review-fields">
+          <p class="review-kicker">New bookmark</p>
           <p class="review-site">{{ review.siteName }} · <span class="review-url">{{ review.url }}</span></p>
           <p v-if="review.offline" class="review-note">Website details aren’t available offline. Your bookmark can still be saved; edit the title now or later.</p>
           <label class="field">
@@ -950,6 +1009,10 @@ async function refreshAllDetails() {
           <label class="field">
             <span class="sr-only">Description</span>
             <textarea v-model="review.description" class="input" rows="2" placeholder="Add a description" aria-label="Description" />
+          </label>
+          <label class="field">
+            <span class="field-head">Note <span class="optional">Optional</span></span>
+            <textarea v-model="review.note" class="input" rows="2" placeholder="Why you saved it, or what to look at" @keydown.enter.meta.prevent="keepReviewed" @keydown.enter.ctrl.prevent="keepReviewed" />
           </label>
           <div class="field">
             <span class="field-head">Folders <span class="optional">Optional</span></span>
@@ -962,6 +1025,10 @@ async function refreshAllDetails() {
             @use="review!.folders = [ensureFolder(review!.suggestion!)]"
             @ignore="review!.suggestion = undefined"
           />
+          <label class="pin-check">
+            <input v-model="review.pinned" type="checkbox">
+            Pin to the top
+          </label>
           <div class="review-actions">
             <button type="submit" class="btn">Save bookmark</button>
             <button type="button" class="btn btn-quiet" @click="cancelReview">Cancel</button>
@@ -1277,6 +1344,31 @@ async function refreshAllDetails() {
   gap: 0.6rem;
 }
 
+.review-kicker {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.review-loading .sk-line {
+  display: block;
+  height: 0.85rem;
+  border-radius: 6px;
+}
+
+.review-loading .sk-title {
+  height: 2.6rem;
+  border-radius: 10px;
+}
+
+.review-loading .sk-desc {
+  height: 3.6rem;
+  border-radius: 10px;
+}
+
 .review-site {
   margin: 0;
   font-size: var(--text-sm);
@@ -1449,6 +1541,59 @@ async function refreshAllDetails() {
   flex: none;
   border-radius: 999px;
   padding-inline: 1.3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.omni-paste {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.omni-paste:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.omni-paste:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.omni-paste svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.omni-spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: omni-spin 0.7s linear infinite;
+}
+
+@keyframes omni-spin {
+  to { transform: rotate(1turn); }
 }
 
 /* ---------- Pinned tiles ---------- */
