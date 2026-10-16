@@ -35,10 +35,44 @@ const pageCount = computed(() => 1 + Math.ceil(spots.value.size / PER_PAGE))
 
 const pager = ref<HTMLElement>()
 const page = ref(0)
+
+// Coming back from an app lands on the screen you left from, for as long as the tab is open.
+// Waits for hydration, since the pinned row can add a screen
+const PAGE_KEY = 'ousa-app:home-page'
+onMounted(() => {
+  let saved = 0
+  try {
+    saved = Number(sessionStorage.getItem(PAGE_KEY)) || 0
+  } catch {}
+  if (!saved) return
+  let restored = false
+  watch(hydrated, async (ready) => {
+    if (!ready || restored) return
+    restored = true
+    await nextTick()
+    const el = pager.value
+    if (!el) return
+    const p = Math.min(saved, pageCount.value - 1)
+    el.scrollLeft = p * el.clientWidth
+    page.value = p
+  }, { immediate: true })
+})
+
+// The app you just came back from glows for a moment, so you can find your place. Client-side
+// navigation only, so the server-rendered page never has it
+const cameFrom = useState<string | null>('came-from')
+const lastApp = ref<string | null>(null)
+onMounted(() => {
+  if (spots.value.has(cameFrom.value ?? '')) lastApp.value = cameFrom.value
+})
+
 function onPagerScroll() {
   const el = pager.value
   if (!el) return
   page.value = Math.round(el.scrollLeft / el.clientWidth)
+  try {
+    sessionStorage.setItem(PAGE_KEY, String(page.value))
+  } catch {}
   if (page.value > 0 && !swiped.value) {
     swiped.value = true
     try {
@@ -110,7 +144,7 @@ useAppSeo({
             :to="tool.to"
             v-bind="group.name === 'Pinned' ? reorderPins.bind(tool, i) : {}"
             class="tile"
-            :class="{ 'page-start': spots.get(tool.to)?.start }"
+            :class="{ 'page-start': spots.get(tool.to)?.start, 'last-app': lastApp === tool.to }"
             :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--on-accent': tool.onColor ?? '#fff', '--col': spots.get(tool.to)?.col, '--row': spots.get(tool.to)?.row }"
           >
             <span v-if="tool.demo" class="demo-badge" title="Open it and click the app’s icon to see it with example data">
@@ -283,6 +317,30 @@ h1 {
 .tile:active .sticker {
   transform: translateY(1px) scale(0.96);
   transition-duration: 0.08s;
+}
+
+/* The app you just came back from: a ring and glow in its own colour that fade out */
+.tile.last-app .sticker {
+  animation: last-app 2.4s ease-out 0.3s both;
+}
+
+@keyframes last-app {
+  0%, 40% {
+    box-shadow:
+      0 0 0 3px var(--plastic),
+      0 0 0 6px var(--accent),
+      inset 0 -5px 0 rgb(0 0 0 / 0.12),
+      inset 0 5px 8px rgb(255 255 255 / 0.25),
+      0 0 22px 4px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 3px var(--plastic),
+      0 0 0 4px var(--plastic-edge),
+      inset 0 -5px 0 rgb(0 0 0 / 0.12),
+      inset 0 5px 8px rgb(255 255 255 / 0.25),
+      0 0 0 transparent;
+  }
 }
 
 /* Apps you can try with sample data; same purple as the demo switch inside each app */

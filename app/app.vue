@@ -23,6 +23,7 @@ const bare = computed(() => route.path.startsWith('/og-card/'))
         <PullIndicator />
         <OfflineBadge />
         <MobileKeyboard />
+        <AppSplash />
       </ClientOnly>
       <GooeyToaster />
     </template>
