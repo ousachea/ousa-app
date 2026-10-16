@@ -451,7 +451,7 @@ const sort = useRemembered<Sort>('bookmarks-sort', 'newest', v => SORTS.some(s =
 type View = 'list' | 'grid' | 'compact'
 const VIEWS: View[] = ['list', 'grid', 'compact']
 const { prefs } = usePrefs()
-const view = useRemembered<View>('bookmarks-view', 'list', v => VIEWS.includes(v as View), () => prefs.defaultView)
+const view = smoothRef(useRemembered<View>('bookmarks-view', 'list', v => VIEWS.includes(v as View), () => prefs.defaultView))
 // Earlier versions kept the view under its own key
 onMounted(() => {
   try {
@@ -464,6 +464,12 @@ function setView(next: View) {
   if (view.value === next) return
   view.value = next
   play('select')
+}
+// Show or hide each page's preview image (og:image) on cards and list rows
+const showImages = useRemembered<boolean>('bookmarks-images', true, v => typeof v === 'boolean')
+function toggleImages() {
+  showImages.value = !showImages.value
+  play(showImages.value ? 'toggle-on' : 'toggle-off')
 }
 const searchInput = ref<HTMLInputElement>()
 
@@ -1122,11 +1128,21 @@ async function refreshAllDetails() {
                 <span class="sr-only">Compact</span>
               </button>
             </div>
+            <div v-if="view !== 'compact'" class="views">
+              <button type="button" class="view-btn" :aria-pressed="showImages" :title="showImages ? 'Hide preview images' : 'Show preview images'" @click="toggleImages">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" /><circle cx="9" cy="10" r="1.6" /><path d="M20.5 15.5l-4.5-4.5-8.5 8" /><path v-if="!showImages" d="M4 4l16 16" /></svg>
+                <span class="sr-only">Preview images</span>
+              </button>
+            </div>
           </div>
 
           <template v-if="shown.length">
-            <TransitionGroup tag="ul" name="list" class="marks" :class="[view === 'compact' ? ['list', 'compact'] : view, { selecting: sel.selecting }]">
+            <TransitionGroup tag="ul" name="list" class="marks" :class="[view === 'compact' ? ['list', 'compact'] : view, { 'selecting': sel.selecting, 'no-images': !showImages }]">
               <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ 'flash': flashId === b.id, 'picked': sel.has(b.id), 'is-pinned': b.pinned, 'is-dupe': duplicateIds.has(b.id) }" :draggable="finePointer && !sel.selecting ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @click.capture="sel.onRowClick($event, b.id)">
+                <!-- Pinned: a ribbon hanging from the top edge -->
+                <span v-if="b.pinned" class="pin-ribbon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg>
+                </span>
                 <!-- The page's own preview image: a cover on cards, a thumbnail in the list -->
                 <img v-if="b.image && view !== 'compact' && !brokenImages.has(b.image)" class="mark-image" :src="b.image" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenImages = new Set(brokenImages).add(b.image!)">
                 <!-- The icon doubles as the checkbox: always while selecting, and on hover with a mouse to start -->
@@ -1139,7 +1155,7 @@ async function refreshAllDetails() {
                   </label>
                 </span>
                 <div class="mark-body">
-                  <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<svg v-if="b.pinned" class="pin-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg><span v-if="b.pinned" class="sr-only"> (pinned)</span><svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
+                  <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<span v-if="b.pinned" class="sr-only"> (pinned)</span><svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
                   <span class="mark-meta">
                     <template v-if="b.siteName && b.siteName.toLowerCase() !== b.title.toLowerCase()">{{ b.siteName }} · </template>{{ hostOf(b.url) }} · added {{ ago(b.createdAt) }}<template v-if="b.visits"> · opened {{ b.visits }}×</template>
                     <button v-if="duplicateIds.has(b.id)" type="button" class="dupe-badge" title="Saved more than once. Open Find duplicates to merge them." @click="dupesOpen = true">Duplicate</button>
@@ -2032,34 +2048,53 @@ kbd {
   transition: opacity 0.15s;
 }
 
-/* Pinned: the accent edge stays on (list) or the card wears an accent border (grid), and a small pin
-   follows the title so it doesn't rest on colour alone */
-.marks.list .mark.is-pinned::before {
-  opacity: 1;
+/* Pinned: a ribbon with a pin hangs from the top edge, beside the icon in the list and at the
+   card's top-right corner in the grid. Its shape and pin carry the meaning, not colour alone. */
+.pin-ribbon {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0.15rem;
+  width: 0.8rem;
+  height: 1.2rem;
+  display: grid;
+  place-items: start center;
+  padding-top: 0.2rem;
   background: var(--pin-color);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%);
+  pointer-events: none;
 }
 
-.marks.grid .mark.is-pinned {
-  box-shadow: 0 0 0 2px var(--pin-color);
+.pin-ribbon svg {
+  width: 0.55rem;
+  height: 0.55rem;
+  fill: #fff;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.marks.grid .pin-ribbon {
+  left: auto;
+  right: 1rem;
+  width: 1.5rem;
+  height: 2.1rem;
+  padding-top: 0.4rem;
+}
+
+.marks.grid .pin-ribbon svg {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 /* Saved more than once: an amber edge or border and a Duplicate badge that opens Find duplicates */
-.marks.list .mark.is-dupe:not(.is-pinned)::before {
+.marks.list .mark.is-dupe::before {
   opacity: 1;
   background: var(--dupe-color);
 }
 
-.marks.grid .mark.is-dupe:not(.is-pinned) {
+.marks.grid .mark.is-dupe {
   box-shadow: 0 0 0 2px var(--dupe-color);
-}
-
-/* Both: blue edge for the pin, with an amber one just inside it */
-.marks.list .mark.is-pinned.is-dupe {
-  box-shadow: inset 6px 0 0 -3px var(--dupe-color);
-}
-
-.marks.grid .mark.is-pinned.is-dupe {
-  box-shadow: 0 0 0 2px var(--pin-color), 0 0 0 4px var(--dupe-color);
 }
 
 .dupe-badge {
@@ -2113,6 +2148,40 @@ kbd {
   }
 }
 
+/* The image toggle shrinks and fades the images rather than dropping them, so rows and cards
+   ease into their new size. A card's cover height comes from its width (cqi), which lets it animate. */
+.mark-image,
+.marks.grid .mark-image + .mark-icon {
+  transition: width 0.3s ease, height 0.3s ease, margin 0.3s ease, opacity 0.2s ease, box-shadow 0.3s ease;
+}
+
+.marks.grid .mark {
+  container-type: inline-size;
+}
+
+.marks.grid .mark-image {
+  height: calc((100cqi + 2rem) / 1.91);
+}
+
+.marks.list.no-images .mark-image {
+  width: 0;
+  margin-left: -0.9rem;
+  opacity: 0;
+  box-shadow: none;
+}
+
+/* Collapsed covers pull the gap back too, so the card lines up with ones that never had an image */
+.marks.grid.no-images .mark-image {
+  height: 0;
+  margin-top: -0.7rem;
+  opacity: 0;
+}
+
+.marks.grid.no-images .mark-image + .mark-icon {
+  margin-top: 0;
+  box-shadow: 0 0 0 3px transparent;
+}
+
 .details-btn {
   display: inline-flex;
   align-items: center;
@@ -2128,17 +2197,6 @@ kbd {
   stroke: currentColor;
   stroke-width: 2;
   stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.pin-mark {
-  width: 0.85em;
-  height: 0.85em;
-  margin-left: 0.35em;
-  vertical-align: -0.05em;
-  fill: var(--pin-color);
-  stroke: var(--pin-color);
-  stroke-width: 1.6;
   stroke-linejoin: round;
 }
 
@@ -2299,7 +2357,8 @@ kbd {
   color: var(--ink);
 }
 
-.view-btn[aria-checked='true'] {
+.view-btn[aria-checked='true'],
+.view-btn[aria-pressed='true'] {
   color: var(--ink);
   background: var(--surface);
   box-shadow: 0 1px 2px rgb(var(--shadow) / 0.15);
@@ -2319,7 +2378,6 @@ kbd {
   fill: currentColor;
   stroke: none;
 }
-
 /* Labels for screen readers only (the view buttons show icons) */
 .sr-only {
   position: absolute;
