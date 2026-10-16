@@ -1173,3 +1173,8 @@ html.keypad-open dialog[open] {
   bottom: var(--keypad, 0px);
   max-height: calc(100dvh - var(--keypad, 0px) - 1rem);
 }
+
+/* Netlify's own badge on netlify.app addresses; it isn't part of the app (see plugins/hide-netlify-badge.client.ts) */
+.nl-badge {
+  display: none !important;
+}
