@@ -19,8 +19,21 @@ const shown = computed(() => (!editing.value && props.display !== undefined ? pr
 const rev = ref(0)
 let cancelled = false
 
+// Home and End move to the start or end of this text (on a Mac they'd otherwise scroll the whole page)
+function caretTo(el: HTMLElement, end: boolean) {
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  range.collapse(!end)
+  const sel = window.getSelection()
+  sel?.removeAllRanges()
+  sel?.addRange(range)
+}
+
 function onKey(e: KeyboardEvent) {
-  if (e.key === 'Enter') {
+  if ((e.key === 'Home' || e.key === 'End') && !e.shiftKey) {
+    e.preventDefault()
+    caretTo(e.target as HTMLElement, e.key === 'End')
+  } else if (e.key === 'Enter') {
     e.preventDefault()
     ;(e.target as HTMLElement).blur()
   } else if (e.key === 'Escape') {

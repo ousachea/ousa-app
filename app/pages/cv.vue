@@ -1742,6 +1742,8 @@ h3 {
 }
 
 .service {
+  /* Its edit tools sit on its own top edge, not the sliding row's */
+  position: relative;
   flex: none;
   width: var(--card);
   display: flex;
