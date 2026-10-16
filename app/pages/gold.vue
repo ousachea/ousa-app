@@ -34,7 +34,9 @@ const DEMO = (): Omit<Purchase, 'id'>[] => [
   { weight: 2, unit: 'chi', price: 560, date: isoDaysAgo(500) },
   { weight: 5, unit: 'chi', price: 1650, date: isoDaysAgo(330) },
   { weight: 1, unit: 'damlung', price: 3900, date: isoDaysAgo(150) },
-  { weight: 0.5, unit: 'chi', price: 262, date: isoDaysAgo(20) }
+  { weight: 0.5, unit: 'chi', price: 262, date: isoDaysAgo(20) },
+  // Bought at a shop's high quote, so the demo shows a loss as well
+  { weight: 1, unit: 'chi', price: 620, date: isoDaysAgo(6) }
 ]
 const { items: purchases, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Purchase>('gold', undefined, { demo: DEMO, label: p => `${p.weight} ${p.unit} of gold` })
 // Signed out: offer Google sign-in right here, so purchases sync without a trip to Settings
@@ -45,7 +47,7 @@ const WORDS = {
   en: {
     li: 'Li', hun: 'Hun', chi: 'Chi', gram: 'Gram', damlung: 'Damlung', troyOz: 'Troy oz',
     spot: 'Gold spot price', perOz: 'per troy ounce', live: 'Live', custom: 'My price', refresh: 'Refresh',
-    byUnit: 'Price by unit', convert: 'Convert units', myGold: 'My gold', add: '+ Add purchase', noGold: 'No gold yet', noGoldText: 'Add the gold you bought and what you paid, and see what it’s worth at today’s price.',
+    byUnit: 'Price by unit', convert: 'Convert units', myGold: 'My gold', tabPrice: 'Price', tabUnits: 'Units', gained: 'Gained', lost: 'Lost', buys: 'buys', on: 'on', add: '+ Add purchase', noGold: 'No gold yet', noGoldText: 'Add the gold you bought and what you paid, and see what it’s worth at today’s price.',
     invested: 'Paid', worth: 'Worth now', gainLoss: 'Gain or loss', weight: 'Weight', paid: 'Paid', date: 'Date',
     step1: 'Check today’s price', step1Hint: 'Live from the world market. Switch to “My price” to use a shop’s quote.',
     step2: 'Choose your gold’s purity', step2Hint: 'Jewellery is often 22K or 18K, so it’s worth less than pure 24K gold.',
@@ -56,7 +58,7 @@ const WORDS = {
   km: {
     li: 'លី', hun: 'ហុន', chi: 'ជី', gram: 'ក្រាម', damlung: 'ដំឡឹង', troyOz: 'អោន',
     spot: 'តម្លៃមាសទីផ្សារ', perOz: 'ក្នុងមួយអោន', live: 'បន្តផ្ទាល់', custom: 'តម្លៃខ្ញុំ', refresh: 'ធ្វើបច្ចុប្បន្នភាព',
-    byUnit: 'តម្លៃតាមឯកតា', convert: 'បម្លែងឯកតា', myGold: 'មាសរបស់ខ្ញុំ', add: '+ បន្ថែមការទិញ', noGold: 'មិនទាន់មានមាសនៅឡើយ', noGoldText: 'បន្ថែមមាសដែលអ្នកបានទិញ និងតម្លៃដែលអ្នកបានបង់ ដើម្បីមើលថាវាមានតម្លៃប៉ុន្មាននៅថ្ងៃនេះ។',
+    byUnit: 'តម្លៃតាមឯកតា', convert: 'បម្លែងឯកតា', myGold: 'មាសរបស់ខ្ញុំ', tabPrice: 'តម្លៃ', tabUnits: 'ឯកតា', gained: 'ចំណេញ', lost: 'ខាត', buys: 'ការទិញ', on: 'លើ', add: '+ បន្ថែមការទិញ', noGold: 'មិនទាន់មានមាសនៅឡើយ', noGoldText: 'បន្ថែមមាសដែលអ្នកបានទិញ និងតម្លៃដែលអ្នកបានបង់ ដើម្បីមើលថាវាមានតម្លៃប៉ុន្មាននៅថ្ងៃនេះ។',
     invested: 'បានបង់', worth: 'តម្លៃឥឡូវ', gainLoss: 'ចំណេញ ឬខាត', weight: 'ទម្ងន់', paid: 'បានបង់', date: 'កាលបរិច្ឆេទ',
     step1: 'មើលតម្លៃថ្ងៃនេះ', step1Hint: 'តម្លៃផ្ទាល់ពីទីផ្សារពិភពលោក។ ប្តូរទៅ «តម្លៃខ្ញុំ» ដើម្បីប្រើតម្លៃហាង។',
     step2: 'ជ្រើសរើសភាពសុទ្ធនៃមាស', step2Hint: 'គ្រឿងអលង្ការជាញឹកញាប់ 22K ឬ 18K ដូច្នេះតម្លៃទាបជាងមាសសុទ្ធ 24K។',
@@ -93,6 +95,25 @@ const sort = useRemembered<(typeof SORTS)[number]['value']>('gold-sort', 'date-d
 const unitOptions = computed(() => UNITS.map(u => ({ value: u, label: w.value[u] })))
 
 const w = computed(() => WORDS[lang.value])
+
+// ---------- Phone tabs ----------
+// On phones the page splits into three screens behind a tab bar, like a native app: the price,
+// your gold, and the units. Wider screens show everything side by side and never see the bar
+const TABS = ['price', 'gold', 'units'] as const
+type Tab = typeof TABS[number]
+const tab = useRemembered<Tab>('gold-tab', 'price', v => TABS.includes(v as Tab))
+const workspace = ref<HTMLElement>()
+function pickTab(t: Tab) {
+  const el = workspace.value
+  // Scrolled down into the screen: the next one starts from its top, as does tapping the open tab
+  const past = el && el.getBoundingClientRect().top < 0
+  const same = t === tab.value
+  if (!same) {
+    tab.value = t
+    play('select')
+  }
+  if (past) nextTick(() => el.scrollIntoView({ block: 'start', behavior: same ? 'smooth' : 'instant' }))
+}
 
 // ---------- Price ----------
 interface Quote { price: number, status: 'live' | 'cached' | 'custom' | 'none', provider: string, at: string | null }
@@ -274,6 +295,12 @@ const fmtQty = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits:
 // ---------- Ledger ----------
 const valueOf = (p: Purchase) => perGram.value * grams(p.weight, p.unit)
 const gainOf = (p: Purchase) => valueOf(p) - p.price
+// A weight of gold the way it's counted here: chi, or damlung from 10 chi up
+function asGold(g: number) {
+  const chi = g / UNIT_GRAMS.chi
+  const [n, unit] = chi >= 10 ? [chi / 10, w.value.damlung] : [chi, w.value.chi]
+  return `${n.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${unit}`
+}
 
 // ---------- Cards catch the light ----------
 // On the price card and each purchase, a shine follows the pointer and the card tilts a little towards it,
@@ -309,7 +336,17 @@ const totals = computed(() => {
   const paid = purchases.value.reduce((s, p) => s + p.price, 0)
   const worth = purchases.value.reduce((s, p) => s + valueOf(p), 0)
   const g = purchases.value.reduce((s, p) => s + grams(p.weight, p.unit), 0)
-  return { paid, worth, gain: worth - paid, pct: paid ? (worth - paid) / paid * 100 : 0, grams: g, chi: g / UNIT_GRAMS.chi }
+  // Gains and losses kept apart, so a loss on one purchase still shows when the whole lot is up
+  // Gains and losses kept apart, with how much gold sits in each
+  const up = purchases.value.filter(p => gainOf(p) > 0)
+  const down = purchases.value.filter(p => gainOf(p) < 0)
+  const sum = (list: Purchase[], f: (p: Purchase) => number) => list.reduce((s, p) => s + f(p), 0)
+  const weight = (p: Purchase) => grams(p.weight, p.unit)
+  return {
+    paid, worth, gain: worth - paid, pct: paid ? (worth - paid) / paid * 100 : 0, grams: g, chi: g / UNIT_GRAMS.chi,
+    up: sum(up, gainOf), upCount: up.length, upGrams: sum(up, weight),
+    down: -sum(down, gainOf), downCount: down.length, downGrams: sum(down, weight)
+  }
 })
 
 const sorted = computed(() => {
@@ -584,9 +621,9 @@ const PURITIES: { value: Purity, label: string }[] = [
     </template>
 
     <ClientOnly>
-      <div class="workspace">
+      <div ref="workspace" class="workspace" :data-tab="tab">
         <!-- ===== Market ===== -->
-        <div v-sticky-fit class="market">
+        <div v-sticky-fit class="market pane-price">
           <!-- The quote: one gold bar of a card -->
           <Step :n="1" :title="w.step1" :hint="w.step1Hint">
             <section class="panel quote shine" aria-live="polite" @pointermove="onShineMove" @pointerleave="onShineLeave">
@@ -707,7 +744,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
         <!-- ===== Units and ledger ===== -->
         <div v-sticky-fit class="side">
-          <Step :n="3" :title="w.step3" :hint="w.step3Hint" class="ledger-step">
+          <Step :n="3" :title="w.step3" :hint="w.step3Hint" class="ledger-step pane-gold">
             <template #aside><span class="aside-tools"><BulkToggle v-if="purchases.length" :select="sel" /><DataSource :sync="sync" /></span></template>
 
             <div v-if="purchases.length" class="panel summary">
@@ -719,6 +756,24 @@ const PURITIES: { value: Purity, label: string }[] = [
                 <small>{{ totals.pct >= 0 ? '+' : '' }}{{ totals.pct.toFixed(1) }}%</small>
               </div>
               <div><span>{{ w.weight }}</span><strong>{{ fmtQty(totals.chi) }} {{ w.chi }}</strong><small>{{ fmtQty(totals.grams) }} g</small></div>
+            </div>
+
+            <!-- How much is up and how much is down, side by side on one bar -->
+            <div v-if="purchases.length && spot" class="panel pl" :aria-label="`${w.gained} ${money(totals.up)} on ${asGold(totals.upGrams)}; ${w.lost} ${money(totals.down)} on ${asGold(totals.downGrams)}`">
+              <div class="pl-bar" aria-hidden="true">
+                <i class="pl-up" :style="{ flexGrow: totals.up }" />
+                <i class="pl-down" :style="{ flexGrow: totals.down }" />
+              </div>
+              <div class="pl-legend">
+                <span class="up">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+                  {{ w.gained }} <strong>{{ money(totals.up) }}</strong><small>{{ w.on }}</small><em>{{ asGold(totals.upGrams) }}</em><small>· {{ totals.upCount }} {{ w.buys }}</small>
+                </span>
+                <span class="down" :class="{ none: !totals.downCount }">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+                  {{ w.lost }} <strong>{{ money(totals.down) }}</strong><small>{{ w.on }}</small><em>{{ asGold(totals.downGrams) }}</em><small>· {{ totals.downCount }} {{ w.buys }}</small>
+                </span>
+              </div>
             </div>
 
             <!-- With nothing added yet, the empty card below has the one Add button -->
@@ -799,7 +854,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
           </Step>
 
-          <Step :title="w.byUnit">
+          <Step :title="w.byUnit" class="pane-units">
             <ul v-if="spot" class="units">
               <li v-for="u in UNITS" :key="u" :class="{ lead: u === 'chi' || u === 'damlung' }">
                 <span class="u-name">{{ w[u] }}</span>
@@ -810,7 +865,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             <p v-else class="panel pad muted">Waiting for a price…</p>
           </Step>
 
-          <Step :title="w.convert">
+          <Step :title="w.convert" class="pane-units">
             <div class="panel pad convert">
               <div class="convert-row">
                 <input v-model.number="convAmount" class="input" type="number" min="0" step="any" inputmode="decimal" aria-label="Amount to convert">
@@ -829,6 +884,19 @@ const PURITIES: { value: Purity, label: string }[] = [
           </Step>
         </div>
       </div>
+
+      <!-- Phones only (CSS): the bar of tabs at the foot of the screen; the bulk bar takes its place while selecting -->
+      <nav v-if="!sel.selecting" class="tab-bar" aria-label="Gold tracker">
+        <button v-for="t in TABS" :key="t" type="button" :class="{ active: tab === t }" :aria-current="tab === t ? 'page' : undefined" @click="pickTab(t)">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path v-if="t === 'price'" d="M3 17l6-6 4 4 8-8M15 7h6v6" />
+            <path v-else-if="t === 'gold'" d="M4 20h16M6 20l1.5-5h9L18 20M8.5 15L10 10h4l1.5 5M10.6 10l1.4-5 1.4 5" />
+            <path v-else d="M12 4v16M8 20h8M5 8h14M5 8l-2.5 6a2.5 2.5 0 0 0 5 0zM19 8l-2.5 6a2.5 2.5 0 0 0 5 0z" />
+          </svg>
+          <span>{{ t === 'price' ? w.tabPrice : t === 'gold' ? w.myGold : w.tabUnits }}</span>
+          <i v-if="t === 'gold' && purchases.length" class="tab-count">{{ purchases.length }}</i>
+        </button>
+      </nav>
 
       <Modal :open="formOpen" :title="editingId ? 'Edit purchase' : 'Add a purchase'" @close="formOpen = false">
         <form v-validate class="form" @submit.prevent="savePurchase">
@@ -1336,6 +1404,80 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 /* ---------- Ledger ---------- */
+/* Gained against lost: one bar split green and red, with the two totals under it */
+.pl {
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pl-bar {
+  display: flex;
+  gap: 3px;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.pl-bar i {
+  flex-basis: 0;
+  min-width: 0;
+  border-radius: 999px;
+  transition: flex-grow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.pl-up { background: var(--good-ink); }
+.pl-down { background: var(--bad-ink); }
+
+.pl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+.pl-legend span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.pl-legend svg {
+  align-self: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pl-legend .up svg,
+.pl-legend .up strong { color: var(--good-ink); }
+.pl-legend .down svg,
+.pl-legend .down strong { color: var(--bad-ink); }
+.pl-legend .down.none { opacity: 0.55; }
+
+.pl-legend strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-legend em {
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.pl-legend small {
+  color: var(--ink-3);
+}
+
 .summary {
   padding: 1rem 1.1rem;
   display: grid;
@@ -1738,5 +1880,197 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .purchase[data-bulk] .p-head {
   padding-left: 2.2rem;
+}
+/* ---------- Phones: a native-app layout ----------
+   One screen at a time behind a floating tab bar, still walked through in numbered steps; the units
+   and converter become grouped lists of rows */
+.tab-bar {
+  display: none;
+}
+
+@media (max-width: 719.98px) {
+  .workspace {
+    gap: 1.5rem;
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    scroll-margin-top: var(--pin-top, 0px);
+  }
+
+  .workspace:not([data-tab='price']) .pane-price,
+  .workspace:not([data-tab='gold']) .pane-gold,
+  .workspace:not([data-tab='units']) .pane-units,
+  .workspace[data-tab='price'] .side {
+    display: none;
+  }
+
+  /* Each screen eases in as its tab opens (the animation restarts whenever it comes back into view) */
+  .pane-price,
+  .pane-gold,
+  .pane-units {
+    animation: tab-in 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* The heading and Select share one row, Select reading as a plain text button */
+  .workspace :deep(.step-head) {
+    flex-wrap: nowrap;
+  }
+
+  .workspace :deep(.step-main) {
+    flex: 1 1 auto;
+  }
+
+  .aside-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .workspace :deep(.bulk-toggle) {
+    min-height: 2rem;
+    padding: 0.25rem 0.5rem;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--gold) 70%, var(--ink));
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  /* Price by unit: one card of rows, name and weight on the left, price on the right */
+  .units {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+  }
+
+  .units li,
+  .units li.lead {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 3.1rem;
+    padding: 0.6rem 1rem;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .units li:not(.lead) {
+    background: none;
+  }
+
+  .units li + li {
+    box-shadow: inset 0 1px 0 var(--line);
+  }
+
+  .u-grams {
+    margin-right: auto;
+  }
+
+  .units strong {
+    width: auto;
+    font-size: 1.05rem;
+  }
+
+  /* Converter: the results read as a list, one unit a row */
+  .convert-out {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .convert-out div {
+    padding: 0.7rem 0;
+  }
+
+  /* The tab bar: a pane of frosted glass floating over the foot of the page */
+  .tab-bar {
+    position: fixed;
+    z-index: 80;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.35rem;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    box-shadow: 0 12px 32px -14px rgb(0 0 0 / 0.4);
+    backdrop-filter: blur(18px) saturate(1.6);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  }
+
+  .tab-bar button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.45rem 0 0.4rem;
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--ink-3);
+    background: none;
+    border: 0;
+    border-radius: 18px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.2s, background-color 0.2s, transform 0.15s;
+  }
+
+  .tab-bar button:active {
+    transform: scale(0.94);
+  }
+
+  .tab-bar button.active {
+    color: color-mix(in srgb, var(--gold) 70%, var(--ink));
+    background: color-mix(in srgb, var(--gold) 15%, transparent);
+  }
+
+  .tab-bar svg {
+    width: 1.45rem;
+    height: 1.45rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tab-count {
+    position: absolute;
+    top: 0.2rem;
+    left: calc(50% + 0.5rem);
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.3rem;
+    display: grid;
+    place-items: center;
+    font-size: 0.65rem;
+    font-style: normal;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #1b1f2a;
+    background: var(--gold);
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+}
+
+@keyframes tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pane-price,
+  .pane-gold,
+  .pane-units {
+    animation: none;
+  }
 }
 </style>
