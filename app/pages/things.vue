@@ -109,6 +109,11 @@ function openAdd() {
   draft.check()
   play('open')
 }
+// The quick-add row in step 1: opens the form with the type already picked
+function openAddAs(key: string) {
+  openAdd()
+  chooseType(key)
+}
 // Continuing a draft skips straight to its details
 function resumeDraft() {
   draft.resume()
@@ -220,7 +225,7 @@ function filterByCategory(category: string) {
 }
 
 // Cards or a compact list (#15)
-const view = smoothRef(useRemembered<'cards' | 'list'>('things-view', 'cards', v => v === 'cards' || v === 'list'))
+const view = smoothRef(useRemembered<'cards' | 'grid' | 'list'>('things-view', 'cards', v => v === 'cards' || v === 'grid' || v === 'list'))
 
 const sort = useRemembered<(typeof SORTS)[number]['value']>('things-sort', 'added', v => SORTS.some(s => s.value === v))
 
@@ -480,7 +485,7 @@ function del(t: Thing) {
   <ToolPage header="band">
     <template #settings>
       <SettingChoice v-model="sort" title="Sort by" description="How the list is ordered when you open it." :options="SORTS" />
-      <SettingChoice v-model="view" title="Show as" :options="[{ value: 'cards', label: 'Cards' }, { value: 'list', label: 'List' }]" />
+      <SettingChoice v-model="view" title="Show as" :options="[{ value: 'cards', label: 'Cards' }, { value: 'grid', label: 'Grid' }, { value: 'list', label: 'List' }]" />
       <SettingChoice v-model="lastCurrency" title="New items in" description="The currency a new item starts in." :options="[{ value: 'USD', label: 'Dollars' }, { value: 'KHR', label: 'Riel' }]" />
       <SettingChoice v-model="lastCategory" title="New items are" description="The kind a new item starts as." :options="NEW_TYPES.map(t => ({ value: t.key, label: t.label }))" />
     </template>
@@ -633,8 +638,22 @@ function del(t: Thing) {
     </Modal>
 
         <ClientOnly>
-          <template v-if="ready && items.length">
-            <section class="panel summary">
+          <!-- Three numbered steps, the way every app here walks you through it -->
+          <div v-if="ready" class="steps">
+          <!-- Hands the sync state to the dot on the app icon; draws nothing here -->
+          <DataSource :sync="sync" />
+          <!-- In a card, since it overlaps the coloured band at the top of the page -->
+          <Step :n="1" title="Add what you own" hint="Pick what it is, then enter what you paid." class="panel add-step">
+            <div class="quick-add" role="group" aria-label="Add something you own">
+              <button v-for="t in NEW_TYPES" :key="t.key" type="button" class="quick-type" :style="categoryStyle(t.key)" @click="openAddAs(t.key)">
+                <span class="cat-option-icon"><CategoryIcon :name="t.icon" /></span>
+                {{ t.label }}
+              </button>
+            </div>
+          </Step>
+
+          <Step :n="2" title="See what it’s all worth" hint="Each thing loses value with age; we estimate it unless you enter a resale price.">
+            <section v-if="items.length" class="panel summary">
               <div class="totals">
                 <span class="label">Worth now</span>
                 <strong class="worth">{{ rate ? formatMoney(totals.now, 'USD') : '…' }}</strong>
@@ -705,14 +724,18 @@ function del(t: Thing) {
                 </ul>
               </div>
             </section>
+            <p v-else class="panel step-empty">Your totals, and where the value is, show here once you add something.</p>
+          </Step>
 
+          <Step :n="3" title="Find and sort your things" hint="Search, filter or tap a category above. Long-press a thing for more.">
+            <template v-if="items.length">
             <div v-sticky-bar class="toolbar">
-              <DataSource :sync="sync" />
               <BulkToggle v-if="items.length" :select="sel" />
               <input v-model="query" class="input search" type="search" placeholder="Search your things" aria-label="Search your things">
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
               <div class="views segmented" role="radiogroup" aria-label="View">
                 <label :class="{ active: view === 'cards' }"><input v-model="view" type="radio" name="things-view" value="cards">Cards</label>
+                <label :class="{ active: view === 'grid' }"><input v-model="view" type="radio" name="things-view" value="grid">Grid</label>
                 <label :class="{ active: view === 'list' }"><input v-model="view" type="radio" name="things-view" value="list">List</label>
               </div>
               <!-- Filters (#47): only the ones your things have values for; folded away on phones -->
@@ -788,12 +811,9 @@ function del(t: Thing) {
               Nothing matches{{ query ? ` “${query}”` : ' these filters' }}.
               <button type="button" class="link" @click="query = ''; clearFilters()">Show everything</button>
             </p>
-          </template>
-
-          <div v-else-if="ready" class="panel">
-            <EmptyState title="Nothing here yet" icon="things" action="+ Add your first item" @action="openAdd">
-              Add your phone, laptop or anything valuable to see what you paid, what it’s worth today, and where your money went.
-            </EmptyState>
+            </template>
+            <p v-else class="panel step-empty">Your things show up here as cards, with what you paid, what each is worth now and how much of its price it keeps.</p>
+          </Step>
           </div>
           <SkeletonList v-else variant="cards" :count="3" label="Loading your things" />
           <template #fallback><SkeletonList variant="cards" :count="3" label="Loading your things" /></template>
@@ -807,6 +827,90 @@ function del(t: Thing) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+/* ---------- Steps ---------- */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.add-step {
+  padding: 1.25rem;
+  overflow: hidden;
+}
+
+.step-empty {
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+/* Step 1: one tap on a type opens the form with it picked. A wrapping grid on wide screens, a row
+   you swipe through on phones */
+.quick-add {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.quick-type {
+  padding: 0.75rem 0.3rem 0.6rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.quick-type .cat-option-icon {
+  background: color-mix(in srgb, var(--cat) 12%, transparent);
+}
+
+.quick-type:hover {
+  color: var(--ink);
+  border-color: var(--cat);
+}
+
+.quick-type:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 719.98px) {
+  .quick-add {
+    display: flex;
+    gap: 0.5rem;
+    /* Edge to edge of its card, so the row slides off the side like a native carousel */
+    margin-inline: -1.25rem;
+    padding: 0.1rem 1.25rem 0.25rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 1.25rem;
+    scrollbar-width: none;
+  }
+
+  .quick-add::-webkit-scrollbar {
+    display: none;
+  }
+
+  .quick-type {
+    flex: none;
+    width: 5.5rem;
+    scroll-snap-align: start;
+  }
 }
 
 /* ---------- Summary: totals on the left, where the value is on the right ---------- */
@@ -1564,6 +1668,80 @@ function del(t: Thing) {
   .views {
     margin-left: auto;
   }
+}
+
+/* ---------- Grid view: small tiles, several to a row (two on a phone) ----------
+   Each tile keeps what you'd scan for: the icon, the name, what it's worth now and how much of its
+   price it keeps. What you paid, the specs and notes are a tap away in Cards or by editing */
+.things.grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
+  gap: 0.6rem;
+}
+
+.things.grid .thing {
+  padding: 0.85rem 0.85rem 0.7rem;
+  gap: 0.55rem;
+  border-radius: 16px;
+}
+
+.things.grid .thing-head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.things.grid .thing-title strong {
+  font-size: 0.95rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.things.grid .thing-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.things.grid .spec-line,
+.things.grid .thing-notes,
+.things.grid .compare .col:not(.end),
+.things.grid .compare .arrow,
+.things.grid .compare .k {
+  display: none;
+}
+
+.things.grid .compare {
+  margin-top: auto;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+  background: none;
+}
+
+.things.grid .col.end {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 0.4rem;
+  text-align: left;
+}
+
+.things.grid .col b {
+  font-size: 1.05rem;
+}
+
+.things.grid .kept {
+  gap: 0.45rem;
+}
+
+.things.grid .kept-text {
+  font-size: 0.7rem;
+}
+
+.things.grid .links {
+  font-size: 0.8rem;
 }
 
 /* ---------- List view: one row per thing ---------- */
