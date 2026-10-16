@@ -89,6 +89,12 @@ function openAdd() {
   draft.check()
   play('open')
 }
+// Step 1's quick picks: the form opens with the name filled in, so its category and icon follow
+const QUICK_SERVICES = ['Netflix', 'Spotify', 'YouTube Premium', 'iCloud+', 'Google One', 'ChatGPT Plus', 'Smart', 'Cellcard', 'Metfone', 'Microsoft 365']
+function openAddAs(name: string) {
+  openAdd()
+  form.name = name
+}
 
 // Conversions go through the shared helpers in utils/exchange.ts (#57)
 const usdOf = (r: Pick<Renewal, 'price' | 'currency'>) => toUsd(r.price, r.currency, rate.value)
@@ -441,8 +447,22 @@ function del(r: Renewal) {
 
     <!-- Read like a billing statement: one centred column -->
     <div class="statement">
-      <Step title="What you’re paying for" class="list-step">
-        <template #aside><ClientOnly><span class="aside-tools"><BulkToggle v-if="items.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly></template>
+      <!-- Three numbered steps, the way every app here walks you through it -->
+      <ClientOnly><DataSource :sync="sync" /></ClientOnly>
+      <Step :n="1" title="Add what you pay for" hint="Streaming, cloud storage, your phone plan: anything that renews. Tap one, or add your own." class="add-step">
+        <div class="panel quick-add" role="group" aria-label="Add a subscription">
+          <button v-for="name in QUICK_SERVICES" :key="name" type="button" class="quick-service" @click="openAddAs(name)">
+            <RenewalIcon :name="name" />
+            <span>{{ name }}</span>
+          </button>
+          <button type="button" class="quick-service other" @click="openAdd">
+            <span class="plus" aria-hidden="true">+</span>
+            <span>Something else</span>
+          </button>
+        </div>
+      </Step>
+
+      <Step :n="2" title="See what it all costs" hint="Spread over a day, a month or a year, and what renews in the next 30 days." class="cost-step">
         <ClientOnly>
           <template v-if="ready && items.length">
             <section class="panel summary">
@@ -495,7 +515,17 @@ function del(r: Renewal) {
               </div>
               <p v-if="!timeline.length" class="quiet">Nothing renews in the next 30 days.</p>
             </section>
+          </template>
+          <p v-else-if="ready" class="panel step-empty">Your total, and a timeline of what’s coming up, show here once you add something.</p>
+          <SkeletonList v-else label="Loading your renewals" />
+          <template #fallback><SkeletonList label="Loading your renewals" /></template>
+        </ClientOnly>
+      </Step>
 
+      <Step :n="3" title="Know what’s due next" hint="Soonest first, counting down to each charge. Add one to your calendar, or long-press it for more." class="list-step">
+        <template #aside><ClientOnly><BulkToggle v-if="items.length" :select="sel" /></ClientOnly></template>
+        <ClientOnly>
+          <template v-if="ready && items.length">
             <div class="list-head">
               <h3>{{ items.length }} {{ items.length === 1 ? 'subscription' : 'subscriptions' }}</h3>
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
@@ -540,13 +570,7 @@ function del(r: Renewal) {
             </TransitionGroup>
           </template>
 
-          <div v-else-if="ready" class="panel">
-            <EmptyState title="No renewals yet" icon="renewals" action="+ Add renewal" @action="openAdd">
-              Track subscriptions and recurring payments, like streaming, cloud storage or your phone plan, so you never forget an upcoming charge.
-            </EmptyState>
-          </div>
-          <SkeletonList v-else label="Loading your renewals" />
-          <template #fallback><SkeletonList label="Loading your renewals" /></template>
+          <p v-else-if="ready" class="panel step-empty">Each subscription shows here with a countdown to its next charge.</p>
         </ClientOnly>
       </Step>
     </div>
@@ -558,6 +582,86 @@ function del(r: Renewal) {
 .statement {
   max-width: 880px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.step-empty {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+/* Step 1: well-known services, one tap each. Wraps on wide screens, swipes sideways on phones */
+.quick-add {
+  padding: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.quick-service {
+  padding: 0.7rem 0.4rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.quick-service:hover {
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.quick-service:active {
+  transform: scale(0.95);
+}
+
+.quick-service .plus {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, var(--line));
+  border-radius: 12px;
+}
+
+@media (max-width: 719.98px) {
+  .quick-add {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.75rem;
+    scrollbar-width: none;
+  }
+
+  .quick-add::-webkit-scrollbar {
+    display: none;
+  }
+
+  .quick-service {
+    flex: none;
+    width: 6rem;
+    scroll-snap-align: start;
+  }
 }
 
 /* Wide screens: the timeline gets the full width and the subscriptions sit side by side */

@@ -260,9 +260,10 @@ function del(e: CountdownEvent) {
     </template>
 
     <div class="workspace" :class="{ 'no-holidays': !cdPrefs.holidays }">
-      <!-- One-row add bar resting on the band -->
-      <div class="form-step">
-        <form v-validate class="panel form" aria-label="Add a date" @submit.prevent="save">
+      <!-- Three numbered steps, the way every app here walks you through it. The first is a card
+           resting on the band, so its heading isn't on the colour -->
+      <Step :n="1" title="Add a date" hint="A birthday, a trip, a deadline. Add a time if it matters to the minute." class="panel form-step">
+        <form v-validate class="form" aria-label="Add a date" @submit.prevent="save">
           <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
           <label class="field">
             <span class="field-head">What’s happening?</span>
@@ -282,9 +283,9 @@ function del(e: CountdownEvent) {
             <button type="submit" class="btn">Start countdown</button>
           </div>
         </form>
-      </div>
+      </Step>
 
-      <Step title="Coming up" v-sticky-fit class="list-step">
+      <Step :n="2" title="Watch it count down" hint="The next one gets the big clock. Add any of them to your calendar, or long-press one to edit it." v-sticky-fit class="list-step">
         <template #aside><ClientOnly><span class="aside-tools"><BulkToggle v-if="items.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
@@ -359,17 +360,13 @@ function del(e: CountdownEvent) {
             </section>
           </template>
 
-          <div v-else-if="ready" class="panel">
-            <EmptyState title="No countdowns yet" icon="countdown" action="Add a date" @action="focusField(titleInput)">
-              Count down to a birthday, a trip or a deadline, and see how much of the wait is behind you.
-            </EmptyState>
-          </div>
+          <p v-else-if="ready" class="panel step-empty">Your next date shows here with a live clock, and how much of the wait is behind you.</p>
           <SkeletonList v-else variant="cards" :count="2" label="Loading your countdowns" />
           <template #fallback><SkeletonList variant="cards" :count="2" label="Loading your countdowns" /></template>
         </ClientOnly>
       </Step>
 
-      <Step v-if="cdPrefs.holidays" title="Cambodian public holidays" hint="Official days off. Lunar dates move every year, so they’re fetched fresh." v-sticky-fit class="holiday-step">
+      <Step v-if="cdPrefs.holidays" :n="3" title="Plan around public holidays" hint="Official days off. Lunar dates move every year, so they’re fetched fresh." v-sticky-fit class="holiday-step">
         <ClientOnly>
           <div v-if="holidayStatus === 'error' && !holidayData" class="panel holiday-msg">
             <p><strong>Couldn’t load the holiday list</strong></p>
@@ -464,13 +461,24 @@ function del(e: CountdownEvent) {
 }
 
 /* Add bar: what, date, time and the button on one line */
+.form-step.panel {
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 12px 30px -14px rgb(var(--shadow) / 0.35);
+}
+
+.step-empty {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
 .form {
-  padding: 1rem 1.1rem;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 0.75rem 1rem;
-  box-shadow: 0 12px 30px -14px rgb(var(--shadow) / 0.35);
 }
 
 .form > .field {

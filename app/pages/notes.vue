@@ -2099,8 +2099,11 @@ kbd {
     display: block;
   }
 
-  /* No numbered steps: the screens themselves are the flow */
-  .notes-app :deep(.step-head),
+  /* Each screen keeps its numbered step on top, so it's clear where you are in the flow */
+  .notes-app :deep(.step-head) {
+    margin-bottom: 0.75rem;
+  }
+
   .new-row,
   .sort,
   .list-tools {
