@@ -189,7 +189,27 @@ const draft = useDraft('eat', form, {
   summary: f => [f.name, f.note, f.kind === 'place' ? 'A place' : 'A food']
 })
 onMounted(() => draft.check())
-useAddAction(() => focusField(nameField.value))
+useAddAction(() => openAdd())
+
+// ---------- Phones: adding opens as a sheet from the foot of the screen ----------
+// One form either way: on wide screens it sits in step 3, on phones CSS lifts it into a sheet
+const PHONE = '(max-width: 719.98px)'
+const addOpen = ref(false)
+function openAdd() {
+  if (matchMedia(PHONE).matches) {
+    addOpen.value = true
+    document.documentElement.style.overflow = 'hidden'
+    play('open')
+    nextTick(() => nameField.value?.focus({ preventScroll: true }))
+  } else {
+    focusField(nameField.value)
+  }
+}
+function closeAdd() {
+  if (!addOpen.value) return
+  addOpen.value = false
+  document.documentElement.style.overflow = focus.value ? 'hidden' : ''
+}
 
 async function save() {
   if (!form.name.trim() || saving.value) return
@@ -223,6 +243,7 @@ async function save() {
   Object.assign(form, { name: '', note: '', imageUrl: '' })
   clearPhoto()
   saving.value = false
+  closeAdd()
 }
 
 onBeforeUnmount(() => {
@@ -390,6 +411,11 @@ function setFocus(on: boolean) {
 }
 
 function onFocusKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && addOpen.value && !document.querySelector('dialog[open]')) {
+    e.preventDefault()
+    closeAdd()
+    return
+  }
   if (e.key === 'Escape' && focus.value && !document.querySelector('dialog[open]')) {
     e.preventDefault()
     setFocus(false)
@@ -509,7 +535,9 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     </template>
     <!-- Centre stage: the deck. Managing the list lives underneath (beside it on wide screens). -->
     <div class="eat-layout">
-    <section v-sticky-fit class="stage-area" :class="{ focus }" :role="focus ? 'dialog' : undefined" :aria-modal="focus || undefined" aria-label="Swipe to decide">
+    <!-- Three numbered steps, the way every app here walks you through it -->
+    <Step v-sticky-fit :n="1" title="Swipe to decide" hint="Right adds it to your shortlist, left skips it. Arrow keys work too." class="deck-step">
+    <section class="stage-area" :class="{ focus }" :role="focus ? 'dialog' : undefined" :aria-modal="focus || undefined" aria-label="Swipe to decide">
       <!-- Focus mode: how many cards are left, and the way out -->
       <div v-if="focus" class="focus-bar">
         <span class="focus-count">{{ deck.length ? `${deck.length} ${deck.length === 1 ? 'card' : 'cards'} left` : 'All done' }}</span>
@@ -521,13 +549,14 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             <input v-model="filter" type="radio" name="filter" :value="f.value">{{ f.label }}
           </label>
         </div>
-        <ClientOnly><DataSource v-if="!focus" :sync="sync" /></ClientOnly>
+        <ClientOnly><DataSource :sync="sync" /></ClientOnly>
         <button v-if="!focus" type="button" class="btn btn-quiet btn-sm focus-btn" title="Swipe full screen" @click="setFocus(true)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
           Focus
         </button>
       </div>
-      <p class="how">Swipe right to add to your shortlist, left to skip. Arrow keys work too.<template v-if="focus"> Esc to leave.</template></p>
+      <!-- Off full screen, step 1's hint says this -->
+      <p v-if="focus" class="how">Swipe right to add to your shortlist, left to skip. Arrow keys work too. Esc to leave.</p>
 
       <ClientOnly>
         <div ref="stageEl" class="stage" tabindex="0" aria-label="Food cards. Use the left and right arrow keys to decide." @keydown="onKey">
@@ -620,7 +649,8 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           <button type="button" class="btn round" aria-label="Add to shortlist" @click="decide('right')">♥</button>
         </div>
 
-        <!-- Everything swiped right so far -->
+        <!-- Step 2: everything swiped right so far. Full screen, only the chips show -->
+        <Step :n="2" title="Pick from your shortlist" hint="Compare them two at a time until one is left, or let the app choose." class="shortlist-step">
         <section v-if="shortlist.length" class="shortlist" aria-label="Your shortlist">
           <span class="shortlist-label">Shortlist</span>
           <TransitionGroup tag="ul" name="chip" class="chips">
@@ -635,17 +665,23 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             Narrow it down
           </button>
         </section>
+        <p v-else class="panel step-empty">Swipe right on a few and they gather here.</p>
+        </Step>
       </ClientOnly>
     </section>
+    </Step>
 
-    <section class="manage" aria-labelledby="manage-title">
-      <div class="manage-head">
-        <h2 id="manage-title">Your foods and places</h2>
-        <ClientOnly><BulkToggle v-if="items.length" :select="sel" /></ClientOnly>
-      </div>
+    <Step :n="3" title="Add your own foods and places" hint="Give each a photo and a price; it joins the deck straight away." class="manage">
+      <template #aside><ClientOnly><BulkToggle v-if="items.length" :select="sel" /></ClientOnly></template>
+      <!-- Phones: the form opens as a sheet from this button -->
+      <button type="button" class="btn add-open" @click="openAdd">+ Add a food or place</button>
       <div class="manage-grid">
-        <form v-validate class="panel form" @submit.prevent="save">
-          <h3>Add one</h3>
+        <div v-if="addOpen" class="sheet-backdrop" aria-hidden="true" @click="closeAdd" />
+        <form v-validate class="panel form" :class="{ open: addOpen }" @submit.prevent="save">
+          <div class="form-head">
+            <h3>Add one</h3>
+            <button type="button" class="link sheet-close" @click="closeAdd">Cancel</button>
+          </div>
           <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
           <div class="segmented" role="radiogroup" aria-label="Type">
             <label :class="{ active: form.kind === 'food' }"><input v-model="form.kind" type="radio" value="food">A food</label>
@@ -708,7 +744,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           </TransitionGroup>
         </ClientOnly>
       </div>
-    </section>
+    </Step>
     </div>
     <Modal :open="!!editingId" :title="editingSpot ? `Edit ${editingSpot.name}` : 'Edit'" @close="cancelEdit">
       <form v-validate class="form edit-form" @submit.prevent="saveEdit">
@@ -761,16 +797,8 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 </template>
 
 <style scoped>
-.manage-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.manage-head h2 {
-  margin: 0;
+.deck-step {
+  min-width: 0;
 }
 
 .stage-area {
@@ -807,7 +835,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     align-items: start;
   }
 
-  .stage-area {
+  .deck-step {
     position: sticky;
     top: var(--pin-top);
   }
@@ -818,8 +846,106 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   }
 }
 
-.manage-head h2 {
-  font-size: 1.25rem;
+.shortlist-step {
+  width: min(640px, 100%);
+  margin-top: 2rem;
+}
+
+/* Full screen it's just the deck and the chips, without the step's heading */
+.stage-area.focus .shortlist-step {
+  margin-top: 0;
+}
+
+.stage-area.focus .shortlist-step :deep(.step-head),
+.stage-area.focus .step-empty {
+  display: none;
+}
+
+.step-empty {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+.form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Wide screens: the form sits in the page, so there's no button to open it or Cancel to close it */
+.add-open,
+.sheet-close,
+.sheet-backdrop {
+  display: none;
+}
+
+/* Phones: the form is a sheet that rises from the foot of the screen */
+@media (max-width: 719.98px) {
+  .add-open {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .sheet-close {
+    display: inline;
+  }
+
+  .sheet-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 240;
+    background: rgb(0 0 0 / 0.35);
+    animation: sheet-fade 0.25s ease-out;
+  }
+
+  .manage .form {
+    position: fixed;
+    z-index: 250;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 88dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.75rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    border-bottom: 0;
+    box-shadow: 0 -12px 40px -12px rgb(0 0 0 / 0.35);
+    translate: 0 105%;
+    visibility: hidden;
+    transition: translate 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.32s;
+  }
+
+  /* The grabber at the top, like a native sheet */
+  .manage .form::before {
+    content: '';
+    align-self: center;
+    width: 2.5rem;
+    height: 0.3rem;
+    margin-bottom: 0.25rem;
+    border-radius: 999px;
+    background: var(--line);
+  }
+
+  .manage .form.open {
+    translate: 0 0;
+    visibility: visible;
+    transition: translate 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+@keyframes sheet-fade {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manage .form { transition: none; }
+  .sheet-backdrop { animation: none; }
 }
 
 .manage-grid {
@@ -1186,8 +1312,22 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   padding: 0.2rem 0.6rem;
   font-size: 0.75rem;
   font-weight: 700;
+  color: #fff;
   background: rgb(255 255 255 / 0.2);
   border-radius: 999px;
+}
+
+/* On a photo the see-through tag disappears into bright food, so it gets a dark frosted chip */
+.has-photo .badge {
+  color: #fff;
+  background: rgb(0 0 0 / 0.55);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22);
+  backdrop-filter: blur(8px) saturate(1.4);
+  -webkit-backdrop-filter: blur(8px) saturate(1.4);
+}
+
+:root[data-effects='lite'] .has-photo .badge {
+  background: rgb(0 0 0 / 0.7);
 }
 
 .price {
