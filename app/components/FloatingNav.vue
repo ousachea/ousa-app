@@ -252,7 +252,7 @@ onBeforeUnmount(() => {
 
 <template>
   <nav ref="root" class="fab" :class="{ open }" aria-label="Apps" :style="{ 'top': `${place.top}px`, 'right': `${place.right}px`, '--menu-top': `${place.top}px` }">
-    <div id="fab-menu" class="sheet" :inert="!open">
+    <div id="fab-menu" class="sheet" :class="{ 'on-home': route.path === '/' }" :inert="!open">
       <!-- Account: live sync status, or a way to sign in -->
       <ClientOnly>
         <div v-if="vault.status !== 'loading'" class="account">
@@ -816,6 +816,15 @@ kbd {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* On a phone's home page every app is already on screen as an icon, so the menu leaves out its
+   own list of them (and the search that filters it); the letter shortcuts still work */
+@media (max-width: 720px) {
+  .on-home .search,
+  .on-home .groups {
+    display: none;
+  }
 }
 
 /* Phones: still three across, each tile its icon over its name, like a home screen */
