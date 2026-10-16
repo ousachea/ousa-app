@@ -111,7 +111,7 @@ useAppSeo({
             v-bind="group.name === 'Pinned' ? reorderPins.bind(tool, i) : {}"
             class="tile"
             :class="{ 'page-start': spots.get(tool.to)?.start }"
-            :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff', '--col': spots.get(tool.to)?.col, '--row': spots.get(tool.to)?.row }"
+            :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--on-accent': tool.onColor ?? '#fff', '--col': spots.get(tool.to)?.col, '--row': spots.get(tool.to)?.row }"
           >
             <span v-if="tool.demo" class="demo-badge" title="Open it and click the app’s icon to see it with example data">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>Try it
@@ -246,7 +246,7 @@ h1 {
   place-items: center;
   font-size: 1.6rem;
   color: var(--on-accent);
-  background: var(--accent);
+  background: var(--sticker, var(--accent));
   border-radius: 11px;
   box-shadow:
     0 0 0 3px var(--plastic),

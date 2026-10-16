@@ -104,7 +104,8 @@ browser; sign-in and sync stay off.
 1. In the [Firebase console](https://console.firebase.google.com), create a project, add a **web app**, enable
    **Google** sign-in under Authentication, and create a **Firestore** database.
 2. Publish the rules in [`firestore.rules`](firestore.rules): each signed-in user can only read and write their own
-   data under `users/{uid}`.
+   data under `users/{uid}`. The CV page (`/cv`) is the one public document, `public/cv`: anyone can read it, and
+   only the owner's Google account can edit it (the email in the rule should match `NUXT_PUBLIC_OWNER_EMAIL`).
 3. Create a `.env` file in the project root (it’s git-ignored):
 
    ```bash

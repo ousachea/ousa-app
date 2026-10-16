@@ -317,7 +317,7 @@ onBeforeUnmount(() => {
                 :aria-keyshortcuts="[LETTER.get(t.to)?.toUpperCase(), keyFor(t.to)].filter(Boolean).join(' ') || undefined"
                 :title="t.summary"
               >
-                <span class="icon" aria-hidden="true" :style="{ '--c': t.color, '--on-c': t.onColor ?? '#fff' }">
+                <span class="icon" aria-hidden="true" :style="{ '--c': t.gradient ?? t.color, '--on-c': t.onColor ?? '#fff' }">
                   <ToolIcon :name="t.icon" />
                 </span>
                 <span class="name">{{ t.name }}</span>

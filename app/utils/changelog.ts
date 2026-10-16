@@ -120,6 +120,9 @@ export const CHANGELOG: Record<string, Release[]> = {
       'Income, savings goals, reports, CSV import and export, and a dashboard for the month.'
     ] }
   ],
+  '/cv': [
+    { version: '1.0.0', date: '2026-10-16', changes: ['My CV as an app: experience, selected work, skills, education and how to get in touch.', 'Save it as a PDF from the Save as PDF button.'] }
+  ],
   '/speed': [
     { version: '1.0.0', date: '2026-10-12', changes: ['Test your download, upload, ping and jitter, with a dial that follows the live speed.', 'See what your connection is good for, and how close you get to your plan’s speed.', 'Your last 30 tests stay on this device.'] }
   ],

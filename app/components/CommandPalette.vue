@@ -34,7 +34,7 @@ interface Entry {
 interface Section { title: string, entries: Entry[] }
 
 const iconOf = (t: Tool | undefined): Pick<Entry, 'icon' | 'color' | 'onColor'> =>
-  t ? { icon: t.icon, color: t.color, onColor: t.onColor } : { icon: 'list', color: 'var(--plastic)' }
+  t ? { icon: t.icon, color: t.gradient ?? t.color, onColor: t.onColor } : { icon: 'list', color: 'var(--plastic)' }
 
 const appPath = (to: string) => to.split('?')[0]!
 

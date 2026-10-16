@@ -5,9 +5,11 @@ import type { Tool } from '~/utils/tools'
 // hero: big centred header (single-purpose tools)
 // bar: compact left-aligned header so the workspace starts high (editors, studios)
 // band: full-width coloured band (collections)
-type Header = 'hero' | 'bar' | 'band'
+// none: no header; the page draws its own (the CV's landing-page hero)
+type Header = 'hero' | 'bar' | 'band' | 'none'
 
-const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header }>(), { width: 'var(--page-width)', tool: undefined, header: 'hero' })
+// siteBar: false leaves out the app's top bar, for a page with a nav of its own (the CV)
+const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header, siteBar?: boolean }>(), { width: 'var(--page-width)', tool: undefined, header: 'hero', siteBar: true })
 
 const route = useRoute()
 const tool = computed(() => props.tool ?? toolFor(route.path)!)
@@ -80,8 +82,8 @@ const slots = useSlots()
 // Shared so a page can open its own settings too (Notes' "Notes settings" link); closed when the page goes
 const settingsOpen = useAppSettingsOpen()
 onBeforeUnmount(() => (settingsOpen.value = false))
-// Listed apps always have settings, if only Import & export
-const hasSettings = computed(() => !!slots.settings || TOOLS.some(t => t.to === route.path))
+// Listed apps always have settings, if only Import & export; pages that save nothing (the CV) don't
+const hasSettings = computed(() => !!slots.settings || (TOOLS.some(t => t.to === route.path) && !tool.value.readOnly))
 function openSettings() {
   settingsOpen.value = true
   play('open')
@@ -114,10 +116,10 @@ function toggleDemo() {
 </script>
 
 <template>
-  <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--accent-btn': tool.buttonColor, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
-    <SiteBar back />
+  <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--accent-btn': tool.buttonColor, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
+    <SiteBar v-if="siteBar" back />
 
-    <header class="head">
+    <header v-if="header !== 'none'" class="head">
       <button
         v-if="demo.supported.value"
         ref="stickerEl"
@@ -239,7 +241,7 @@ function toggleDemo() {
   place-items: center;
   font-size: 2rem;
   color: var(--on-accent);
-  background: var(--accent);
+  background: var(--sticker, var(--accent));
   border-radius: 14px;
   /* Glossy sticker on black plastic, like the cube */
   box-shadow:

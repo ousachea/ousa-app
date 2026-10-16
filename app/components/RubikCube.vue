@@ -10,6 +10,8 @@ interface CubeLink {
   name: string
   icon: ToolIconName
   color?: string
+  /** Paints the sticker instead of `color`, for apps with a gradient */
+  gradient?: string
   onColor?: string
 }
 
@@ -124,7 +126,7 @@ function faceStyle(cubie: Cubie, face: Face) {
   if (!color) return undefined
   const link = cubie.links[face]
   // App colours: the icon sticker takes its app's colour; plain stickers keep the cube's
-  if (props.appColors && link?.color) return { '--c': link.color, '--ink': link.onColor ?? '#ffffff' }
+  if (props.appColors && link?.color) return { '--c': link.gradient ?? link.color, '--ink': link.onColor ?? '#ffffff' }
   return { '--c': color, '--ink': inkOn(color) }
 }
 

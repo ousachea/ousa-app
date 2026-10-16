@@ -4,5 +4,14 @@ service cloud.firestore {
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // The CV page (/cv): anyone can read it; only the owner's Google account can change it.
+    // Keep the email in step with NUXT_PUBLIC_OWNER_EMAIL.
+    match /public/cv {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.token.email == 'ousauser@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
   }
 }

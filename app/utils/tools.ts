@@ -1,7 +1,7 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
-  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'ambient' | 'speed' | 'budget'
+  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'ambient' | 'speed' | 'budget' | 'cv'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -23,6 +23,10 @@ export interface Tool {
   description?: string
   /** Has a demo: sample data behind the app icon (or demo files, for the compressor) */
   demo?: boolean
+  /** Paints the app's icon tile instead of `color` (which still sets its text, buttons and borders) */
+  gradient?: string
+  /** A page to read, with nothing saved: no Settings or Import & export */
+  readOnly?: boolean
 }
 
 export const TOOLS: Tool[] = [
@@ -224,6 +228,18 @@ export const TOOLS: Tool[] = [
     group: 'Life',
     seoTitle: 'YouTube Music player with ambient sounds and focus timer',
     description: 'Play your YouTube Music playlists and liked songs, mix in rain, fire, ocean or brown noise, and use a focus or sleep timer. Ambient scenes included.'
+  },
+  {
+    to: '/cv',
+    name: 'Ousa',
+    summary: 'My CV: UX/UI, web design and project management, from discovery to delivery.',
+    color: '#7c3aed',
+    gradient: 'linear-gradient(135deg, #b06cf7 0%, #7c3aed 55%, #5b21b6 100%)',
+    icon: 'cv',
+    group: 'Life',
+    seoTitle: 'Ousa Chea: UX/UI designer and digital project manager in Phnom Penh',
+    description: 'Ousa Chea’s CV: 8+ years designing, building and delivering websites and digital products for banks, NGOs and hotels in Cambodia. Available for projects.',
+    readOnly: true
   }
 ]
 

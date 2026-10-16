@@ -166,6 +166,14 @@ defineProps<{ name: ToolIconName }>()
       <path d="M20.5 12H17a2 2 0 0 0 0 4h3.5" />
     </template>
 
+    <!-- CV (Ousa): an ID card with a portrait and two lines of details -->
+    <template v-else-if="name === 'cv'">
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <circle cx="8.5" cy="10.5" r="2" />
+      <path d="M5.5 16c.6-1.6 1.6-2.4 3-2.4s2.4.8 3 2.4" />
+      <path d="M14 10h4M14 14h4" />
+    </template>
+
     <!-- Gold tracker: a stacked gold bar -->
     <template v-else-if="name === 'gold'">
       <path d="M7 10.5h10l3 7.5H4z" />

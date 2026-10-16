@@ -26,7 +26,7 @@ const ink = computed(() => tool.value?.onColor ?? '#ffffff')
   </div>
 
   <!-- One app: its colour, its icon and what it does -->
-  <div v-else-if="tool" class="card app" :style="{ '--c': tool.color, '--ink': ink }">
+  <div v-else-if="tool" class="card app" :style="{ '--c': tool.gradient ?? tool.color, '--c-solid': tool.color, '--ink': ink }">
     <div class="grid" aria-hidden="true">
       <i v-for="n in 9" :key="n" />
     </div>
@@ -147,7 +147,7 @@ const ink = computed(() => tool.value?.onColor ?? '#ffffff')
   place-items: center;
   font-size: 76px;
   /* A deeper shade of the app colour so light colours (yellow, gold) still stand out on white */
-  color: color-mix(in srgb, var(--c) 72%, #000);
+  color: color-mix(in srgb, var(--c-solid) 72%, #000);
   background: #fff;
   border-radius: 34px;
   box-shadow: 0 0 0 10px #12151d, 0 24px 50px rgb(0 0 0 / 0.25);
