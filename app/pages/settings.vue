@@ -89,7 +89,7 @@ const VIEWS: { value: Prefs['defaultView'], label: string }[] = [
   { value: 'compact', label: 'Compact' }
 ]
 
-function choose<K extends 'density' | 'motion' | 'defaultView'>(key: K, value: Prefs[K]) {
+function choose<K extends 'density' | 'motion' | 'defaultView' | 'cubeColors'>(key: K, value: Prefs[K]) {
   prefs[key] = value
   sound.play('select')
 }
@@ -179,6 +179,21 @@ const volume = computed({
               </label>
             </div>
             <p class="theme-note">Buttons and highlights. The first keeps each app’s own colour.</p>
+
+            <h3 class="effects-head">Cube colours</h3>
+            <div class="segmented cube-colors" role="radiogroup" aria-label="Cube sticker colours">
+              <label :class="{ active: prefs.cubeColors === 'cube' }">
+                <input type="radio" name="cube-colors" value="cube" :checked="prefs.cubeColors === 'cube'" @change="choose('cubeColors', 'cube')">
+                <span class="swatches" aria-hidden="true"><i style="background: #1f5bd8" /><i style="background: #f7c324" /><i style="background: #179a54" /></span>
+                Cube
+              </label>
+              <label :class="{ active: prefs.cubeColors === 'apps' }">
+                <input type="radio" name="cube-colors" value="apps" :checked="prefs.cubeColors === 'apps'" @change="choose('cubeColors', 'apps')">
+                <span class="swatches" aria-hidden="true"><i style="background: var(--teal)" /><i style="background: var(--purple)" /><i style="background: var(--pink)" /></span>
+                Apps
+              </label>
+            </div>
+            <p class="theme-note">The stickers on the home page’s cube: classic Rubik’s colours, or each app’s own.</p>
 
             <h3 class="effects-head">Density</h3>
             <div class="segmented" role="radiogroup" aria-label="Density">
@@ -369,6 +384,24 @@ const volume = computed({
   margin-top: 1.25rem;
   margin-bottom: 0.6rem;
   font-size: 1rem;
+}
+
+.cube-colors label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.swatches {
+  display: inline-flex;
+}
+
+.swatches i {
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-left: -0.15rem;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1.5px var(--surface);
 }
 
 .theme-note {

@@ -26,6 +26,8 @@ export interface Prefs {
   pinnedApps: string[]
   /** Button and highlight colour: each app's own ('apps'), or one colour everywhere (a palette name like 'blue') */
   accent: string
+  /** Stickers on the home page's Rubik's cube: classic cube colours, or each app's own */
+  cubeColors: 'cube' | 'apps'
   /** List, grid or compact, for lists you haven't picked a view for yet */
   defaultView: 'list' | 'grid' | 'compact'
 }
@@ -41,6 +43,7 @@ const DEFAULTS: Prefs = {
   motion: 'system',
   pinnedApps: [],
   accent: 'apps',
+  cubeColors: 'cube',
   defaultView: 'list'
 }
 
@@ -62,6 +65,8 @@ function start() {
     for (const k of Object.keys(DEFAULTS) as (keyof Prefs)[]) {
       if (saved[k] !== undefined && typeof saved[k] === typeof DEFAULTS[k]) (prefs as Record<string, unknown>)[k] = saved[k]
     }
+    // The cube colours used to be a switch on the home page with a key of their own
+    if (saved.cubeColors === undefined && localStorage.getItem('ousa-app:cube-colors') === 'apps') prefs.cubeColors = 'apps'
   } catch {}
   apply()
   // In a scope of its own: started from inside a component, the watch would otherwise stop when that

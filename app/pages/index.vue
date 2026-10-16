@@ -1,24 +1,10 @@
 <script setup lang="ts">
-// Cube sticker style for the app icons, remembered per visitor
-const appColors = ref(false)
-onMounted(() => {
-  try {
-    appColors.value = localStorage.getItem('ousa-app:cube-colors') === 'apps'
-  } catch {}
-})
-const { play } = useSound()
-function setColors(apps: boolean) {
-  appColors.value = apps
-  play('select')
-  try {
-    localStorage.setItem('ousa-app:cube-colors', apps ? 'apps' : 'cube')
-  } catch {}
-}
-
 // Pinned apps get their own row at the top (CHECKLIST.md #09); only known after mount, so the
 // server-rendered page always shows the plain groups
 const { prefs } = usePrefs()
 const hydrated = useHydrated()
+// Cube sticker colours are chosen in Settings; known only after mount, like the pins
+const appColors = computed(() => hydrated.value && prefs.cubeColors === 'apps')
 const GROUPS = computed(() => {
   const pins = hydrated.value ? prefs.pinnedApps : []
   const pinned = pins.map(p => TOOLS.find(t => t.to === p)).filter((t): t is typeof TOOLS[number] => !!t)
@@ -29,6 +15,49 @@ const GROUPS = computed(() => {
     { name: 'Life', tools: rest.filter(t => t.group === 'Life') }
   ].filter(g => g.tools.length)
 })
+
+// On phones the home page is a row of screens you swipe through: the hero first, then the icons
+// in pages. Every app gets a fixed spot (page, row, column) counted across all groups, and the
+// CSS only uses it below 720px
+const PER_PAGE = 12
+const COLS = 4
+const spots = computed(() => {
+  const map = new Map<string, { col: number, row: number, start: boolean }>()
+  GROUPS.value.flatMap(g => g.tools).forEach((t, k) => {
+    const page = Math.floor(k / PER_PAGE)
+    const i = k % PER_PAGE
+    map.set(t.to, { col: (page + 1) * COLS + (i % COLS) + 1, row: Math.floor(i / COLS) + 1, start: i === 0 })
+  })
+  return map
+})
+const pageCount = computed(() => 1 + Math.ceil(spots.value.size / PER_PAGE))
+
+const pager = ref<HTMLElement>()
+const page = ref(0)
+function onPagerScroll() {
+  const el = pager.value
+  if (!el) return
+  page.value = Math.round(el.scrollLeft / el.clientWidth)
+  if (page.value > 0 && !swiped.value) {
+    swiped.value = true
+    try {
+      localStorage.setItem('ousa-app:swiped', '1')
+    } catch {}
+  }
+}
+
+// The hero's "Swipe for the apps" hint nudges sideways until the visitor has swiped once
+const swiped = ref(true)
+onMounted(() => {
+  try {
+    swiped.value = localStorage.getItem('ousa-app:swiped') === '1'
+  } catch {
+    swiped.value = false
+  }
+})
+function goToPage(p: number) {
+  pager.value?.scrollTo({ left: p * pager.value.clientWidth, behavior: 'smooth' })
+}
 
 // Pinned apps can be dragged into any order (CHECKLIST.md #28)
 const reorderPins = useDragReorder<typeof TOOLS[number]>({
@@ -61,44 +90,49 @@ useAppSeo({
 <template>
   <main class="home">
     <SiteBar />
-    <div class="hero">
-      <RubikCube :size="60" follow-pointer interactive :links="TOOLS" :app-colors="appColors" class="hero-cube" />
-      <div class="segmented cube-colors" role="radiogroup" aria-label="Icon sticker colours">
-        <label :class="{ active: !appColors }">
-          <input type="radio" name="cube-colors" :checked="!appColors" @change="setColors(false)">
-          <span class="swatches" aria-hidden="true"><i style="background: #1f5bd8" /><i style="background: #f7c324" /><i style="background: #179a54" /></span>
-          Cube colours
-        </label>
-        <label :class="{ active: appColors }">
-          <input type="radio" name="cube-colors" :checked="appColors" @change="setColors(true)">
-          <span class="swatches" aria-hidden="true"><i style="background: var(--teal)" /><i style="background: var(--purple)" /><i style="background: var(--pink)" /></span>
-          App colours
-        </label>
+    <div ref="pager" class="groups" @scroll.passive="onPagerScroll">
+      <div class="hero page-start">
+        <RubikCube :size="60" follow-pointer interactive :links="TOOLS" :app-colors="appColors" class="hero-cube" />
+        <h1>Ousa’s Apps</h1>
+        <p>Small tools for everyday jobs, and simple trackers for the things in your life. Click an icon on the cube to open it, or anywhere else to shuffle.</p>
+        <button type="button" class="swipe-hint" :class="{ nudge: !swiped }" @click="goToPage(1)">
+          Swipe for the apps
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
       </div>
-      <h1>Ousa’s Apps</h1>
-      <p>Small tools for everyday jobs, and simple trackers for the things in your life. Click an icon on the cube to open it, or anywhere else to shuffle.</p>
+      <section v-for="group in GROUPS" :key="group.name" class="group" :aria-labelledby="`group-${group.name}`">
+        <h2 :id="`group-${group.name}`">{{ group.name }}</h2>
+        <nav class="tools" :class="{ 'drop-x': group.name === 'Pinned' }" :aria-label="group.name === 'Pinned' ? 'Pinned. Drag to reorder, or Alt and the arrow keys.' : group.name">
+          <NuxtLink
+            v-for="(tool, i) in group.tools"
+            :key="tool.to"
+            :to="tool.to"
+            v-bind="group.name === 'Pinned' ? reorderPins.bind(tool, i) : {}"
+            class="tile"
+            :class="{ 'page-start': spots.get(tool.to)?.start }"
+            :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff', '--col': spots.get(tool.to)?.col, '--row': spots.get(tool.to)?.row }"
+          >
+            <span v-if="tool.demo" class="demo-badge" title="Open it and click the app’s icon to see it with example data">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>Try it
+            </span>
+            <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
+            <strong>{{ tool.name }}</strong>
+            <span class="summary">{{ tool.summary }}</span>
+          </NuxtLink>
+        </nav>
+      </section>
     </div>
-
-    <section v-for="group in GROUPS" :key="group.name" class="group" :aria-labelledby="`group-${group.name}`">
-      <h2 :id="`group-${group.name}`">{{ group.name }}</h2>
-      <nav class="tools" :class="{ 'drop-x': group.name === 'Pinned' }" :aria-label="group.name === 'Pinned' ? 'Pinned. Drag to reorder, or Alt and the arrow keys.' : group.name">
-        <NuxtLink
-          v-for="(tool, i) in group.tools"
-          :key="tool.to"
-          :to="tool.to"
-          v-bind="group.name === 'Pinned' ? reorderPins.bind(tool, i) : {}"
-          class="tile"
-          :style="{ '--accent': tool.color, '--on-accent': tool.onColor ?? '#fff' }"
-        >
-          <span v-if="tool.demo" class="demo-badge" title="Open it and click the app’s icon to see it with example data">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>Try it
-          </span>
-          <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
-          <strong>{{ tool.name }}</strong>
-          <span class="summary">{{ tool.summary }}</span>
-        </NuxtLink>
-      </nav>
-    </section>
+    <div v-if="pageCount > 1" class="page-dots">
+      <button
+        v-for="p in pageCount"
+        :key="p"
+        type="button"
+        :class="{ active: page === p - 1 }"
+        :aria-label="`Page ${p} of ${pageCount}`"
+        :aria-current="page === p - 1 ? 'page' : undefined"
+        @click="goToPage(p - 1)"
+      />
+    </div>
 
   </main>
 </template>
@@ -122,32 +156,6 @@ useAppSeo({
   text-align: center;
 }
 
-.cube-colors {
-  width: fit-content;
-  margin: -0.5rem 0 1.75rem;
-  font-size: 0.85rem;
-}
-
-.cube-colors label {
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.8rem;
-}
-
-.swatches {
-  display: inline-flex;
-}
-
-.swatches i {
-  width: 0.65rem;
-  height: 0.65rem;
-  margin-left: -0.15rem;
-  border-radius: 3px;
-  box-shadow: 0 0 0 1.5px var(--surface);
-}
-
 .hero-cube {
   margin: -1rem 0 1rem;
 }
@@ -165,6 +173,20 @@ h1 {
   max-width: 28rem;
   font-size: 1.15rem;
   color: var(--ink-2);
+}
+
+.groups {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
+}
+
+/* Only phones page through the icons */
+.page-dots,
+.swipe-hint {
+  display: none;
 }
 
 .group {
@@ -309,29 +331,178 @@ h1 {
   scroll-margin-top: var(--pin-top);
 }
 
+/* Phones get a home-screen grid: four big icons a row with a short name under each */
 @media (max-width: 720px) {
-  .tools {
-    flex-direction: column;
+  /* Still names each section for screen readers through aria-labelledby */
+  .group h2 {
+    display: none;
+  }
+
+  /* One grid for every group: the sections and their navs drop out of layout so the tiles flow
+     straight on from Pinned into Tools and Life. Each tile sits at its spot from the script, four
+     columns to a screen-wide page, and the grid scrolls sideways a page at a time */
+  .groups {
+    /* Each screen fills the phone: the pager takes all the height the page has left, since the
+       page is at least the screen tall */
+    flex: 1;
+    display: grid;
+    grid-auto-columns: 25%;
+    /* Three rows of icons a screen; the spare last row soaks up the rest of the height, so the
+       icon rows keep their own spacing instead of being stretched */
+    grid-template-rows: auto auto auto 1fr;
+    align-items: start;
+    row-gap: 1.4rem;
+    column-gap: 0;
     max-width: 420px;
+    /* Room for the icons' hover lift and glow, which the scroller would otherwise clip */
+    padding: 6px 0 14px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .groups::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tile {
+    grid-column: var(--col);
+    grid-row: var(--row);
+  }
+
+  /* The hero is the first screen, filling the pager's height with its content centred */
+  .hero {
+    grid-column: 1 / span 4;
+    grid-row: 1 / -1;
+    align-self: stretch;
+    justify-content: center;
+    padding: 0 0.5rem;
+  }
+
+  .page-start {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* The dots sit at the foot of the screen: last in a page that's exactly the screen tall, with
+     just enough room under them to clear the phone's home bar */
+  .home {
+    padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+  }
+
+  .page-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.2rem;
+    margin-top: -2.75rem;
+  }
+
+  .swipe-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 1.75rem;
+    padding: 0.55rem 0.8rem 0.55rem 1.1rem;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .swipe-hint svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .swipe-hint.nudge svg {
+    animation: swipe-nudge 1.6s ease-in-out infinite;
+  }
+
+  .page-dots button {
+    padding: 0.4rem;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .page-dots button::before {
+    content: '';
+    display: block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--ink-2);
+    opacity: 0.3;
+    transition: opacity 0.2s;
+  }
+
+  .page-dots button.active::before {
+    opacity: 1;
+  }
+
+  .group,
+  .tools {
+    display: contents;
   }
 
   .tools > * {
-    flex: none;
     max-width: none;
   }
 
   .tile {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    column-gap: 1.1rem;
-    padding: 1rem 1.15rem;
-    text-align: left;
-    align-items: center;
+    gap: 0.45rem;
+    /* The gutter between icons, since the columns have to be exactly a quarter of the page */
+    padding: 0 0.25rem;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .sticker {
-    grid-row: span 2;
-    margin: 0 0 0 3px;
+    width: 3.75rem;
+    height: 3.75rem;
+    margin: 4px 0 0;
+    font-size: 2rem;
+    border-radius: 16px;
+  }
+
+  .tile strong {
+    width: 100%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  /* Kept for screen readers; there is no room for it under an icon */
+  .summary {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .demo-badge {
+    display: none;
   }
 
   .hero-cube {
@@ -340,7 +511,16 @@ h1 {
   }
 }
 
+@keyframes swipe-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .swipe-hint.nudge svg {
+    animation: none;
+  }
+
   .tile:hover .sticker,
   .tile:focus-visible .sticker,
   .tile:active .sticker,

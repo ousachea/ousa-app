@@ -304,9 +304,41 @@ function startOrientation() {
   // Leaving the window counts as going idle straight away
   const onLeave = () => (lastMove = -Infinity)
 
+  // Phones have no pointer to follow, so the cube follows the phone's tilt instead. Tilt is
+  // measured from how the phone is held, and that resting angle slowly catches up when it settles
+  // somewhere new; tiny jitter doesn't count as movement, so the idle spin still comes back
+  let restBeta: number | undefined
+  let restGamma = 0
+  const onTilt = (e: DeviceOrientationEvent) => {
+    if (e.beta == null || e.gamma == null) return
+    if (restBeta === undefined) {
+      restBeta = e.beta
+      restGamma = e.gamma
+    }
+    restBeta += (e.beta - restBeta) * 0.01
+    restGamma += (e.gamma - restGamma) * 0.01
+    const clamp = (n: number) => Math.max(-1, Math.min(1, n))
+    const x = clamp((e.gamma - restGamma) / 25)
+    const y = clamp((e.beta - restBeta) / 25)
+    if (Math.abs(x - lookX) + Math.abs(y - lookY) > 0.04) lastMove = performance.now()
+    lookX = x
+    lookY = y
+  }
+  // iOS only reports tilt after the visitor allows it, and only asks from inside a tap
+  type IOSOrientationEvent = typeof DeviceOrientationEvent & { requestPermission?: () => Promise<'granted' | 'denied'> }
+  const askForTilt = () => {
+    const ask = (window.DeviceOrientationEvent as IOSOrientationEvent | undefined)?.requestPermission
+    ask?.().then(state => state === 'granted' && window.addEventListener('deviceorientation', onTilt)).catch(() => {})
+  }
+  const touchScreen = window.matchMedia('(pointer: coarse)').matches && 'DeviceOrientationEvent' in window
+
   if (props.followPointer && !lite.value) {
     window.addEventListener('pointermove', onPointerMove, { passive: true })
     document.documentElement.addEventListener('pointerleave', onLeave)
+    if (touchScreen) {
+      if ((window.DeviceOrientationEvent as IOSOrientationEvent).requestPermission) window.addEventListener('touchend', askForTilt, { once: true })
+      else window.addEventListener('deviceorientation', onTilt)
+    }
   }
 
   let prev = performance.now()
@@ -349,6 +381,8 @@ function startOrientation() {
     cancelAnimationFrame(orientFrame)
     window.removeEventListener('pointermove', onPointerMove)
     document.documentElement.removeEventListener('pointerleave', onLeave)
+    window.removeEventListener('deviceorientation', onTilt)
+    window.removeEventListener('touchend', askForTilt)
   }
 }
 
