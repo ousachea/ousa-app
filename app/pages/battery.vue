@@ -523,6 +523,25 @@ function choose(name: string) {
 const batteryRef = ref<HTMLElement | null>(null)
 const batteryFlash = ref(false)
 
+// ---------- Phones: the result pill ----------
+const PHONE = '(max-width: 719.98px)'
+const resultsRef = ref<HTMLElement | null>(null)
+// The result card is somewhere below the screen (not above: scrolled past it, you've seen it)
+const resultBelow = ref(false)
+let resultsSeen: IntersectionObserver | undefined
+onMounted(() => {
+  if (!resultsRef.value) return
+  resultsSeen = new IntersectionObserver(([e]) => {
+    resultBelow.value = !!e && !e.isIntersecting && e.boundingClientRect.top > 0
+  })
+  resultsSeen.observe(resultsRef.value)
+})
+onBeforeUnmount(() => resultsSeen?.disconnect())
+function showResult() {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+  resultsRef.value?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+}
+
 /**
  * After picking a phone, bring the battery into view if it's off screen
  * (the stacked phone layout puts it below the inputs) and pulse it so the
@@ -533,7 +552,8 @@ function revealBattery() {
     const el = batteryRef.value
     if (!el) return
     const r = el.getBoundingClientRect()
-    if (r.top < 80 || r.bottom > window.innerHeight) {
+    // On a phone the result waits below steps 2 and 3, so stay put and let the result pill flash
+    if (!matchMedia(PHONE).matches && (r.top < 80 || r.bottom > window.innerHeight)) {
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
     }
@@ -797,9 +817,8 @@ onMounted(async () => {
     </template>
     <div class="pb">
       <div class="layout">
-        <!-- INPUTS -->
-        <section class="card">
-          <h2>Your battery</h2>
+        <!-- INPUTS: three numbered steps, the way every app here walks you through it -->
+        <div class="inputs">
 
           <div v-if="sharedView" class="detect" role="status">
             <span class="detect-icon" aria-hidden="true">
@@ -848,6 +867,8 @@ onMounted(async () => {
             </div>
           </Transition>
 
+          <Step :n="1" title="Pick your phone" hint="Its battery size when new fills in for you.">
+          <section class="card">
           <div class="seg seg-brands" role="tablist" aria-label="Phone brand">
             <button
               v-for="b in BRANDS"
@@ -960,6 +981,11 @@ onMounted(async () => {
             </div>
             <small>The rated capacity from the spec sheet, e.g. 5000 mAh.</small>
           </label>
+          </section>
+          </Step>
+
+          <Step :n="2" title="Check your battery health" hint="From your phone’s settings, or the mAh a battery app measured.">
+          <section class="card">
 
           <div class="seg" role="tablist" aria-label="What do you know?">
             <button type="button" :class="{ on: mode === 'health' }" role="tab" :aria-selected="mode === 'health'" @click="setMode('health')">
@@ -988,6 +1014,11 @@ onMounted(async () => {
             </div>
             <small>The measured capacity a battery app reports today.</small>
           </label>
+          </section>
+          </Step>
+
+          <Step :n="3" title="Enter today’s charge" hint="How full your battery is right now.">
+          <section class="card">
 
           <label class="field">
             <span class="charge-label">
@@ -1011,10 +1042,13 @@ onMounted(async () => {
             <small v-else-if="isIOS">iPhones don't share their battery level with web pages, so enter the % from your status bar.</small>
             <small v-else>The percentage shown in your status bar.</small>
           </label>
-        </section>
+          </section>
+          </Step>
+        </div>
 
         <!-- RESULTS -->
-        <section v-sticky-fit class="card results">
+        <Step v-sticky-fit :n="4" title="See what’s left" hint="What your battery holds now, and how long a charge lasts." class="results-step">
+        <section ref="resultsRef" class="card results">
           <div class="status" :class="`s-${status.key}`">
             <span class="dot" />
             <strong>{{ status.label }}</strong>
@@ -1135,7 +1169,19 @@ onMounted(async () => {
 
           <p class="note">{{ status.note }}</p>
         </section>
+        </Step>
       </div>
+
+      <!-- Phones only (CSS): while the result is out of view below the steps, a pill at the foot of
+           the screen keeps it in sight; tapping it jumps down to the result -->
+      <Transition name="peek">
+        <button v-if="resultBelow" type="button" class="peek" :class="[`s-${status.key}`, { flash: batteryFlash }]" @click="showResult">
+          <span class="dot" aria-hidden="true" />
+          <strong>{{ status.label }}</strong>
+          <span>{{ fmt(health, 1) }}% · {{ fmt(currentMax) }} mAh</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </button>
+      </Transition>
 
       <section class="card how">
         <h2>How it’s calculated</h2>
@@ -1199,8 +1245,23 @@ onMounted(async () => {
   gap: 1.5rem;
 }
 
-/* keep the battery and numbers in view while browsing the model grid */
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
+.card > :last-child {
+  margin-bottom: 0;
+}
+
 .results {
+  scroll-margin-top: var(--pin-top, 1rem);
+}
+
+/* keep the battery and numbers in view while browsing the model grid */
+.results-step {
   position: sticky;
   top: var(--pin-top);
 }
@@ -1214,7 +1275,7 @@ onMounted(async () => {
 
 @media (max-width: 1000px) {
   .layout { grid-template-columns: minmax(0, 1fr); }
-  .results { position: static; }
+  .results-step { position: static; }
 }
 
 .card {
@@ -1862,6 +1923,103 @@ onMounted(async () => {
 .how { margin-top: 1.5rem; }
 .how ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; font-size: 0.875rem; }
 .how strong { font-weight: 700; }
+
+/* The result pill: phones only, floating over the foot of the screen */
+.peek {
+  display: none;
+}
+
+@media (max-width: 719.98px) {
+  .peek {
+    position: fixed;
+    z-index: 80;
+    left: 50%;
+    bottom: max(0.85rem, env(safe-area-inset-bottom));
+    translate: -50% 0;
+    max-width: calc(100vw - 1.5rem);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0.9rem 0.65rem 1rem;
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--ink);
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--surface) 84%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: 0 12px 32px -14px rgb(0 0 0 / 0.45);
+    backdrop-filter: blur(18px) saturate(1.6);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s;
+  }
+
+  .peek:active {
+    transform: scale(0.96);
+  }
+
+  .peek > span:not(.dot) {
+    color: var(--gray);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .peek .dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--c);
+  }
+
+  .peek strong {
+    color: var(--c);
+  }
+
+  .peek svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: var(--gray);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .peek.flash {
+    animation: peek-flash 0.6s ease-out;
+  }
+}
+
+.peek.s-great { --c: var(--pb-great); }
+.peek.s-good { --c: var(--pb-good); }
+.peek.s-worn { --c: var(--pb-worn); }
+.peek.s-replace { --c: var(--pb-replace); }
+.peek.s-over { --c: var(--pb-over); }
+
+@keyframes peek-flash {
+  40% { transform: scale(1.06); }
+}
+
+.peek-enter-active,
+.peek-leave-active {
+  transition: opacity 0.2s, translate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.peek-enter-from,
+.peek-leave-to {
+  opacity: 0;
+  translate: -50% 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peek.flash { animation: none; }
+}
+
+@media (max-width: 719.98px) {
+  /* Room under the last card for the pill */
+  .pb { padding-bottom: 4.5rem; }
+}
 
 @media (max-width: 760px) {
   .card { padding: 1.25rem; }
