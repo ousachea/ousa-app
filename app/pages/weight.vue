@@ -199,7 +199,8 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
       <SettingChoice v-model="weightPrefs.range" title="Chart shows" :options="RANGES" />
     </template>
     <div class="workspace">
-      <Step title="Log your weight" class="form-step">
+      <!-- Three numbered steps, the way every app here walks you through it -->
+      <Step :n="1" title="Log your weight" hint="Once a day is plenty, ideally at the same time each morning." class="form-step">
         <form v-validate class="panel form" @submit.prevent="save">
           <div class="row">
             <label class="field">
@@ -224,8 +225,8 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
         </form>
       </Step>
 
-      <Step title="Your trend" class="chart-step">
-        <template #aside><ClientOnly><span class="aside-tools"><BulkToggle v-if="items.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly></template>
+      <Step :n="2" title="See your trend" hint="Pick a range to see how it’s changed. Tap or drag across the chart to read a day." class="chart-step">
+        <template #aside><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
             <section class="panel stats">
@@ -293,8 +294,24 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
               <p v-if="!visible.length" class="no-data">No entries in this range.</p>
             </figure>
 
-            <details ref="tableView" class="table-view">
-              <summary>Show as a table</summary>
+          </template>
+
+          <div v-else-if="ready" class="panel">
+            <EmptyState title="No entries yet" icon="weight" action="Log your weight" @action="focusField(weightField)">
+              Log your weight to start a trend line. Once a day is plenty, and the chart smooths out the daily ups and downs.
+            </EmptyState>
+          </div>
+          <SkeletonList v-else variant="cards" :count="1" label="Loading your weight log" />
+          <template #fallback><SkeletonList variant="cards" :count="1" label="Loading your weight log" /></template>
+        </ClientOnly>
+      </Step>
+
+      <Step :n="3" title="Check your entries" hint="Every day you’ve logged. Spot a typo? Log that day again, or select entries to delete them." class="entries-step">
+        <template #aside><ClientOnly><BulkToggle v-if="items.length" :select="sel" /></ClientOnly></template>
+        <ClientOnly>
+          <template v-if="ready && items.length">
+            <details ref="tableView" class="panel table-view">
+              <summary>Show all {{ items.length }} {{ items.length === 1 ? 'entry' : 'entries' }}</summary>
               <table>
                 <thead><tr><th>Date</th><th>Weight</th><th><span class="sr-only">Actions</span></th></tr></thead>
                 <TransitionGroup tag="tbody" name="list">
@@ -307,14 +324,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
               </table>
             </details>
           </template>
-
-          <div v-else-if="ready" class="panel">
-            <EmptyState title="No entries yet" icon="weight" action="Log your weight" @action="focusField(weightField)">
-              Log your weight to start a trend line. Once a day is plenty, and the chart smooths out the daily ups and downs.
-            </EmptyState>
-          </div>
-          <SkeletonList v-else variant="cards" :count="1" label="Loading your weight log" />
-          <template #fallback><SkeletonList variant="cards" :count="1" label="Loading your weight log" /></template>
+          <p v-else class="panel step-empty">Each day you log shows up here as a row.</p>
         </ClientOnly>
       </Step>
     </div>
@@ -359,6 +369,25 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 
 .form .hint {
   flex-basis: 100%;
+}
+
+.step-empty {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+/* Phones: the unit switch and the button each take the full width, easy to hit with a thumb */
+@media (max-width: 719.98px) {
+  .form .segmented,
+  .form .btn {
+    flex: 1 1 100%;
+  }
+
+  .form .btn {
+    min-height: 3rem;
+  }
 }
 
 .weight-in {
@@ -532,7 +561,7 @@ svg:focus-visible {
 }
 
 .table-view {
-  margin-top: 1rem;
+  padding: 0.9rem 1.1rem;
 }
 
 .table-view summary {
