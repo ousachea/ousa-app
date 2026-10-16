@@ -18,7 +18,8 @@ const GROUPS = computed(() => {
 
 // On phones the home page is a row of screens you swipe through: the hero first, then the icons
 // in pages. Every app gets a fixed spot (page, row, column) counted across all groups, and the
-// CSS only uses it below 720px
+// CSS only uses it below 720px. Each screen is four columns plus a fifth, the gutter between it and
+// the next screen
 const PER_PAGE = 12
 const COLS = 4
 const spots = computed(() => {
@@ -26,7 +27,7 @@ const spots = computed(() => {
   GROUPS.value.flatMap(g => g.tools).forEach((t, k) => {
     const page = Math.floor(k / PER_PAGE)
     const i = k % PER_PAGE
-    map.set(t.to, { col: (page + 1) * COLS + (i % COLS) + 1, row: Math.floor(i / COLS) + 1, start: i === 0 })
+    map.set(t.to, { col: (page + 1) * (COLS + 1) + (i % COLS) + 1, row: Math.floor(i / COLS) + 1, start: i === 0 })
   })
   return map
 })
@@ -346,16 +347,23 @@ h1 {
        page is at least the screen tall */
     flex: 1;
     display: grid;
-    grid-auto-columns: 25%;
+    /* Edge to edge, so icons slide off the side of the screen instead of being cut off at the
+       page's side padding. That padding moves inside: each screen's four columns sit within it,
+       and a fifth column between screens is both screens' padding together */
+    --pad: max(clamp(1rem, 4vw, 3rem), calc((100vw - 420px) / 2));
+    width: 100vw;
+    max-width: none;
+    padding-inline: var(--pad);
+    scroll-padding-inline: var(--pad);
+    grid-auto-columns: 25% 25% 25% 25% calc(2 * var(--pad));
     /* Three rows of icons a screen; the spare last row soaks up the rest of the height, so the
        icon rows keep their own spacing instead of being stretched */
     grid-template-rows: auto auto auto 1fr;
     align-items: start;
     row-gap: 1.4rem;
     column-gap: 0;
-    max-width: 420px;
     /* Room for the icons' hover lift and glow, which the scroller would otherwise clip */
-    padding: 6px 0 14px;
+    padding-block: 6px 14px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
