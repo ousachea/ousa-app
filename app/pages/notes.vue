@@ -135,7 +135,7 @@ const SORTS: { value: NoteSort, label: string }[] = [
 ]
 const sort = useRemembered<NoteSort>('notes-sort', 'modified', v => SORTS.some(s => s.value === v))
 const VIEWS: NoteView[] = ['list', 'grid', 'compact']
-const view = useRemembered<NoteView>('notes-layout', 'list', v => VIEWS.includes(v as NoteView), () => prefs.defaultView)
+const view = smoothRef(useRemembered<NoteView>('notes-layout', 'list', v => VIEWS.includes(v as NoteView), () => prefs.defaultView))
 
 const query = ref('')
 const searchText = ref('')
@@ -1046,7 +1046,7 @@ function listMenu() {
 
           <SkeletonList v-if="!ready" label="Loading your notes" />
           <template v-else-if="shown.length">
-            <ul class="note-list" :class="[view, { selecting: sel.selecting }]">
+            <TransitionGroup tag="ul" name="list" class="note-list" :class="[view, { selecting: sel.selecting }]">
               <template v-for="(n, i) in visible" :key="n.id">
                 <li v-if="groupOf(n) && groupOf(n) !== groupOf(visible[i - 1]!)" class="group-head" aria-hidden="true">{{ groupOf(n) }}</li>
                 <li
@@ -1076,7 +1076,7 @@ function listMenu() {
                   </button>
                 </li>
               </template>
-            </ul>
+            </TransitionGroup>
             <div v-if="shown.length > limit" ref="moreSentinel" class="more">
               <button type="button" class="btn btn-quiet btn-sm" @click="limit += PAGE">Show more ({{ shown.length - limit }} left)</button>
             </div>

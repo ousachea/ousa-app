@@ -103,7 +103,7 @@ watch(() => result.value?.verdict, (v, old) => {
 
 function selectMode(value: Mode) {
   if (mode.value === value) return
-  mode.value = value
+  viewTransition(() => (mode.value = value))
   play('select')
 }
 

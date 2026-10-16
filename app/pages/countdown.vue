@@ -348,14 +348,14 @@ function del(e: CountdownEvent) {
 
             <section v-if="past.length" class="past">
               <h3>Already happened</h3>
-              <ul>
+              <TransitionGroup tag="ul" name="list">
                 <li v-for="e in past" :key="e.id" :data-item-id="e.id" class="bulk-row" v-bind="menuFor(() => countdownMenu(e), e.title)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, e.id)" :class="{ 'bulk-picked': sel.has(e.id) }">
                   <BulkCheck v-if="sel.selecting" inline :checked="sel.has(e.id)" :label="`Select ${e.title}`" @pick="sel.pick(e.id, $event)" />
                   <span>{{ e.title }}</span>
                   <span class="meta">{{ agoText(e.left) }}</span>
                   <span class="menu-dup"><ConfirmDelete :name="e.title" @confirm="del(e)" /></span>
                 </li>
-              </ul>
+              </TransitionGroup>
             </section>
           </template>
 
@@ -404,7 +404,7 @@ function del(e: CountdownEvent) {
               <button v-if="!isTracked(nextHoliday)" type="button" class="btn btn-sm add-mine" @click="track(nextHoliday)">Add to my countdowns</button>
             </section>
 
-            <ol class="holidays">
+            <TransitionGroup tag="ol" name="list" class="holidays">
               <li v-for="h in laterHolidays" :key="h.start" class="holiday">
                 <span class="h-date" aria-hidden="true">
                   <strong>{{ holidayDay(h) }}</strong>
@@ -421,7 +421,7 @@ function del(e: CountdownEvent) {
                   <span v-else class="h-added">Added</span>
                 </span>
               </li>
-            </ol>
+            </TransitionGroup>
             <button v-if="holidays.length > 7" type="button" class="btn btn-quiet btn-sm more" :aria-expanded="showAllHolidays" @click="showAllHolidays = !showAllHolidays">
               {{ showAllHolidays ? 'Show fewer' : `Show all ${holidays.length - 1}` }}
             </button>

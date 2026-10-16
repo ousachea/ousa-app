@@ -193,7 +193,7 @@ onBeforeUnmount(() => clearTimeout(clipboardTimer))
 
           <p v-else-if="!filtered.length" class="no-match">Nothing matches “{{ query }}”.</p>
 
-          <ul v-else class="items">
+          <TransitionGroup tag="ul" name="list" v-else class="items">
             <li v-for="item in filtered" :key="item.id" class="panel item" :class="{ selected: editing?.id === item.id }">
               <div class="item-head">
                 <span class="monogram" :class="{ 'has-icon': iconUrl(item.url) }" aria-hidden="true">
@@ -231,7 +231,7 @@ onBeforeUnmount(() => clearTimeout(clipboardTimer))
                 <ConfirmDelete text permanent :name="item.site" @confirm="deleteItem(item)" />
               </div>
             </li>
-          </ul>
+          </TransitionGroup>
         </section>
 
         <aside v-sticky-fit class="editor-side">

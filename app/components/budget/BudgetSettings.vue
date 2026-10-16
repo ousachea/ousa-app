@@ -112,12 +112,12 @@ const rateLabel = computed(() => {
 
     <section class="panel b-panel">
       <h3>Payment methods</h3>
-      <ul class="methods">
+      <TransitionGroup tag="ul" name="list" class="methods">
         <li v-for="m in s.methods" :key="m.id" :class="{ archived: m.archived }">
           <input class="input" :value="m.name" :aria-label="`Rename ${m.name}`" data-keys="text" @change="renameMethod(m, ($event.target as HTMLInputElement).value)">
           <button type="button" class="link" @click="toggleMethod(m)">{{ m.archived ? 'Bring back' : 'Hide' }}</button>
         </li>
-      </ul>
+      </TransitionGroup>
       <form class="rate-row" @submit.prevent="addMethod">
         <input v-model="newMethod" class="input" placeholder="ABA, Wing, ACLEDA…" aria-label="New payment method" data-keys="text">
         <button type="submit" class="btn btn-sm">Add</button>

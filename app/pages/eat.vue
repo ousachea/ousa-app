@@ -272,7 +272,7 @@ function del(s: Spot) {
 // ---------- Deck ----------
 // Eat settings (the gear in the header): what the deck shows when you open it
 const { prefs: eatPrefs } = useAppPrefs('eat', { filter: 'all' })
-const filter = ref<'all' | Kind>('all')
+const filter = smoothRef(ref<'all' | Kind>('all'))
 onMounted(() => (filter.value = eatPrefs.filter as 'all' | Kind))
 const deck = ref<string[]>([])
 const chosen = ref<Spot>()
@@ -690,7 +690,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
         </form>
 
         <ClientOnly>
-          <ul v-if="items.length" class="thumbs">
+          <TransitionGroup tag="ul" name="list" v-if="items.length" class="thumbs">
             <li v-for="s in items" :key="s.id" :data-item-id="s.id" class="thumb bulk-row" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, s.id)" :class="{ editing: editingId === s.id, 'bulk-picked': sel.has(s.id) }" :data-kind="s.kind">
               <BulkCheck v-if="sel.selecting" :checked="sel.has(s.id)" :label="`Select ${s.name}`" @pick="sel.pick(s.id, $event)" />
               <!-- Click a thumbnail to add or replace its photo -->
@@ -705,7 +705,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
                 <ConfirmDelete text :name="s.name" @confirm="del(s)" />
               </span>
             </li>
-          </ul>
+          </TransitionGroup>
         </ClientOnly>
       </div>
     </section>

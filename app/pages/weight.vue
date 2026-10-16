@@ -108,6 +108,7 @@ function del(e: Entry) {
 // Weight settings (the gear in the header): the chart's starting range; the unit is remembered as you switch
 const { prefs: weightPrefs } = useAppPrefs('weight', { range: 90 })
 const range = ref(90)
+const pickedRange = smoothRef(range) // picking a range cross-fades the chart
 onMounted(() => (range.value = weightPrefs.range))
 const sorted = computed(() => [...items.value].sort((a, b) => a.date.localeCompare(b.date)))
 const visible = computed(() => {
@@ -242,7 +243,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 
             <div class="segmented ranges" role="radiogroup" aria-label="Time range">
               <label v-for="r in RANGES" :key="r.value" :class="{ active: range === r.value }">
-                <input v-model="range" type="radio" name="range" :value="r.value">{{ r.label }}
+                <input v-model="pickedRange" type="radio" name="range" :value="r.value">{{ r.label }}
               </label>
             </div>
 
@@ -296,13 +297,13 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
               <summary>Show as a table</summary>
               <table>
                 <thead><tr><th>Date</th><th>Weight</th><th><span class="sr-only">Actions</span></th></tr></thead>
-                <tbody>
+                <TransitionGroup tag="tbody" name="list">
                   <tr v-for="e in tableRows" :key="e.id" class="bulk-row" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, e.id)" :class="{ 'bulk-picked': sel.has(e.id) }">
                     <td><span class="bulk-cell"><BulkCheck v-if="sel.selecting" inline :checked="sel.has(e.id)" :label="`Select ${formatDate(e.date, true)}`" @pick="sel.pick(e.id, $event)" />{{ formatDate(e.date, true) }}</span></td>
                     <td class="num">{{ fmt(e.kg) }}</td>
                     <td class="act"><ConfirmDelete :name="`the entry for ${formatDate(e.date, true)}`" @confirm="del(e)" /></td>
                   </tr>
-                </tbody>
+                </TransitionGroup>
               </table>
             </details>
           </template>

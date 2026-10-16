@@ -50,7 +50,7 @@ function del(t: BudgetTransaction) {
         <span>{{ formatDay(d.date, { weekday: 'long', day: 'numeric', month: 'short' }) }}</span>
         <span v-if="dayTotal(d.list)" class="day-total">−{{ money(dayTotal(d.list)) }}</span>
       </h4>
-      <ul>
+      <TransitionGroup tag="ul" name="list">
         <li
           v-for="t in d.list"
           :key="t.id"
@@ -70,7 +70,7 @@ function del(t: BudgetTransaction) {
           <span class="amount" :class="t.kind">{{ t.kind === 'income' ? '+' : '−' }}{{ formatMoney(t.amount, t.currency) }}</span>
           <span v-if="!compact" class="row-actions"><ConfirmDelete :name="titleOf(t)" @confirm="del(t)" /></span>
         </li>
-      </ul>
+      </TransitionGroup>
     </section>
   </div>
 </template>

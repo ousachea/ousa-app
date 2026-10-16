@@ -189,7 +189,7 @@ const nameOf = (id: string) => categoryById.value.get(id)?.name ?? ''
       <label v-if="archivedCount" class="check"><input v-model="showArchived" type="checkbox"> Show {{ archivedCount }} archived</label>
     </div>
 
-    <ul class="cats">
+    <TransitionGroup tag="ul" name="list" class="cats">
       <li v-for="(c, i) in tops" :key="c.id" class="panel cat" :class="[`slot-${c.color}`, { archived: c.archived }]">
         <div class="cat-row">
           <button v-if="kind === 'expense'" type="button" class="expand" :aria-expanded="open.has(c.id)" :aria-label="`${open.has(c.id) ? 'Hide' : 'Show'} subcategories of ${c.name}`" @click="toggle(c.id)">
@@ -229,7 +229,7 @@ const nameOf = (id: string) => categoryById.value.get(id)?.name ?? ''
           <li><button type="button" class="link add-sub" @click="openEdit(undefined, c)">+ Subcategory in {{ c.name }}</button></li>
         </ul>
       </li>
-    </ul>
+    </TransitionGroup>
 
     <Modal :open="editOpen" :title="editing ? `Edit ${editing.name}` : parentForNew ? `New subcategory in ${parentForNew.name}` : kind === 'income' ? 'New income source' : 'New category'" @close="editOpen = false">
       <form v-validate class="b-form" @submit.prevent="saveEdit">

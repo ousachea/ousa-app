@@ -139,7 +139,7 @@ const when = (d: string) => {
       </EmptyState>
     </div>
 
-    <ul class="bills">
+    <TransitionGroup tag="ul" name="list" class="bills">
       <li v-for="{ r, s } in rows" :data-item-id="r.id" :key="r.id" class="panel bill" :class="{ paused: !r.active }">
         <div class="top">
           <span class="icon" :class="`slot-${categoryById.get(r.categoryId)?.color ?? 'gray'}`" aria-hidden="true">{{ categoryById.get(r.subcategoryId || r.categoryId)?.icon ?? '🧾' }}</span>
@@ -171,7 +171,7 @@ const when = (d: string) => {
           </span>
         </div>
       </li>
-    </ul>
+    </TransitionGroup>
 
     <section v-if="schedule.length" class="panel b-panel b-gap">
       <h3>Next 30 days</h3>

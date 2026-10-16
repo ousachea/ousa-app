@@ -101,8 +101,8 @@ const spentTotal = computed(() => total(filtered.value.filter(t => t.kind === 'e
 const incomeTotal = computed(() => total(filtered.value.filter(t => t.kind === 'income'), conv.value))
 
 // Views: grouped by day (default), a flat list, or a table; plus totals by day, week or month
-const view = useRemembered<'days' | 'list' | 'table'>('budget-tx-view', 'days', v => v === 'days' || v === 'list' || v === 'table')
-const periodTotals = ref<'' | 'day' | 'week' | 'month'>('')
+const view = smoothRef(useRemembered<'days' | 'list' | 'table'>('budget-tx-view', 'days', v => v === 'days' || v === 'list' || v === 'table'))
+const periodTotals = smoothRef(ref<'' | 'day' | 'week' | 'month'>(''))
 const buckets = computed(() => {
   if (!periodTotals.value) return []
   const keyOf = (d: string) => periodTotals.value === 'month' ? monthOf(d) : periodTotals.value === 'week' ? weekRange(d, settings.value.weekStart).from : d
@@ -243,7 +243,7 @@ const describe = computed(() => {
         <thead>
           <tr><th>Date</th><th>Category</th><th>Note</th><th>Method</th><th class="r">Amount</th><th><span class="sr-only">Actions</span></th></tr>
         </thead>
-        <tbody>
+        <TransitionGroup tag="tbody" name="list">
           <tr v-for="t in page" :key="t.id" class="bulk-row" :class="{ 'bulk-picked': sel.has(t.id) }" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)">
             <td class="nowrap"><span class="bulk-cell"><BulkCheck v-if="sel.selecting" inline :checked="sel.has(t.id)" :label="`Select ${t.note || 'transaction'}`" @pick="sel.pick(t.id, $event)" />{{ formatDay(t.date, { day: 'numeric', month: 'short', year: '2-digit' }) }}</span></td>
             <td>{{ categoryById.get(t.categoryId)?.name ?? '—' }}<span v-if="t.subcategoryId" class="b-muted"> › {{ categoryById.get(t.subcategoryId)?.name }}</span></td>
@@ -252,7 +252,7 @@ const describe = computed(() => {
             <td class="r b-num" :class="{ income: t.kind === 'income' }">{{ t.kind === 'income' ? '+' : '−' }}{{ formatMoney(t.amount, t.currency) }}</td>
             <td class="r"><button type="button" class="link" @click="store.openEntry(undefined, t)">Edit</button></td>
           </tr>
-        </tbody>
+        </TransitionGroup>
       </table>
     </section>
     <div v-if="filtered.length > shownCount" class="more">

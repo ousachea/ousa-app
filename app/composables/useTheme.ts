@@ -38,7 +38,8 @@ export function useTheme() {
     try {
       localStorage.setItem(STORAGE_KEY, preference)
     } catch {}
-    apply()
+    // Every surface cross-fades to the new colours at once instead of each snapping on its own
+    viewTransition(apply)
   }
 
   return {

@@ -10,7 +10,7 @@ const router = useRouter()
 const tab = computed<Tab>(() => (route.query.tab === 'compare' ? 'compare' : 'case'))
 function setTab(next: Tab) {
   if (next === tab.value) return
-  router.replace({ query: next === 'compare' ? { tab: 'compare' } : {} })
+  viewTransition(() => router.replace({ query: next === 'compare' ? { tab: 'compare' } : {} }))
   play('select')
 }
 

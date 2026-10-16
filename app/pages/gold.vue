@@ -78,6 +78,10 @@ const autoRefresh = ref(0) // seconds, 0 = off
 const purity = ref<Purity>(1)
 const customPurity = ref(99.99)
 const range = ref<Range>('1D')
+// Picking a range cross-fades the chart
+function pickRange(r: Range) {
+  viewTransition(() => (range.value = r))
+}
 const SORTS = [
   { value: 'date-desc', label: 'Newest first' },
   { value: 'date-asc', label: 'Oldest first' },
@@ -663,7 +667,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             <div class="panel pad">
               <div class="segmented ranges" role="radiogroup" aria-label="Time range">
                 <label v-for="r in (['1H', '1D', '1W', '1M'] as const)" :key="r" :class="{ active: range === r }">
-                  <input type="radio" name="gold-range" :checked="range === r" @change="range = r">
+                  <input type="radio" name="gold-range" :checked="range === r" @change="pickRange(r)">
                   {{ r }}
                 </label>
               </div>

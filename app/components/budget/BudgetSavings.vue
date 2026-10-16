@@ -110,7 +110,7 @@ function delContribution(c: BudgetContribution) {
       </EmptyState>
     </div>
 
-    <div class="goals">
+    <TransitionGroup tag="div" name="list" class="goals">
       <article v-for="x in cards" :key="x.g.id" class="panel goal" :class="{ archived: x.g.archived }">
         <div class="top">
           <div class="nm">
@@ -147,7 +147,7 @@ function delContribution(c: BudgetContribution) {
           <li v-if="!historyOf(x.g.id).length" class="b-muted">Nothing yet.</li>
         </ul>
       </article>
-    </div>
+    </TransitionGroup>
 
     <Modal :open="goalOpen" :title="editingId ? 'Edit goal' : 'New savings goal'" @close="goalOpen = false">
       <form v-validate class="b-form" @submit.prevent="saveGoal">

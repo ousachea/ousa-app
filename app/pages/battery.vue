@@ -336,7 +336,7 @@ function setMode(next: Mode) {
   // Carry the current figure across so switching modes doesn't jump.
   if (next === 'mah') measuredMah.value = Math.round(currentMax.value)
   else healthPct.value = Math.round(health.value * 10) / 10
-  mode.value = next
+  viewTransition(() => (mode.value = next))
   sfx.play('select')
 }
 

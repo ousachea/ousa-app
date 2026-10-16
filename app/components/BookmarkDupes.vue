@@ -21,7 +21,7 @@ const { play } = useSound()
 // "Not duplicates" answers, remembered by the page (it shows the count too)
 const ignored = defineModel<string[]>('ignored', { required: true })
 const groups = computed(() => findDuplicates(props.bookmarks, new Set(ignored.value)))
-const tab = ref<'duplicate' | 'similar'>('duplicate')
+const tab = smoothRef(ref<'duplicate' | 'similar'>('duplicate'))
 const shown = computed(() => groups.value.filter(g => g.kind === tab.value))
 const counts = computed(() => ({
   duplicate: groups.value.filter(g => g.kind === 'duplicate').length,

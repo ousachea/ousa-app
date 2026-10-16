@@ -443,7 +443,7 @@ async function copyResults() {
         <input v-model="contactQuery" class="input search" type="search" placeholder="Search by name or number" aria-label="Search contacts">
         </div>
 
-        <ul v-if="filteredContacts.length" class="people">
+        <TransitionGroup tag="ul" name="list" v-if="filteredContacts.length" class="people">
           <li v-for="c in filteredContacts.slice(0, showCount)" :key="c.id">
             <button type="button" class="person" @click="checkContact(c)">
               <span class="avatar" :style="{ '--op': c.result.valid ? c.result.operator?.color ?? 'var(--ink-3)' : 'var(--red)' }" aria-hidden="true">{{ initials(c.name) || '?' }}</span>
@@ -457,7 +457,7 @@ async function copyResults() {
               <span v-else class="net-tag bad" :title="c.result.reason">{{ c.result.match ? 'Wrong length' : 'Invalid' }}</span>
             </button>
           </li>
-        </ul>
+        </TransitionGroup>
         <p v-else class="none">No contacts match.</p>
         <button v-if="filteredContacts.length > showCount" type="button" class="btn btn-quiet btn-sm more" @click="showCount += 200">
           Show {{ Math.min(200, filteredContacts.length - showCount) }} more

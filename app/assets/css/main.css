@@ -443,7 +443,8 @@ input[type='range']:disabled {
 .slide-back-leave-active {
   transition:
     opacity 0.22s ease,
-    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.22s ease;
 }
 
 .slide-forward-leave-active,
@@ -452,16 +453,19 @@ input[type='range']:disabled {
   transition-timing-function: ease-in;
 }
 
+/* Pages arrive slightly small and soft, then sharpen into place */
 .slide-forward-enter-from,
 .slide-back-leave-to {
   opacity: 0;
-  transform: translateX(32px);
+  transform: translateX(28px) scale(0.985);
+  filter: blur(3px);
 }
 
 .slide-forward-leave-to,
 .slide-back-enter-from {
   opacity: 0;
-  transform: translateX(-32px);
+  transform: translateX(-28px) scale(0.985);
+  filter: blur(3px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -470,6 +474,7 @@ input[type='range']:disabled {
   .slide-back-enter-from,
   .slide-back-leave-to {
     transform: none;
+    filter: none;
   }
 }
 
@@ -500,6 +505,7 @@ input[type='range']:disabled {
 :root[data-effects='lite'] .slide-back-enter-from,
 :root[data-effects='lite'] .slide-back-leave-to {
   transform: none;
+  filter: none;
 }
 
 /* Decorative loops that never stop (shimmer, drifting glows, bubbles) */
@@ -818,6 +824,54 @@ kbd {
   pointer-events: none;
 }
 
+/* Table rows can't leave the flow without breaking the columns, so they simply fade out in place */
+:root:root tr.list-leave-active {
+  position: static !important;
+}
+
+/* Segmented controls and tab bars (plugins/segmented.client.ts): one highlight slides between options.
+   The group paints it as ::after under the labels; the selected option stops painting its own. */
+[data-pill-rel] {
+  position: relative;
+}
+
+[data-pill] {
+  isolation: isolate;
+}
+
+[data-pill]::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: var(--pill-w);
+  height: var(--pill-h);
+  translate: var(--pill-x) var(--pill-y);
+  background: var(--pill-bg);
+  box-shadow: var(--pill-shadow);
+  border-radius: var(--pill-radius);
+  pointer-events: none;
+}
+
+[data-pill-glide]::after {
+  transition: translate var(--dur-slow) var(--ease-out), width var(--dur-slow) var(--ease-out), height var(--dur-slow) var(--ease-out);
+}
+
+[data-pill] > :is([aria-checked='true'], [aria-selected='true'], .active, .on, :has(> input:checked)) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* View, tab, sort and filter switches (utils/viewTransition.ts): the old screen cross-fades into
+   the new one. Parts that didn't change stay still, since both pictures match there. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur);
+  animation-timing-function: var(--ease-out);
+}
+
 .collapse-enter-active,
 .collapse-leave-active {
   transition: grid-template-rows var(--dur-slow) var(--ease-out), opacity var(--dur) var(--ease-out);
@@ -833,6 +887,13 @@ kbd {
 .collapse-enter-to,
 .collapse-leave-from {
   grid-template-rows: 1fr;
+}
+
+/* The single child inside is what gets clipped while the row grows or shrinks */
+.collapse-enter-active > *,
+.collapse-leave-active > * {
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {

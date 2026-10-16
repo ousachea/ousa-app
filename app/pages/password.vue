@@ -16,7 +16,7 @@ const pending = ref<string>()
 
 function selectTab(value: Tab) {
   if (value === tab.value) return
-  router.replace({ query: value === 'saved' ? { tab: 'saved' } : {} })
+  viewTransition(() => router.replace({ query: value === 'saved' ? { tab: 'saved' } : {} }))
   play('select')
 }
 

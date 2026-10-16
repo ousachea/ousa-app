@@ -37,13 +37,15 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
       <span>{{ COPY[state].label }}</span>
       <span class="dot" aria-hidden="true" />
     </button>
-    <div v-if="open" class="pop" role="status">
-      <p>{{ COPY[state].detail }}</p>
-      <p v-if="state === 'offline' && session.offlineReason" class="why">{{ offlineHelp(session.offlineReason) }}</p>
-      <NuxtLink v-if="state === 'device'" to="/settings#sync" class="btn btn-sm">Sign in to sync</NuxtLink>
-      <NuxtLink v-else-if="state === 'needs-setup'" to="/settings#sync" class="btn btn-sm">Set up Firebase</NuxtLink>
-      <button v-else-if="state === 'offline' || state === 'error'" type="button" class="btn btn-sm" @click="sync.retry(); open = false">Try again</button>
-    </div>
+    <Transition name="slide-down">
+      <div v-if="open" class="pop" role="status">
+        <p>{{ COPY[state].detail }}</p>
+        <p v-if="state === 'offline' && session.offlineReason" class="why">{{ offlineHelp(session.offlineReason) }}</p>
+        <NuxtLink v-if="state === 'device'" to="/settings#sync" class="btn btn-sm">Sign in to sync</NuxtLink>
+        <NuxtLink v-else-if="state === 'needs-setup'" to="/settings#sync" class="btn btn-sm">Set up Firebase</NuxtLink>
+        <button v-else-if="state === 'offline' || state === 'error'" type="button" class="btn btn-sm" @click="sync.retry(); open = false">Try again</button>
+      </div>
+    </Transition>
   </div>
 </template>
 

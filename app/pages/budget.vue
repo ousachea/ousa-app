@@ -33,7 +33,7 @@ onMounted(() => {
 
 function selectTab(value: BudgetTab) {
   if (value === tab.value && Object.keys(route.query).length <= 1) return
-  store.go(value)
+  viewTransition(() => store.go(value))
   play('select')
 }
 

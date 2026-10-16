@@ -220,7 +220,7 @@ function filterByCategory(category: string) {
 }
 
 // Cards or a compact list (#15)
-const view = useRemembered<'cards' | 'list'>('things-view', 'cards', v => v === 'cards' || v === 'list')
+const view = smoothRef(useRemembered<'cards' | 'list'>('things-view', 'cards', v => v === 'cards' || v === 'list'))
 
 const sort = useRemembered<(typeof SORTS)[number]['value']>('things-sort', 'added', v => SORTS.some(s => s.value === v))
 

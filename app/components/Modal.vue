@@ -77,13 +77,35 @@ function onClick(e: MouseEvent) {
   backdrop-filter: blur(3px);
 }
 
-/* Soft entrance; exits instantly so closing never feels sluggish */
+/* Soft entrance, and a quicker exit (shorter than the entrance so closing never feels sluggish).
+   The exit keeps the closing dialog on screen and in the top layer just long enough to fade out;
+   browsers without allow-discrete simply close it at once. */
 .modal[open] {
   animation: modal-in 0.22s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .modal[open]::backdrop {
   animation: fade-in 0.22s ease-out;
+}
+
+.modal,
+.modal::backdrop {
+  transition:
+    opacity 0.14s var(--ease-in),
+    translate 0.14s var(--ease-in),
+    scale 0.14s var(--ease-in),
+    overlay 0.14s allow-discrete,
+    display 0.14s allow-discrete;
+}
+
+.modal:not([open]) {
+  opacity: 0;
+  translate: 0 6px;
+  scale: 0.98;
+}
+
+.modal:not([open])::backdrop {
+  opacity: 0;
 }
 
 .panel-inner {
@@ -144,9 +166,12 @@ function onClick(e: MouseEvent) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .modal,
+  .modal::backdrop,
   .modal[open],
   .modal[open]::backdrop {
     animation: none;
+    transition: none;
   }
 }
 </style>

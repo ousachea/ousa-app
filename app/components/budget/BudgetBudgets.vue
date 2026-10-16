@@ -91,7 +91,7 @@ const showSpending = (l: BudgetLimit, range: { from: string, to: string }) =>
       <button type="button" class="btn" @click="openForm(undefined, { scope: 'overall' })">Set a monthly budget</button>
     </section>
 
-    <div class="list">
+    <TransitionGroup tag="div" name="list" class="list">
       <article v-for="{ l, s } in [...overallRows, ...otherRows]" :data-item-id="l.id" :key="l.id" class="panel b-panel budget" :class="{ overall: l.scope === 'overall' }">
         <div class="top">
           <span class="icon" :class="`slot-${categoryById.get(l.targetId)?.color ?? 'gray'}`" aria-hidden="true">{{ l.scope === 'overall' ? '💰' : categoryById.get(l.targetId)?.icon ?? '🧾' }}</span>
@@ -114,7 +114,7 @@ const showSpending = (l: BudgetLimit, range: { from: string, to: string }) =>
           {{ s.level === 'over' ? 'Over budget.' : 'Limit reached.' }} You can still log spending; this is just a heads-up.
         </p>
       </article>
-    </div>
+    </TransitionGroup>
 
     <div v-if="!limits.items.value.length" class="panel b-gap">
       <EmptyState title="No budgets yet" icon="budget" action="+ Budget" @action="openForm()">

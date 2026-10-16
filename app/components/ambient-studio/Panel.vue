@@ -5,7 +5,7 @@ import { useAmbientMusic } from '~/composables/ambient-studio/useAmbientMusic'
 
 // The side panel: the sound mixer and the timer, one at a time. On phones it sits under the
 // player and folds away to a single bar.
-const tab = ref<'queue' | 'mixer' | 'timer'>('mixer')
+const tab = smoothRef(ref<'queue' | 'mixer' | 'timer'>('mixer'))
 const open = ref(true)
 const timer = useAmbientTimer()
 const mixer = useAmbientMixer()
@@ -50,11 +50,13 @@ function pick(id: 'queue' | 'mixer' | 'timer') {
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
       </button>
     </div>
-    <div v-show="open" :id="`ambient-studio-pane-${tab}`" class="pane" role="tabpanel" :aria-labelledby="`ambient-studio-tab-${tab}`">
-      <AmbientStudioQueue v-if="tab === 'queue'" />
-      <AmbientStudioMixer v-else-if="tab === 'mixer'" />
-      <AmbientStudioTimer v-else />
-    </div>
+    <Transition name="collapse">
+      <div v-show="open" :id="`ambient-studio-pane-${tab}`" class="pane" role="tabpanel" :aria-labelledby="`ambient-studio-tab-${tab}`">
+        <AmbientStudioQueue v-if="tab === 'queue'" />
+        <AmbientStudioMixer v-else-if="tab === 'mixer'" />
+        <AmbientStudioTimer v-else />
+      </div>
+    </Transition>
   </section>
 </template>
 

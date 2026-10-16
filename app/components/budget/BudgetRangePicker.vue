@@ -7,6 +7,8 @@ const props = defineProps<{ weekStart: 0 | 1, modes?: RangeMode[] }>()
 const range = defineModel<DateRange>({ required: true })
 const mode = defineModel<RangeMode>('mode', { default: 'month' })
 const { play } = useSound()
+// Switching period or month cross-fades the figures below
+const pickedMode = smoothRef(mode)
 
 const MODES = computed(() => (props.modes ?? ['month', 'week', 'day', 'custom']).map(value => ({
   value, label: { month: 'Month', week: 'This week', day: 'Today', custom: 'Custom' }[value]
@@ -22,7 +24,7 @@ const isThisMonth = computed(() => range.value.from === monthRange(today()).from
 function shift(by: number) {
   const next = monthRange(addMonths(range.value.from, by))
   if (next.from > today()) return
-  range.value = next
+  viewTransition(() => (range.value = next))
   play('tap')
 }
 
@@ -34,7 +36,7 @@ const to = computed({ get: () => range.value.to, set: v => (range.value = { from
   <div class="range-picker">
     <div class="segmented modes" role="radiogroup" aria-label="Period">
       <label v-for="m in MODES" :key="m.value" :class="{ active: mode === m.value }">
-        <input v-model="mode" type="radio" :value="m.value">{{ m.label }}
+        <input v-model="pickedMode" type="radio" :value="m.value">{{ m.label }}
       </label>
     </div>
     <div v-if="mode === 'month'" class="month">
