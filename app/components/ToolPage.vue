@@ -120,6 +120,8 @@ function toggleDemo() {
     <SiteBar v-if="siteBar" back />
 
     <header v-if="header !== 'none'" class="head">
+      <!-- The icon, with the sync dot on its corner for apps that save data -->
+      <span class="icon-wrap">
       <button
         v-if="demo.supported.value"
         ref="stickerEl"
@@ -137,6 +139,8 @@ function toggleDemo() {
         </span>
       </button>
       <span v-else ref="stickerEl" class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
+      <ClientOnly><SyncDot /></ClientOnly>
+      </span>
       <div class="head-text">
         <h1>{{ tool.name }}</h1>
         <p>{{ tool.summary }}</p>
@@ -249,6 +253,12 @@ function toggleDemo() {
     0 0 0 5px var(--plastic-edge),
     inset 0 -6px 0 rgb(0 0 0 / 0.12),
     inset 0 6px 10px rgb(255 255 255 / 0.25);
+}
+
+.icon-wrap {
+  position: relative;
+  flex: none;
+  display: inline-flex;
 }
 
 /* ---------- Demo switch: the app icon itself ---------- */
@@ -841,11 +851,14 @@ h1 {
     display: contents;
   }
 
+  .icon-wrap {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
   .sticker,
   .header-bar .sticker,
   .header-band .sticker {
-    grid-column: 1;
-    grid-row: 1;
     width: 2.75rem;
     height: 2.75rem;
     font-size: 1.5rem;
