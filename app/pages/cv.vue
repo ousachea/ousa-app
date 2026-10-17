@@ -82,10 +82,49 @@ function go(id: string) {
   activeId.value = id
 }
 
+// Links to a section on this page (the nav, View my work, the footer) glide there. Done here rather
+// than with CSS scroll-behavior, which a device's reduce-motion setting turns into a jump; it stops
+// as soon as you scroll yourself.
+let glide = 0
+function stopGlide() {
+  cancelAnimationFrame(glide)
+  glide = 0
+}
+function glideTo(top: number) {
+  stopGlide()
+  const from = window.scrollY
+  const distance = top - from
+  if (Math.abs(distance) < 2) return
+  const duration = Math.min(900, Math.max(450, Math.abs(distance) * 0.35))
+  const start = performance.now()
+  const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
+  const step = (now: number) => {
+    const t = Math.min(1, (now - start) / duration)
+    window.scrollTo({ top: from + distance * ease(t), behavior: 'instant' })
+    glide = t < 1 ? requestAnimationFrame(step) : 0
+  }
+  glide = requestAnimationFrame(step)
+}
+function onAnchorClick(e: MouseEvent) {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('.cv a[href^="#"]')
+  if (!link) return
+  const id = link.getAttribute('href')!.slice(1)
+  const el = id && id !== 'top' ? document.getElementById(id) : null
+  if (id && id !== 'top' && !el) return
+  e.preventDefault()
+  // Lands where the CSS scroll-margin-top says, under the floating nav
+  const margin = el ? parseFloat(getComputedStyle(el).scrollMarginTop) || 0 : 0
+  glideTo(el ? el.getBoundingClientRect().top + window.scrollY - margin : 0)
+  history.replaceState(history.state, '', id && id !== 'top' ? `#${id}` : location.pathname)
+}
+
 let spy: IntersectionObserver | undefined
 const onScroll = () => (scrolled.value = window.scrollY > 24)
 onMounted(() => {
   onScroll()
+  document.addEventListener('click', onAnchorClick)
+  for (const type of ['wheel', 'touchstart', 'keydown'] as const) window.addEventListener(type, stopGlide, { passive: true })
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('resize', placeMarker, { passive: true })
   // A section counts as the one you're reading while it crosses a band just above the middle
@@ -96,6 +135,9 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   spy?.disconnect()
+  stopGlide()
+  document.removeEventListener('click', onAnchorClick)
+  for (const type of ['wheel', 'touchstart', 'keydown'] as const) window.removeEventListener(type, stopGlide)
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('resize', placeMarker)
 })
