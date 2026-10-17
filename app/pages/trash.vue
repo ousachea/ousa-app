@@ -108,7 +108,7 @@ function daysLeft(iso: string) {
 </script>
 
 <template>
-  <ToolPage :tool="TRASH" header="bar" width="980px">
+  <ToolPage :tool="TRASH" header="bar">
     <ClientOnly>
       <template v-if="entries.length">
         <!-- Filter by app -->

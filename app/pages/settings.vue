@@ -199,7 +199,7 @@ const volume = computed({
 </script>
 
 <template>
-  <ToolPage header="bar" width="1100px">
+  <ToolPage header="bar">
     <ClientOnly>
       <div class="settings">
         <nav v-sticky-fit class="snav" aria-label="Settings sections">
@@ -571,6 +571,37 @@ const volume = computed({
 
 .rows > :deep(:first-child) {
   border-top: 0;
+}
+
+/* Full-width windows: the rows sit in two columns, so a title and its switch stay close together */
+@media (min-width: 1500px) {
+  .rows {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 3rem;
+  }
+
+  .rows > :deep(:nth-child(2)) {
+    border-top: 0;
+  }
+
+  .rows-note {
+    grid-column: 1 / -1;
+  }
+
+  .rows:has(> .rows-note) > :deep(:nth-child(2)) {
+    border-top: 0;
+  }
+
+  .rows:has(> .rows-note) > :deep(:nth-child(3)) {
+    border-top: 0;
+  }
+
+  .lowspec-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 3rem;
+  }
 }
 
 .rows-note {

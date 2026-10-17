@@ -33,7 +33,7 @@ function saveToVault(password: string) {
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <template #settings>
       <SettingChoice v-model="pwPrefs.tab" title="Open on" :options="TABS" />
       <SettingChoice v-model="pwPrefs.length" title="New password length" description="20 characters is very hard to crack." :options="[{ value: 12, label: '12' }, { value: 16, label: '16' }, { value: 20, label: '20' }, { value: 32, label: '32' }]" />
@@ -68,7 +68,8 @@ function saveToVault(password: string) {
   justify-content: center;
   gap: 0.25rem;
   width: fit-content;
-  margin: -0.5rem auto 2.25rem;
+  /* Left-aligned under the compact header, like Text tools' tabs */
+  margin: 0 0 1.75rem;
   padding: 4px;
   background: var(--surface-2);
   border: 1px solid var(--line);

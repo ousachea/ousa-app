@@ -399,7 +399,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   --up-a: var(--cyan);
   --up-b: color-mix(in srgb, var(--cyan) 50%, #9ff3ff);
   width: 100%;
-  max-width: 76rem;
   display: grid;
   grid-template-areas: 'dial' 'stats' 'result' 'history';
   gap: 1rem;
@@ -437,6 +436,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     position: sticky;
     top: var(--pin-top);
   }
+
 }
 
 /* Upload turns the dial blue, so the two halves of the test read apart at a glance */
@@ -457,6 +457,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   width: min(100%, 22rem);
   /* The dial is open at the bottom, so the box stops just under its ends */
   aspect-ratio: 320 / 268;
+}
+
+/* Wide screens: the dial grows to fill its half of the page */
+@media (min-width: 1000px) {
+  .dial-wrap {
+    width: min(100%, 30rem);
+  }
 }
 
 .dial {

@@ -130,7 +130,7 @@ async function reloadRate() {
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <template #settings>
       <SettingChoice v-model="xPrefs.mode" title="Open on" :options="MODES" />
       <SettingChoice v-model="xPrefs.direction" title="Change" :options="DIRECTIONS" />
@@ -290,7 +290,8 @@ async function reloadRate() {
   justify-content: center;
   gap: 0.25rem;
   width: fit-content;
-  margin: -0.5rem auto 2.25rem;
+  /* Left-aligned under the compact header, like Text tools' tabs */
+  margin: 0 0 1.75rem;
   padding: 4px;
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -329,7 +330,7 @@ async function reloadRate() {
 
 @media (min-width: 1000px) {
   .workspace {
-    max-width: 1280px;
+    max-width: none;
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     gap: 2.5rem;
     align-items: start;

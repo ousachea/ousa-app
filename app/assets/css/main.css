@@ -1,6 +1,7 @@
 :root {
-  /* Widest an app's content gets; wide screens use the room instead of leaving big margins */
-  --page-width: 1840px;
+  /* Widest an app's content gets: the whole window, less the side gutters. Pages lay themselves out
+     in more columns as the room grows instead of leaving big margins */
+  --page-width: 100%;
 
   /* Surfaces */
   --bg: #e8ebf0;

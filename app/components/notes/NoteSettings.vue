@@ -11,6 +11,7 @@ const { prefs, reset } = useNotePrefs()
 const FONTS = [{ value: 'sans', label: 'Sans' }, { value: 'serif', label: 'Serif' }, { value: 'mono', label: 'Mono' }] as const
 const SIZES = [{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }] as const
 const LEADING = [{ value: 'tight', label: 'Tight' }, { value: 'normal', label: 'Normal' }, { value: 'relaxed', label: 'Relaxed' }] as const
+const WIDTHS = [{ value: 'center', label: 'Centred' }, { value: 'full', label: 'Full width' }] as const
 const PREVIEW = [{ value: 0, label: 'None' }, { value: 80, label: 'Short' }, { value: 140, label: 'Medium' }, { value: 240, label: 'Long' }] as const
 </script>
 
@@ -34,6 +35,12 @@ const PREVIEW = [{ value: 0, label: 'None' }, { value: 80, label: 'Short' }, { v
         <span>Line spacing</span>
         <div class="seg" role="radiogroup" aria-label="Line spacing">
           <label v-for="o in LEADING" :key="o.value" :class="{ active: prefs.leading === o.value }"><input v-model="prefs.leading" type="radio" :value="o.value">{{ o.label }}</label>
+        </div>
+      </div>
+      <div class="row">
+        <span>Note width</span>
+        <div class="seg" role="radiogroup" aria-label="Note width">
+          <label v-for="o in WIDTHS" :key="o.value" :class="{ active: prefs.width === o.value }"><input v-model="prefs.width" type="radio" :value="o.value">{{ o.label }}</label>
         </div>
       </div>
       <label class="row check"><span>Spellcheck</span><input v-model="prefs.spellcheck" type="checkbox"></label>

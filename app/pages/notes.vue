@@ -673,6 +673,11 @@ async function copyNote(n: Note) {
     toast.error('Could not copy')
   }
 }
+// The note centred or across the whole pane; remembered with the other Notes settings
+function toggleWidth() {
+  notePrefs.width = notePrefs.width === 'full' ? 'center' : 'full'
+  play(notePrefs.width === 'full' ? 'toggle-on' : 'toggle-off')
+}
 const escapeHtml = (t: string) => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 function rename(n: Note) {
   openNoteById(n.id)
@@ -941,7 +946,7 @@ function listMenu() {
 </script>
 
 <template>
-  <ToolPage header="bar" width="1560px">
+  <ToolPage header="bar">
     <template #settings>
       <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
       <SettingChoice v-model="view" title="Show notes as" :options="VIEWS.map(v => ({ value: v, label: v === 'grid' ? 'Cards' : v[0]!.toUpperCase() + v.slice(1) }))" />
@@ -1160,6 +1165,10 @@ function listMenu() {
                 <button type="button" class="icon-btn" :class="{ on: openNote.favorite }" :aria-pressed="!!openNote.favorite" :aria-label="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" :title="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" @click="toggleFavorite(openNote)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z" /></svg>
                 </button>
+                <button type="button" class="icon-btn width-btn" :class="{ on: notePrefs.width === 'full' }" :aria-pressed="notePrefs.width === 'full'" aria-label="Full width" :title="notePrefs.width === 'full' ? 'Centre the note' : 'Full width'" @click="toggleWidth">
+                  <svg v-if="notePrefs.width === 'full'" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h5M20 12h-5M7 9l2.5 3L7 15M17 9l-2.5 3 2.5 3" /></svg>
+                  <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12h17M6.5 9l-3 3 3 3M17.5 9l3 3-3 3" /></svg>
+                </button>
                 <button type="button" class="icon-btn" aria-label="Copy note" title="Copy note" @click="copyNote(openNote)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.2" /><path d="M15.5 8.5V6.7a2.2 2.2 0 0 0-2.2-2.2H6.7a2.2 2.2 0 0 0-2.2 2.2v6.6a2.2 2.2 0 0 0 2.2 2.2h1.8" /></svg>
                 </button>
@@ -1180,7 +1189,7 @@ function listMenu() {
               This note is archived. <button type="button" class="link" @click="setArchived(openNote, false)">Put it back</button>
             </div>
 
-            <div class="sheet" :style="editorStyle">
+            <div class="sheet" :class="{ full: notePrefs.width === 'full' }" :style="editorStyle">
               <textarea
                 ref="titleInput"
                 v-model="draft.title"
@@ -1880,6 +1889,11 @@ time {
   margin: 0 auto;
 }
 
+/* Full width (the toggle in the editor's header, or Notes settings): the note uses the whole pane */
+.sheet.full {
+  max-width: none;
+}
+
 /* The note fills the panel, so its details can sit at the bottom however short it is */
 .editor-pane:has(> .sheet) {
   display: flex;
@@ -2377,8 +2391,9 @@ kbd {
     clip-path: inset(50%);
   }
 
-  /* Version history is in the … menu */
-  .history-btn {
+  /* Version history is in the … menu; the note already fills a phone, so no width toggle */
+  .history-btn,
+  .width-btn {
     display: none;
   }
 

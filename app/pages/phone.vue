@@ -279,7 +279,7 @@ async function copyResults() {
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <template #settings>
       <SettingChoice v-model="phonePrefs.showCount" title="Contacts shown at first" description="When you check an address book. Scroll for more." :options="[{ value: 50, label: '50' }, { value: 100, label: '100' }, { value: 250, label: '250' }, { value: 1000, label: '1,000' }]" />
     </template>

@@ -13,6 +13,8 @@ export interface NotePrefs {
   previewLength: number
   /** Created, modified, words and folder under the editor */
   showDetails: boolean
+  /** The note in a centred column that's easy to read, or across the whole editor */
+  width: 'center' | 'full'
 }
 
 const DEFAULTS: NotePrefs = {
@@ -22,7 +24,8 @@ const DEFAULTS: NotePrefs = {
   spellcheck: true,
   defaultFolder: '',
   previewLength: 140,
-  showDetails: true
+  showDetails: true,
+  width: 'center'
 }
 
 const prefs = reactive<NotePrefs>({ ...DEFAULTS })

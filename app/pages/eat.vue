@@ -529,7 +529,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 </script>
 
 <template>
-  <ToolPage>
+  <ToolPage header="bar">
     <template #settings>
       <SettingChoice v-model="eatPrefs.filter" title="Show" description="What the deck deals when you open the app." :options="[{ value: 'all', label: 'Both' }, { value: 'food', label: 'Foods' }, { value: 'place', label: 'Places' }]" />
     </template>
