@@ -27,7 +27,8 @@ function write(key: string, value: string) {
   } catch {}
 }
 
-const resolved = computed(() => state.preference === 'lite' || (state.preference === 'auto' && state.slowDevice) ? 'lite' : 'full')
+// Low-spec PC mode (Settings) always means lite, whatever is picked here
+const resolved = computed(() => usePrefs().prefs.lowSpec || state.preference === 'lite' || (state.preference === 'auto' && state.slowDevice) ? 'lite' : 'full')
 
 function apply() {
   document.documentElement.dataset.effects = resolved.value
@@ -70,6 +71,7 @@ function start() {
   if (saved === 'auto' || saved === 'full' || saved === 'lite') state.preference = saved
   state.slowDevice = read(DETECTED_KEY) === 'slow'
   apply()
+  effectScope(true).run(() => watch(resolved, apply))
   probe()
 }
 

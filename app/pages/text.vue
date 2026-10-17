@@ -107,7 +107,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
     </ClientOnly>
 
     <div v-else class="workspace">
-      <Step title="Your text" class="input-step">
+      <!-- Three numbered steps, the way every app here walks you through it. The case picker runs across
+           the top, so it's step 1 -->
+      <Step :n="2" title="Paste your text" hint="Type or paste anything: a heading, a list, a whole document." class="input-step">
         <div class="panel editor">
           <textarea
             v-model="input"
@@ -129,7 +131,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
       </Step>
 
       <div class="side">
-        <Step title="Case" class="modes-step">
+        <Step :n="1" title="Pick a case" hint="Each one shows how it looks, using the start of your text once you’ve pasted it. Change it any time." class="modes-step">
           <div class="modes" role="radiogroup" aria-label="Case">
             <label
               v-for="m in CASE_MODES"
@@ -150,7 +152,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
           </div>
         </Step>
 
-        <Step title="Result" class="output-step">
+        <Step :n="3" title="Copy the result" hint="It updates as you type. Copy it and paste it wherever you need it." class="output-step">
           <div class="panel result">
             <output class="output" :class="{ empty: !input }" aria-live="polite">
               {{ input ? output : 'Your converted text shows up here as you type.' }}

@@ -30,6 +30,8 @@ export interface Prefs {
   cubeColors: 'cube' | 'apps'
   /** List, grid or compact, for lists you haven't picked a view for yet */
   defaultView: 'list' | 'grid' | 'compact'
+  /** Low-spec PC mode: lite effects and no motion at all, plus no splash or cross-fades, for old computers */
+  lowSpec: boolean
 }
 
 const DEFAULTS: Prefs = {
@@ -44,7 +46,8 @@ const DEFAULTS: Prefs = {
   pinnedApps: [],
   accent: 'apps',
   cubeColors: 'cube',
-  defaultView: 'list'
+  defaultView: 'list',
+  lowSpec: false
 }
 
 const prefs = reactive<Prefs>({ ...DEFAULTS })
@@ -53,8 +56,10 @@ let started = false
 function apply() {
   const root = document.documentElement
   root.dataset.density = prefs.density
-  if (prefs.motion === 'reduced') root.dataset.motion = 'reduced'
+  if (prefs.motion === 'reduced' || prefs.lowSpec) root.dataset.motion = 'reduced'
   else delete root.dataset.motion
+  if (prefs.lowSpec) root.dataset.lowspec = ''
+  else delete root.dataset.lowspec
 }
 
 function start() {

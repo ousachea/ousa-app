@@ -26,6 +26,8 @@ const props = defineProps<{
   activeLabel?: string
   /** Phones: always show the whole tree instead of folding it under the current folder (Notes' Folders screen) */
   expanded?: boolean
+  /** An item is being dragged with the mouse: every folder shows it can take it */
+  itemDragging?: boolean
 }>()
 const emit = defineEmits<{
   'select': [id: string]
@@ -153,7 +155,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
 </script>
 
 <template>
-  <nav class="folder-tree" :class="{ 'phone-open': openOnPhone || expanded, expanded }" aria-label="Folders">
+  <nav class="folder-tree" :class="{ 'phone-open': openOnPhone || expanded, expanded, 'drop-targets': itemDragging }" aria-label="Folders">
     <button v-if="!expanded" type="button" class="phone-toggle" :aria-expanded="openOnPhone" @click="openOnPhone = !openOnPhone">
       <FolderIcon icon="folder" />
       <span class="phone-current">{{ activeName }}</span>
@@ -243,7 +245,8 @@ watch(() => props.active, () => (openOnPhone.value = false))
       <button type="button" class="add-folder bottom" @click="emit('add', '')">
         <span aria-hidden="true">+</span> Add folder
       </button>
-      <p v-if="folders.length" class="hint">Drag {{ noun }} onto a folder to move them. Drag folders to reorder or nest them.</p>
+      <p v-if="itemDragging" class="hint drop-hint" role="status">Drop on a folder to move it there.</p>
+      <p v-else-if="folders.length" class="hint">Drag {{ noun }} onto a folder to move them. Drag folders to reorder or nest them.</p>
     </div>
   </nav>
 </template>
@@ -341,6 +344,17 @@ watch(() => props.active, () => (openOnPhone.value = false))
   color: var(--ink);
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
   box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* While a bookmark is dragged, every folder that can take it gets a dashed outline */
+.drop-targets .row:not(.on, .drop-into) {
+  outline: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: -1.5px;
+}
+
+.drop-hint {
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .row.drop-before {

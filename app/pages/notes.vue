@@ -652,6 +652,28 @@ async function copyLink(n: Note) {
     toast.error('Could not copy')
   }
 }
+// The note itself to the clipboard: formatted where pasting keeps formatting (Docs, Mail),
+// Markdown everywhere else (chat apps, plain text boxes)
+async function copyNote(n: Note) {
+  const title = n.title?.trim()
+  const html = (title ? `<h1>${escapeHtml(title)}</h1>` : '') + n.html
+  const plain = (title ? `${title}\n\n` : '') + htmlToMarkdown(n.html).trim()
+  try {
+    if (typeof ClipboardItem !== 'undefined' && navigator.clipboard.write) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([plain], { type: 'text/plain' })
+      })])
+    } else {
+      await navigator.clipboard.writeText(plain)
+    }
+    play('copy')
+    toast.success('Note copied', { description: 'Paste it anywhere: formatting comes along where it can.' })
+  } catch {
+    toast.error('Could not copy')
+  }
+}
+const escapeHtml = (t: string) => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 function rename(n: Note) {
   openNoteById(n.id)
   nextTick(() => {
@@ -691,6 +713,7 @@ const noteMenu = (n: Note): MenuEntry[] => sel.has(n.id) && sel.selected.size > 
       '-',
       { label: 'Duplicate', icon: 'duplicate', run: () => duplicate(n) },
       { label: n.archived ? 'Unarchive' : 'Archive', icon: 'folder', run: () => setArchived(n, !n.archived) },
+      { label: 'Copy note', icon: 'copy', run: () => copyNote(n) },
       { label: 'Copy link', icon: 'copy', run: () => copyLink(n) },
       { label: 'Export as Markdown', icon: 'open', run: () => exportNotes('one', 'md', n) },
       { label: 'Save as template', icon: 'list', run: () => saveAsTemplate(n) },
@@ -707,6 +730,7 @@ function moreMenu(e: MouseEvent) {
     { label: 'Version history', icon: 'refresh', run: () => (historyOpen.value = true) },
     { label: 'Duplicate', icon: 'duplicate', run: () => duplicate(n) },
     { label: 'Save as template', icon: 'list', run: () => saveAsTemplate(n) },
+    { label: 'Copy note', icon: 'copy', run: () => copyNote(n) },
     { label: 'Copy link', icon: 'copy', run: () => copyLink(n) },
     '-',
     { label: n.archived ? 'Unarchive' : 'Archive', icon: 'folder', run: () => setArchived(n, !n.archived) },
@@ -1060,6 +1084,7 @@ function listMenu() {
                   @dragstart="onNoteDrag($event, n)"
                   @click.capture="sel.onRowClick($event, n.id)"
                 >
+                  <span v-if="!sel.selecting" class="drag-grip corner end" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg></span>
                   <BulkCheck v-if="sel.selecting" :checked="sel.has(n.id)" :label="`Select ${displayTitle(n)}`" @pick="sel.pick(n.id, $event)" />
                   <button type="button" class="note-open" :aria-current="n.id === openId ? 'true' : undefined" @click="openNoteById(n.id)">
                     <span class="note-title">
@@ -1134,6 +1159,9 @@ function listMenu() {
               <span class="head-actions">
                 <button type="button" class="icon-btn" :class="{ on: openNote.favorite }" :aria-pressed="!!openNote.favorite" :aria-label="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" :title="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" @click="toggleFavorite(openNote)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z" /></svg>
+                </button>
+                <button type="button" class="icon-btn" aria-label="Copy note" title="Copy note" @click="copyNote(openNote)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.2" /><path d="M15.5 8.5V6.7a2.2 2.2 0 0 0-2.2-2.2H6.7a2.2 2.2 0 0 0-2.2 2.2v6.6a2.2 2.2 0 0 0 2.2 2.2h1.8" /></svg>
                 </button>
                 <button type="button" class="icon-btn history-btn" aria-label="Version history" title="Version history" @click="historyOpen = true">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v3h3M12 8v4l2.5 2" /></svg>

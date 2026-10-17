@@ -147,6 +147,7 @@ useAppSeo({
             :class="{ 'page-start': spots.get(tool.to)?.start, 'last-app': lastApp === tool.to }"
             :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--on-accent': tool.onColor ?? '#fff', '--col': spots.get(tool.to)?.col, '--row': spots.get(tool.to)?.row }"
           >
+            <span v-if="group.name === 'Pinned'" class="drag-grip corner" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg></span>
             <span v-if="tool.demo" class="demo-badge" title="Open it and click the app’s icon to see it with example data">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>Try it
             </span>

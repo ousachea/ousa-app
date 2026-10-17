@@ -61,7 +61,8 @@ const offs: (() => void)[] = []
 onMounted(() => {
   offs.push(router.beforeEach((to, from) => {
     const next = appOf(to.path)
-    if (!next || next === appOf(from.path) || !matchMedia(PHONE).matches) return
+    // Low-spec PC mode skips it: the page shows as soon as it's ready
+    if (!next || next === appOf(from.path) || !matchMedia(PHONE).matches || usePrefs().prefs.lowSpec) return
     show(next)
   }))
   offs.push(nuxtApp.hook('page:transition:finish', hide))

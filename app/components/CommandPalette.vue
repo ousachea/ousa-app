@@ -13,6 +13,8 @@ const { theme, toggle: toggleTheme } = useTheme()
 const sound = useSound()
 const { prefs } = usePrefs()
 const { log } = useActivity()
+// Signed out, it finds apps and commands but none of your data (useSignInGate)
+const gate = useSignInGate()
 
 const dialog = ref<HTMLDialogElement>()
 const input = ref<HTMLInputElement>()
@@ -128,6 +130,7 @@ const commandEntries = computed<Entry[]>(() => {
 
 // Recent activity, newest first, one line per thing
 const recentEntries = computed<Entry[]>(() => {
+  if (!gate.open.value) return []
   const seen = new Set<string>()
   const out: Entry[] = []
   for (const a of log.value) {
@@ -158,7 +161,7 @@ const sections = computed<Section[]>(() => {
   }
 
   const out: Section[] = []
-  for (const g of searchEverything(q)) {
+  for (const g of gate.open.value ? searchEverything(q) : []) {
     out.push({
       title: g.group,
       entries: g.hits.map(h => ({ id: h.key, title: h.title, subtitle: h.subtitle, ...iconOf(pageFor(h.app)), run: () => go(h.to) }))

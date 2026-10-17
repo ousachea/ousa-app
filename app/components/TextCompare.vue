@@ -110,6 +110,8 @@ const wordCount = (s: string) => (s.match(/[\p{L}\p{N}]+/gu) ?? []).length
 
 <template>
   <div class="compare">
+    <!-- Two numbered steps, the way every app here walks you through it -->
+    <Step :n="1" title="Paste both versions" hint="The original on the left, the changed version on the right. Swap them if you got it the wrong way round.">
     <div class="inputs">
       <label class="field box">
         <span class="field-head">Original <output>{{ wordCount(original).toLocaleString() }} words</output></span>
@@ -121,6 +123,9 @@ const wordCount = (s: string) => (s.match(/[\p{L}\p{N}]+/gu) ?? []).length
         <textarea v-model="modified" class="input text" placeholder="Paste the changed text…" spellcheck="false" />
       </label>
     </div>
+    </Step>
+
+    <Step :n="2" title="See what changed" hint="Added words are green, removed ones red, changed ones orange. Ignore capitals or spacing you don’t care about, and pick how the changes are laid out.">
 
     <div class="bar">
       <label class="check"><input v-model="ignoreCase" type="checkbox">Ignore capitals</label>
@@ -233,6 +238,7 @@ const wordCount = (s: string) => (s.match(/[\p{L}\p{N}]+/gu) ?? []).length
         Put the original on the left and the changed version on the right. Every word that was added, removed or changed is highlighted.
       </EmptyState>
     </section>
+    </Step>
   </div>
 </template>
 
@@ -240,7 +246,7 @@ const wordCount = (s: string) => (s.match(/[\p{L}\p{N}]+/gu) ?? []).length
 .compare {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 2rem;
 }
 
 .inputs {
@@ -271,6 +277,7 @@ const wordCount = (s: string) => (s.match(/[\p{L}\p{N}]+/gu) ?? []).length
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .check {

@@ -1,7 +1,7 @@
 # Ousa’s Apps
 
 Small tools for everyday jobs, and simple trackers for the things in your life, in one web app.
-Everything works on this device without an account; sign in with Google to sync your data across devices.
+Sign in with Google to open the apps; your data then syncs across your devices, and nobody else using the same device can see it. (The CV page stays public.)
 
 Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google sign-in and Firestore).
 

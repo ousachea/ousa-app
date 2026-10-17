@@ -83,7 +83,7 @@ const slots = useSlots()
 const settingsOpen = useAppSettingsOpen()
 onBeforeUnmount(() => (settingsOpen.value = false))
 // Listed apps always have settings, if only Import & export; pages that save nothing (the CV) don't
-const hasSettings = computed(() => !!slots.settings || (TOOLS.some(t => t.to === route.path) && !tool.value.readOnly))
+const hasSettings = computed(() => !walled.value && (!!slots.settings || (TOOLS.some(t => t.to === route.path) && !tool.value.readOnly)))
 function openSettings() {
   settingsOpen.value = true
   play('open')
@@ -107,6 +107,9 @@ const accent = computed(() => (hydrated.value && prefs.accent !== 'apps'
 
 // Demo: on pages that have one, the app icon switches sample data on and off
 const demo = useDemoState(route.path)
+// Signed out, an app shows the sign-in wall instead of itself (useSignInGate)
+const gate = useSignInGate()
+const walled = computed(() => isGatedPage(route.path) && !gate.open.value)
 const { play } = useSound()
 function toggleDemo() {
   demo.active.value = !demo.active.value
@@ -123,7 +126,7 @@ function toggleDemo() {
       <!-- The icon, with the sync dot on its corner for apps that save data -->
       <span class="icon-wrap">
       <button
-        v-if="demo.supported.value"
+        v-if="demo.supported.value && !walled"
         ref="stickerEl"
         type="button"
         class="sticker demo-toggle"
@@ -210,11 +213,14 @@ function toggleDemo() {
 
     <!-- The header keeps the app's own colour; buttons and highlights can use one accent everywhere -->
     <div class="body" :style="accent.override ? { '--accent': accent.color, '--accent-btn': `var(--${prefs.accent}-btn, ${accent.color})`, '--on-accent': accent.on } : undefined">
+      <SignInWall v-if="walled" :name="tool.name" :checking="gate.state.value === 'checking'" />
+      <template v-else>
       <p v-if="demo.active.value" class="demo-banner" role="status">
         <span><strong>This is example data.</strong> Explore freely: changes here aren’t saved, and your own data is untouched.</span>
         <button type="button" class="btn btn-sm" @click="toggleDemo">Back to my data</button>
       </p>
       <slot />
+      </template>
     </div>
   </main>
 </template>

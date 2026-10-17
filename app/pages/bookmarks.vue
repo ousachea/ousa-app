@@ -593,8 +593,13 @@ function bulkPin(pinned = !selectionPinned.value) {
 const movingMany = ref(false)
 function bulkMove(folderId: string) {
   movingMany.value = false
+  moveMarks(selectedMarks.value, folderId)
+}
+
+// Several bookmarks to one folder: the selection, or a drag of selected bookmarks
+function moveMarks(marks: Bookmark[], folderId: string) {
   const target = folderId === UNFILED || folderId === ALL_BOOKMARKS ? [] : [folderId]
-  const targets = selectedMarks.value.filter(b => JSON.stringify(foldersOf(b)) !== JSON.stringify(target))
+  const targets = marks.filter(b => JSON.stringify(foldersOf(b)) !== JSON.stringify(target))
   if (!targets.length) return
   const now = new Date().toISOString()
   const before = targets.map(b => update(b.id, { folders: target, updatedAt: now }, { quiet: true })).filter((b): b is Bookmark => !!b)
@@ -635,14 +640,33 @@ function pickFolder(folderId: string) {
   moving.value = undefined
 }
 
-// Bookmarks drag onto folders in the sidebar (desktop; phones use Move to folder…)
+// Bookmarks drag onto folders: with a mouse onto the sidebar (the whole row drags, the grip shows it can),
+// with a finger by the grip onto the tray of folders that slides up (FolderDropTray).
+// Dragging a selected bookmark takes the whole selection along.
 const finePointer = ref(false)
 onMounted(() => (finePointer.value = matchMedia('(pointer: fine)').matches))
+const dragIdsFor = (b: Bookmark) => (sel.has(b.id) && sel.selected.size > 1 ? [...sel.selected] : [b.id])
+const dragLabel = (ids: string[]) => (ids.length === 1 ? items.value.find(x => x.id === ids[0])?.title ?? '1 bookmark' : marksText(ids.length))
+const draggingMarks = ref(false)
 function onBookmarkDrag(e: DragEvent, b: Bookmark) {
-  e.dataTransfer?.setData('application/x-bookmark', b.id)
+  const ids = dragIdsFor(b)
+  e.dataTransfer?.setData('application/x-bookmark', ids.join('\n'))
   e.dataTransfer?.setData('text/uri-list', b.url)
   if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove'
+  // A chip saying what's moving, instead of a ghost of the whole row
+  const chip = document.createElement('div')
+  chip.className = 'drag-ghost'
+  chip.textContent = ids.length > 1 ? `Moving ${marksText(ids.length)}` : (b.title || hostOf(b.url))
+  document.body.append(chip)
+  e.dataTransfer?.setDragImage(chip, 16, 16)
+  setTimeout(() => chip.remove())
+  draggingMarks.value = true
 }
+function dropMarks(ids: string[], folderId: string) {
+  if (ids.length === 1) moveBookmark(ids[0]!, folderId)
+  else moveMarks(items.value.filter(b => ids.includes(b.id)), folderId)
+}
+const touchDrag = useTouchItemDrag(dropMarks)
 
 // ---------- Right-click / long-press menu (CHECKLIST.md #26, #27) ----------
 const menuFor = useRowMenu()
@@ -1059,6 +1083,7 @@ async function refreshAllDetails() {
           v-bind="{ ...menuFor(() => bookmarkMenu(b), b.title), ...reorderPinned.bind(b, i) }"
           @click="opened(b)"
         >
+          <span class="drag-grip corner" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg></span>
           <span class="ribbon" aria-hidden="true" />
           <span class="tile-icon">
             <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
@@ -1088,7 +1113,8 @@ async function refreshAllDetails() {
             @edit="openEditFolder"
             @delete="deleteFolder"
             @move-folder="moveFolder"
-            @drop-bookmark="moveBookmark"
+            :item-dragging="draggingMarks"
+            @drop-bookmark="(ids, folderId) => { draggingMarks = false; dropMarks(ids.split('\n'), folderId) }"
           />
 
           <div class="side-tools">
@@ -1138,7 +1164,11 @@ async function refreshAllDetails() {
 
           <template v-if="shown.length">
             <TransitionGroup tag="ul" name="list" class="marks" :class="[view === 'compact' ? ['list', 'compact'] : view, { 'selecting': sel.selecting, 'no-images': !showImages }]">
-              <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ 'flash': flashId === b.id, 'picked': sel.has(b.id), 'is-pinned': b.pinned, 'is-dupe': duplicateIds.has(b.id) }" :draggable="finePointer && !sel.selecting ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @click.capture="sel.onRowClick($event, b.id)">
+              <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ 'flash': flashId === b.id, 'picked': sel.has(b.id), 'is-pinned': b.pinned, 'is-dupe': duplicateIds.has(b.id) }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @dragend="draggingMarks = false" @click.capture="sel.onRowClick($event, b.id)">
+                <!-- Drag to a folder: the whole row with a mouse, this grip with a finger -->
+                <button v-if="folders.length" type="button" class="grip" tabindex="-1" :aria-label="`Drag ${b.title} to a folder`" title="Drag to a folder" @pointerdown="touchDrag.start($event, dragIdsFor(b), dragLabel(dragIdsFor(b)))" @touchstart.stop @click.stop.prevent>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg>
+                </button>
                 <!-- Pinned: a ribbon hanging from the top edge -->
                 <span v-if="b.pinned" class="pin-ribbon" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg>
@@ -1271,6 +1301,7 @@ async function refreshAllDetails() {
         <button type="button" class="move-opt new" @click="moving = undefined; movingMany = false; openNewFolder()">+ New folder…</button>
       </div>
     </Modal>
+    <FolderDropTray :drag="touchDrag.drag" :folders="folders" unfiled />
   </ToolPage>
 </template>
 
@@ -2015,6 +2046,58 @@ kbd {
 .mark-tags {
   position: relative;
   z-index: 1;
+}
+
+/* Drag to a folder: a grip on the left edge. Shows on hover with a mouse; always there for a finger,
+   which drags by it (the rest of the row scrolls the list) */
+.grip {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: 1.1rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--ink-3);
+  background: none;
+  border: 0;
+  cursor: grab;
+  opacity: 0;
+  touch-action: none;
+  transition: opacity 0.15s;
+}
+
+.grip svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+
+.mark:hover .grip {
+  opacity: 1;
+}
+
+.marks.grid .grip {
+  top: 0.5rem;
+  left: 0.25rem;
+  translate: none;
+  height: 1.6rem;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  border-radius: 6px;
+}
+
+@media (hover: none) {
+  .grip {
+    opacity: 0.7;
+    width: 1.75rem;
+  }
+
+  .marks.list .mark {
+    padding-left: 1.6rem;
+  }
 }
 
 /* ---------- Hover: show clearly that the bookmark itself is what opens ----------
