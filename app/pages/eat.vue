@@ -1080,8 +1080,15 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 .result-go {
   min-width: 9rem;
-  color: var(--ink);
+  /* Fixed colours, not the theme's: it always sits on the card's dark overlay, so it stays dark text on
+     white in dark mode too, and hovering only greys it a little instead of turning it pink */
+  color: #1b1f2a;
   background: #fff;
+}
+
+.result-go:hover:not(:disabled) {
+  color: #1b1f2a;
+  background: #e9ebf0;
 }
 
 @keyframes result-in {
