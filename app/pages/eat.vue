@@ -11,6 +11,7 @@ interface Spot {
   note: string
   price: 1 | 2 | 3
   image?: string // a path inside public/ (e.g. /eat/3f2a….webp), or a link to an image on the web
+  lastEaten?: string // when you last picked it and pressed Let's eat (ISO); recent ones sink down the deck
 }
 
 const SEED = (): Spot[] => [
@@ -191,24 +192,14 @@ const draft = useDraft('eat', form, {
 onMounted(() => draft.check())
 useAddAction(() => openAdd())
 
-// ---------- Phones: adding opens as a sheet from the foot of the screen ----------
-// One form either way: on wide screens it sits in step 3, on phones CSS lifts it into a sheet
-const PHONE = '(max-width: 719.98px)'
+// ---------- Adding opens in a popup (+ Add in Your foods and places, or A anywhere) ----------
 const addOpen = ref(false)
 function openAdd() {
-  if (matchMedia(PHONE).matches) {
-    addOpen.value = true
-    document.documentElement.style.overflow = 'hidden'
-    play('open')
-    nextTick(() => nameField.value?.focus({ preventScroll: true }))
-  } else {
-    focusField(nameField.value)
-  }
+  addOpen.value = true
+  play('open')
 }
 function closeAdd() {
-  if (!addOpen.value) return
   addOpen.value = false
-  document.documentElement.style.overflow = focus.value ? 'hidden' : ''
 }
 
 async function save() {
@@ -297,18 +288,59 @@ const filter = smoothRef(ref<'all' | Kind>('all'))
 onMounted(() => (filter.value = eatPrefs.filter as 'all' | Kind))
 const deck = ref<string[]>([])
 const chosen = ref<Spot>()
+// Pressed Let's eat on the result: it says enjoy, and offers to decide again
+const ate = ref(false)
 
 // Swiping right adds to this shortlist; the pick is made from it at the end
 const liked = ref<string[]>([])
 
+// Before you swipe: which prices, and whether to leave out what you had in the last few days
+const RECENT_DAYS = 3
+const prices = ref<Spot['price'][]>([1, 2, 3])
+const skipRecent = ref(false)
+function togglePrice(p: Spot['price']) {
+  // At least one price stays on, or the deck would be empty
+  if (prices.value.includes(p)) prices.value = prices.value.length > 1 ? prices.value.filter(x => x !== p) : prices.value
+  else prices.value = [...prices.value, p].sort()
+  play('select')
+}
+
+// Whole days since you last had it (undefined if never)
+const daysSince = (s: Spot) => {
+  if (!s.lastEaten) return undefined
+  const then = new Date(s.lastEaten)
+  const today = new Date()
+  return Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() - new Date(then.getFullYear(), then.getMonth(), then.getDate()).getTime()) / 86_400_000)
+}
+const lastHad = (s: Spot) => {
+  const d = daysSince(s)
+  if (d === undefined) return ''
+  if (d <= 0) return 'Had today'
+  if (d === 1) return 'Had yesterday'
+  if (d < 14) return `Had ${d} days ago`
+  if (d < 60) return `Had ${Math.round(d / 7)} weeks ago`
+  return `Had ${Math.round(d / 30)} months ago`
+}
+
+const inDeck = (s: Spot) => (filter.value === 'all' || s.kind === filter.value)
+  && prices.value.includes(s.price)
+  && !(skipRecent.value && (daysSince(s) ?? Infinity) < RECENT_DAYS)
+
 function shuffle() {
-  const ids = items.value.filter(s => filter.value === 'all' || s.kind === filter.value).map(s => s.id)
+  const ids = items.value.filter(inDeck).map(s => s.id)
   for (let i = ids.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[ids[i], ids[j]] = [ids[j]!, ids[i]!]
   }
-  deck.value = ids
+  // What you had this past week goes to the back, the most recent last, so the same dish doesn't
+  // come up every night
+  const recency = (id: string) => {
+    const d = daysSince(byId(id)!)
+    return d === undefined || d >= 7 ? 99 : d
+  }
+  deck.value = [...ids].sort((a, b) => recency(b) - recency(a))
   chosen.value = undefined
+  ate.value = false
   duel.value = undefined
 }
 
@@ -318,6 +350,25 @@ function startOver() {
   shuffle()
   play('retry')
 }
+
+// ---------- The result ----------
+// Let's eat: remembered on the item, so it shows "Had today" and sinks down the deck for a while
+function eatIt(spot: Spot) {
+  update(spot.id, { lastEaten: new Date().toISOString() }, { quiet: true })
+  // The result card shows the updated item (Had today)
+  chosen.value = byId(spot.id) ?? spot
+  ate.value = true
+  play('level-up')
+  toast.success(`Enjoy your ${spot.name}!`, { description: 'It’ll come up less for the next few days.' })
+}
+// Another go from the same shortlist, or a fresh deck when there's nothing left to choose between
+function pickAgain() {
+  ate.value = false
+  if (shortlist.value.length > 1) narrow()
+  else startOver()
+}
+// Places open in Google Maps by name (around wherever the phone is)
+const directionsUrl = (s: Spot) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}`
 
 function unlike(id: string) {
   liked.value = liked.value.filter(x => x !== id)
@@ -361,8 +412,8 @@ function keep(side: 0 | 1) {
   }
   duel.value = undefined
   chosen.value = winner
-  play('level-up')
-  toast.success(`${winner.name} it is`, { description: 'Your favourite, fair and square. Enjoy!' })
+  ate.value = false
+  play('success')
 }
 
 function randomFromDuel() {
@@ -376,12 +427,21 @@ function pickOne() {
   const spot = pool[Math.floor(Math.random() * pool.length)]
   if (!spot) return
   chosen.value = spot
+  ate.value = false
   play('success')
-  toast.success(`${spot.name} it is`, { description: 'Enjoy your meal!' })
 }
 
-watch([ready, filter], ([r]) => {
+watch([ready, filter, prices, skipRecent], ([r]) => {
   if (r) shuffle()
+})
+
+// ---------- Your foods and places: the library under the deck ----------
+const libQuery = ref('')
+const libKind = ref<'all' | Kind>('all')
+const library = computed(() => {
+  const q = libQuery.value.trim().toLowerCase()
+  return items.value.filter(s => (libKind.value === 'all' || s.kind === libKind.value)
+    && (!q || s.name.toLowerCase().includes(q) || s.note?.toLowerCase().includes(q)))
 })
 
 // Switching the example data on or off swaps every card, so deal a fresh deck from the new list.
@@ -411,11 +471,6 @@ function setFocus(on: boolean) {
 }
 
 function onFocusKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && addOpen.value && !document.querySelector('dialog[open]')) {
-    e.preventDefault()
-    closeAdd()
-    return
-  }
   if (e.key === 'Escape' && focus.value && !document.querySelector('dialog[open]')) {
     e.preventDefault()
     setFocus(false)
@@ -424,14 +479,7 @@ function onFocusKey(e: KeyboardEvent) {
 // Capture, so Esc closes focus mode before the app-wide Esc (go back) sees it
 onMounted(() => window.addEventListener('keydown', onFocusKey, true))
 
-// Opening the app goes straight into focus mode, once there's something to swipe.
-// With nothing saved yet it stays on the page, where foods and places are added.
-let autoFocused = false
-watch([ready, () => items.value.length], ([r, count]) => {
-  if (!r || autoFocused) return
-  autoFocused = true
-  if (count) setFocus(true)
-}, { immediate: true })
+// The app opens on the page; Start deciding takes the deck full screen
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onFocusKey, true)
   document.documentElement.style.overflow = ''
@@ -533,27 +581,31 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     <template #settings>
       <SettingChoice v-model="eatPrefs.filter" title="Show" description="What the deck deals when you open the app." :options="[{ value: 'all', label: 'Both' }, { value: 'food', label: 'Foods' }, { value: 'place', label: 'Places' }]" />
     </template>
-    <!-- Centre stage: the deck. Managing the list lives underneath (beside it on wide screens). -->
-    <div class="eat-layout">
-    <!-- Three numbered steps, the way every app here walks you through it -->
-    <Step v-sticky-fit :n="1" title="Swipe to decide" hint="Right adds it to your shortlist, left skips it. Arrow keys work too." class="deck-step">
+    <!-- Deciding comes first: the deck and the shortlist side by side, your list of foods and places below -->
+    <div class="decide">
+    <Step :n="1" title="Swipe to decide" hint="Right adds it to your shortlist, left skips it. Arrow keys work too." class="deck-step">
     <section class="stage-area" :class="{ focus }" :role="focus ? 'dialog' : undefined" :aria-modal="focus || undefined" aria-label="Swipe to decide">
       <!-- Focus mode: how many cards are left, and the way out -->
       <div v-if="focus" class="focus-bar">
         <span class="focus-count">{{ deck.length ? `${deck.length} ${deck.length === 1 ? 'card' : 'cards'} left` : 'All done' }}</span>
         <button type="button" class="btn btn-sm focus-done" @click="setFocus(false)">Done</button>
       </div>
+      <!-- Before you swipe: what's in the deck -->
       <div class="stage-top">
         <div class="segmented filter" role="radiogroup" aria-label="Show">
           <label v-for="f in FILTERS" :key="f.value" :class="{ active: filter === f.value }">
             <input v-model="filter" type="radio" name="filter" :value="f.value">{{ f.label }}
           </label>
         </div>
-        <ClientOnly><DataSource :sync="sync" /></ClientOnly>
-        <button v-if="!focus" type="button" class="btn btn-quiet btn-sm focus-btn" title="Swipe full screen" @click="setFocus(true)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
-          Focus
-        </button>
+        <div class="deck-options">
+          <div class="prices" role="group" aria-label="Prices">
+            <button v-for="p in ([1, 2, 3] as const)" :key="p" type="button" class="price-toggle" :aria-pressed="prices.includes(p)" @click="togglePrice(p)">{{ priceText(p) }}</button>
+          </div>
+          <label class="skip-recent">
+            <input v-model="skipRecent" type="checkbox">
+            Skip what I had lately
+          </label>
+        </div>
       </div>
       <!-- Off full screen, step 1's hint says this -->
       <p v-if="focus" class="how">Swipe right to add to your shortlist, left to skip. Arrow keys work too. Esc to leave.</p>
@@ -592,15 +644,16 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             </div>
           </div>
 
-          <div v-else-if="chosen" class="panel chosen" role="status">
-            <img v-if="chosen.image" :src="chosen.image" alt="" class="chosen-photo">
-            <span class="label">You’re eating</span>
+          <!-- The result: one big card, and what to do about it -->
+          <div v-else-if="chosen" class="result" :class="{ 'has-photo': chosen.image }" :data-kind="chosen.kind" :style="photoStyle(chosen)" role="status">
+            <span class="result-label">{{ ate ? 'Enjoy!' : 'Tonight it’s' }}</span>
             <h2>{{ chosen.name }}</h2>
             <p v-if="chosen.note">{{ chosen.note }}</p>
-            <div class="chosen-actions">
-              <button v-if="shortlist.length > 1" type="button" class="btn" @click="narrow">Narrow it down</button>
-              <button v-if="current" type="button" class="btn btn-quiet" @click="chosen = undefined">Keep swiping</button>
-              <button type="button" class="btn btn-quiet" @click="startOver">Start over</button>
+            <span class="result-meta">{{ chosen.kind === 'food' ? 'Food' : 'Place' }} · {{ priceText(chosen.price) }}<template v-if="lastHad(chosen)"> · {{ lastHad(chosen) }}</template></span>
+            <div class="result-actions">
+              <button v-if="!ate" type="button" class="btn result-go" @click="eatIt(chosen)">Let’s eat</button>
+              <a v-if="chosen.kind === 'place'" class="btn btn-quiet" :href="directionsUrl(chosen)" target="_blank" rel="noopener">Directions</a>
+              <button type="button" class="btn btn-quiet" @click="ate ? startOver() : pickAgain()">{{ ate ? 'Decide again' : 'Pick again' }}</button>
             </div>
           </div>
 
@@ -623,7 +676,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               <span class="badge">{{ current.kind === 'food' ? 'Food' : 'Place' }}</span>
               <h2 class="card-title">{{ current.name }}</h2>
               <p v-if="current.note">{{ current.note }}</p>
-              <span class="price">{{ priceText(current.price) }}</span>
+              <span class="price">{{ priceText(current.price) }}<span v-if="lastHad(current)" class="card-had"> · {{ lastHad(current) }}</span></span>
             </div>
           </template>
 
@@ -638,9 +691,9 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           </div>
 
           <div v-else-if="ready" class="panel out">
-            <h2>{{ items.length ? 'That’s everything' : 'Nothing saved yet' }}</h2>
-            <p>{{ items.length ? 'Nothing caught your eye? Shuffle the deck and go again.' : 'Add a few foods or places below first.' }}</p>
-            <button v-if="items.length" type="button" class="btn" @click="shuffle">Shuffle again</button>
+            <h2>{{ items.length ? (items.some(inDeck) ? 'That’s everything' : 'Nothing matches') : 'Nothing saved yet' }}</h2>
+            <p>{{ !items.length ? 'Add a few foods or places below first.' : items.some(inDeck) ? 'Nothing caught your eye? Shuffle the deck and go again.' : 'Try more prices, or turn off Skip what I had lately.' }}</p>
+            <button v-if="items.some(inDeck)" type="button" class="btn" @click="shuffle">Shuffle again</button>
           </div>
         </div>
 
@@ -648,10 +701,14 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           <button type="button" class="btn btn-quiet round" aria-label="Not today" @click="decide('left')">✕</button>
           <button type="button" class="btn round" aria-label="Add to shortlist" @click="decide('right')">♥</button>
         </div>
+        <!-- Start the deck full screen; once you're going it's just a way to get more room -->
+        <button v-if="!focus && current && !chosen && !duel" type="button" class="btn start-btn" :class="{ 'btn-quiet': liked.length }" @click="setFocus(true)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+          {{ liked.length ? 'Full screen' : 'Start deciding' }}
+        </button>
 
-        <!-- Step 2: everything swiped right so far. Full screen, only the chips show -->
-        <Step :n="2" title="Pick from your shortlist" hint="Compare them two at a time until one is left, or let the app choose." class="shortlist-step">
-        <section v-if="shortlist.length" class="shortlist" aria-label="Your shortlist">
+        <!-- Full screen, the shortlist rides along under the deck as chips -->
+        <section v-if="focus && shortlist.length" class="shortlist focus-shortlist" aria-label="Your shortlist">
           <span class="shortlist-label">Shortlist</span>
           <TransitionGroup tag="ul" name="chip" class="chips">
             <li v-for="s in shortlist" :key="s.id" class="chip" :class="{ picked: chosen?.id === s.id }">
@@ -660,92 +717,125 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               <button v-if="!duel" type="button" class="chip-x" :aria-label="`Remove ${s.name} from shortlist`" @click="unlike(s.id)">×</button>
             </li>
           </TransitionGroup>
-          <button v-if="shortlist.length > 1 && !chosen && !duel && current" type="button" class="btn narrow-btn" @click="narrow">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z" /></svg>
-            Narrow it down
-          </button>
         </section>
-        <p v-else class="panel step-empty">Swipe right on a few and they gather here.</p>
-        </Step>
       </ClientOnly>
     </section>
     </Step>
 
-    <Step :n="3" title="Add your own foods and places" hint="Give each a photo and a price; it joins the deck straight away." class="manage">
-      <template #aside><ClientOnly><BulkToggle v-if="items.length" :select="sel" /></ClientOnly></template>
-      <!-- Phones: the form opens as a sheet from this button -->
-      <button type="button" class="btn add-open" @click="openAdd">+ Add a food or place</button>
-      <div class="manage-grid">
-        <div v-if="addOpen" class="sheet-backdrop" aria-hidden="true" @click="closeAdd" />
-        <form v-validate class="panel form" :class="{ open: addOpen }" @submit.prevent="save">
-          <div class="form-head">
-            <h3>Add one</h3>
-            <button type="button" class="link sheet-close" @click="closeAdd">Cancel</button>
-          </div>
-          <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
-          <div class="segmented" role="radiogroup" aria-label="Type">
-            <label :class="{ active: form.kind === 'food' }"><input v-model="form.kind" type="radio" value="food">A food</label>
-            <label :class="{ active: form.kind === 'place' }"><input v-model="form.kind" type="radio" value="place">A place</label>
-          </div>
-          <div class="form-row">
-            <label class="photo-pick" :class="{ filled: photo || (photoLink(form.imageUrl) && !addLinkBroken) }">
-              <input type="file" accept="image/*" aria-label="Add a photo" @change="onPhotoPick">
-              <img v-if="photo" :src="photo.preview" alt="Photo preview">
-              <img v-else-if="photoLink(form.imageUrl) && !addLinkBroken" :src="photoLink(form.imageUrl)" alt="Photo from the link" referrerpolicy="no-referrer" @error="addLinkBroken = true">
-              <span v-else>+ Photo</span>
-            </label>
-            <div class="form-fields">
-              <label class="field">
-                <span class="field-head">Name</span>
-                <input ref="nameField" v-model="form.name" class="input" :placeholder="form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required :data-error="form.kind === 'food' ? 'Name the food' : 'Name the place'">
-              </label>
-              <label class="field">
-                <span class="field-head">Note <span class="optional">Optional</span></span>
-                <input v-model="form.note" class="input" placeholder="Extra spicy, good for lunch…">
-              </label>
-            </div>
-          </div>
-          <button v-if="photo" type="button" class="link remove-photo" @click="clearPhoto">Remove photo</button>
-          <label class="field">
-            <span class="field-head">Photo link <span class="optional">Optional</span></span>
-            <input v-model="form.imageUrl" class="input" type="url" inputmode="url" spellcheck="false" placeholder="https://… paste an image address">
-            <small v-if="form.imageUrl.trim() && !photoLink(form.imageUrl)" class="hint warn">Use a link that starts with https://</small>
-            <small v-else-if="addLinkBroken" class="hint warn">Couldn’t load a picture from that link. Use a direct link to an image (right-click it, then Copy image address).</small>
-            <small v-else-if="photo && photoLink(form.imageUrl)" class="hint">The photo you picked is used instead of the link.</small>
-          </label>
-          <div class="field">
-            <span class="field-head">Price</span>
-            <div class="segmented" role="radiogroup" aria-label="Price">
-              <label v-for="p in ([1, 2, 3] as const)" :key="p" :class="{ active: form.price === p }">
-                <input v-model="form.price" type="radio" :value="p">{{ priceText(p) }}
-              </label>
-            </div>
-          </div>
-          <button type="submit" class="btn" :disabled="saving">{{ saving && !editingId ? 'Saving photo…' : 'Save' }}</button>
-          <p class="hint">A photo link works anywhere and syncs with the item. Picked photos are cropped square and saved to <code>public/eat/</code> in this project so you can commit them, which only works while running the app locally.</p>
-        </form>
-
-        <ClientOnly>
-          <TransitionGroup tag="ul" name="list" v-if="items.length" class="thumbs">
-            <li v-for="s in items" :key="s.id" :data-item-id="s.id" class="thumb bulk-row" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, s.id)" :class="{ editing: editingId === s.id, 'bulk-picked': sel.has(s.id) }" :data-kind="s.kind">
-              <BulkCheck v-if="sel.selecting" :checked="sel.has(s.id)" :label="`Select ${s.name}`" @pick="sel.pick(s.id, $event)" />
-              <!-- Click a thumbnail to add or replace its photo -->
-              <label class="thumb-img" :style="photoStyle(s)" :title="s.image ? 'Replace photo' : 'Add a photo'">
-                <input type="file" accept="image/*" :aria-label="s.image ? `Replace photo of ${s.name}` : `Add a photo of ${s.name}`" @change="setPhoto(s, $event)">
-                <span v-if="!s.image" aria-hidden="true">{{ s.name.slice(0, 1) }}</span>
-                <span class="thumb-hint" aria-hidden="true">{{ s.image ? 'Replace photo' : '+ Photo' }}</span>
-              </label>
-              <span class="thumb-name">{{ s.name }}</span>
-              <span class="thumb-links">
-                <button type="button" class="link" :aria-label="`Edit ${s.name}`" @click="edit(s)">Edit</button>
-                <ConfirmDelete text :name="s.name" @confirm="del(s)" />
-              </span>
+    <!-- Step 2, beside the deck: everything swiped right so far, and how to choose between them -->
+    <Step :n="2" title="Pick from your shortlist" hint="Compare them two at a time until one is left, or let the app choose." class="shortlist-step">
+      <ClientOnly>
+        <section v-if="shortlist.length" class="panel shortlist-panel" aria-label="Your shortlist">
+          <TransitionGroup tag="ul" name="chip" class="chips">
+            <li v-for="s in shortlist" :key="s.id" class="chip" :class="{ picked: chosen?.id === s.id }">
+              <span class="chip-img" :data-kind="s.kind" :style="photoStyle(s)" aria-hidden="true" />
+              {{ s.name }}
+              <button v-if="!duel" type="button" class="chip-x" :aria-label="`Remove ${s.name} from shortlist`" @click="unlike(s.id)">×</button>
             </li>
           </TransitionGroup>
-        </ClientOnly>
-      </div>
+          <div v-if="!chosen && !duel" class="shortlist-actions">
+            <button v-if="shortlist.length > 1" type="button" class="btn narrow-btn" @click="narrow">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z" /></svg>
+              Narrow it down
+            </button>
+            <button type="button" class="btn btn-quiet" @click="pickOne">{{ shortlist.length > 1 ? 'Pick at random' : `Eat ${shortlist[0]!.name}` }}</button>
+          </div>
+        </section>
+        <p v-else class="panel step-empty">Swipe right on a few and they gather here.</p>
+        <template #fallback><p class="panel step-empty">Swipe right on a few and they gather here.</p></template>
+      </ClientOnly>
     </Step>
     </div>
+
+    <!-- Step 3: the library the deck deals from -->
+    <Step :n="3" title="Your foods and places" hint="Everything the deck deals from. Give each a photo and a price." class="manage">
+      <template #aside>
+        <ClientOnly><span class="manage-tools"><BulkToggle v-if="items.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly>
+      </template>
+      <div class="library-bar">
+        <input v-model="libQuery" class="input lib-search" type="search" placeholder="Search your foods and places" aria-label="Search your foods and places">
+        <div class="segmented lib-kind" role="radiogroup" aria-label="Show in the list">
+          <label v-for="f in FILTERS" :key="f.value" :class="{ active: libKind === f.value }">
+            <input v-model="libKind" type="radio" name="lib-kind" :value="f.value">{{ f.label }}
+          </label>
+        </div>
+        <button type="button" class="btn add-btn" @click="openAdd">+ Add</button>
+      </div>
+      <ClientOnly>
+        <TransitionGroup v-if="library.length" tag="ul" name="list" class="thumbs">
+          <li v-for="s in library" :key="s.id" :data-item-id="s.id" class="thumb bulk-row" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, s.id)" :class="{ editing: editingId === s.id, 'bulk-picked': sel.has(s.id) }" :data-kind="s.kind">
+            <BulkCheck v-if="sel.selecting" :checked="sel.has(s.id)" :label="`Select ${s.name}`" @pick="sel.pick(s.id, $event)" />
+            <!-- Click a thumbnail to add or replace its photo -->
+            <label class="thumb-img" :style="photoStyle(s)" :title="s.image ? 'Replace photo' : 'Add a photo'">
+              <input type="file" accept="image/*" :aria-label="s.image ? `Replace photo of ${s.name}` : `Add a photo of ${s.name}`" @change="setPhoto(s, $event)">
+              <!-- No photo yet: what it is, a bowl for a food, a pin for a place -->
+              <svg v-if="!s.image" class="thumb-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <template v-if="s.kind === 'food'"><path d="M3.5 11h17a8.5 8.5 0 0 1-17 0z" /><path d="M8 7.5c0-1 1-1.5 1-2.5M12 7.5c0-1 1-1.5 1-2.5M16 7.5c0-1 1-1.5 1-2.5" /></template>
+                <template v-else><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></template>
+              </svg>
+              <span class="thumb-hint" aria-hidden="true">{{ s.image ? 'Replace photo' : '+ Photo' }}</span>
+            </label>
+            <span class="thumb-name">{{ s.name }}</span>
+            <span class="thumb-meta">{{ priceText(s.price) }}<template v-if="lastHad(s)"> · {{ lastHad(s) }}</template></span>
+            <span class="thumb-links">
+              <button type="button" class="link" :aria-label="`Edit ${s.name}`" @click="edit(s)">Edit</button>
+              <ConfirmDelete text :name="s.name" @confirm="del(s)" />
+            </span>
+          </li>
+        </TransitionGroup>
+        <p v-else-if="items.length" class="panel step-empty">Nothing matches{{ libQuery ? ` “${libQuery}”` : '' }}. <button type="button" class="link" @click="libQuery = ''; libKind = 'all'">Show everything</button></p>
+        <p v-else class="panel step-empty">Add a few foods or places and they’ll show here, and in the deck.</p>
+      </ClientOnly>
+    </Step>
+
+    <Modal :open="addOpen" title="Add a food or place" @close="closeAdd">
+      <form v-validate class="form edit-form" @submit.prevent="save">
+          <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
+        <div class="segmented" role="radiogroup" aria-label="Type">
+          <label :class="{ active: form.kind === 'food' }"><input v-model="form.kind" type="radio" value="food">A food</label>
+          <label :class="{ active: form.kind === 'place' }"><input v-model="form.kind" type="radio" value="place">A place</label>
+        </div>
+        <div class="form-row">
+          <label class="photo-pick" :class="{ filled: photo || (photoLink(form.imageUrl) && !addLinkBroken) }">
+            <input type="file" accept="image/*" aria-label="Add a photo" @change="onPhotoPick">
+            <img v-if="photo" :src="photo.preview" alt="Photo preview">
+            <img v-else-if="photoLink(form.imageUrl) && !addLinkBroken" :src="photoLink(form.imageUrl)" alt="Photo from the link" referrerpolicy="no-referrer" @error="addLinkBroken = true">
+            <span v-else>+ Photo</span>
+          </label>
+          <div class="form-fields">
+            <label class="field">
+              <span class="field-head">Name</span>
+              <input ref="nameField" v-model="form.name" class="input" :placeholder="form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required :data-error="form.kind === 'food' ? 'Name the food' : 'Name the place'">
+            </label>
+            <label class="field">
+              <span class="field-head">Note <span class="optional">Optional</span></span>
+              <input v-model="form.note" class="input" placeholder="Extra spicy, good for lunch…">
+            </label>
+          </div>
+        </div>
+        <button v-if="photo" type="button" class="link remove-photo" @click="clearPhoto">Remove photo</button>
+        <label class="field">
+          <span class="field-head">Photo link <span class="optional">Optional</span></span>
+          <input v-model="form.imageUrl" class="input" type="url" inputmode="url" spellcheck="false" placeholder="https://… paste an image address">
+          <small v-if="form.imageUrl.trim() && !photoLink(form.imageUrl)" class="hint warn">Use a link that starts with https://</small>
+          <small v-else-if="addLinkBroken" class="hint warn">Couldn’t load a picture from that link. Use a direct link to an image (right-click it, then Copy image address).</small>
+          <small v-else-if="photo && photoLink(form.imageUrl)" class="hint">The photo you picked is used instead of the link.</small>
+        </label>
+        <div class="field">
+          <span class="field-head">Price</span>
+          <div class="segmented" role="radiogroup" aria-label="Price">
+            <label v-for="p in ([1, 2, 3] as const)" :key="p" :class="{ active: form.price === p }">
+              <input v-model="form.price" type="radio" :value="p">{{ priceText(p) }}
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn" :disabled="saving">{{ saving && !editingId ? 'Saving photo…' : 'Add' }}</button>
+          <button type="button" class="btn btn-quiet" @click="closeAdd">Cancel</button>
+        </div>
+        <p class="hint">A photo link works anywhere and syncs with the item. Picked photos are cropped square and saved to <code>public/eat/</code> in this project so you can commit them, which only works while running the app locally.</p>
+      </form>
+    </Modal>
     <Modal :open="!!editingId" :title="editingSpot ? `Edit ${editingSpot.name}` : 'Edit'" @close="cancelEdit">
       <form v-validate class="form edit-form" @submit.prevent="saveEdit">
         <div class="segmented" role="radiogroup" aria-label="Type">
@@ -823,42 +913,250 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .manage {
-  max-width: 1080px;
-  margin: 4rem auto 0;
+  margin-top: 3.5rem;
 }
 
-@media (min-width: 1400px) {
-  .eat-layout {
-    display: grid;
-    grid-template-columns: minmax(380px, 520px) minmax(0, 1fr);
-    gap: 3rem;
-    align-items: start;
-  }
+/* ---------- Deciding: the deck and the shortlist side by side on wide screens ---------- */
+.decide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
 
-  .deck-step {
-    position: sticky;
-    top: var(--pin-top);
-  }
-
-  .manage {
-    max-width: none;
-    margin: 0;
+@media (min-width: 1000px) {
+  .decide {
+    grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
+    gap: 2.5rem;
   }
 }
+
+/* Room between the filters and the deck (full screen, the "how to" line gives it) */
+.stage-area:not(.focus) .stage-top {
+  margin-bottom: 1.5rem;
+}
+
+/* Before you swipe: prices and Skip what I had lately, under Everything / Foods / Places */
+.deck-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  flex-basis: 100%;
+}
+
+.prices {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.price-toggle {
+  min-width: 3rem;
+  height: 2.2rem;
+  padding: 0 0.7rem;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color var(--dur-fast, 0.15s), border-color var(--dur-fast, 0.15s), background-color var(--dur-fast, 0.15s);
+}
+
+.price-toggle[aria-pressed='true'] {
+  color: var(--accent-btn, var(--accent));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+
+.skip-recent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.skip-recent input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+}
+
+/* Start deciding: the deck full screen. Primary until you've started, then just a way to get more room */
+.start-btn {
+  margin-top: 1rem;
+  gap: 0.45rem;
+}
+
+.start-btn svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.card-had {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* ---------- The result: one big card with what to do next ---------- */
+.result {
+  position: absolute;
+  inset: 0;
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: center;
+  color: #fff;
+  border-radius: 24px;
+  background:
+    linear-gradient(to top, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0.1) 60%, transparent),
+    var(--photo, none) center / cover,
+    var(--pink);
+  box-shadow: 0 0 0 4px var(--plastic), 0 0 0 9px var(--accent), 0 18px 40px -16px rgb(var(--shadow) / 0.5);
+  animation: result-in 0.45s cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+
+.result[data-kind='place'] {
+  background:
+    linear-gradient(to top, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0.1) 60%, transparent),
+    var(--photo, none) center / cover,
+    var(--indigo);
+}
+
+.result-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.result h2 {
+  margin-top: 0.2rem;
+  font-size: clamp(2.1rem, 6vw, 2.8rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.result p {
+  margin: 0.4rem 0 0;
+  opacity: 0.9;
+}
+
+.result-meta {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.result-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* On the photo, the quiet buttons turn to frosted glass and Let's eat is white */
+.result .btn-quiet {
+  color: #fff;
+  background: rgb(255 255 255 / 0.16);
+  border-color: rgb(255 255 255 / 0.35);
+  box-shadow: none;
+  backdrop-filter: blur(6px);
+}
+
+.result-go {
+  min-width: 9rem;
+  color: var(--ink);
+  background: #fff;
+}
+
+@keyframes result-in {
+  from { scale: 0.92; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result { animation: none; }
+}
+
+/* ---------- Step 2: the shortlist panel ---------- */
+.shortlist-panel {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.shortlist-panel .chips {
+  justify-content: flex-start;
+}
+
+.shortlist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ---------- Step 3: the library ---------- */
+.manage-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.library-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.1rem;
+}
+
+.lib-search {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.lib-kind {
+  width: auto;
+}
+
+.add-btn {
+  flex: none;
+}
+
+.thumb-icon {
+  width: 42%;
+  height: 42%;
+  fill: none;
+  stroke: rgb(255 255 255 / 0.95);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.thumb-meta {
+  margin-top: -0.2rem;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
 
 .shortlist-step {
-  width: min(640px, 100%);
-  margin-top: 2rem;
-}
-
-/* Full screen it's just the deck and the chips, without the step's heading */
-.stage-area.focus .shortlist-step {
-  margin-top: 0;
-}
-
-.stage-area.focus .shortlist-step :deep(.step-head),
-.stage-area.focus .step-empty {
-  display: none;
+  min-width: 0;
 }
 
 .step-empty {
@@ -868,92 +1166,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   color: var(--ink-2);
 }
 
-.form-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
-/* Wide screens: the form sits in the page, so there's no button to open it or Cancel to close it */
-.add-open,
-.sheet-close,
-.sheet-backdrop {
-  display: none;
-}
-
-/* Phones: the form is a sheet that rises from the foot of the screen */
-@media (max-width: 719.98px) {
-  .add-open {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-    margin-bottom: 1.25rem;
-  }
-
-  .sheet-close {
-    display: inline;
-  }
-
-  .sheet-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 240;
-    background: rgb(0 0 0 / 0.35);
-    animation: sheet-fade 0.25s ease-out;
-  }
-
-  .manage .form {
-    position: fixed;
-    z-index: 250;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    max-height: 88dvh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: 0.75rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
-    border-radius: 22px 22px 0 0;
-    border-bottom: 0;
-    box-shadow: 0 -12px 40px -12px rgb(0 0 0 / 0.35);
-    translate: 0 105%;
-    visibility: hidden;
-    transition: translate 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.32s;
-  }
-
-  /* The grabber at the top, like a native sheet */
-  .manage .form::before {
-    content: '';
-    align-self: center;
-    width: 2.5rem;
-    height: 0.3rem;
-    margin-bottom: 0.25rem;
-    border-radius: 999px;
-    background: var(--line);
-  }
-
-  .manage .form.open {
-    translate: 0 0;
-    visibility: visible;
-    transition: translate 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-}
-
-@keyframes sheet-fade {
-  from { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .manage .form { transition: none; }
-  .sheet-backdrop { animation: none; }
-}
-
-.manage-grid {
-  display: grid;
-  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-}
 
 .form {
   padding: 1.25rem;
@@ -1053,8 +1266,8 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
+  gap: 1rem 0.85rem;
 }
 
 .thumb {
@@ -1689,10 +1902,6 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   padding: 0;
   font-size: 1.4rem;
   border-radius: 50%;
-}
-
-@media (max-width: 860px) {
-  .manage-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Phones: three smaller thumbnails across instead of two big ones */

@@ -136,7 +136,11 @@ export const CHANGELOG: Record<string, Release[]> = {
   '/cv': [
     { version: '1.0.0', date: '2026-10-16', changes: ['My CV as an app: experience, selected work, skills, education and how to get in touch.', 'Save it as a PDF from the Save as PDF button.'] }
   ],
+  '/claude': [
+    { version: '1.0.0', date: '2026-10-18', changes: ['Your Claude API spend and tokens by day and model, from Anthropic’s Usage and Cost reports (needs an Admin API key, kept only in your browser).', 'Your Claude Code sessions, tokens and estimated cost by day, project and model, read from its logs when the app runs on your computer.'] }
+  ],
   '/speed': [
+    { version: '1.2.0', date: '2026-10-18', changes: ['Past tests are saved to your account when you’re signed in, so they’re on all your devices.', 'Sort past tests by newest, oldest, fastest download or upload, or lowest ping.', 'Icons show what each result is good for, in the result and beside every past test.'] },
     { version: '1.0.0', date: '2026-10-12', changes: ['Test your download, upload, ping and jitter, with a dial that follows the live speed.', 'See what your connection is good for, and how close you get to your plan’s speed.', 'Your last 30 tests stay on this device.'] }
   ],
   '/salary': [
@@ -145,6 +149,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Work out what a raise is really worth after Cambodian salary tax.'] }
   ],
   '/things': [
+    { version: '3.2.0', date: '2026-10-18', changes: ['No more automatic depreciation: what something is worth now stays at what you paid until you enter a resale price.', 'Company logos fill their tile, framed in the logo’s own colour, and Google shows its G.'] },
     { version: '3.1.0', date: '2026-10-11', changes: ['Tap a category under “Where the value is” to see only those things; tap it again to see everything.', 'Hide a category from the list with the eye beside it; tap its chip above the list to bring it back.', 'Leave something out of the totals (a work laptop, something lent out) from its right-click menu or by selecting several. It stays in the list, marked Not counted.', 'Import and export are now in Settings.'] },
     { version: '3.0.1', date: '2026-10-08', changes: ['Logos now show for Sony, Samsung, Google, Honor, Redmi, RedMagic and more brands.'] },
     { version: '3.0.0', date: '2026-10-08', changes: ['Adding starts with what kind of thing it is: phone, tablet, laptop, desktop, monitor, TV, keyboard, mouse, headphones and more.', 'Company, model and generation suggest as you type, from a list of common devices; anything else can be typed in.', 'Known models suggest their release year, RAM and screen size, and the storage sizes they came in.', 'Each item shows its company’s logo and details like 2023 · 256 GB · 8 GB RAM.', 'Filter by type, company, year, storage and generation; sort by recently added, company, type or release year.', 'A compact list view alongside the cards.', 'Adding the same device twice asks first.'] },
@@ -154,6 +159,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Keep track of what you own, what you paid and what it’s worth now.'] }
   ],
   '/eat': [
+    { version: '2.0.0', date: '2026-10-18', changes: ['Opens on the page; Start deciding takes the deck full screen.', 'Choose prices and skip what you had lately before you swipe.', 'The pick is one big card: Let’s eat remembers it, Directions opens a place in Maps, or pick again.', 'What you had recently comes up less, and every food shows when you last had it.', 'The deck and your shortlist sit side by side; your foods and places are a searchable list below, and + Add opens a popup.'] },
     { version: '1.5.1', date: '2026-10-11', changes: ['On phones, the card you picked in “Which sounds better?” no longer stays highlighted in the next round.'] },
     { version: '1.5.0', date: '2026-10-08', changes: [BIN, UNDO, DRAFTS, CHECK] },
     { version: '1.4.0', date: '2026-10-07', changes: ['Focus mode: swipe full screen with bigger cards and nothing else in the way. The app opens in it; Done or Esc takes you back.', 'A big, centred Narrow it down button under your shortlist.', 'When you’ve gone through every card, narrowing down starts on its own, or your only pick is chosen.'] },

@@ -162,6 +162,13 @@ defineProps<{ name: ToolIconName }>()
       <circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none" />
     </template>
 
+    <!-- Claude usage: a spark of eight rays over a small rising bar -->
+    <template v-else-if="name === 'claude'">
+      <path d="M12 3v7M12 14v1M7 5.5l3 3.5M17 5.5l-3 3.5M4 10.5l4.5 1M20 10.5l-4.5 1" />
+      <path d="M5 21h14" />
+      <path d="M8 21v-3M12 21v-5M16 21v-4" />
+    </template>
+
     <!-- Budget: a wallet with its clasp -->
     <template v-else-if="name === 'budget'">
       <path d="M18 7.5V5.5a1.5 1.5 0 0 0-1.5-1.5H5a2 2 0 0 0 0 4h14a1.5 1.5 0 0 1 1.5 1.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6" />

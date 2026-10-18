@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import { DIAL_STOPS, dialFraction, formatBytes, measureDownload, measurePing, measureUpload, verdicts, type ServerInfo } from '~/utils/speedTest'
+import { DIAL_STOPS, dialFraction, formatBytes, measureDownload, measurePing, measureUpload, VERDICT_ICONS, verdicts, type ServerInfo } from '~/utils/speedTest'
 
 // Speed test: ping, then download, then upload, on one dial whose needle glides to the live speed.
-// Results stay on this device in a short history.
+// Every result is kept as a past test (useCollection 'speed'): synced to your account when signed in,
+// on this device otherwise.
 type Phase = 'idle' | 'ping' | 'download' | 'upload' | 'done' | 'error'
 
 interface SpeedResult {
+  id: string
   at: string
   down: number
   up: number
@@ -33,7 +35,38 @@ const upSamples = ref<number[]>([])
 const server = ref<ServerInfo>({})
 const bytesUsed = ref(0)
 const error = ref('')
-const history = useRemembered<SpeedResult[]>('speed-history', [], Array.isArray)
+// Past tests, newest first by default; deleting them skips the Recycle Bin and activity, like Gold's price history
+const tests = useCollection<SpeedResult>('speed', undefined, { app: '/speed', trash: false, activity: false, label: r => `Speed test, ${dateFmt.format(new Date(r.at))}` })
+// Plenty to look back on, without the list (and the account) growing forever
+const KEEP_TESTS = 100
+
+const SORTS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'down', label: 'Fastest download' },
+  { value: 'up', label: 'Fastest upload' },
+  { value: 'ping', label: 'Lowest ping' }
+] as const
+type Sort = (typeof SORTS)[number]['value']
+const sort = useRemembered<Sort>('speed-sort', 'newest', v => SORTS.some(s => s.value === v))
+const history = computed(() => [...tests.items.value].sort((a, b) => {
+  if (sort.value === 'oldest') return a.at.localeCompare(b.at)
+  if (sort.value === 'down') return b.down - a.down
+  if (sort.value === 'up') return b.up - a.up
+  if (sort.value === 'ping') return a.ping - b.ping
+  return b.at.localeCompare(a.at)
+}))
+// What each past test was good enough for, as icons
+const goodFor = (h: SpeedResult) => verdicts(h.down, h.up, h.ping, h.jitter).filter(v => v.ok)
+
+// Tests saved before they synced lived only on this device (useRemembered 'speed-history'): moved in once
+const oldHistory = useRemembered<Omit<SpeedResult, 'id'>[]>('speed-history', [], Array.isArray)
+watch(() => tests.ready.value, (ready) => {
+  if (!ready || !oldHistory.value.length || tests.sync.state.value === 'demo') return
+  const known = new Set(tests.items.value.map(t => t.at))
+  tests.addMany(oldHistory.value.filter(h => !known.has(h.at)))
+  oldHistory.value = []
+}, { immediate: true })
 
 const running = computed(() => phase.value === 'ping' || phase.value === 'download' || phase.value === 'upload')
 let controller: AbortController | undefined
@@ -161,7 +194,7 @@ async function start() {
 
     phase.value = 'done'
     play('success')
-    history.value = [{
+    tests.add({
       at: new Date().toISOString(),
       down: d.mbps,
       up: u.mbps,
@@ -169,7 +202,10 @@ async function start() {
       jitter: p.jitter,
       colo: p.server.colo,
       bytes: bytesUsed.value
-    }, ...history.value].slice(0, 30)
+    })
+    // Only the newest are kept
+    const byAge = [...tests.items.value].sort((a, b) => b.at.localeCompare(a.at))
+    for (const old of byAge.slice(KEEP_TESTS)) tests.remove(old.id, { undoAdd: true })
   } catch (e) {
     live.value = 0
     if ((e as Error).name === 'AbortError') {
@@ -225,10 +261,10 @@ function spark(values: number[], w = 120, h = 32) {
 const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 function clearHistory() {
-  const before = history.value
-  history.value = []
+  const removed = [...tests.items.value]
+  for (const t of removed) tests.remove(t.id)
   play('delete')
-  toast('History cleared', { action: { label: 'Undo', onClick: () => (history.value = before) } })
+  toast('Past tests cleared', { action: { label: 'Undo', onClick: () => removed.forEach(t => tests.restore(t)) } })
 }
 
 // Space or Enter on the page starts a test (or stops one), when no field has the keyboard
@@ -353,7 +389,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <h2>Good for</h2>
           <ul class="verdicts">
             <li v-for="(v, i) in good" :key="v.label" :class="{ ok: v.ok }" :style="{ '--i': i }">
-              <svg viewBox="0 0 16 16" aria-hidden="true"><path v-if="v.ok" d="M3.5 8.5 6.5 11.5 12.5 4.5" /><path v-else d="M4.5 4.5l7 7M11.5 4.5l-7 7" /></svg>
+              <!-- What it's for, with a tick or a cross on its corner -->
+              <span class="use-icon" aria-hidden="true">
+                <svg viewBox="0 0 16 16"><path v-for="d in VERDICT_ICONS[v.key]" :key="d" :d="d" /></svg>
+                <svg class="mark" viewBox="0 0 16 16"><path v-if="v.ok" d="M3.5 8.5 6.5 11.5 12.5 4.5" /><path v-else d="M4.5 4.5l7 7M11.5 4.5l-7 7" /></svg>
+              </span>
               {{ v.label }}
               <span class="sr-only">{{ v.ok ? 'yes' : 'not really' }}</span>
             </li>
@@ -376,17 +416,24 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <section v-if="history.length" class="history panel" aria-label="Past tests">
         <div class="history-head">
           <h2>Past tests</h2>
+          <AppSelect v-model="sort" class="history-sort" aria-label="Sort past tests" :options="SORTS" />
           <button type="button" class="link" @click="clearHistory">Clear</button>
         </div>
         <TransitionGroup tag="ul" name="list" class="history-list">
-          <li v-for="h in history" :key="h.at">
-            <span class="when">{{ dateFmt.format(new Date(h.at)) }}</span>
+          <li v-for="h in history" :key="h.id">
+            <span class="when">
+              {{ dateFmt.format(new Date(h.at)) }}
+              <!-- What it was good enough for -->
+              <span class="uses" :aria-label="`Good for: ${goodFor(h).map(v => v.label).join(', ') || 'not much'}`">
+                <svg v-for="v in goodFor(h)" :key="v.key" viewBox="0 0 16 16" aria-hidden="true"><title>{{ v.label }}</title><path v-for="d in VERDICT_ICONS[v.key]" :key="d" :d="d" /></svg>
+              </span>
+            </span>
             <span class="h-down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" /></svg>{{ fmt(h.down) }}</span>
             <span class="h-up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14V3M3.5 7.5 8 3l4.5 4.5" /></svg>{{ fmt(h.up) }}</span>
             <span class="h-ping">{{ Math.round(h.ping) }} ms</span>
           </li>
         </TransitionGroup>
-        <p class="hint">Speeds in {{ unitLabel }}. Kept on this device.</p>
+        <p class="hint">Speeds in {{ unitLabel }}. {{ tests.sync.signedIn.value ? 'Saved to your account, on all your devices.' : 'Kept on this device; sign in to keep them in your account.' }} The icons show what each was good enough for.</p>
       </section>
     </div>
   </ToolPage>
@@ -835,19 +882,52 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   color: var(--ink);
 }
 
+/* The use's own icon, with a small tick or cross badge on its corner */
+.use-icon {
+  position: relative;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.verdicts li.ok .use-icon {
+  background: color-mix(in srgb, var(--green) 14%, var(--surface));
+}
+
 .verdicts svg {
   flex: none;
   width: 1.1rem;
   height: 1.1rem;
   fill: none;
   stroke: var(--ink-3);
-  stroke-width: 2.2;
+  stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .verdicts li.ok svg {
   stroke: var(--good-ink);
+}
+
+.verdicts .mark {
+  position: absolute;
+  right: -0.3rem;
+  bottom: -0.3rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  padding: 0.1rem;
+  stroke-width: 2.6;
+  background: var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.verdicts li:not(.ok) .mark {
+  stroke: var(--bad-ink);
 }
 
 @keyframes pop-in {
@@ -919,7 +999,40 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .history-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.history-sort {
+  margin-left: auto;
+  width: auto;
+  min-width: 10rem;
+  font-size: var(--text-sm);
+}
+
+/* The date, with what that test was good enough for in small icons underneath */
+.history-list .when {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.uses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  color: var(--good-ink);
+}
+
+.history-list .uses svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .history-list {

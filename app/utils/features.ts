@@ -45,7 +45,8 @@ export const APP_FEATURES: Record<string, FeatureKey[]> = {
   '/notes': ['sync', 'demo', 'drag', 'folders', 'search', 'views', 'select', 'trash', 'quickAdd', 'formats', 'copy', 'download'],
   '/battery': ['copy'],
   '/salary': [],
-  '/speed': ['download'],
+  '/speed': ['sync', 'download'],
+  '/claude': [],
   '/gold': ['sync', 'demo', 'select', 'trash', 'quickAdd', 'drafts', 'formats', 'download']
 }
 

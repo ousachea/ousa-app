@@ -210,20 +210,33 @@ export function dialFraction(mbps: number) {
   return (i - 1 + (mbps - lo) / (hi - lo)) / (s.length - 1)
 }
 
+export type VerdictKey = 'browse' | 'hd' | 'uhd' | 'calls' | 'games' | 'downloads'
+
 export interface Verdict {
+  key: VerdictKey
   label: string
   ok: boolean
+}
+
+/** A small line icon for each use (16×16, drawn with a stroke) */
+export const VERDICT_ICONS: Record<VerdictKey, string[]> = {
+  browse: ['M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0z', 'M2 8h12', 'M8 2c2.2 2.2 2.2 9.8 0 12M8 2C5.8 4.2 5.8 11.8 8 14'],
+  hd: ['M2 3.5h12v8H2z', 'M6 14h4', 'M7 5.8v3.4l2.8-1.7z'],
+  uhd: ['M4 4.5v4h3M6 4.5v7', 'M9.5 4.5v7M12.5 4.5 9.6 8l2.9 3.5'],
+  calls: ['M2 4.5h8v7H2z', 'M10 7l4-2.2v6.4L10 9'],
+  games: ['M5 5h6a3.2 3.2 0 0 1 2.9 4.6l-.5 1.1a1.7 1.7 0 0 1-2.8.4L9.6 10H6.4l-1 1.1a1.7 1.7 0 0 1-2.8-.4l-.5-1.1A3.2 3.2 0 0 1 5 5z', 'M5.5 6.8v2M4.5 7.8h2', 'M10.3 7.3h.01M11.5 8.5h.01'],
+  downloads: ['M8 2v8M4.5 6.6 8 10l3.5-3.4', 'M3 13.5h10']
 }
 
 /** What the connection is good for, from the numbers that matter for each */
 export function verdicts(down: number, up: number, ping: number, jitter: number): Verdict[] {
   return [
-    { label: 'Browsing and messages', ok: down >= 1 },
-    { label: 'HD video', ok: down >= 5 },
-    { label: '4K video', ok: down >= 25 },
-    { label: 'Video calls', ok: down >= 3 && up >= 2 && ping < 150 },
-    { label: 'Online games', ok: down >= 3 && ping < 60 && jitter < 25 },
-    { label: 'Big downloads fast', ok: down >= 100 }
+    { key: 'browse', label: 'Browsing and messages', ok: down >= 1 },
+    { key: 'hd', label: 'HD video', ok: down >= 5 },
+    { key: 'uhd', label: '4K video', ok: down >= 25 },
+    { key: 'calls', label: 'Video calls', ok: down >= 3 && up >= 2 && ping < 150 },
+    { key: 'games', label: 'Online games', ok: down >= 3 && ping < 60 && jitter < 25 },
+    { key: 'downloads', label: 'Big downloads fast', ok: down >= 100 }
   ]
 }
 

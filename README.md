@@ -26,6 +26,7 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 | Phone battery | See how much of your battery is left compared with when it was new |
 | Salary & raise | Work out what a raise is really worth after Cambodian salary tax |
 | Speed test | Test your download, upload, ping and jitter on a live dial, see what it’s good for and how close you get to your plan |
+| Claude usage | Your Claude API spend from Anthropic’s Usage and Cost reports (Admin API key, kept in the browser), and Claude Code usage from its local logs |
 
 **Life**
 

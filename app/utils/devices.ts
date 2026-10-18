@@ -14,8 +14,6 @@ export interface ThingType {
   /** Line icon in CategoryIcon */
   icon: string
   color: string
-  /** Typical value lost per year, compounding (for the estimate) */
-  yearlyLoss: number
   /** Details the add form asks for */
   specs: Spec[]
   /** Only kept so older items still show; not offered for new ones */
@@ -23,24 +21,24 @@ export interface ThingType {
 }
 
 export const THING_TYPES: ThingType[] = [
-  { key: 'Phone', label: 'Phone', icon: 'Phone', color: '#1f5bd8', yearlyLoss: 0.3, specs: ['year', 'storage', 'ram', 'display'] },
-  { key: 'Tablet', label: 'Tablet', icon: 'Tablet', color: '#1479b0', yearlyLoss: 0.25, specs: ['year', 'storage', 'ram', 'display'] },
-  { key: 'Laptop', label: 'Laptop', icon: 'Laptop', color: '#3949ab', yearlyLoss: 0.22, specs: ['year', 'storage', 'ram', 'display'] },
-  { key: 'Desktop', label: 'Desktop', icon: 'Desktop', color: '#4b5b78', yearlyLoss: 0.2, specs: ['year', 'storage', 'ram'] },
-  { key: 'Monitor', label: 'Monitor', icon: 'Monitor', color: '#0e7490', yearlyLoss: 0.15, specs: ['year', 'display'] },
-  { key: 'TV', label: 'TV', icon: 'TV', color: '#7448d1', yearlyLoss: 0.18, specs: ['year', 'display'] },
-  { key: 'Keyboard', label: 'Keyboard', icon: 'Keyboard', color: '#4f8a12', yearlyLoss: 0.2, specs: ['year'] },
-  { key: 'Mouse', label: 'Mouse', icon: 'Mouse', color: '#b8471c', yearlyLoss: 0.22, specs: ['year'] },
-  { key: 'Headphones', label: 'Headphones', icon: 'Headphones', color: '#0f9488', yearlyLoss: 0.22, specs: ['year'] },
-  { key: 'Watch', label: 'Watch', icon: 'Watch', color: '#ef7d16', yearlyLoss: 0.18, specs: ['year', 'display'] },
-  { key: 'Camera', label: 'Camera', icon: 'Camera', color: '#7448d1', yearlyLoss: 0.15, specs: ['year'] },
-  { key: 'Gaming', label: 'Game console', icon: 'Gaming', color: '#d43d78', yearlyLoss: 0.2, specs: ['year', 'storage'] },
-  { key: 'Audio', label: 'Speaker / audio', icon: 'Audio', color: '#0f9488', yearlyLoss: 0.2, specs: ['year'] },
-  { key: 'Home', label: 'Home', icon: 'Home', color: '#179a54', yearlyLoss: 0.1, specs: [] },
-  { key: 'Vehicle', label: 'Vehicle', icon: 'Vehicle', color: '#d7263d', yearlyLoss: 0.12, specs: ['year'] },
-  { key: 'Other', label: 'Other', icon: 'Other', color: '#8d5f33', yearlyLoss: 0.15, specs: [] },
+  { key: 'Phone', label: 'Phone', icon: 'Phone', color: '#1f5bd8', specs: ['year', 'storage', 'ram', 'display'] },
+  { key: 'Tablet', label: 'Tablet', icon: 'Tablet', color: '#1479b0', specs: ['year', 'storage', 'ram', 'display'] },
+  { key: 'Laptop', label: 'Laptop', icon: 'Laptop', color: '#3949ab', specs: ['year', 'storage', 'ram', 'display'] },
+  { key: 'Desktop', label: 'Desktop', icon: 'Desktop', color: '#4b5b78', specs: ['year', 'storage', 'ram'] },
+  { key: 'Monitor', label: 'Monitor', icon: 'Monitor', color: '#0e7490', specs: ['year', 'display'] },
+  { key: 'TV', label: 'TV', icon: 'TV', color: '#7448d1', specs: ['year', 'display'] },
+  { key: 'Keyboard', label: 'Keyboard', icon: 'Keyboard', color: '#4f8a12', specs: ['year'] },
+  { key: 'Mouse', label: 'Mouse', icon: 'Mouse', color: '#b8471c', specs: ['year'] },
+  { key: 'Headphones', label: 'Headphones', icon: 'Headphones', color: '#0f9488', specs: ['year'] },
+  { key: 'Watch', label: 'Watch', icon: 'Watch', color: '#ef7d16', specs: ['year', 'display'] },
+  { key: 'Camera', label: 'Camera', icon: 'Camera', color: '#7448d1', specs: ['year'] },
+  { key: 'Gaming', label: 'Game console', icon: 'Gaming', color: '#d43d78', specs: ['year', 'storage'] },
+  { key: 'Audio', label: 'Speaker / audio', icon: 'Audio', color: '#0f9488', specs: ['year'] },
+  { key: 'Home', label: 'Home', icon: 'Home', color: '#179a54', specs: [] },
+  { key: 'Vehicle', label: 'Vehicle', icon: 'Vehicle', color: '#d7263d', specs: ['year'] },
+  { key: 'Other', label: 'Other', icon: 'Other', color: '#8d5f33', specs: [] },
   // Before Laptop and Desktop existed
-  { key: 'Computer', label: 'Computer', icon: 'Computer', color: '#3949ab', yearlyLoss: 0.22, specs: ['year', 'storage', 'ram', 'display'], legacy: true }
+  { key: 'Computer', label: 'Computer', icon: 'Computer', color: '#3949ab', specs: ['year', 'storage', 'ram', 'display'], legacy: true }
 ]
 
 export const typeOf = (key: string) => THING_TYPES.find(t => t.key === key) ?? THING_TYPES.find(t => t.key === 'Other')!
@@ -48,10 +46,11 @@ export const NEW_TYPES = THING_TYPES.filter(t => !t.legacy)
 
 // ---------- Companies (#50: their own site icon is the logo) ----------
 
-export interface Company { name: string, domain: string }
+/** `logo`: a file of our own (public/logos) for a company whose site icon isn't its logo */
+export interface Company { name: string, domain: string, logo?: string }
 
 export const COMPANIES: Company[] = [
-  { name: 'Apple', domain: 'apple.com' }, { name: 'Samsung', domain: 'samsung.com' }, { name: 'Google', domain: 'store.google.com' },
+  { name: 'Apple', domain: 'apple.com' }, { name: 'Samsung', domain: 'samsung.com' }, { name: 'Google', domain: 'google.com', logo: '/logos/google.svg' },
   { name: 'Xiaomi', domain: 'mi.com' }, { name: 'OPPO', domain: 'oppo.com' }, { name: 'vivo', domain: 'vivo.com' },
   { name: 'OnePlus', domain: 'oneplus.com' }, { name: 'realme', domain: 'realme.com' }, { name: 'Huawei', domain: 'huawei.com' },
   { name: 'Honor', domain: 'honor.com' }, { name: 'Redmi', domain: 'mi.com' }, { name: 'POCO', domain: 'po.co' },
@@ -62,6 +61,7 @@ export const COMPANIES: Company[] = [
   { name: 'ASUS', domain: 'asus.com' }, { name: 'Acer', domain: 'acer.com' }, { name: 'MSI', domain: 'msi.com' },
   { name: 'LG', domain: 'lg.com' }, { name: 'Sony', domain: 'sony.com' }, { name: 'TCL', domain: 'tcl.com' },
   { name: 'Logitech', domain: 'logitech.com' }, { name: 'Keychron', domain: 'keychron.com' }, { name: 'Razer', domain: 'razer.com' },
+  { name: 'Lofree', domain: 'lofree.co' }, { name: 'AULA', domain: 'aulagear.com' }, { name: 'VGN', domain: 'vgngaming.com', logo: '/logos/vgn.svg' },
   { name: 'Bose', domain: 'bose.com' }, { name: 'JBL', domain: 'jbl.com' }, { name: 'Garmin', domain: 'garmin.com' },
   { name: 'Fujifilm', domain: 'fujifilm.com' }, { name: 'Canon', domain: 'canon.com' }, { name: 'Nikon', domain: 'nikon.com' },
   { name: 'GoPro', domain: 'gopro.com' }, { name: 'DJI', domain: 'dji.com' }, { name: 'Nintendo', domain: 'nintendo.com' },
@@ -81,7 +81,8 @@ export const siteLogo = (domain: string) => `/api/logo?domain=${encodeURICompone
  */
 export const companyLogo = (name?: string) => {
   const c = companyOf(name)
-  if (c) return siteLogo(c.domain)
+  // Some brands' site icons aren't their logo (Google's store bag, a tiny favicon, VGN's site), so they have files of their own
+  if (c) return c.logo ?? siteLogo(c.domain)
   const word = name?.trim().toLowerCase()
   return word && /^[a-z0-9]{2,20}$/.test(word) ? siteLogo(`${word}.com`) : undefined
 }

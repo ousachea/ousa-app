@@ -8,12 +8,12 @@
 //   change, so they're served from the cache once saved.
 // After installing, every app page and the files it needs are fetched once in the background,
 // so apps you haven't opened yet also work offline.
-const VERSION = 'v7'
+const VERSION = 'v8'
 const PAGES = `pages-${VERSION}`
 const ASSETS = `assets-${VERSION}`
 const STATIC = `static-${VERSION}`
 
-const APP_PAGES = ['/', '/qr', '/phone', '/compress', '/text', '/password', '/exchange', '/things', '/eat', '/weight', '/budget', '/countdown', '/renewals', '/bookmarks', '/notes', '/battery', '/salary', '/speed', '/gold', '/settings', '/trash']
+const APP_PAGES = ['/', '/qr', '/phone', '/compress', '/text', '/password', '/exchange', '/things', '/eat', '/weight', '/budget', '/countdown', '/renewals', '/bookmarks', '/notes', '/battery', '/salary', '/speed', '/claude', '/gold', '/settings', '/trash']
 // The fonts nearly every page uses come with the shell, so text looks right offline from the first visit
 const SHELL = ['/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/fonts/bricolage-grotesque-latin.woff2', '/fonts/noto-sans-khmer-khmer.woff2']
 

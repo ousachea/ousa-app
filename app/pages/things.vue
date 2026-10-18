@@ -12,7 +12,7 @@ interface Thing {
   purchaseDate: string // yyyy-mm-dd
   price: number
   currency: Currency
-  // What it would sell for today, in the same currency; empty means "use an estimate"
+  // What it would sell for today, in the same currency; empty means "the same as you paid"
   currentValue?: number | null
   notes: string
   // Device details (CHECKLIST.md #45, #46), all optional
@@ -53,13 +53,13 @@ const SORTS = [
 const { play } = useSound()
 // Demo (the app icon switches it on): a typical set of gadgets, a vehicle and something bought in riel
 const DEMO = (): Omit<Thing, 'id'>[] => [
-  { name: 'Apple iPhone 15 Pro', category: 'Phone', company: 'Apple', model: 'iPhone 15 Pro', year: 2023, storage: 256, ram: 8, display: 6.1, purchaseDate: isoDaysAgo(420), price: 1099, currency: 'USD', currentValue: null, notes: 'Natural titanium' },
-  { name: 'Apple MacBook Air 13-inch M2', category: 'Laptop', company: 'Apple', model: 'MacBook Air 13-inch', generation: 'M2', year: 2022, storage: 512, ram: 8, display: 13.6, purchaseDate: isoDaysAgo(760), price: 1299, currency: 'USD', currentValue: null, notes: 'For work' },
-  { name: 'Lenovo Legion Y700 Gen 2', category: 'Tablet', company: 'Lenovo', model: 'Legion Y700', generation: 'Gen 2', year: 2023, storage: 256, display: 8.8, purchaseDate: isoDaysAgo(300), price: 380, currency: 'USD', currentValue: null, notes: '' },
-  { name: 'Dell UltraSharp U2723QE', category: 'Monitor', company: 'Dell', model: 'UltraSharp U2723QE', year: 2022, display: 27, purchaseDate: isoDaysAgo(500), price: 580, currency: 'USD', currentValue: null, notes: '' },
+  { name: 'Apple iPhone 15 Pro', category: 'Phone', company: 'Apple', model: 'iPhone 15 Pro', year: 2023, storage: 256, ram: 8, display: 6.1, purchaseDate: isoDaysAgo(420), price: 1099, currency: 'USD', currentValue: 720, notes: 'Natural titanium' },
+  { name: 'Apple MacBook Air 13-inch M2', category: 'Laptop', company: 'Apple', model: 'MacBook Air 13-inch', generation: 'M2', year: 2022, storage: 512, ram: 8, display: 13.6, purchaseDate: isoDaysAgo(760), price: 1299, currency: 'USD', currentValue: 850, notes: 'For work' },
+  { name: 'Lenovo Legion Y700 Gen 2', category: 'Tablet', company: 'Lenovo', model: 'Legion Y700', generation: 'Gen 2', year: 2023, storage: 256, display: 8.8, purchaseDate: isoDaysAgo(300), price: 380, currency: 'USD', currentValue: 300, notes: '' },
+  { name: 'Dell UltraSharp U2723QE', category: 'Monitor', company: 'Dell', model: 'UltraSharp U2723QE', year: 2022, display: 27, purchaseDate: isoDaysAgo(500), price: 580, currency: 'USD', currentValue: 420, notes: '' },
   { name: 'Logitech MX Master 3S', category: 'Mouse', company: 'Logitech', model: 'MX Master 3S', year: 2022, purchaseDate: isoDaysAgo(200), price: 99, currency: 'USD', currentValue: null, notes: '' },
-  { name: 'Sony WH-1000XM5', category: 'Headphones', company: 'Sony', model: 'WH-1000XM5', year: 2022, purchaseDate: isoDaysAgo(240), price: 399, currency: 'USD', currentValue: null, notes: '' },
-  { name: 'Sony PlayStation 5 Slim', category: 'Gaming', company: 'Sony', model: 'PlayStation 5', generation: 'Slim', year: 2023, storage: 1000, purchaseDate: isoDaysAgo(330), price: 499, currency: 'USD', currentValue: null, notes: '' },
+  { name: 'Sony WH-1000XM5', category: 'Headphones', company: 'Sony', model: 'WH-1000XM5', year: 2022, purchaseDate: isoDaysAgo(240), price: 399, currency: 'USD', currentValue: 280, notes: '' },
+  { name: 'Sony PlayStation 5 Slim', category: 'Gaming', company: 'Sony', model: 'PlayStation 5', generation: 'Slim', year: 2023, storage: 1000, purchaseDate: isoDaysAgo(330), price: 499, currency: 'USD', currentValue: 430, notes: '' },
   { name: 'Honda Dream 125', category: 'Vehicle', company: 'Honda', purchaseDate: isoDaysAgo(1100), price: 2350, currency: 'USD', currentValue: 1800, notes: 'Plate 2AB-1234' },
   { name: 'Rice cooker', category: 'Home', purchaseDate: isoDaysAgo(60), price: 180000, currency: 'KHR', currentValue: null, notes: '' }
 ]
@@ -176,6 +176,11 @@ const logoOf = (t: Pick<Thing, 'company'>) => {
   const src = companyLogo(t.company)
   return src && !brokenLogos.value.has(src) ? src : undefined
 }
+// The space around each logo takes the colour of the logo's own edge (logoEdgeColor), read once per logo
+const logoBg = ref(new Map<string, string>())
+function onLogoLoad(e: Event, src: string) {
+  if (!logoBg.value.has(src)) logoBg.value.set(src, logoEdgeColor(e.target as HTMLImageElement))
+}
 const query = ref('')
 
 // ---------- Filters (#47), remembered (#14) ----------
@@ -229,21 +234,21 @@ const view = smoothRef(useRemembered<'cards' | 'grid' | 'list'>('things-view', '
 
 const sort = useRemembered<(typeof SORTS)[number]['value']>('things-sort', 'added', v => SORTS.some(s => s.value === v))
 
-// Today's value: what the owner entered, otherwise an age-and-category estimate
-const isEstimate = (t: Thing) => t.currentValue == null
-const worth = (t: Thing) => t.currentValue ?? estimateValue(t.price, t.category, t.purchaseDate)
+// Today's value: what the owner entered, otherwise what they paid. Nothing is estimated or written down
+// automatically; the value only changes when you say so
+const unvalued = (t: Thing) => t.currentValue == null
+const worth = (t: Thing) => t.currentValue ?? t.price
 const change = (t: Thing) => (t.price ? worth(t) / t.price - 1 : 0)
 // Share of the price an item still holds, for the bar on each card (over 100% when it went up in value)
 const kept = (t: Thing) => (t.price ? worth(t) / t.price : 0)
-const pct = (n: number) => `${n < 0 ? '−' : '+'}${Math.abs(Math.round(n * 100))}%`
+const pct = (n: number) => (Math.round(n * 100) === 0 ? '0%' : `${n < 0 ? '−' : '+'}${Math.abs(Math.round(n * 100))}%`)
+// Colour for a change: neither red nor green when it rounds to nothing
+const trend = (n: number) => (Math.round(n * 100) === 0 ? 'same' : n < 0 ? 'down' : 'up')
 
 // Compare different currencies by their dollar value
 const usd = (amount: number, currency: Currency) => (currency === 'USD' ? amount : amount / (rate.value ?? 4000))
 const worthUsd = (t: Thing) => usd(worth(t), t.currency)
 const paidUsd = (t: Thing) => usd(t.price, t.currency)
-
-// Live estimate shown in the popup while typing
-const formEstimate = computed(() => (form.price > 0 ? estimateValue(form.price, form.category, form.purchaseDate) : 0))
 
 // Last added or edited here; older items fall back to the purchase date
 const touchedAt = (t: Thing) => t.updatedAt ?? t.createdAt ?? t.purchaseDate
@@ -271,7 +276,7 @@ const excludedCount = computed(() => items.value.length - counted.value.length)
 const totals = computed(() => {
   const now = counted.value.reduce((n, t) => n + worthUsd(t), 0)
   const paid = counted.value.reduce((n, t) => n + paidUsd(t), 0)
-  return { now, paid, change: paid ? now / paid - 1 : 0, estimates: counted.value.filter(isEstimate).length }
+  return { now, paid, change: paid ? now / paid - 1 : 0, unvalued: counted.value.filter(unvalued).length }
 })
 
 const byCategory = computed(() => {
@@ -342,7 +347,7 @@ function save(force = false) {
     storage: num(form.storage),
     ram: num(form.ram),
     display: num(form.display),
-    // An empty field means "estimate it"; keep 0 as a real value (worth nothing)
+    // An empty field means "the same as I paid"; keep 0 as a real value (worth nothing)
     currentValue: typeof form.currentValue === 'number' ? form.currentValue : null
   }
   if (editingId.value) {
@@ -402,6 +407,42 @@ function cancel() {
   formOpen.value = false
   Object.assign(form, blank())
 }
+
+// ---------- Details: click (or Enter on) a card to see everything about it ----------
+const viewingId = ref<string>()
+// Read live from the list, so an edit or a favourite shows straight away
+const viewing = computed(() => items.value.find(t => t.id === viewingId.value))
+function showDetails(t: Thing) {
+  viewingId.value = t.id
+  play('open')
+}
+// Clicks on the card's own buttons and links, a selection, a long-press or a swipe aren't a request to open it
+function onCardClick(e: MouseEvent, t: Thing) {
+  if (e.defaultPrevented || sel.selecting.value) return
+  if ((e.target as HTMLElement).closest('button, a, input, label, select, textarea, .bulk-check')) return
+  showDetails(t)
+}
+function editFromDetails(t: Thing) {
+  viewingId.value = undefined
+  edit(t)
+}
+function deleteFromDetails(t: Thing) {
+  viewingId.value = undefined
+  del(t)
+}
+// Every detail that's been filled in, in reading order
+const detailRows = (t: Thing) => [
+  ['Type', typeLabel(t.category)],
+  ['Company', t.company],
+  ['Model', t.model],
+  ['Generation', t.generation],
+  ['Released', t.year],
+  ['Storage', t.storage && storageLabel(t.storage)],
+  ['Memory', t.ram && `${t.ram} GB RAM`],
+  ['Screen', t.display && `${t.display}″`],
+  ['Bought', `${formatDate(t.purchaseDate)} · ${owned(t.purchaseDate)}`],
+  ['In the totals', t.excluded ? 'Left out' : 'Counted']
+].filter((r): r is [string, string | number] => r[1] !== undefined && r[1] !== null && r[1] !== '' && r[1] !== 0)
 
 // ---------- Import & export (CHECKLIST.md #18) ----------
 const transferOpen = ref(false)
@@ -619,10 +660,10 @@ function del(t: Thing) {
         <div class="field">
           <span class="field-head">What it’s worth now <span class="optional">Optional</span></span>
           <div class="price">
-            <input v-model.number="form.currentValue" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="What it’s worth now" :placeholder="formEstimate ? `About ${Math.round(formEstimate).toLocaleString('en-US')} if left empty` : 'Leave empty to estimate'">
+            <input v-model.number="form.currentValue" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="What it’s worth now" :placeholder="form.price > 0 ? `${Math.round(form.price).toLocaleString('en-US')} (what you paid) if left empty` : 'Leave empty to use what you paid'">
             <span class="unit">{{ form.currency === 'USD' ? '$' : '៛' }}</span>
           </div>
-          <small class="hint">Leave it empty and we’ll estimate it from the age and category. Enter a resale price for something more exact.</small>
+          <small class="hint">Leave it empty and it counts at what you paid. Enter a resale price when you know what it would sell for.</small>
         </div>
         <label class="field">
           <span class="field-head">Notes <span class="optional">Optional</span></span>
@@ -652,7 +693,7 @@ function del(t: Thing) {
             </div>
           </Step>
 
-          <Step :n="2" title="See what it’s all worth" hint="Each thing loses value with age; we estimate it unless you enter a resale price.">
+          <Step :n="2" title="See what it’s all worth" hint="What you paid, and what each is worth now once you enter a resale price.">
             <section v-if="items.length" class="panel summary">
               <div class="totals">
                 <span class="label">Worth now</span>
@@ -660,8 +701,8 @@ function del(t: Thing) {
                 <dl class="stats">
                   <div><dt>Paid</dt><dd>{{ formatMoney(totals.paid, 'USD') }}</dd></div>
                   <div>
-                    <dt>{{ totals.now >= totals.paid ? 'Gained' : 'Lost to age' }}</dt>
-                    <dd :class="totals.change < 0 ? 'down' : 'up'">
+                    <dt>{{ totals.now >= totals.paid ? 'Gained' : 'Lost in value' }}</dt>
+                    <dd :class="trend(totals.change)">
                       {{ totals.now >= totals.paid ? '+' : '−' }}{{ formatMoney(Math.abs(totals.now - totals.paid), 'USD') }}
                       <small>{{ pct(totals.change) }}</small>
                     </dd>
@@ -674,8 +715,8 @@ function del(t: Thing) {
                 <p v-if="rateInfo.from === 'fallback' && items.some(t => t.currency === 'KHR')" class="note">
                   Couldn’t get today’s exchange rate, so riel prices are counted at about {{ FALLBACK_RATE.toLocaleString('en-US') }} ៛ to the dollar.
                 </p>
-                <p v-if="totals.estimates" class="note">
-                  {{ totals.estimates === counted.length ? 'All values are estimates' : `${totals.estimates} of ${counted.length} values are estimates` }} from age and category. Edit an item to enter its real value.
+                <p v-if="totals.unvalued" class="note">
+                  {{ totals.unvalued === counted.length ? 'Everything counts' : `${totals.unvalued} of ${counted.length} things count` }} at what you paid, with no value entered yet. Edit one to enter what it would sell for.
                 </p>
               </div>
 
@@ -764,11 +805,11 @@ function del(t: Thing) {
 
             <!-- One card per thing: what it is, what you paid → what it's worth now, and how much of its price it keeps -->
             <TransitionGroup tag="ul" name="list" class="things" :class="view">
-              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing bulk-row" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)" :class="{ editing: editingId === t.id, 'bulk-picked': sel.has(t.id), excluded: t.excluded }" :style="categoryStyle(t.category)">
+              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing bulk-row" tabindex="0" :aria-label="`${t.name}, show details`" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)" @click="onCardClick($event, t)" @keydown.enter.self.prevent="showDetails(t)" :class="{ editing: editingId === t.id, 'bulk-picked': sel.has(t.id), excluded: t.excluded }" :style="categoryStyle(t.category)">
                 <BulkCheck v-if="sel.selecting" :checked="sel.has(t.id)" :label="`Select ${t.name}`" @pick="sel.pick(t.id, $event)" />
                 <header class="thing-head">
-                  <span class="thing-icon" :class="{ logo: logoOf(t) }" aria-hidden="true">
-                    <img v-if="logoOf(t)" :src="logoOf(t)" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenLogos.add(logoOf(t)!)">
+                  <span class="thing-icon" :class="{ logo: logoOf(t) }" :style="logoOf(t) && logoBg.get(logoOf(t)!) ? { '--logo-bg': logoBg.get(logoOf(t)!) } : undefined" aria-hidden="true">
+                    <img v-if="logoOf(t)" :src="logoOf(t)" alt="" loading="lazy" referrerpolicy="no-referrer" @load="onLogoLoad($event, logoOf(t)!)" @error="brokenLogos.add(logoOf(t)!)">
                     <CategoryIcon v-else :name="typeOf(t.category).icon" />
                   </span>
                   <span class="thing-title">
@@ -786,9 +827,9 @@ function del(t: Thing) {
                   </div>
                   <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
                   <div class="col end">
-                    <span class="k">Worth now<span v-if="isEstimate(t)" class="est" title="Estimated from age and category">est.</span></span>
+                    <span class="k">Worth now</span>
                     <b>{{ formatMoney(worth(t), t.currency) }}</b>
-                    <small class="delta" :class="change(t) < 0 ? 'down' : 'up'">{{ pct(change(t)) }}</small>
+                    <small class="delta" :class="trend(change(t))">{{ pct(change(t)) }}</small>
                   </div>
                 </div>
 
@@ -818,11 +859,151 @@ function del(t: Thing) {
           <SkeletonList v-else variant="cards" :count="3" label="Loading your things" />
           <template #fallback><SkeletonList variant="cards" :count="3" label="Loading your things" /></template>
         </ClientOnly>
+    <Modal :open="!!viewing" :title="viewing?.name ?? ''" @close="viewingId = undefined">
+      <div v-if="viewing" class="details" :style="categoryStyle(viewing.category)">
+        <div class="details-head">
+          <span class="thing-icon details-icon" :class="{ logo: logoOf(viewing) }" :style="logoOf(viewing) && logoBg.get(logoOf(viewing)!) ? { '--logo-bg': logoBg.get(logoOf(viewing)!) } : undefined" aria-hidden="true">
+            <img v-if="logoOf(viewing)" :src="logoOf(viewing)" alt="" referrerpolicy="no-referrer" @load="onLogoLoad($event, logoOf(viewing)!)" @error="brokenLogos.add(logoOf(viewing)!)">
+            <CategoryIcon v-else :name="typeOf(viewing.category).icon" />
+          </span>
+          <p>
+            {{ [typeLabel(viewing.category), viewing.company].filter(Boolean).join(' · ') }}
+            <span v-if="viewing.favorite" class="fav" title="Favourite"> ★ Favourite</span>
+          </p>
+        </div>
+
+        <!-- What you paid against what it's worth, like the card but roomier -->
+        <div class="compare details-compare">
+          <div class="col">
+            <span class="k">Paid</span>
+            <b>{{ formatMoney(viewing.price, viewing.currency) }}</b>
+            <small>{{ formatDate(viewing.purchaseDate) }}</small>
+          </div>
+          <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+          <div class="col end">
+            <span class="k">Worth now</span>
+            <b>{{ formatMoney(worth(viewing), viewing.currency) }}</b>
+            <small class="delta" :class="trend(change(viewing))">{{ pct(change(viewing)) }} · keeps {{ Math.round(kept(viewing) * 100) }}%</small>
+          </div>
+        </div>
+        <p v-if="unvalued(viewing)" class="details-note">No resale price entered, so it counts at what you paid.</p>
+
+        <dl class="details-list">
+          <div v-for="[k, v] in detailRows(viewing)" :key="k"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>
+        </dl>
+
+        <section v-if="viewing.notes" class="details-notes">
+          <h3>Notes</h3>
+          <p>{{ viewing.notes }}</p>
+        </section>
+
+        <div class="details-actions">
+          <button type="button" class="btn" @click="editFromDetails(viewing)">Edit</button>
+          <ConfirmDelete text :name="viewing.name" @confirm="deleteFromDetails(viewing)" />
+          <button type="button" class="btn btn-quiet" @click="viewingId = undefined">Close</button>
+        </div>
+      </div>
+    </Modal>
+
     <BulkBar :select="sel" :actions="bulkActions" label="Selected things" noun="things" />
   </ToolPage>
 </template>
 
 <style scoped>
+/* ---------- A card opens its details ---------- */
+.thing:not([data-bulk]) {
+  cursor: pointer;
+}
+
+.thing:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.details-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.details-head p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.details-icon {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1.6rem;
+  border-radius: 14px;
+}
+
+.details-compare {
+  margin: 0;
+}
+
+.details-note {
+  margin: -0.4rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+.details-list {
+  margin: 0;
+  display: grid;
+}
+
+.details-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.details-list dt {
+  color: var(--ink-2);
+}
+
+.details-list dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.details-notes h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.details-notes p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.details-actions .btn-quiet {
+  margin-left: auto;
+}
+
 .head-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -1451,17 +1632,6 @@ function del(t: Thing) {
   color: var(--ink-3);
 }
 
-.est {
-  margin-left: 0.2rem;
-  padding: 0.05rem 0.35rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  vertical-align: middle;
-  color: var(--ink-2);
-  background: var(--surface-2);
-  border-radius: 6px;
-}
 
 .optional {
   font-weight: 400;
@@ -1598,15 +1768,22 @@ function del(t: Thing) {
 }
 
 /* Company logo (#50) on a white tile so any logo reads */
+/* The logo with 4px around it, filled with the colour of the logo's own edge (--logo-bg, read when it
+   loads), so the logo looks like it runs to the tile's edge. White until then, and for logos with a
+   transparent edge */
 .thing-icon.logo {
-  background: #fff;
-  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 4px;
+  overflow: hidden;
+  background: var(--logo-bg, #fff);
+  box-shadow: none;
+  transition: background-color var(--dur-fast, 0.15s);
 }
 
 .thing-icon.logo img {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  border-radius: 6px;
 }
 
 /* ---------- Filters and view ---------- */
@@ -1688,6 +1865,12 @@ function del(t: Thing) {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.55rem;
+}
+
+/* The full width of the card, not just as wide as its longest line: stacked and left-aligned, the title
+   would otherwise grow with a long name, and its one-line details would run past the right padding */
+.things.grid .thing-title {
+  align-self: stretch;
 }
 
 .things.grid .thing-title strong {

@@ -1,7 +1,7 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
-  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'speed' | 'budget' | 'cv'
+  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'speed' | 'claude' | 'budget' | 'cv'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -201,6 +201,17 @@ export const TOOLS: Tool[] = [
     icon: 'speed',
     seoTitle: 'Internet speed test',
     description: 'Test your internet speed: download, upload, ping and jitter in Mbps, what your connection is good for, and how close you get to your plan.'
+  },
+  {
+    to: '/claude',
+    name: 'Claude usage',
+    summary: 'What you spend on the Claude API, and how much you use Claude Code.',
+    color: '#c2410c',
+    icon: 'claude',
+    seoTitle: 'Claude API spend and Claude Code usage',
+    description: 'See your Claude API spend and tokens by day and model from Anthropic’s Usage and Cost reports, and your Claude Code sessions, tokens and estimated cost by project.',
+    // Nothing of yours is saved here: the Admin key stays in the browser and the logs stay on your computer
+    readOnly: true
   },
   {
     to: '/gold',

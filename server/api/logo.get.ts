@@ -5,6 +5,11 @@ import { fetchPage } from '../utils/publicFetch'
 // Many brands don't keep an icon at /favicon.ico (Samsung, Google Store, RedMagic) or refuse it to
 // other sites (Sony), so this reads the icon the homepage declares (apple-touch-icon first), fetches
 // it once and hands it back with a long cache. Only the domain is sent anywhere; no personal data.
+//
+// Big brands often turn away requests from cloud servers like the one this runs on (Xiaomi, MSI, Sony,
+// RedMagic did), and a slow site could run past the host's time limit for a request. So Google's public
+// favicon service is asked at the same time, and used when the brand's own site hasn't answered with an
+// icon within a few seconds. Its icons are often smaller, so the brand's own is preferred when it comes.
 const MAX_IMAGE = 300 * 1024
 const DOMAIN = /^(?=.{3,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/
 const TTL = 7 * 86_400_000
@@ -42,7 +47,10 @@ async function readImage(res: Response) {
   return buf.length && buf.length <= MAX_IMAGE ? { body: buf, type } : undefined
 }
 
-async function findLogo(domain: string): Promise<Logo | null> {
+const SITE_BUDGET_MS = 4000
+
+/** The brand's own icon, from its homepage */
+async function fromSite(domain: string): Promise<Logo | null> {
   const home = new URL(`https://${domain}/`)
   let html = ''
   let base = home
@@ -59,6 +67,26 @@ async function findLogo(domain: string): Promise<Logo | null> {
     } catch {}
   }
   return null
+}
+
+/** Google's copy of the site's icon; a 404 (it doesn't know the site) counts as none */
+async function fromGoogle(domain: string): Promise<Logo | null> {
+  try {
+    const { res } = await fetchPage(new URL(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`), 'image/*')
+    const img = await readImage(res)
+    return img ? { ...img, at: Date.now() } : null
+  } catch {
+    return null
+  }
+}
+
+async function findLogo(domain: string): Promise<Logo | null> {
+  const google = fromGoogle(domain)
+  const site = await Promise.race([
+    fromSite(domain),
+    new Promise<null>(resolve => setTimeout(() => resolve(null), SITE_BUDGET_MS))
+  ])
+  return site ?? await google
 }
 
 export default defineEventHandler(async (event) => {
