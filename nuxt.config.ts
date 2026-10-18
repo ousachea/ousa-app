@@ -56,7 +56,7 @@ export default defineNuxtConfig({
         },
         {
           // Density and reduced motion from Settings, before first paint (see composables/usePrefs.ts)
-          innerHTML: "(function(){try{var p=JSON.parse(localStorage.getItem('ousa-app:prefs')||'{}');var r=document.documentElement;r.dataset.density=p.density||'comfortable';if(p.motion==='reduced'||p.lowSpec)r.dataset.motion='reduced';if(p.lowSpec)r.dataset.lowspec=''}catch(e){}})()",
+          innerHTML: "(function(){try{var p=JSON.parse(localStorage.getItem('ousa-app:prefs')||'{}');var r=document.documentElement;r.dataset.density=p.density||'comfortable';if(p.motion==='reduced'||p.lowSpec)r.dataset.motion='reduced';if(p.lowSpec)r.dataset.lowspec='';if(p.condensed)r.dataset.condensed=''}catch(e){}})()",
           tagPosition: 'head'
         },
         {

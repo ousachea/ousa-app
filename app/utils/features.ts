@@ -14,7 +14,7 @@ export interface Feature {
 
 export const FEATURES: Feature[] = [
   { key: 'sync', label: 'Saves & syncs', description: 'Keeps what you add, and syncs it to your other devices when you’re signed in.' },
-  { key: 'demo', label: 'Example data', description: 'Click the app’s icon to try it with sample data, without touching yours.' },
+  { key: 'demo', label: 'Example data', description: 'Click the app’s icon to try it with sample data, without touching yours. Signed out, it shows the example until you sign in.' },
   { key: 'drag', label: 'Drag & drop', description: 'Drag things to move or reorder them, or drop files in.' },
   { key: 'folders', label: 'Folders', description: 'Sort things into nested folders.' },
   { key: 'search', label: 'Search', description: 'A search box to find things in the app.' },
@@ -40,8 +40,7 @@ export const APP_FEATURES: Record<string, FeatureKey[]> = {
   '/eat': ['sync', 'demo', 'select', 'trash', 'quickAdd', 'drafts'],
   '/weight': ['sync', 'demo', 'select', 'trash', 'quickAdd'],
   '/budget': ['sync', 'demo', 'search', 'select', 'trash', 'download'],
-  '/countdown': ['sync', 'select', 'trash', 'quickAdd', 'drafts'],
-  '/renewals': ['sync', 'demo', 'select', 'trash', 'quickAdd', 'drafts', 'formats', 'copy'],
+  '/countdown': ['sync', 'demo', 'select', 'trash', 'quickAdd', 'drafts', 'formats', 'copy'],
   '/bookmarks': ['sync', 'demo', 'drag', 'folders', 'search', 'views', 'select', 'trash', 'quickAdd', 'formats', 'copy'],
   '/notes': ['sync', 'demo', 'drag', 'folders', 'search', 'views', 'select', 'trash', 'quickAdd', 'formats', 'copy', 'download'],
   '/battery': ['copy'],

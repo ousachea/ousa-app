@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { Tool } from '~/utils/tools'
 
-// Pages listed in TOOLS are found by route; other pages pass their own `tool`
+// Pages listed in TOOLS are found by route; other pages pass their own `tool`.
+// A tab of an app (Renewals in Calendar) is a page of its own for search and settings, but wears
+// the app's name, icon, colour and pin, with the app's tabs under its name.
 // hero: big centred header (single-purpose tools)
 // bar: compact left-aligned header so the workspace starts high (editors, studios)
 // band: full-width coloured band (collections)
@@ -12,27 +14,28 @@ type Header = 'hero' | 'bar' | 'band' | 'none'
 const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header, siteBar?: boolean }>(), { width: 'var(--page-width)', tool: undefined, header: 'hero', siteBar: true })
 
 const route = useRoute()
-const tool = computed(() => props.tool ?? toolFor(route.path)!)
+const page = computed(() => props.tool ?? toolFor(route.path)!)
+const tool = computed(() => (page.value.app ? toolFor(page.value.app) : undefined) ?? page.value)
 
 // Search titles are worded the way people search ("Cambodian phone number checker"); the page heading keeps the short name
-useHead({ title: () => tool.value.seoTitle ?? tool.value.name })
+useHead({ title: () => page.value.seoTitle ?? page.value.name })
 
 // Pages that aren't real apps stay out of search results
 const listed = computed(() => !!toolFor(route.path))
 const site = useSiteUrl()
 const seo = useAppSeo(() => ({
-  title: `${tool.value.seoTitle ?? tool.value.name} · Ousa’s Apps`,
-  description: tool.value.description ?? tool.value.summary,
+  title: `${page.value.seoTitle ?? page.value.name} · Ousa’s Apps`,
+  description: page.value.description ?? page.value.summary,
   path: route.path,
   image: listed.value ? undefined : 'home',
   noindex: !listed.value,
   jsonLd: listed.value
     ? {
         '@type': 'WebApplication',
-        'name': tool.value.seoTitle ?? tool.value.name,
-        'alternateName': tool.value.name,
-        'description': tool.value.description ?? tool.value.summary,
-        'applicationCategory': tool.value.group === 'Life' ? 'LifestyleApplication' : 'UtilitiesApplication',
+        'name': page.value.seoTitle ?? page.value.name,
+        'alternateName': page.value.name,
+        'description': page.value.description ?? page.value.summary,
+        'applicationCategory': page.value.group === 'Life' ? 'LifestyleApplication' : 'UtilitiesApplication',
         'operatingSystem': 'Any (web browser)',
         'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
         'isPartOf': { '@type': 'WebSite', 'name': 'Ousa’s Apps', 'url': `${site}/` }
@@ -83,7 +86,9 @@ const slots = useSlots()
 const settingsOpen = useAppSettingsOpen()
 onBeforeUnmount(() => (settingsOpen.value = false))
 // Listed apps always have settings, if only Import & export; pages that save nothing (the CV) don't
-const hasSettings = computed(() => !walled.value && (!!slots.settings || (TOOLS.some(t => t.to === route.path) && !tool.value.readOnly)))
+// Signed out, its Import & export would hand over the data the example is hiding
+const appPage = computed(() => [...TOOLS, ...TAB_PAGES].some(t => t.to === route.path) && !page.value.readOnly)
+const hasSettings = computed(() => !walled.value && !example.value && (!!slots.settings || appPage.value))
 function openSettings() {
   settingsOpen.value = true
   play('open')
@@ -97,8 +102,8 @@ function openWhatsNew() {
 
 // Pin this app to the top of the menu, home page and palette (CHECKLIST.md #09)
 const { prefs } = usePrefs()
-const pinnable = computed(() => TOOLS.some(t => t.to === route.path))
-const pinned = computed(() => prefs.pinnedApps.includes(route.path))
+const pinnable = computed(() => TOOLS.some(t => t.to === tool.value.to))
+const pinned = computed(() => prefs.pinnedApps.includes(tool.value.to))
 // One accent everywhere, if chosen in Settings (after hydration, so the server's colours match first)
 const hydrated = useHydrated()
 const accent = computed(() => (hydrated.value && prefs.accent !== 'apps'
@@ -107,13 +112,22 @@ const accent = computed(() => (hydrated.value && prefs.accent !== 'apps'
 
 // Demo: on pages that have one, the app icon switches sample data on and off
 const demo = useDemoState(route.path)
-// Signed out, an app shows the sign-in wall instead of itself (useSignInGate)
+// Signed out (useSignInGate), an app runs on its example data until you sign in (useDemo holds it on).
+// The Recycle Bin is nothing but your data, so it keeps the sign-in wall; apps that save nothing to
+// your account (calculators) just work. While the sign-in is still being checked, nothing shows.
 const gate = useSignInGate()
-const walled = computed(() => isGatedPage(route.path) && !gate.open.value)
+const locked = computed(() => isGatedPage(route.path) && !gate.open.value)
+const example = computed(() => locked.value && demo.supported.value)
+const walled = computed(() => locked.value && (route.path === TRASH.to || (demo.supported.value && gate.state.value === 'checking')))
 const { play } = useSound()
 function toggleDemo() {
   demo.active.value = !demo.active.value
   play(demo.active.value ? 'toggle-on' : 'toggle-off')
+}
+const signInOpen = ref(false)
+function openSignIn() {
+  signInOpen.value = true
+  play('open')
 }
 
 </script>
@@ -126,7 +140,7 @@ function toggleDemo() {
       <!-- The icon, with the sync dot on its corner for apps that save data -->
       <span class="icon-wrap">
       <button
-        v-if="demo.supported.value && !walled"
+        v-if="demo.supported.value && !locked"
         ref="stickerEl"
         type="button"
         class="sticker demo-toggle"
@@ -161,34 +175,48 @@ function toggleDemo() {
             :class="{ on: pinned }"
             :aria-pressed="pinned"
             :title="pinned ? 'Unpin from the top of the menu' : 'Pin to the top of the menu and home page'"
-            @click="togglePinnedApp(route.path)"
+            @click="togglePinnedApp(tool.to)"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg>
             {{ pinned ? 'Pinned' : 'Pin' }}
           </button>
         </ClientOnly>
-        <button v-if="hasSettings" type="button" class="pin gear" :title="`${tool.name} settings`" @click="openSettings">
+        <button v-if="hasSettings" type="button" class="pin gear" :title="`${page.name} settings`" @click="openSettings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6L18 18M6 18l1.4-1.4M16.6 7.4L18 6" /></svg>
           Settings
         </button>
         </div>
+        <!-- An app with tabs that are pages of their own (Calendar: Dates and Renewals). They replace
+             the history entry, so Back leaves the app rather than stepping through its tabs. -->
+        <nav v-if="tool.tabs" class="app-tabs" :aria-label="`${tool.name} sections`">
+          <NuxtLink
+            v-for="t in tool.tabs"
+            :key="t.to"
+            :to="t.to"
+            replace
+            class="app-tab"
+            :aria-current="t.to === route.path ? 'page' : undefined"
+          >
+            {{ t.label }}
+          </NuxtLink>
+        </nav>
       </div>
       <div v-if="$slots.actions" class="head-actions"><slot name="actions" /></div>
       <!-- The band's artwork: the app's icon drawn large and faint behind the header -->
       <ToolIcon v-if="header === 'band'" :name="tool.icon" class="band-art" aria-hidden="true" />
     </header>
 
-    <Modal v-if="hasSettings" :open="settingsOpen" :title="`${tool.name} settings`" @close="settingsOpen = false">
+    <Modal v-if="hasSettings" :open="settingsOpen" :title="`${page.name} settings`" @close="settingsOpen = false">
       <template v-if="slots.settings">
         <div class="app-settings">
           <slot name="settings" />
         </div>
-        <p class="app-settings-note">Saved on this device. They set where {{ tool.name }} starts; you can still change things on the page.</p>
+        <p class="app-settings-note">Saved on this device. They set where {{ page.name }} starts; you can still change things on the page.</p>
       </template>
       <!-- Every app can take its data and settings out to a file and bring them back -->
-      <section v-if="pinnable" class="app-data" aria-label="Import and export">
+      <section v-if="appPage" class="app-data" aria-label="Import and export">
         <h3 class="app-data-head">Import &amp; export</h3>
-        <DataPanel v-if="settingsOpen" :app="route.path" :app-name="tool.name" />
+        <DataPanel v-if="settingsOpen" :app="route.path" :app-name="page.name" />
         <!-- Apps with formats of their own (CSV, browser bookmarks, Markdown) open them from here -->
         <div v-if="slots.transfer" class="app-data-more">
           <slot name="transfer" />
@@ -196,7 +224,11 @@ function toggleDemo() {
       </section>
     </Modal>
 
-    <Modal :open="whatsNewOpen" :title="`What’s new in ${tool.name}`" @close="whatsNewOpen = false">
+    <Modal :open="signInOpen" :title="`Sign in to use ${tool.name}`" @close="signInOpen = false">
+      <VaultAuth purpose="account" @done="signInOpen = false" />
+    </Modal>
+
+    <Modal :open="whatsNewOpen" :title="`What’s new in ${page.name}`" @close="whatsNewOpen = false">
       <ol class="releases">
         <li v-for="(r, i) in releases" :key="r.version" class="release" :class="{ current: i === 0 }">
           <div class="release-head">
@@ -215,7 +247,11 @@ function toggleDemo() {
     <div class="body" :style="accent.override ? { '--accent': accent.color, '--accent-btn': `var(--${prefs.accent}-btn, ${accent.color})`, '--on-accent': accent.on } : undefined">
       <SignInWall v-if="walled" :name="tool.name" :checking="gate.state.value === 'checking'" />
       <template v-else>
-      <p v-if="demo.active.value" class="demo-banner" role="status">
+      <p v-if="example" class="demo-banner" role="status">
+        <span><strong>This is example data.</strong> Sign in to use {{ tool.name }} with your own. Until then, changes here aren’t saved.</span>
+        <button type="button" class="btn btn-sm" @click="openSignIn">Sign in</button>
+      </p>
+      <p v-else-if="demo.active.value" class="demo-banner" role="status">
         <span><strong>This is example data.</strong> Explore freely: changes here aren’t saved, and your own data is untouched.</span>
         <button type="button" class="btn btn-sm" @click="toggleDemo">Back to my data</button>
       </p>
@@ -431,6 +467,65 @@ h1 {
 
 .pin.on svg {
   fill: currentColor;
+}
+
+/* ---------- Tabs: a segmented switch under the app's name ---------- */
+.app-tabs {
+  display: inline-flex;
+  gap: 0.2rem;
+  margin-top: 1rem;
+  padding: 0.25rem;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  border-radius: 999px;
+}
+
+.app-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 1.1rem;
+  font-size: 0.925rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-radius: 999px;
+  transition: background-color var(--dur-fast, 0.15s), color var(--dur-fast, 0.15s);
+}
+
+.app-tab:hover {
+  color: var(--ink);
+}
+
+.app-tab[aria-current='page'] {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(var(--shadow) / 0.15);
+}
+
+.app-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* On the coloured band: frosted glass, with the current tab in white */
+.header-band .app-tabs {
+  background: rgb(0 0 0 / 0.16);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+.header-band .app-tab {
+  color: var(--on-accent);
+  opacity: 0.85;
+}
+
+.header-band .app-tab:hover {
+  opacity: 1;
+}
+
+.header-band .app-tab[aria-current='page'] {
+  color: var(--accent);
+  background: #fff;
+  opacity: 1;
 }
 
 /* ---------- This app's settings ---------- */
@@ -890,9 +985,16 @@ h1 {
   }
 
   .head-meta,
+  .app-tabs,
   .head-actions {
     grid-column: 1 / -1;
     justify-content: flex-start;
+  }
+
+  /* Tabs share the width, so each is an easy tap */
+  .app-tab {
+    flex: 1;
+    justify-content: center;
   }
 
   .head-actions {

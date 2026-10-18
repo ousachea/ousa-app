@@ -15,7 +15,7 @@ const { theme, setTheme } = useTheme()
 type SectionId = 'appearance' | 'performance' | 'behaviour' | 'sync' | 'data' | 'sound' | 'features' | 'about'
 interface Section { id: SectionId, label: string, hint: string, icon: string, keywords: string }
 const SECTIONS: Section[] = [
-  { id: 'appearance', label: 'Appearance', hint: 'Theme, colours and density', icon: 'M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.6 0-.5-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.6 17 3 12 3zM7.5 12.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM10 8.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM14.5 8.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z', keywords: 'theme dark light mode accent colour color cube stickers density compact spacious comfortable' },
+  { id: 'appearance', label: 'Appearance', hint: 'Theme, colours and density', icon: 'M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.6 0-.5-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.6 17 3 12 3zM7.5 12.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM10 8.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM14.5 8.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z', keywords: 'theme dark light mode accent colour color cube stickers density compact spacious comfortable condensed narrow width centre center' },
   { id: 'performance', label: 'Performance', hint: 'Low-spec PC mode, effects, animations', icon: 'M13 3L5 13.5h6L10 21l8-10.5h-6z', keywords: 'low spec slow old computer pc fast smooth lite effects blur animations motion reduce speed' },
   { id: 'behaviour', label: 'Behaviour', hint: 'Shortcuts, keyboards, deleting, autosave', icon: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4', keywords: 'keyboard shortcuts phone keypad full screen confirm delete autosave forms drafts default view list grid' },
   { id: 'sync', label: 'Account & sync', hint: 'Sign in and sync your devices', icon: 'M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9M18.5 3.5v3.6h-3.6M5.5 20.5v-3.6h3.6', keywords: 'sign in sign out google account firebase sync devices cloud login' },
@@ -261,6 +261,7 @@ const volume = computed({
                 </div>
               </div>
               <SettingChoice v-model="prefs.density" title="Density" description="How much room lists and cards get. Compact fits more on screen." :options="DENSITIES" />
+              <SettingRow v-model="prefs.condensed" title="Condensed" description="Packs every app into a column in the middle of the window, so nothing is far to reach on a wide screen. Also in the middle of the top bar." />
             </div>
           </div>
 

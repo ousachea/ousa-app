@@ -27,6 +27,10 @@ export interface Tool {
   gradient?: string
   /** A page to read, with nothing saved: no Settings or Import & export */
   readOnly?: boolean
+  /** The app's tabs, each its own page (Calendar: Dates and Renewals); shown under the app's name */
+  tabs?: { to: string, label: string }[]
+  /** For a tab: the app it belongs to, whose name, icon, colour and pin it shares */
+  app?: string
 }
 
 export const TOOLS: Tool[] = [
@@ -139,24 +143,15 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/countdown',
-    name: 'Countdown',
-    summary: 'Count down to the dates that matter.',
+    name: 'Calendar',
+    summary: 'Count down to the dates that matter, and see when subscriptions renew.',
     color: 'var(--purple)',
     icon: 'countdown',
     group: 'Life',
-    seoTitle: 'Countdown to dates and Cambodian holidays',
-    description: 'Count down to birthdays, trips and deadlines, see every Cambodian public holiday coming up, and the live time in Phnom Penh.'
-  },
-  {
-    to: '/renewals',
-    name: 'Renewals',
-    summary: 'See what your subscriptions cost and when they renew.',
-    color: 'var(--indigo)',
-    icon: 'renewals',
-    group: 'Life',
-    seoTitle: 'Subscription and renewal tracker',
-    description: 'See what your subscriptions cost each month and year, and what renews in the next 30 days, so nothing charges you by surprise.',
-    demo: true
+    seoTitle: 'Calendar: countdowns, Cambodian holidays, renewals and a clock screen saver',
+    description: 'Count down to birthdays, trips and deadlines, see Cambodian public holidays and what your subscriptions cost and when they renew, plus a full-screen clock.',
+    demo: true,
+    tabs: [{ to: '/countdown', label: 'Dates' }, { to: '/renewals', label: 'Renewals' }]
   },
   {
     to: '/bookmarks',
@@ -261,13 +256,38 @@ export const TRASH: Tool = {
   icon: 'trash'
 }
 
-export const toolFor = (path: string) => [...TOOLS, SETTINGS].find(t => t.to === path)
+// Renewals is Calendar's second tab: its own page and data, under Calendar's name, icon and pin.
+// Kept out of TOOLS so it isn't listed as an app of its own; its name and icon still label its
+// records in activity, search and the Recycle Bin.
+export const RENEWALS: Tool = {
+  to: '/renewals',
+  name: 'Renewals',
+  summary: 'See what your subscriptions cost and when they renew.',
+  color: 'var(--indigo)',
+  icon: 'renewals',
+  group: 'Life',
+  seoTitle: 'Subscription and renewal tracker',
+  description: 'See what your subscriptions cost each month and year, and what renews in the next 30 days, so nothing charges you by surprise.',
+  demo: true,
+  app: '/countdown'
+}
+
+/** Tabs that are pages of their own, inside an app in TOOLS */
+export const TAB_PAGES: Tool[] = [RENEWALS]
+
+export const toolFor = (path: string) => [...TOOLS, ...TAB_PAGES, SETTINGS].find(t => t.to === path)
 
 /** Any page with a name and icon, including the Recycle Bin */
-export const pageFor = (path: string) => [...TOOLS, SETTINGS, TRASH].find(t => t.to === path)
+export const pageFor = (path: string) => [...TOOLS, ...TAB_PAGES, SETTINGS, TRASH].find(t => t.to === path)
 
-// Page order drives the transition direction and the forward/back navigation sounds
-const PAGE_ORDER = ['/', ...TOOLS.map(t => t.to), SETTINGS.to]
+/** The app a page belongs to: itself, or for a tab like Renewals, the app it's in (Calendar) */
+export const appFor = (path: string) => {
+  const page = toolFor(path)
+  return page?.app ? toolFor(page.app) : page
+}
+
+// Page order drives the transition direction and the forward/back navigation sounds; an app's tabs sit in order
+const PAGE_ORDER = ['/', ...TOOLS.flatMap(t => t.tabs?.map(tab => tab.to) ?? [t.to]), SETTINGS.to]
 
 export function pageRank(path: string) {
   const i = PAGE_ORDER.indexOf(path)

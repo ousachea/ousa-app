@@ -10,6 +10,10 @@ const model = defineModel<string[]>({ required: true })
 const uid = useId()
 const query = ref('')
 const open = ref(false)
+// The list opens in the top layer (useAnchoredPopover), so a popup or a scrolling card never cuts it off
+const box = ref<HTMLElement>()
+const list = ref<HTMLUListElement>()
+const popover = useAnchoredPopover(box, list, { matchWidth: true, gap: 4 })
 const active = ref(0)
 const input = ref<HTMLInputElement>()
 
@@ -25,6 +29,16 @@ const exact = computed(() => props.folders.some(f => f.name.toLowerCase() === qu
 const canCreate = computed(() => !!query.value.trim() && !exact.value)
 // The create row sits after the matches
 const count = computed(() => options.value.length + (canCreate.value ? 1 : 0))
+// Shown while open with something to offer; typing changes its height, so it's placed again
+watch([open, count], async ([on, n]) => {
+  if (on && n) {
+    popover.show()
+    await nextTick()
+    popover.position()
+  } else {
+    popover.hide()
+  }
+}, { flush: 'post' })
 watch(query, () => {
   active.value = 0
   open.value = true
@@ -75,7 +89,7 @@ function onBlur(e: FocusEvent) {
 
 <template>
   <div class="folder-picker" @focusout="onBlur">
-    <div class="box input" @click="input?.focus()">
+    <div ref="box" class="box input" @click="input?.focus()">
       <TransitionGroup name="pop">
         <span v-for="f in selected" :key="f.id" class="chip" :style="{ '--tag': folderColor(f) }">
           <FolderIcon :icon="f.icon" :color="f.color" />
@@ -101,36 +115,42 @@ function onBlur(e: FocusEvent) {
       <button v-if="selected.length" type="button" class="link clear" @click.stop="model = []">Clear</button>
     </div>
 
-    <Transition name="slide-down">
-      <ul v-if="open && count" :id="`${uid}-list`" class="options" role="listbox" aria-label="Folders">
-        <li
-          v-for="(o, i) in options"
-          :id="`${uid}-opt-${i}`"
-          :key="o.folder.id"
-          role="option"
-          :aria-selected="i === active"
-          :style="{ paddingLeft: `${0.7 + o.depth * 0.9}rem` }"
-          @pointerenter="active = i"
-          @mousedown.prevent="choose(i)"
-        >
-          <FolderIcon :icon="o.folder.icon" :color="o.folder.color" />
-          <span>{{ o.folder.name }}</span>
-          <small v-if="o.depth" class="path">{{ pathOf(folders, o.folder.id).slice(0, -1).join(' → ') }}</small>
-        </li>
-        <li
-          v-if="canCreate"
-          :id="`${uid}-opt-${options.length}`"
-          role="option"
-          class="create"
-          :aria-selected="active === options.length"
-          @pointerenter="active = options.length"
-          @mousedown.prevent="choose(options.length)"
-        >
-          <span class="plus" aria-hidden="true">+</span>
-          <span>Create folder “{{ folderName(query) }}”</span>
-        </li>
-      </ul>
-    </Transition>
+    <ul
+      :id="`${uid}-list`"
+      ref="list"
+      popover="manual"
+      class="options"
+      :class="[`from-${popover.placement.value}`, { 'is-open': popover.open.value }]"
+      role="listbox"
+      aria-label="Folders"
+    >
+      <li
+        v-for="(o, i) in options"
+        :id="`${uid}-opt-${i}`"
+        :key="o.folder.id"
+        role="option"
+        :aria-selected="i === active"
+        :style="{ paddingLeft: `${0.7 + o.depth * 0.9}rem` }"
+        @pointerenter="active = i"
+        @mousedown.prevent="choose(i)"
+      >
+        <FolderIcon :icon="o.folder.icon" :color="o.folder.color" />
+        <span>{{ o.folder.name }}</span>
+        <small v-if="o.depth" class="path">{{ pathOf(folders, o.folder.id).slice(0, -1).join(' → ') }}</small>
+      </li>
+      <li
+        v-if="canCreate"
+        :id="`${uid}-opt-${options.length}`"
+        role="option"
+        class="create"
+        :aria-selected="active === options.length"
+        @pointerenter="active = options.length"
+        @mousedown.prevent="choose(options.length)"
+      >
+        <span class="plus" aria-hidden="true">+</span>
+        <span>Create folder “{{ folderName(query) }}”</span>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -210,12 +230,12 @@ function onBlur(e: FocusEvent) {
 }
 
 .options {
-  position: absolute;
-  z-index: 20;
-  left: 0;
-  right: 0;
-  top: calc(100% + 4px);
-  max-height: 15rem;
+  position: fixed;
+  inset: auto;
+  max-height: min(15rem, 60vh);
+  overscroll-behavior: contain;
+  color: var(--ink);
+  border: 0;
   overflow-y: auto;
   margin: 0;
   padding: 0.3rem;
@@ -223,6 +243,26 @@ function onBlur(e: FocusEvent) {
   background: var(--surface);
   border-radius: 12px;
   box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
+}
+
+.options.is-open {
+  animation: options-in 0.16s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.options.from-above.is-open {
+  animation-name: options-in-above;
+}
+
+@keyframes options-in {
+  from { opacity: 0; translate: 0 -4px; }
+}
+
+@keyframes options-in-above {
+  from { opacity: 0; translate: 0 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .options.is-open { animation: none; }
 }
 
 .options li {

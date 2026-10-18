@@ -1,39 +1,16 @@
 <script setup lang="ts">
 import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
-import type { Currency } from '~/utils/exchange'
+import type { Renewal } from '~/utils/calendar'
 import type { Countdown, Cycle, Period } from '~/utils/renewals'
-import type { RenewalCategory } from '~/utils/services'
 import type { CsvColumn } from '~/utils/transfer'
 import type { MenuEntry } from '~/composables/useContextMenu'
 
-interface Renewal {
-  id: string
-  name: string
-  price: number
-  currency: Currency
-  cycle: Cycle
-  nextDate: string // yyyy-mm-dd, as entered; past dates roll forward when shown
-  category?: RenewalCategory | '' // optional; suggested from the name (CHECKLIST.md #30)
-  icon?: string // '' automatic from the name; 'letter', 'svc:<service>' or an image link chosen by hand (#54)
-  favorite?: boolean // starred: shown on the home page (#66)
-}
-
-const SOON_DAYS = 7
-
 const { play } = useSound()
-// Demo: everyday subscriptions, a couple renewing this week so the timeline has something to show
-const DEMO = (): Omit<Renewal, 'id'>[] => [
-  { name: 'Netflix', price: 9.99, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(3) },
-  { name: 'Spotify', price: 5.99, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(11) },
-  { name: 'iCloud+ 200 GB', price: 2.99, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(6) },
-  { name: 'ChatGPT Plus', price: 20, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(18) },
-  { name: 'Home internet', price: 25, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(1) },
-  { name: 'Gym', price: 35, currency: 'USD', cycle: 'monthly', nextDate: isoDaysAhead(24) },
-  { name: 'Domain name', price: 12, currency: 'USD', cycle: 'yearly', nextDate: isoDaysAhead(45) },
-  { name: 'Phone top-up', price: 20000, currency: 'KHR', cycle: 'weekly', nextDate: isoDaysAhead(2) }
-]
-const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Renewal>('renewals', undefined, { demo: DEMO })
+// Calendar's Renewals tab: your subscriptions, plus your dates and the holidays for the 30-day timeline (useCalendar)
+const { items, ready, sync, add, addMany, update, replace, remove, restore } = useRenewals()
+const dates = useDates()
+const calPrefs = useCalendarPrefs().prefs
 // Today's rate, the last one saved here, or (if neither ever loaded) a typical rate that's labelled
 const rateInfo = useMarketRateInfo()
 const rate = computed(() => rateInfo.value.rate)
@@ -100,19 +77,10 @@ function openAddAs(name: string) {
 const usdOf = (r: Pick<Renewal, 'price' | 'currency'>) => toUsd(r.price, r.currency, rate.value)
 const perMonth = (r: Renewal) => CYCLES.find(c => c.value === r.cycle)!.perMonth
 
-// A clock for the countdowns (#55): every second while something is under an hour away, else every 30 s
-const now = ref(new Date())
-let tick: ReturnType<typeof setTimeout> | undefined
-function scheduleTick() {
-  clearTimeout(tick)
-  const live = upcoming.value.some(r => r.countdown.live)
-  tick = setTimeout(() => {
-    now.value = new Date()
-    scheduleTick()
-  }, live ? 1000 : 30_000)
-}
-onMounted(scheduleTick)
-onBeforeUnmount(() => clearTimeout(tick))
+// Calendar's clock for the countdowns (#55): every second while something is under an hour away, else every 30 s
+const nowMs = useNow(() => upcoming.value.some(r => r.countdown.live))
+const now = computed(() => new Date(nowMs.value))
+const { holidays } = useHolidays(nowMs)
 
 // Equivalent cost per period (#58), and which currency the totals show in (#57)
 const period = useRemembered<Period>('renewals-period', 'month', v => PERIODS.some(p => p.value === v))
@@ -169,59 +137,13 @@ const rowEquivalent = (r: Renewal) => {
   return `≈ ${formatMoney(equivalent(r.price, r.cycle, period.value), r.currency)} a ${periodLabel.value}`
 }
 
-// A heads-up for anything renewing today or tomorrow, once per browser session
-watch(ready, (isReady) => {
-  if (!isReady) return
-  const urgent = upcoming.value.filter(r => r.status === 'due')
-  if (!urgent.length) return
-  try {
-    if (sessionStorage.getItem('ousa-app:renewals-reminded') === isoToday()) return
-    sessionStorage.setItem('ousa-app:renewals-reminded', isoToday())
-  } catch {}
-  const r = urgent[0]!
-  // On a fresh load the page is ready before the app's toast area mounts; wait a moment so it isn't lost
-  setTimeout(() => toast.warning(`${r.name} ${r.days === 0 ? 'renews today' : 'renews tomorrow'}`, {
-    description: urgent.length > 1 ? `And ${urgent.length - 1} more within a day.` : `${formatMoney(r.price, r.currency)} ${cycleLabel(r.cycle)}`
-  }), 600)
-}, { immediate: true })
+// The day's heads-up for renewals, dates and holidays due today or tomorrow, shared with the Dates tab
+useDueReminder(() => ready.value && dates.ready.value && sync.state.value !== 'demo'
+  ? { renewals: items.value, dates: dates.items.value, holidays: calPrefs.holidays ? holidays.value : [] }
+  : undefined)
 
-// ---------- 30-day timeline ----------
-const WINDOW = 30
-
-// Every renewal date inside the window (weekly plans appear several times)
-const timeline = computed(() => {
-  const marks: { id: string, name: string, price: string, day: number, lane: number }[] = []
-  for (const r of items.value) {
-    let from = new Date()
-    for (let guard = 0; guard < 10; guard++) {
-      if (r.cycle === 'once' && guard > 0) break
-      const next = nextRenewal(r.nextDate, r.cycle, from)
-      const day = daysUntil(next)
-      if (day > WINDOW || day < 0) break
-      marks.push({ id: `${r.id}-${day}`, name: r.name, price: formatMoney(r.price, r.currency), day, lane: 0 })
-      from = new Date(`${next}T00:00`)
-      from.setDate(from.getDate() + 1)
-    }
-  }
-  // A label is about four days wide on the track, so markers closer than that go in separate lanes
-  marks.sort((a, b) => a.day - b.day)
-  const laneEnds: number[] = []
-  for (const m of marks) {
-    let lane = laneEnds.findIndex(end => m.day - end > 5)
-    if (lane === -1) lane = laneEnds.length
-    laneEnds[lane] = m.day
-    m.lane = lane
-  }
-  return marks
-})
-const lanes = computed(() => Math.max(1, ...timeline.value.map(m => m.lane + 1)))
-const weekTicks = [0, 7, 14, 21, 28]
-const tickLabel = (d: number) => {
-  if (d === 0) return 'Today'
-  const date = new Date()
-  date.setDate(date.getDate() + d)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-}
+// ---------- The next 30 days: renewals, your dates and the holidays on one track ----------
+const marks = computed(() => upcomingMarks({ renewals: items.value, dates: dates.items.value, holidays: calPrefs.holidays ? holidays.value : [] }, now.value))
 
 function whenText(r: { days: number, cycle: Cycle, countdown: Countdown }) {
   const verb = r.cycle === 'once' ? 'Ends' : 'Renews'
@@ -354,7 +276,7 @@ function del(r: Renewal) {
 </script>
 
 <template>
-  <ToolPage header="bar">
+  <ToolPage header="band">
     <template #settings>
       <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
       <SettingChoice v-model="period" title="Show what it costs per" description="The totals and the “≈ … a month” under each subscription." :options="PERIODS.map(p => ({ value: p.value, label: p.label }))" />
@@ -496,25 +418,7 @@ function del(r: Renewal) {
               </div>
             </section>
 
-            <section class="panel timeline" aria-label="Renewals in the next 30 days">
-              <h3>Next 30 days</h3>
-              <div class="track" :style="{ '--lanes': lanes }">
-                <span v-for="d in weekTicks" :key="d" class="tick" :style="{ left: `${(d / WINDOW) * 100}%` }">
-                  <span>{{ tickLabel(d) }}</span>
-                </span>
-                <span
-                  v-for="m in timeline"
-                  :key="m.id"
-                  class="mark"
-                  :class="{ end: m.day > WINDOW - 7 }"
-                  :style="{ left: `${(m.day / WINDOW) * 100}%`, '--lane': m.lane }"
-                  :title="`${m.name}: ${m.price}, ${m.day === 0 ? 'today' : `in ${m.day} days`}`"
-                >
-                  <span class="mark-label"><b>{{ m.name }}</b> <span class="mark-price">{{ m.price }}</span></span>
-                </span>
-              </div>
-              <p v-if="!timeline.length" class="quiet">Nothing renews in the next 30 days.</p>
-            </section>
+            <UpcomingTimeline class="timeline" :marks="marks" empty="Nothing renews or comes up in the next 30 days." />
           </template>
           <p v-else-if="ready" class="panel step-empty">Your total, and a timeline of what’s coming up, show here once you add something.</p>
           <SkeletonList v-else label="Loading your renewals" />
@@ -808,103 +712,9 @@ function del(r: Renewal) {
   font-variant-numeric: tabular-nums;
 }
 
-/* Timeline: today on the left, one marker per renewal, lanes so close dates don't collide */
+/* The 30-day timeline (UpcomingTimeline), under the totals */
 .timeline {
   margin-top: 1rem;
-  padding: 1.1rem 1.4rem 2.4rem; /* room for the date labels under the track */
-}
-
-.timeline h3 {
-  font-size: 0.95rem;
-}
-
-.track {
-  position: relative;
-  margin: 0.9rem 0.5rem 0 0.25rem;
-  height: calc(var(--lanes) * 2.6rem + 1rem);
-  border-bottom: 2px solid var(--line);
-}
-
-.tick {
-  position: absolute;
-  bottom: -0.35rem;
-  width: 2px;
-  height: 0.7rem;
-  background: var(--line);
-}
-
-.tick span {
-  position: absolute;
-  top: 1rem;
-  left: 0;
-  font-size: 0.72rem;
-  color: var(--ink-3);
-  white-space: nowrap;
-  transform: translateX(-10%);
-}
-
-.mark {
-  position: absolute;
-  bottom: -0.45rem;
-  width: 0.9rem;
-  height: 0.9rem;
-  margin-left: -0.45rem;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--surface);
-}
-
-/* A stem from the dot up to its label, longer for higher lanes */
-.mark::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  width: 1px;
-  height: calc(0.6rem + var(--lane) * 2.6rem);
-  background: color-mix(in srgb, var(--accent) 50%, transparent);
-}
-
-.mark-label {
-  position: absolute;
-  left: 0;
-  bottom: calc(1.4rem + var(--lane) * 2.6rem);
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
-  color: var(--ink-2);
-  background: var(--surface-2);
-  border-radius: 6px;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.mark.end .mark-label {
-  left: auto;
-  right: 0;
-}
-
-/* Phones: names only, kept short, so neighbouring labels don't run into each other.
-   Prices are in the list right below. */
-@media (max-width: 560px) {
-  .mark-price {
-    display: none;
-  }
-
-  .mark-label {
-    max-width: 5.5rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-.mark-label b {
-  color: var(--ink);
-}
-
-.quiet {
-  margin: 1.5rem 0 0;
-  font-size: 0.875rem;
-  color: var(--ink-3);
 }
 
 .head-buttons {

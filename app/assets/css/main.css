@@ -105,6 +105,11 @@
   color-scheme: light;
 }
 
+/* Condensed (the top bar's middle button): every app packed into a column in the middle of the window */
+:root[data-condensed] {
+  --page-width: 1280px;
+}
+
 /* Density (Settings → Density, CHECKLIST.md #67): how much room list rows and cards get */
 :root[data-density='compact'] {
   --density: 0.6;
@@ -1082,7 +1087,7 @@ kbd {
    Rows and cards across the apps take their vertical padding and gaps from --density, so Compact fits
    more on screen and Spacious gives more air. Comfortable (1) is each app's own design. The doubled
    :root outranks each page's scoped styles. */
-:root:root:not([data-density='comfortable']) .mark,
+:root:root:not([data-density='comfortable']) .marks > .mark, /* bookmark rows, not Renewals' timeline dots */
 :root:root:not([data-density='comfortable']) .renewal,
 :root:root:not([data-density='comfortable']) .page.panel,
 :root:root:not([data-density='comfortable']) .bin .row,

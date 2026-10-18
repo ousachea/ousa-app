@@ -3,11 +3,15 @@ import type { SyncState } from '~/composables/useCollection'
 
 // The small dot on the app icon saying where the page's data lives: it pulses green while synced
 // with Firebase, and turns grey, orange or red when it's only on this device or something's wrong.
-// Tapping it explains, with a button to sign in or try again where that helps
+// Tapping it explains, with a button to sign in or try again where that helps. The explanation opens in
+// the top layer (useAnchoredPopover), so the coloured band header can't cut it off.
 const { state, retry } = useSyncSources()
 const session = useSync().state
-const open = ref(false)
-const root = ref<HTMLElement>()
+const dot = ref<HTMLElement>()
+const pop = ref<HTMLElement>()
+const { open, placement, toggle, hide } = useAnchoredPopover(dot, pop, { gap: 8 })
+// Signed out, the example stays on until you sign in (useDemo)
+const gate = useSignInGate()
 
 const COPY: Record<SyncState, { label: string, detail: string }> = {
   'loading': { label: 'Checking…', detail: 'Looking for your saved data.' },
@@ -19,27 +23,22 @@ const COPY: Record<SyncState, { label: string, detail: string }> = {
   'needs-setup': { label: 'On this device', detail: 'You’re signed in, but Firebase needs a one-time setup before it can store this data.' },
   'demo': { label: 'Example data', detail: 'Example data to show how the app works. Changes here aren’t saved. Click the app icon again to go back to your own data.' }
 }
-
-function onOutside(e: PointerEvent) {
-  if (open.value && !root.value?.contains(e.target as Node)) open.value = false
-}
-onMounted(() => document.addEventListener('pointerdown', onOutside))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
+const detail = computed(() => (state.value === 'demo' && gate.state.value === 'locked'
+  ? 'Example data to show how the app works. Changes here aren’t saved. Sign in to use the app with your own data.'
+  : state.value ? COPY[state.value].detail : ''))
 </script>
 
 <template>
-  <span v-if="state" ref="root" class="sync" :data-state="state">
-    <button type="button" class="dot" :aria-expanded="open" :aria-label="COPY[state].label" :title="COPY[state].label" @click.stop="open = !open" />
-    <Transition name="slide-down">
-      <span v-if="open" class="pop" role="status">
-        <strong>{{ COPY[state].label }}</strong>
-        <span>{{ COPY[state].detail }}</span>
-        <span v-if="state === 'offline' && session.offlineReason" class="why">{{ offlineHelp(session.offlineReason) }}</span>
-        <NuxtLink v-if="state === 'device'" to="/settings#sync" class="btn btn-sm">Sign in to sync</NuxtLink>
-        <NuxtLink v-else-if="state === 'needs-setup'" to="/settings#sync" class="btn btn-sm">Set up Firebase</NuxtLink>
-        <button v-else-if="state === 'offline' || state === 'error'" type="button" class="btn btn-sm" @click="retry(); open = false">Try again</button>
-      </span>
-    </Transition>
+  <span v-if="state" class="sync" :data-state="state">
+    <button ref="dot" type="button" class="dot" :aria-expanded="open" :aria-label="COPY[state].label" :title="COPY[state].label" @click.stop="toggle" />
+    <span ref="pop" popover="manual" class="pop" :class="[`from-${placement}`, { 'is-open': open }]" role="status">
+      <strong>{{ COPY[state].label }}</strong>
+      <span>{{ detail }}</span>
+      <span v-if="state === 'offline' && session.offlineReason" class="why">{{ offlineHelp(session.offlineReason) }}</span>
+      <NuxtLink v-if="state === 'device'" to="/settings#sync" class="btn btn-sm">Sign in to sync</NuxtLink>
+      <NuxtLink v-else-if="state === 'needs-setup'" to="/settings#sync" class="btn btn-sm">Set up Firebase</NuxtLink>
+      <button v-else-if="state === 'offline' || state === 'error'" type="button" class="btn btn-sm" @click="retry(); hide()">Try again</button>
+    </span>
   </span>
 </template>
 
@@ -98,13 +97,13 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 [data-state='needs-setup'] .dot { background: var(--orange); }
 
 .pop {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 0.5rem);
-  left: -0.5rem;
+  position: fixed;
+  inset: auto;
+  margin: 0;
   width: min(18rem, 80vw);
   padding: 0.85rem 0.95rem;
-  display: flex;
+  /* Hidden until opened: a popover's own display:none would lose to the flex below */
+  display: none;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.35rem;
@@ -117,6 +116,30 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 10px 28px rgb(var(--shadow) / 0.18);
+}
+
+.pop:popover-open {
+  display: flex;
+}
+
+.pop.is-open {
+  animation: pop-in 0.16s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.pop.from-above.is-open {
+  animation-name: pop-in-above;
+}
+
+@keyframes pop-in {
+  from { opacity: 0; translate: 0 -4px; }
+}
+
+@keyframes pop-in-above {
+  from { opacity: 0; translate: 0 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop.is-open { animation: none; }
 }
 
 .pop strong {

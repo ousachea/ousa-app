@@ -16,11 +16,17 @@ export function useAnchoredPopover(
     const p = panel.value
     if (!a || !p) return
     const r = a.getBoundingClientRect()
-    if (options.matchWidth) p.style.minWidth = `${r.width}px`
-    const height = p.offsetHeight
+    if (options.matchWidth) p.style.minWidth = `${Math.min(r.width, window.innerWidth - 16)}px`
+    // Measured at its natural size, then fitted to the side with more room: never cut off by the screen's edge
+    p.style.maxHeight = ''
+    p.style.maxWidth = `${window.innerWidth - 16}px`
     const width = p.offsetWidth
-    const roomBelow = window.innerHeight - r.bottom - gap
-    placement.value = roomBelow < height && r.top > roomBelow ? 'above' : 'below'
+    const roomBelow = window.innerHeight - r.bottom - gap - 8
+    const roomAbove = r.top - gap - 8
+    placement.value = roomBelow < p.offsetHeight && roomAbove > roomBelow ? 'above' : 'below'
+    const room = Math.max(120, placement.value === 'below' ? roomBelow : roomAbove)
+    if (p.offsetHeight > room) p.style.maxHeight = `${room}px`
+    const height = p.offsetHeight
     const top = placement.value === 'below' ? r.bottom + gap : Math.max(8, r.top - gap - height)
     // Line up with the trigger's left edge, but never past the right side of the screen
     const left = Math.min(Math.max(8, r.left), window.innerWidth - width - 8)

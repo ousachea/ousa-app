@@ -147,7 +147,7 @@ export function useCollection<T extends StoredItem>(
   let realItems: T[] = []
   if (options.demo) {
     const makeDemo = options.demo
-    watch(demoOn, (on) => {
+    const swap = (on: boolean) => {
       if (on) {
         realItems = items.value
         // Demo records may bring their own ids (so demo bookmarks can point at demo folders)
@@ -155,7 +155,10 @@ export function useCollection<T extends StoredItem>(
       } else {
         items.value = readCache<T>(key) ?? realItems
       }
-    })
+    }
+    watch(demoOn, swap)
+    // Already on as the page opens (signed out, see useDemo)
+    if (demoOn.value) swap(true)
   }
 
   function cache() {
@@ -182,7 +185,7 @@ export function useCollection<T extends StoredItem>(
   onMounted(async () => {
     const local = readCache<T>(key)
     // With a saved copy, show it straight away; a first visit waits for Firestore and any examples
-    if (local) {
+    if (local && !demoOn.value) {
       items.value = local
       ready.value = true
     }
@@ -195,7 +198,7 @@ export function useCollection<T extends StoredItem>(
 
     // Example data only for a brand-new user: nothing on this device and nothing in Firestore.
     // Checked after catching up so a second device doesn't add duplicate examples.
-    if (!local && !items.value.length && localStorage.getItem(`${key}:seeded`) === null) {
+    if (!demoOn.value && !local && !items.value.length && localStorage.getItem(`${key}:seeded`) === null) {
       items.value = seed()
       try {
         localStorage.setItem(`${key}:seeded`, '1')

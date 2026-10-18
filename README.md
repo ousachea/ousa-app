@@ -34,8 +34,7 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 | Things I own | What you own, what you paid and what it’s worth today; filter from the summary, hide categories, or leave items out of the totals |
 | What should I eat? | Swipe through your saved foods and places until one sounds good |
 | Weight | Log your weight and see the trend |
-| Countdown | Count down to dates, with Cambodian public holidays |
-| Renewals | What your subscriptions cost and when they renew |
+| Calendar | Count down to dates, with Cambodian public holidays and a full-screen clock screen saver; its Renewals tab shows what your subscriptions cost and when they renew |
 | Bookmarks | Save links in folders and pin the ones you open every day; each site’s preview image, description and icon fill in, and duplicates are flagged |
 | Notes | Fast notes with folders, checklists, links between notes and version history |
 | Gold tracker | Live gold price in chi and damlung, and what your gold is worth now |

@@ -38,6 +38,21 @@ export function nextRenewal(nextDate: string, cycle: Cycle, today = new Date()) 
   return iso(d)
 }
 
+/** The last date of a repeating series before `before` (yyyy-mm-dd), or undefined when it starts later */
+export function occurrenceBefore(anchor: string, cycle: Cycle, before: string) {
+  if (cycle === 'once') return undefined
+  const start = parse(anchor)
+  const end = parse(before)
+  let d = start
+  let prev: Date | undefined
+  let guard = 0
+  while (d < end && guard++ < 5000) {
+    prev = d
+    d = step(d, cycle, start.getDate())
+  }
+  return prev && iso(prev)
+}
+
 export function daysUntil(date: string, today = new Date()) {
   const now = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   return Math.round((parse(date).getTime() - now.getTime()) / 86_400_000)

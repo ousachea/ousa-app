@@ -136,7 +136,7 @@ watch(demoOn, (on) => {
     contacts.value = savedContacts?.list ?? []
     contactSource.value = savedContacts?.source ?? ''
   }
-})
+}, { immediate: true })
 
 async function fromGoogle() {
   importing.value = 'google'

@@ -137,7 +137,7 @@ function onPickImage(e: Event) {
 }
 
 // ---------- [[ suggestions ----------
-const suggest = ref<{ query: string, from: number, x: number, y: number, active: number }>()
+const suggest = ref<{ query: string, from: number, x: number, y: number, top: number, active: number }>()
 const suggestions = computed(() => {
   const s = suggest.value
   if (!s) return []
@@ -151,6 +151,17 @@ const suggestions = computed(() => {
 
 // Kept on screen near the cursor
 const suggestLeft = computed(() => (suggest.value ? Math.max(8, Math.min(suggest.value.x, window.innerWidth - 272)) : 0))
+// Under the caret, or above it when the caret is near the bottom of the screen, so the list is never cut off
+const suggestStyle = computed(() => {
+  const s = suggest.value
+  if (!s) return {}
+  const roomBelow = window.innerHeight - s.y - 14
+  const roomAbove = s.top - 14
+  const above = roomBelow < 256 && roomAbove > roomBelow
+  return above
+    ? { left: `${suggestLeft.value}px`, bottom: `${window.innerHeight - s.top + 6}px`, maxHeight: `${Math.min(256, roomAbove)}px` }
+    : { left: `${suggestLeft.value}px`, top: `${s.y + 6}px`, maxHeight: `${Math.min(256, Math.max(120, roomBelow))}px` }
+})
 
 function checkSuggest() {
   const e = editor.value
@@ -166,7 +177,7 @@ function checkSuggest() {
     return
   }
   const at = e.view.coordsAtPos($from.pos)
-  suggest.value = { query: m[1]!, from: $from.pos - m[0].length, x: at.left, y: at.bottom, active: suggest.value?.active ?? 0 }
+  suggest.value = { query: m[1]!, from: $from.pos - m[0].length, x: at.left, y: at.bottom, top: at.top, active: suggest.value?.active ?? 0 }
 }
 
 function pick(i: number) {
@@ -296,7 +307,7 @@ defineExpose({
         class="note-suggest"
         role="listbox"
         aria-label="Link to a note"
-        :style="{ left: `${suggestLeft}px`, top: `${suggest.y + 6}px` }"
+        :style="suggestStyle"
       >
         <li
           v-for="(s, i) in suggestions"

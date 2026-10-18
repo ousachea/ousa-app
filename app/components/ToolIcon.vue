@@ -113,10 +113,12 @@ defineProps<{ name: ToolIconName }>()
       <path d="M12 11.5l1.6-2.6" />
     </template>
 
-    <!-- Countdown: hourglass -->
+    <!-- Calendar (the countdown app): a calendar page with a clock on its corner -->
     <template v-else-if="name === 'countdown'">
-      <path d="M6.5 3h11M6.5 21h11" />
-      <path d="M7.5 3v3.2L12 12l-4.5 5.8V21M16.5 3v3.2L12 12l4.5 5.8V21" />
+      <path d="M11 20.5H6a2.5 2.5 0 0 1-2.5-2.5V7.5A2.5 2.5 0 0 1 6 5h12a2.5 2.5 0 0 1 2.5 2.5V11" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+      <circle cx="17" cy="17" r="4" />
+      <path d="M17 15.2V17l1.2.8" />
     </template>
 
     <!-- Renewals: calendar with a repeat arrow -->

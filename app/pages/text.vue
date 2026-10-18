@@ -42,7 +42,7 @@ watch(demoOn, (on) => {
   } else {
     input.value = savedInput
   }
-})
+}, { immediate: true })
 
 // Each case button previews the start of the visitor's own text in that case
 const SAMPLE = 'the quick brown fox. jumps over the lazy dog'

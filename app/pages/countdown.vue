@@ -1,21 +1,15 @@
 <script setup lang="ts">
 import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
-import type { Cached } from '~/utils/cache'
+import type { CountdownEvent } from '~/utils/calendar'
+import type { Cycle } from '~/utils/renewals'
 import type { MenuEntry } from '~/composables/useContextMenu'
-
-interface CountdownEvent {
-  id: string
-  title: string
-  date: string // yyyy-mm-dd
-  time: string // hh:mm, or '' for all day
-  createdAt: string // ISO; the progress bar measures the wait from here
-  favorite?: boolean // starred: shown on the home page (#66)
-}
 
 const { play } = useSound()
 const online = useOnline()
-const { items, ready, sync, add, update, replace, remove, restore } = useCollection<CountdownEvent>('countdown')
+// Calendar's Dates tab: your dates, plus your renewals and the holidays for the 30-day timeline (useCalendar)
+const { items, ready, sync, add, update, replace, remove, restore } = useDates()
+const renewals = useRenewals()
 
 // Pull down on a phone to sync again and fetch the holidays fresh (CHECKLIST.md #26)
 usePullToRefresh(async () => {
@@ -24,7 +18,7 @@ usePullToRefresh(async () => {
 })
 
 const isoToday = () => localIsoDate()
-const blank = () => ({ title: '', date: '', time: '' })
+const blank = () => ({ title: '', date: '', time: '', repeat: 'once' as Cycle })
 const form = reactive(blank())
 
 // Times every 15 minutes, plus whatever odd time an existing countdown already has
@@ -37,14 +31,11 @@ function timeOptionsFor(current: string) {
 const timeOptions = computed(() => timeOptionsFor(form.time))
 const editingId = ref<string>()
 
-// Tick once a second so the featured countdown is live
-const now = ref(Date.now())
-let ticker: ReturnType<typeof setInterval> | undefined
-onMounted(() => (ticker = setInterval(() => (now.value = Date.now()), 1000)))
-onBeforeUnmount(() => clearInterval(ticker))
+// Calendar's clock, every second here: the header clock and the next date's flip clock show seconds
+const now = useNow(() => true)
 
 // Live clock in Cambodia time, whatever time zone this device is set to
-const TZ = 'Asia/Phnom_Penh'
+const TZ = CAMBODIA_TZ
 const clockFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit', second: '2-digit' })
 const dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const clock = computed(() => {
@@ -53,6 +44,16 @@ const clock = computed(() => {
   return { time: `${get('hour')}:${get('minute')}`, seconds: get('second'), period: get('dayPeriod') }
 })
 const todayText = computed(() => dateFmt.format(now.value))
+
+// Screen saver (the header's button): this month as a printed calendar page, with the same clock
+const saverOpen = ref(false)
+const saver = ref<{ enterFullscreen: () => void }>()
+function openSaver() {
+  // Full screen first, still inside the click: browsers refuse it a moment later
+  saver.value?.enterFullscreen()
+  saverOpen.value = true
+  play('open')
+}
 
 // Written out by hand: not every browser ships Khmer locale data for Intl
 const KM_DAYS = ['អាទិត្យ', 'ច័ន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍']
@@ -64,33 +65,14 @@ const todayKhmer = computed(() => {
   return `ថ្ងៃ${KM_DAYS[d.getUTCDay()]} ទី${kmDigits(d.getUTCDate())} ខែ${KM_MONTHS[d.getUTCMonth()]} ឆ្នាំ${kmDigits(d.getUTCFullYear())}`
 })
 
-// Public holidays come from the server (Nager.Date); each one starts at midnight Cambodia time
-const { data: liveHolidays, status: holidayStatus, refresh: refreshHolidays } = useFetch('/api/holidays', { server: false, lazy: true })
-// The last list this device saw keeps the countdown working offline (CHECKLIST.md #19)
-type HolidayData = NonNullable<typeof liveHolidays.value>
-const cachedHolidays = ref<Cached<HolidayData>>()
-onMounted(() => (cachedHolidays.value = readCached<HolidayData>('holidays')))
-watch(liveHolidays, (d) => {
-  if (d?.holidays?.length) writeCached('holidays', d)
-})
-const holidayData = computed(() => liveHolidays.value ?? (holidayStatus.value === 'error' ? cachedHolidays.value?.data : undefined))
-const holidaysFromCache = computed(() => !liveHolidays.value && !!holidayData.value)
+// Public holidays (useHolidays): fetched fresh, or the last list this device saw when offline
+const { holidays, data: holidayData, status: holidayStatus, fromCache: holidaysFromCache, cached: cachedHolidays, refresh: refreshHolidays } = useHolidays(now)
 const DAY = 86_400_000
-const khMidnight = (iso: string) => new Date(`${iso}T00:00:00+07:00`).getTime()
-
-const holidays = computed(() => (holidayData.value?.holidays ?? [])
-  .map((h) => {
-    const startAt = khMidnight(h.start)
-    const endAt = khMidnight(h.end) + DAY
-    return { ...h, startAt, endAt, left: startAt - now.value, onNow: now.value >= startAt && now.value < endAt }
-  })
-  // Anything not yet over, up to a year ahead
-  .filter(h => h.endAt > now.value && h.startAt < now.value + 365 * DAY))
 
 const nextHoliday = computed(() => holidays.value[0])
 const showAllHolidays = ref(false)
-// Countdown settings (the gear in the header)
-const { prefs: cdPrefs } = useAppPrefs('countdown', { clock: true, holidays: true })
+// Calendar settings (the gear in the header); the holidays switch covers the timeline on both tabs
+const { prefs: cdPrefs } = useCalendarPrefs()
 const laterHolidays = computed(() => holidays.value.slice(1, showAllHolidays.value ? undefined : 7))
 
 const holidayDateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' })
@@ -102,14 +84,13 @@ function holidayRange(h: { startAt: number, endAt: number, days: number }) {
 const holidayDay = (h: { startAt: number }) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric' }).format(h.startAt)
 const holidayMonth = (h: { startAt: number }) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, month: 'short' }).format(h.startAt)
 
-// Calendar days between today and the holiday, both in Cambodia time
-function holidayWhen(h: { start: string, onNow: boolean }) {
+// Read the same way as every countdown in Calendar (countdown() in utils/renewals.ts): weeks, then months
+function holidayWhen(h: { start: string, startAt: number, onNow: boolean }) {
   if (h.onNow) return 'On now'
   const today = khMidnight(new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now.value))
-  const days = Math.round((khMidnight(h.start) - today) / DAY)
-  if (days === 1) return 'Tomorrow'
-  if (days < 60) return `In ${days} days`
-  return `In ${Math.round(days / 30.44)} months`
+  if (Math.round((khMidnight(h.start) - today) / DAY) === 1) return 'Tomorrow'
+  const c = countdown(new Date(h.startAt), new Date(now.value))
+  return `In ${c.value} ${c.unit}`
 }
 
 const isTracked = (h: { name: string, start: string }) => items.value.some(e => e.title === h.name && e.date === h.start)
@@ -121,25 +102,30 @@ function track(h: { name: string, start: string }) {
   toast.success(`Counting down to ${h.name}`, { action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
 }
 
-const target = (e: CountdownEvent) => new Date(`${e.date}T${e.time || '00:00'}`).getTime()
-
 const events = computed(() => items.value
   .map((e) => {
-    const at = target(e)
-    const start = new Date(e.createdAt).getTime()
-    const span = Math.max(at - start, 1)
+    // A repeating date counts down to the next time it comes round (occurrence in utils/calendar.ts)
+    const o = occurrence(e, now.value)
+    // The wait runs from when it was added, or for a repeating date from the last time it came round
+    const start = Math.max(new Date(e.createdAt).getTime(), o.since ?? 0)
+    const span = Math.max(o.at - start, 1)
+    const days = daysUntil(o.date, new Date(now.value))
     return {
       ...e,
-      at,
-      left: at - now.value,
+      at: o.at,
+      nextDate: o.date,
+      left: o.at - now.value,
+      days,
+      // An all-day date stays up for the whole of its day
+      today: !e.time && days === 0,
       // Share of the wait already behind you (0 when added, 1 on the day)
       progress: Math.min(Math.max((now.value - start) / span, 0), 1)
     }
   })
   .sort((a, b) => a.at - b.at))
 
-const upcoming = computed(() => events.value.filter(e => e.left > 0))
-const past = computed(() => events.value.filter(e => e.left <= 0).reverse())
+const upcoming = computed(() => events.value.filter(e => e.left > 0 || e.today))
+const past = computed(() => events.value.filter(e => e.left <= 0 && !e.today).reverse())
 const featured = computed(() => upcoming.value[0])
 // The cards below the banner, so the next date isn't shown twice
 const later = computed(() => upcoming.value.slice(1))
@@ -149,40 +135,42 @@ function parts(ms: number) {
   return { days: Math.floor(s / 86400), hours: Math.floor((s % 86400) / 3600), minutes: Math.floor((s % 3600) / 60), seconds: s % 60 }
 }
 
-function shortLeft(ms: number) {
-  const { days, hours, minutes } = parts(ms)
-  if (days >= 1) return { value: days, unit: days === 1 ? 'day' : 'days' }
-  if (hours >= 1) return { value: hours, unit: hours === 1 ? 'hour' : 'hours' }
-  return { value: Math.max(minutes, 1), unit: minutes <= 1 ? 'minute' : 'minutes' }
-}
-
 function agoText(ms: number) {
   const days = Math.floor(-ms / 86_400_000)
   if (days === 0) return 'Today'
   return `${days} ${days === 1 ? 'day' : 'days'} ago`
 }
 
-const formatWhen = (e: CountdownEvent) =>
-  new Date(target(e)).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', ...(e.time ? { hour: '2-digit', minute: '2-digit' } : {}) })
+type Shown = { at: number, time: string, repeat?: Cycle }
+const formatWhen = (e: Shown) =>
+  new Date(e.at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', ...(e.time ? { hour: '2-digit', minute: '2-digit' } : {}) })
+  + (repeatLabel(e.repeat) ? ` · ${repeatLabel(e.repeat)}` : '')
 
-const at = (e: CountdownEvent) => new Date(target(e))
-const monthOf = (e: CountdownEvent) => at(e).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-const dayOf = (e: CountdownEvent) => at(e).getDate()
-const weekdayOf = (e: CountdownEvent) => at(e).toLocaleDateString('en-GB', { weekday: 'long' })
+const monthOf = (e: Shown) => new Date(e.at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+const dayOf = (e: Shown) => new Date(e.at).getDate()
+const weekdayOf = (e: Shown) => new Date(e.at).toLocaleDateString('en-GB', { weekday: 'long' })
+// Time left, worded like every countdown in Calendar
+const togo = (e: { at: number }) => countdown(new Date(e.at), new Date(now.value))
+
+// ---------- The next 30 days, and the day's reminder: shared with the Renewals tab ----------
+const marks = computed(() => upcomingMarks({ dates: items.value, renewals: renewals.items.value, holidays: cdPrefs.holidays ? holidays.value : [] }, new Date(now.value)))
+useDueReminder(() => ready.value && renewals.ready.value && sync.state.value !== 'demo'
+  ? { dates: items.value, renewals: renewals.items.value, holidays: cdPrefs.holidays ? holidays.value : [] }
+  : undefined)
 
 const canSave = computed(() => form.title.trim() && form.date)
 const titleInput = ref<HTMLInputElement>()
 const draft = useDraft('countdown', form, {
   active: () => true,
   isEmpty: f => !f.title.trim() && !f.date,
-  summary: f => [f.title, f.date && new Date(`${f.date}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }), f.time]
+  summary: f => [f.title, f.date && new Date(`${f.date}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }), f.time, repeatLabel(f.repeat)]
 })
 onMounted(() => draft.check())
 useAddAction(() => focusField(titleInput.value))
 
 function save() {
   if (!canSave.value) return
-  const added = add({ title: form.title.trim(), date: form.date, time: form.time, createdAt: new Date().toISOString() })
+  const added = add({ title: form.title.trim(), date: form.date, time: form.time, repeat: form.repeat, createdAt: new Date().toISOString() })
   draft.clear()
   toast.success(`Counting down to ${form.title.trim()}`, { action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
   play('success')
@@ -205,13 +193,13 @@ const countdownMenu = (e: CountdownEvent): MenuEntry[] => [
 
 function edit(e: CountdownEvent) {
   editingId.value = e.id
-  Object.assign(editForm, { title: e.title, date: e.date, time: e.time })
+  Object.assign(editForm, { title: e.title, date: e.date, time: e.time, repeat: e.repeat ?? 'once' })
   play('open')
 }
 
 function saveEdit() {
   if (!editingId.value || !canSaveEdit.value) return
-  const before = update(editingId.value, { title: editForm.title.trim(), date: editForm.date, time: editForm.time })
+  const before = update(editingId.value, { title: editForm.title.trim(), date: editForm.date, time: editForm.time, repeat: editForm.repeat })
   toastSaved(before && (() => replace(before)))
   play('success')
   cancel()
@@ -247,6 +235,7 @@ function del(e: CountdownEvent) {
     <template #settings>
       <SettingRow v-model="cdPrefs.clock" title="Phnom Penh clock" description="The time and today’s date, in English and Khmer, in the header." />
       <SettingRow v-model="cdPrefs.holidays" title="Cambodian public holidays" description="The list of official days off beside your countdowns." />
+      <SettingChoice v-model="cdPrefs.saver" title="Screen saver" description="What the Screen saver button shows. While it’s on, ← and → switch between them." :options="[{ value: 'page', label: 'Calendar page' }, { value: 'clock', label: 'Big clock' }]" />
     </template>
     <template #actions>
       <ClientOnly>
@@ -256,13 +245,29 @@ function del(e: CountdownEvent) {
           <span class="now-date">{{ todayText }}</span>
           <span class="now-date km" lang="km">{{ todayKhmer }}</span>
         </div>
+        <button type="button" class="btn btn-quiet btn-sm saver-btn" title="The time and date in big type, full screen" @click="openSaver">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12.5" rx="2.5" /><path d="M8.5 21h7M12 17v4" /><path d="M12 8v3l2 1.5" /></svg>
+          Screen saver
+        </button>
+        <ScreenSaver
+          ref="saver"
+          :open="saverOpen"
+          :time="clock.time"
+          :seconds="clock.seconds"
+          :period="clock.period"
+          v-model:look="cdPrefs.saver"
+          :now="now"
+          :time-zone="TZ"
+          :khmer="todayKhmer"
+          @close="saverOpen = false"
+        />
       </ClientOnly>
     </template>
 
     <div class="workspace" :class="{ 'no-holidays': !cdPrefs.holidays }">
       <!-- Three numbered steps, the way every app here walks you through it. The first is a card
            resting on the band, so its heading isn't on the colour -->
-      <Step :n="1" title="Add a date" hint="A birthday, a trip, a deadline. Add a time if it matters to the minute." class="panel form-step">
+      <Step :n="1" title="Add a date" hint="A birthday, a trip, a deadline. Add a time if it matters to the minute, and repeat it every year for birthdays." class="panel form-step">
         <form v-validate class="form" aria-label="Add a date" @submit.prevent="save">
           <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
           <label class="field">
@@ -272,11 +277,16 @@ function del(e: CountdownEvent) {
           <div class="row">
             <label class="field">
               <span class="field-head">Date</span>
-              <DatePicker v-model="form.date" aria-label="Date" :min="isoToday()" required />
+              <!-- A repeating date can start in the past: a birthday from the day someone was born -->
+              <DatePicker v-model="form.date" aria-label="Date" :min="form.repeat === 'once' ? isoToday() : undefined" required />
             </label>
             <label class="field">
               <span class="field-head">Time <span class="optional">Optional</span></span>
               <AppSelect v-model="form.time" aria-label="Time" :options="timeOptions" placeholder="Any time" />
+            </label>
+            <label class="field">
+              <span class="field-head">Repeats</span>
+              <AppSelect v-model="form.repeat" aria-label="Repeats" :options="REPEATS" />
             </label>
           </div>
           <div class="actions">
@@ -293,28 +303,32 @@ function del(e: CountdownEvent) {
             <section v-if="featured" :data-item-id="featured.id" class="panel featured bulk-row" v-bind="menuFor(() => countdownMenu(featured!), featured.title)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, featured.id)" :class="{ editing: editingId === featured.id, 'bulk-picked': sel.has(featured.id) }" aria-live="off">
               <BulkCheck v-if="sel.selecting" :checked="sel.has(featured.id)" :label="`Select ${featured.title}`" @pick="sel.pick(featured.id, $event)" />
               <div class="featured-text">
-                <span class="label">Next up</span>
+                <span class="label">Next up<span v-if="dateBadge(featured.days)" class="badge featured-badge" :class="dateBadge(featured.days)!.badge"><span aria-hidden="true">{{ dateBadge(featured.days)!.symbol }}</span> {{ dateBadge(featured.days)!.label }}</span></span>
                 <h2>{{ featured.title }}</h2>
                 <p class="when-text">{{ formatWhen(featured) }}</p>
                 <div class="featured-progress">
-                  <span class="bar" role="img" :aria-label="`${Math.round(featured.progress * 100)}% of the wait has passed`">
+                  <span class="bar" role="img" :aria-label="`${Math.floor(featured.progress * 100)}% of the wait has passed`">
                     <span :style="{ transform: `scaleX(${featured.progress})` }" />
                   </span>
-                  <span class="bar-text">{{ Math.round(featured.progress * 100) }}% of the wait done</span>
+                  <span class="bar-text">{{ Math.floor(featured.progress * 100) }}% of the wait done</span>
                 </div>
                 <span class="links">
-                  <CalendarAdd :title="featured.title" :date="featured.date" :time="featured.time" details="Counting down in Ousa’s Apps" />
+                  <CalendarAdd :title="featured.title" :date="featured.nextDate" :time="featured.time" :repeat="featured.repeat" details="Counting down in Ousa’s Apps" />
                   <span class="menu-dup"><button type="button" class="link" @click="edit(featured)">Edit</button>
                     <ConfirmDelete text :name="featured.title" @confirm="del(featured)" /></span>
                 </span>
               </div>
-              <div class="clock" role="timer" :aria-label="`${parts(featured.left).days} days left`">
+              <p v-if="featured.left <= 0" class="today-word">It’s today</p>
+              <div v-else class="clock" role="timer" :aria-label="`${parts(featured.left).days} days left`">
                 <div v-for="(v, k) in parts(featured.left)" :key="k" class="unit">
                   <strong><RollingNumber :value="String(v).padStart(k === 'days' ? 1 : 2, '0')" /></strong>
                   <span>{{ k }}</span>
                 </div>
               </div>
             </section>
+
+            <!-- The next 30 days across Calendar: your dates, renewals and holidays on one track -->
+            <UpcomingTimeline class="timeline" :marks="marks" />
 
             <!-- Later dates: a date tile, how long to go (more exact as it nears) and how much of the wait is done -->
             <h3 v-if="later.length" class="later-head">After that</h3>
@@ -326,18 +340,23 @@ function del(e: CountdownEvent) {
                   <strong class="day">{{ dayOf(e) }}</strong>
                 </span>
                 <span class="page-body">
-                  <span class="title">{{ e.title }}<span v-if="e.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span></span>
-                  <span class="weekday">{{ weekdayOf(e) }}, {{ dayOf(e) }} {{ monthOf(e) }}{{ e.time ? ` · ${e.time}` : '' }}</span>
-                  <span class="progress" role="img" :aria-label="`${Math.round(e.progress * 100)}% of the wait has passed`">
+                  <span class="title-row">
+                    <span class="title">{{ e.title }}<span v-if="e.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span></span>
+                    <!-- The same status badge as Renewals, for anything in the next week -->
+                    <span v-if="dateBadge(e.days)" class="badge" :class="dateBadge(e.days)!.badge"><span aria-hidden="true">{{ dateBadge(e.days)!.symbol }}</span> {{ dateBadge(e.days)!.label }}</span>
+                  </span>
+                  <span class="weekday">{{ weekdayOf(e) }}, {{ dayOf(e) }} {{ monthOf(e) }}{{ e.time ? ` · ${e.time}` : '' }}{{ repeatLabel(e.repeat) ? ` · ${repeatLabel(e.repeat)}` : '' }}</span>
+                  <span class="progress" role="img" :aria-label="`${Math.floor(e.progress * 100)}% of the wait has passed`">
                     <span :style="{ transform: `scaleX(${e.progress})` }" />
                   </span>
                 </span>
-                <span class="togo" role="timer" :aria-label="`${countdown(new Date(Date.now() + e.left)).text} to go`">
-                  <b><RollingNumber :value="countdown(new Date(Date.now() + e.left)).value" /></b>
-                  <span>{{ countdown(new Date(Date.now() + e.left)).unit }}</span>
+                <span v-if="e.today" class="togo"><b class="word">Today</b></span>
+                <span v-else class="togo" role="timer" :aria-label="`${togo(e).text} to go`">
+                  <b><RollingNumber :value="togo(e).value" /></b>
+                  <span>{{ togo(e).unit }}</span>
                 </span>
                 <span class="links page-actions">
-                  <CalendarAdd :title="e.title" :date="e.date" :time="e.time" details="Counting down in Ousa’s Apps" label="Calendar" />
+                  <CalendarAdd :title="e.title" :date="e.nextDate" :time="e.time" :repeat="e.repeat" details="Counting down in Ousa’s Apps" label="Calendar" />
                   <span class="menu-dup"><button type="button" class="icon-btn" :aria-label="`Edit ${e.title}`" title="Edit" @click="edit(e)">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
                   </button>
@@ -443,6 +462,10 @@ function del(e: CountdownEvent) {
             <AppSelect v-model="editForm.time" aria-label="Time" :options="editTimeOptions" placeholder="Any time" />
           </label>
         </div>
+        <label class="field">
+          <span class="field-head">Repeats</span>
+          <AppSelect v-model="editForm.repeat" aria-label="Repeats" :options="REPEATS" />
+        </label>
         <div class="edit-actions">
           <button type="submit" class="btn">Save changes</button>
           <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
@@ -486,10 +509,44 @@ function del(e: CountdownEvent) {
 }
 
 .row {
-  flex: 1 1 320px;
+  flex: 1 1 480px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .row { grid-template-columns: 1fr 1fr; }
+  .row > :last-child { grid-column: 1 / -1; }
+}
+
+/* The 30-day timeline (UpcomingTimeline), between the next date and the rest */
+.timeline {
+  margin-top: 1rem;
+}
+
+/* An all-day date on its day: no clock to run, just the word */
+.today-word {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.featured-badge {
+  margin-left: 0.5rem;
+  vertical-align: 1px;
+}
+
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.togo .word {
+  font-size: 1.15rem;
 }
 
 .optional {
@@ -859,6 +916,28 @@ function del(e: CountdownEvent) {
 }
 
 /* ---------- Live Cambodia clock, sitting in the band ---------- */
+.saver-btn {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0 auto;
+}
+
+.saver-btn svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 640px) {
+  .saver-btn {
+    margin-left: 0;
+  }
+}
+
 .now {
   min-width: 14rem;
   padding: 0.75rem 1rem 0.8rem;

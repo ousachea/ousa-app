@@ -1,6 +1,7 @@
 // Demo mode for a page: the app's icon in the header switches it on and off.
 // While it's on, the page shows sample data and nothing is saved, so people can try an app
 // before typing anything in. It always switches off when you leave the page.
+// Signed out (useSignInGate) it stays on, so an app shows its example instead of your data until you sign in.
 
 const keyFor = (path: string) => `demo:${path}`
 
@@ -18,9 +19,20 @@ export function useDemo() {
   const { supported, active } = useDemoState(path)
   supported.value = true
 
+  // Locked: on, and nothing switches it off. Signing in brings your own data back.
+  const gate = useSignInGate()
+  watch(gate.state, (state, before) => {
+    if (state === 'locked') active.value = true
+    else if (state === 'open' && before === 'locked') active.value = false
+  }, { immediate: true })
+  // (supported goes false first when the page closes, so leaving still switches it off)
+  watch(active, (on) => {
+    if (!on && supported.value && gate.state.value === 'locked') active.value = true
+  }, { flush: 'sync' })
+
   onBeforeUnmount(() => {
-    active.value = false
     supported.value = false
+    active.value = false
   })
 
   return { active }

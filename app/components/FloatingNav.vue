@@ -24,8 +24,7 @@ const MENU_KEYS: Record<string, string> = {
   '/things': 'o', // Own
   '/eat': 'e', // Eat
   '/weight': 'k', // kg
-  '/countdown': 'c',
-  '/renewals': 'r',
+  '/countdown': 'c', // Calendar (Renewals is its second tab)
   '/bookmarks': 'b',
   '/notes': 'n',
   '/battery': 'a', // bAttery

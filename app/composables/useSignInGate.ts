@@ -11,6 +11,6 @@ export function useSignInGate() {
   return { state, open: computed(() => state.value === 'open') }
 }
 
-/** Pages behind the sign-in wall: every app, and the Recycle Bin. The CV is a public page with nothing saved. */
+/** Pages that keep your data out of sight while signed out: every app shows its example instead (ToolPage), and the Recycle Bin its sign-in wall. The CV is a public page with nothing saved. */
 export const isGatedPage = (path: string) =>
-  path === TRASH.to || TOOLS.some(t => t.to === path && !t.readOnly)
+  path === TRASH.to || [...TOOLS, ...TAB_PAGES].some(t => t.to === path && !t.readOnly)

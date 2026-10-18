@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// What an app shows instead of itself while you're signed out (useSignInGate)
+// What the Recycle Bin shows instead of itself while you're signed out (useSignInGate); apps show their example data
 defineProps<{ name: string, checking?: boolean }>()
 </script>
 

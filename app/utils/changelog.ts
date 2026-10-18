@@ -158,6 +158,9 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Log your weight and see the trend.'] }
   ],
   '/countdown': [
+    { version: '2.5.0', date: '2026-10-18', changes: ['Dates can repeat every week, month, 3 or 6 months, or year, so a birthday only needs adding once.', 'A 30-day timeline of your dates, renewals and public holidays.', 'Dates this week get the same Today, Tomorrow and This week badges as Renewals, and an all-day date stays up for its whole day.', 'A heads-up when something is today or tomorrow.', 'Time left reads the same everywhere in Calendar, holidays included.'] },
+    { version: '2.4.0', date: '2026-10-18', changes: ['Renewals is now part of Calendar: switch between Dates and Renewals under the name. Your subscriptions and links to them are where they were.'] },
+    { version: '2.3.0', date: '2026-10-18', changes: ['Countdown is now called Calendar.', 'Screen saver: the time, weekday and date in big type, full screen, on slowly shifting colours. It keeps the screen awake; tap or press any key to close it.', 'Example dates to try it with: click the app’s icon. Signed out, they show until you sign in.'] },
     { version: '2.2.0', date: '2026-10-08', changes: ['Later dates are tidy rows with a date tile, how long to go (weeks or months when it’s far, days when it’s close) and a progress bar.', 'Clock digits roll smoothly as they change.'] },
     { version: '2.1.0', date: '2026-10-08', changes: ['The holiday list works offline from the last copy saved on this device.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
     { version: '2.0.0', date: '2026-10-07', changes: ['The next date gets a banner with a live clock and how much of the wait is done.', 'Add any countdown to Google Calendar, or to Apple, Outlook or your phone.', PICKERS, POPUP_EDIT, SYNC, STICKY, TWO_CLICK] },
@@ -165,6 +168,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Count down to the dates that matter.'] }
   ],
   '/renewals': [
+    { version: '2.1.0', date: '2026-10-18', changes: ['The 30-day timeline shows your dates and public holidays too, each in its own colour.', 'One heads-up a day for everything in Calendar due today or tomorrow: renewals, dates and holidays.'] },
     { version: '2.0.0', date: '2026-10-08', changes: ['Each subscription shows its service’s icon automatically; pick another, a letter, or your own image link.', 'A live countdown that gets more exact as the date nears: months, then weeks, days, hours, and minutes and seconds in the last hour.', 'Status at a glance: Safe, Upcoming, Soon, Due and Expired, in words as well as colour.', 'Prices and totals in both dollars and riel, using today’s rate.', 'See what everything costs per day, week, month, quarter, half-year or year.', 'New billing options: every 6 months, and one-off dates that expire.'] },
     { version: '1.4.0', date: '2026-10-08', changes: ['Sort by soonest, most expensive or name.', 'Give subscriptions a category; well-known services suggest one.', TRANSFER, 'New subscriptions start with the currency and billing you used last.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
     { version: '1.3.1', date: '2026-10-07', changes: ['The 30-day timeline stays readable on a phone: short names, no overlapping prices.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },

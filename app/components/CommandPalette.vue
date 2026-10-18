@@ -75,7 +75,7 @@ const appEntries = computed<Entry[]>(() => {
   }))
 })
 
-const current = computed(() => toolFor(route.path))
+const current = computed(() => appFor(route.path))
 const commandEntries = computed<Entry[]>(() => {
   const list: Entry[] = [
     { id: 'cmd:add', title: 'Add something…', subtitle: 'Bookmark, device, renewal, countdown…', icon: 'plus', color: 'var(--green)', run: () => switchTo('add') },

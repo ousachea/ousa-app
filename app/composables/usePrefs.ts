@@ -32,6 +32,8 @@ export interface Prefs {
   defaultView: 'list' | 'grid' | 'compact'
   /** Low-spec PC mode: lite effects and no motion at all, plus no splash or cross-fades, for old computers */
   lowSpec: boolean
+  /** Condensed: every app in a narrower column in the middle of the window, instead of the full width */
+  condensed: boolean
 }
 
 const DEFAULTS: Prefs = {
@@ -47,7 +49,8 @@ const DEFAULTS: Prefs = {
   accent: 'apps',
   cubeColors: 'cube',
   defaultView: 'list',
-  lowSpec: false
+  lowSpec: false,
+  condensed: false
 }
 
 const prefs = reactive<Prefs>({ ...DEFAULTS })
@@ -60,6 +63,8 @@ function apply() {
   else delete root.dataset.motion
   if (prefs.lowSpec) root.dataset.lowspec = ''
   else delete root.dataset.lowspec
+  if (prefs.condensed) root.dataset.condensed = ''
+  else delete root.dataset.condensed
 }
 
 function start() {
@@ -72,6 +77,8 @@ function start() {
     }
     // The cube colours used to be a switch on the home page with a key of their own
     if (saved.cubeColors === undefined && localStorage.getItem('ousa-app:cube-colors') === 'apps') prefs.cubeColors = 'apps'
+    // A tab that used to be an app of its own (Renewals, now in Calendar): its pin moves to the app
+    prefs.pinnedApps = [...new Set(prefs.pinnedApps.map(p => appFor(p)?.to ?? p))]
   } catch {}
   apply()
   // In a scope of its own: started from inside a component, the watch would otherwise stop when that

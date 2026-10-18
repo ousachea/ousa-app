@@ -1,6 +1,7 @@
 import { pathText, type Folder } from './folders'
 import { typeOf } from './devices'
 import { autoTitle } from './notes'
+import { nextRenewal, type Cycle } from './renewals'
 // Universal search (CHECKLIST.md #06): one place that knows how to find records in every app.
 // Each source reads an app's saved list from this device (the same copy useCollection keeps), so
 // search works offline and never sends anything anywhere. Add a source here when a new app stores data.
@@ -89,9 +90,10 @@ export const SEARCH_SOURCES: Source[] = [
   {
     collection: 'countdown',
     app: '/countdown',
-    group: 'Countdowns',
+    group: 'Dates',
     title: c => c.title,
-    subtitle: c => new Date(`${c.date}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    // A repeating date (a birthday) shows when it next comes round
+    subtitle: c => new Date(`${c.repeat && c.repeat !== 'once' ? nextRenewal(String(c.date), c.repeat as Cycle) : c.date}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   },
   {
     collection: 'contacts',

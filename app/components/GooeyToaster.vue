@@ -16,11 +16,32 @@ import 'vue-sonner/style.css'
 
 <style>
 /* Gooey look: pill-shaped toasts that squash and stretch like a blob when they appear.
-   Uses the standalone `scale` property so it doesn't fight Sonner's own `transform`. */
+   Uses the standalone `scale` property so it doesn't fight Sonner's own `transform`.
+   The opposite of the page: black in light mode, white in dark mode, so it always stands out. */
+[data-sonner-toast].goey {
+  --goey-bg: #000;
+  --goey-text: #fff;
+  --goey-muted: #b7bdca;
+  --goey-success: #3ddc84;
+  --goey-error: #ff6b7a;
+  --goey-warning: #ffd500;
+  --goey-info: #7aa7ff;
+}
+
+:root[data-theme='dark'] [data-sonner-toast].goey {
+  --goey-bg: #fff;
+  --goey-text: #0b0d12;
+  --goey-muted: #4a5163;
+  --goey-success: #12873f;
+  --goey-error: #d02a3c;
+  --goey-warning: #a86b00;
+  --goey-info: #2f62d6;
+}
+
 [data-sonner-toast].goey[data-styled='true'] {
-  --normal-bg: var(--plastic);
-  --normal-border: var(--plastic);
-  --normal-text: #fff;
+  --normal-bg: var(--goey-bg);
+  --normal-border: var(--goey-bg);
+  --normal-text: var(--goey-text);
   border-radius: 999px;
   padding: 12px 18px;
   font-family: var(--font);
@@ -36,13 +57,13 @@ import 'vue-sonner/style.css'
 }
 
 [data-sonner-toast].goey [data-description] {
-  color: #b7bdca;
+  color: var(--goey-muted);
 }
 
-[data-sonner-toast].goey[data-type='success'] [data-icon] { color: #3ddc84; }
-[data-sonner-toast].goey[data-type='error'] [data-icon] { color: #ff6b7a; }
-[data-sonner-toast].goey[data-type='warning'] [data-icon] { color: #ffd500; }
-[data-sonner-toast].goey[data-type='info'] [data-icon] { color: #7aa7ff; }
+[data-sonner-toast].goey[data-type='success'] [data-icon] { color: var(--goey-success); }
+[data-sonner-toast].goey[data-type='error'] [data-icon] { color: var(--goey-error); }
+[data-sonner-toast].goey[data-type='warning'] [data-icon] { color: var(--goey-warning); }
+[data-sonner-toast].goey[data-type='info'] [data-icon] { color: var(--goey-info); }
 
 @keyframes goey-in {
   0% { scale: 0.3 0.6; filter: blur(6px); }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // A text field with suggestions underneath (CHECKLIST.md #13, #45): type to filter, arrows to move,
 // Enter or a click to pick. Anything typed is kept as it is, so values not in the list work too.
+// The list opens in the top layer (useAnchoredPopover), so a popup or a scrolling card never cuts it off.
 export interface ComboOption { value: string, hint?: string, logo?: string }
 
 const props = withDefaults(defineProps<{ options: readonly (string | ComboOption)[], placeholder?: string, ariaLabel?: string, required?: boolean, dataError?: string }>(), {
@@ -11,6 +12,9 @@ const emit = defineEmits<{ pick: [value: string] }>()
 
 const uid = useId()
 const open = ref(false)
+const input = ref<HTMLInputElement>()
+const list = ref<HTMLUListElement>()
+const popover = useAnchoredPopover(input, list, { matchWidth: true, gap: 4 })
 const active = ref(-1)
 const brokenLogos = ref(new Set<string>())
 
@@ -22,6 +26,16 @@ const shown = computed(() => {
   return list.length === 1 && list[0]!.value.toLowerCase() === q ? [] : list.slice(0, 40)
 })
 watch(() => model.value, () => (active.value = -1))
+// Shown while open with something to suggest; typing changes its height, so it's placed again
+watch([open, () => shown.value.length], async ([on, count]) => {
+  if (on && count) {
+    popover.show()
+    await nextTick()
+    popover.position()
+  } else {
+    popover.hide()
+  }
+}, { flush: 'post' })
 
 function pick(o: ComboOption) {
   model.value = o.value
@@ -55,6 +69,7 @@ function onBlur() {
 <template>
   <div class="combo">
     <input
+      ref="input"
       v-model="model"
       class="input"
       role="combobox"
@@ -73,23 +88,29 @@ function onBlur() {
       @keydown="onKey"
       @blur="onBlur"
     >
-    <Transition name="slide-down">
-      <ul v-if="open && shown.length" :id="`${uid}-list`" class="list" role="listbox" :aria-label="ariaLabel">
-        <li
-          v-for="(o, i) in shown"
-          :id="`${uid}-opt-${i}`"
-          :key="o.value"
-          role="option"
-          :aria-selected="i === active"
-          @pointerenter="active = i"
-          @mousedown.prevent="pick(o)"
-        >
-          <img v-if="o.logo && !brokenLogos.has(o.logo)" class="logo" :src="o.logo" alt="" referrerpolicy="no-referrer" @error="brokenLogos.add(o.logo)">
-          <span class="value">{{ o.value }}</span>
-          <span v-if="o.hint" class="hint">{{ o.hint }}</span>
-        </li>
-      </ul>
-    </Transition>
+    <ul
+      :id="`${uid}-list`"
+      ref="list"
+      popover="manual"
+      class="list"
+      :class="[`from-${popover.placement.value}`, { 'is-open': popover.open.value }]"
+      role="listbox"
+      :aria-label="ariaLabel"
+    >
+      <li
+        v-for="(o, i) in shown"
+        :id="`${uid}-opt-${i}`"
+        :key="o.value"
+        role="option"
+        :aria-selected="i === active"
+        @pointerenter="active = i"
+        @mousedown.prevent="pick(o)"
+      >
+        <img v-if="o.logo && !brokenLogos.has(o.logo)" class="logo" :src="o.logo" alt="" referrerpolicy="no-referrer" @error="brokenLogos.add(o.logo)">
+        <span class="value">{{ o.value }}</span>
+        <span v-if="o.hint" class="hint">{{ o.hint }}</span>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -99,12 +120,12 @@ function onBlur() {
 }
 
 .list {
-  position: absolute;
-  z-index: 20;
-  left: 0;
-  right: 0;
-  top: calc(100% + 4px);
-  max-height: 15rem;
+  position: fixed;
+  inset: auto;
+  max-height: min(15rem, 60vh);
+  overscroll-behavior: contain;
+  color: var(--ink);
+  border: 0;
   overflow-y: auto;
   margin: 0;
   padding: 0.3rem;
@@ -112,6 +133,26 @@ function onBlur() {
   background: var(--surface);
   border-radius: 12px;
   box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
+}
+
+.list.is-open {
+  animation: list-in 0.16s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.list.from-above.is-open {
+  animation-name: list-in-above;
+}
+
+@keyframes list-in {
+  from { opacity: 0; translate: 0 -4px; }
+}
+
+@keyframes list-in-above {
+  from { opacity: 0; translate: 0 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list.is-open { animation: none; }
 }
 
 li {
