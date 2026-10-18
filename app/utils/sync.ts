@@ -1,7 +1,5 @@
-import {
-  collection, doc, getDocsFromServer, onSnapshot, query, runTransaction, serverTimestamp, Timestamp, where, writeBatch,
-  type DocumentSnapshot, type Firestore, type Unsubscribe
-} from 'firebase/firestore'
+import type { DocumentSnapshot, Firestore, Timestamp, Unsubscribe } from 'firebase/firestore'
+import type * as FirestoreSdk from 'firebase/firestore'
 
 // The one sync engine every tracker shares (CHECKLIST.md #76–#82). Plain TypeScript with no Nuxt
 // auto-imports, so the emulator tests run this exact file.
@@ -197,8 +195,16 @@ function withTimeout<T>(promise: Promise<T>, ms = TIMEOUT) {
 
 // ---------- The engine ----------
 
+/**
+ * The Firestore functions the engine calls, handed in rather than imported: the SDK loads after the page
+ * (loadFirebase in useFirebase.ts), and this file only ever needs its types
+ */
+export type FirestoreFns = Pick<typeof FirestoreSdk,
+  'collection' | 'doc' | 'getDocsFromServer' | 'onSnapshot' | 'query' | 'runTransaction' | 'serverTimestamp' | 'Timestamp' | 'where' | 'writeBatch'>
+
 export interface EngineOptions {
   db: Firestore
+  fs: FirestoreFns
   uid: string
   /** Stable per browser; written into each record so a device recognises its own writes */
   deviceId: string
@@ -269,7 +275,7 @@ export class SyncEngine {
   }
 
   private get items() {
-    return collection(this.o.db, 'users', this.uid, 'items')
+    return this.o.fs.collection(this.o.db, 'users', this.uid, 'items')
   }
 
   private meta(): Meta {
@@ -334,7 +340,7 @@ export class SyncEngine {
   // A device's first sync with this account: read everything once, then only changes from here on
   private async fullSync() {
     this.log('full sync')
-    const snap = await withTimeout(getDocsFromServer(this.items))
+    const snap = await withTimeout(this.o.fs.getDocsFromServer(this.items))
     this.count('reads', Math.max(1, snap.size))
     const remoteIds = new Set(snap.docs.map(d => d.id))
     this.applyRemote(snap.docs.map(d => ({ id: d.id, data: d.data() as RemoteDoc })))
@@ -355,11 +361,12 @@ export class SyncEngine {
     if (this.unsubscribe || this.stopped) return
     const c = this.meta().cursor ?? [0, 0]
     this.log('listening from', c)
-    const q = query(this.items, where('syncedAt', '>', new Timestamp(c[0], c[1])))
+    const { fs } = this.o
+    const q = fs.query(this.items, fs.where('syncedAt', '>', new fs.Timestamp(c[0], c[1])))
     let first = true
     listeners.count++
     this.listening = true
-    const unsub = onSnapshot(q, (snap) => {
+    const unsub = fs.onSnapshot(q, (snap) => {
       // Our own batch writes show up here first as local, unconfirmed copies; wait for the server's
       const changes = snap.docChanges().filter(ch => !ch.doc.metadata.hasPendingWrites)
       if (!snap.metadata.fromCache) {
@@ -537,11 +544,11 @@ export class SyncEngine {
     // New records: nobody else can have changed them, so write without reading first
     for (let i = 0; i < adds.length; i += BATCH_LIMIT) {
       const chunk = adds.slice(i, i + BATCH_LIMIT)
-      const batch = writeBatch(this.o.db)
+      const batch = this.o.fs.writeBatch(this.o.db)
       const revs = this.meta().revs
       const decisions = chunk.map((t) => {
         const rev = (revs[t.id] ?? 0) + 1
-        batch.set(doc(this.items, t.id), this.full(t.name, t.rec!, rev))
+        batch.set(this.o.fs.doc(this.items, t.id), this.full(t.name, t.rec!, rev))
         return { rev } as Decision
       })
       try {
@@ -563,12 +570,13 @@ export class SyncEngine {
     for (let i = 0; i < checked.length; i += TX_CHUNK) {
       const chunk = checked.slice(i, i + TX_CHUNK)
       const revs = this.meta().revs
-      const decisions = await withTimeout(runTransaction(this.o.db, async (tx) => {
-        const snaps = await Promise.all(chunk.map(t => tx.get(doc(this.items, t.id))))
+      const { fs } = this.o
+      const decisions = await withTimeout(fs.runTransaction(this.o.db, async (tx) => {
+        const snaps = await Promise.all(chunk.map(t => tx.get(fs.doc(this.items, t.id))))
         const out = chunk.map((t, j) => this.decide(t, snaps[j]!, revs[t.id]))
         chunk.forEach((t, j) => {
           const w = out[j]!.write
-          if (w) tx.set(doc(this.items, t.id), w)
+          if (w) tx.set(fs.doc(this.items, t.id), w)
         })
         return out
       }, { maxAttempts: 3 }))
@@ -579,11 +587,11 @@ export class SyncEngine {
   }
 
   private full(name: string, rec: SyncRecord, rev: number) {
-    return { collection: name, data: rec, rev, by: this.o.deviceId, syncedAt: serverTimestamp(), updatedAt: new Date().toISOString() }
+    return { collection: name, data: rec, rev, by: this.o.deviceId, syncedAt: this.o.fs.serverTimestamp(), updatedAt: new Date().toISOString() }
   }
 
   private tombstone(name: string, rev: number) {
-    return { collection: name, deleted: true, rev, by: this.o.deviceId, syncedAt: serverTimestamp(), updatedAt: new Date().toISOString() }
+    return { collection: name, deleted: true, rev, by: this.o.deviceId, syncedAt: this.o.fs.serverTimestamp(), updatedAt: new Date().toISOString() }
   }
 
   private decide(t: Task, snap: DocumentSnapshot, knownRev: number | undefined): Decision {

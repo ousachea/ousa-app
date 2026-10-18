@@ -168,10 +168,7 @@ const APPS: Record<string, AppKeyboard> = {
     named: { price: SETS.money }
   },
   '/': { kinds: { search: APP_NAMES } },
-  '/trash': { kinds: { search: APP_NAMES } },
-  '/ambient-studio': {
-    kinds: { number: SETS.minutes, url: SETS.url, text: SETS.url }
-  }
+  '/trash': { kinds: { search: APP_NAMES } }
 }
 
 /** What a key types where the caret is, filling in keys that depend on the moment, like Notes' Today */

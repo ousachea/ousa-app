@@ -46,8 +46,7 @@ export const APP_FEATURES: Record<string, FeatureKey[]> = {
   '/battery': ['copy'],
   '/salary': [],
   '/speed': ['download'],
-  '/gold': ['sync', 'demo', 'select', 'trash', 'quickAdd', 'drafts', 'formats', 'download'],
-  '/ambient-studio': ['search']
+  '/gold': ['sync', 'demo', 'select', 'trash', 'quickAdd', 'drafts', 'formats', 'download']
 }
 
 export const hasFeature = (app: string, key: FeatureKey) => APP_FEATURES[app]?.includes(key) ?? false

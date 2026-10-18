@@ -36,7 +36,7 @@ export const BACKUP_SECTIONS: BackupSection[] = [
 // Settings that travel with a backup: preferences, theme, effects, sound, remembered choices and each
 // app's own settings and saved inputs. Drafts, the activity log and the Recycle Bin stay on the device
 // they belong to.
-const SETTING_KEYS = /^ousa-app:(prefs|theme|effects|sound|cube-colors|remember:.+|app-prefs:.+|ambient-studio|salary|battery|weight-unit|notes-prefs|gold-settings|bookmarks-view)$/
+const SETTING_KEYS = /^ousa-app:(prefs|theme|effects|sound|cube-colors|remember:.+|app-prefs:.+|salary|battery|weight-unit|notes-prefs|gold-settings|bookmarks-view)$/
 
 // Settings that belong to one app, for Import / Export in that app's own settings
 const APP_SETTING_EXTRAS: Record<string, string[]> = {
@@ -46,8 +46,7 @@ const APP_SETTING_EXTRAS: Record<string, string[]> = {
   '/weight': ['weight-unit'],
   '/bookmarks': ['bookmarks-view'],
   '/salary': ['salary'],
-  '/battery': ['battery'],
-  '/ambient-studio': ['ambient-studio']
+  '/battery': ['battery']
 }
 
 /** The localStorage keys holding one app's settings: its own settings, remembered choices and extras */

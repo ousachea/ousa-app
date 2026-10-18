@@ -3,7 +3,6 @@ import { toast } from 'vue-sonner'
 import type { EffectsPreference } from '~/composables/useEffects'
 import type { Density, MotionPreference, Prefs } from '~/composables/usePrefs'
 import { getPack, packNames, type CueName, type PackName } from 'uisfx'
-import { getDocsFromServer, limit, query } from 'firebase/firestore'
 
 const sound = useSound()
 const { state } = sound
@@ -66,10 +65,11 @@ const table = ref<'checking' | 'ready' | 'missing' | 'error'>('checking')
 async function checkTable() {
   if (!signedIn.value) return
   table.value = 'checking'
-  const uid = useFirebase().auth.currentUser?.uid
+  const { auth, db, sdk } = await loadFirebase()
+  const uid = auth.currentUser?.uid
   if (!uid) return
   try {
-    await getDocsFromServer(query(itemsRef(uid), limit(1)))
+    await sdk.getDocsFromServer(sdk.query(sdk.collection(db, 'users', uid, 'items'), sdk.limit(1)))
     table.value = 'ready'
   } catch (e) {
     table.value = needsFirestoreSetup(e) ? 'missing' : 'error'
@@ -149,8 +149,7 @@ const lowSpec = computed({
 const LOW_SPEC_DOES = [
   'Turns off blur and see-through glass, the hardest thing for an old graphics chip to draw',
   'Stops every animation and transition: pages, lists, menus and the home page cube',
-  'Skips the splash screen and cross-fades, so each page shows as soon as it’s ready',
-  'Draws ambient scenes as one still picture instead of moving'
+  'Skips the splash screen and cross-fades, so each page shows as soon as it’s ready'
 ]
 
 // ---------- Behaviour ----------
@@ -261,7 +260,7 @@ const volume = computed({
                 </div>
               </div>
               <SettingChoice v-model="prefs.density" title="Density" description="How much room lists and cards get. Compact fits more on screen." :options="DENSITIES" />
-              <SettingRow v-model="prefs.condensed" title="Condensed" description="Packs every app into a column in the middle of the window, so nothing is far to reach on a wide screen. Also in the middle of the top bar." />
+              <SettingRow v-model="prefs.condensed" title="Condensed" description="Packs every app into a column in the middle of the window, so nothing is far to reach on a wide screen. Also in the middle of the top bar, or press Shift on its own." />
             </div>
           </div>
 

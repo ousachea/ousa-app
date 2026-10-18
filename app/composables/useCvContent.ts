@@ -1,6 +1,4 @@
 import { toast } from 'vue-sonner'
-import { onAuthStateChanged } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
 import { CV_DEFAULT, withDefaults, type CvContent } from '~/data/cv'
 
 // The CV page's content: rendered from Firestore's public/cv (server/api/cv.get.ts) so every visitor
@@ -37,15 +35,24 @@ export function useCvContent() {
     if (import.meta.server || !firebaseConfigured()) return
     const owner = String(useRuntimeConfig().public.ownerEmail ?? '').trim().toLowerCase()
     if (!owner) return
-    const stop = onAuthStateChanged(useFirebase().auth, (user) => {
-      isOwner.value = !!user && user.emailVerified && user.email?.toLowerCase() === owner
+    // Firebase arrives just after the page (loadFirebase); the editing tools show once it says who you are
+    let stop: (() => void) | undefined
+    let left = false
+    onBeforeUnmount(() => {
+      left = true
+      stop?.()
     })
-    onBeforeUnmount(stop)
+    loadFirebase().then(({ auth, sdk }) => {
+      if (left) return
+      stop = sdk.onAuthStateChanged(auth, (user) => {
+        isOwner.value = !!user && user.emailVerified && user.email?.toLowerCase() === owner
+      })
+    }).catch(() => {})
   }
 
   async function publish(next: CvContent) {
-    const { db } = useFirebase()
-    await withTimeout(setDoc(doc(db, 'public', 'cv'), {
+    const { db, sdk } = await loadFirebase()
+    await withTimeout(sdk.setDoc(sdk.doc(db, 'public', 'cv'), {
       json: JSON.stringify(next),
       updatedAt: new Date().toISOString()
     }))

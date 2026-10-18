@@ -1,5 +1,4 @@
 import { toast } from 'vue-sonner'
-import { collection } from 'firebase/firestore'
 
 // A list of records for the personal trackers (Things I own, Renewals, Countdown…).
 // Always kept in this browser; when signed in, the shared sync session (useSync, utils/sync.ts) keeps it
@@ -19,8 +18,6 @@ export type SyncState =
   | 'needs-setup' // signed in, but the Firestore database or its rules aren't set up yet
   | 'demo' // showing sample data; nothing is saved
 
-// Where a signed-in user's tracker records live
-export const itemsRef = (uid: string) => collection(useFirebase().db, 'users', uid, 'items')
 
 function readCache<T>(key: string): T[] | undefined {
   let raw: string | null = null

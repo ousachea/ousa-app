@@ -30,6 +30,18 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.2.0',
+    date: '2026-10-18',
+    changes: [
+      'Signed out, every app shows its example data until you sign in.',
+      'Condensed, in the middle of the top bar, packs every app into a column in the middle of the window.',
+      'Pages respond sooner: the fonts come from this site, and Firebase loads just after the page instead of before it.',
+      'Dropdowns and pop-ups are never cut off by the card or header they sit in.',
+      'Toasts are black in light mode and white in dark mode.',
+      'Ambient Studio has been retired.'
+    ]
+  },
+  {
     version: '2.1.0',
     date: '2026-10-11',
     changes: [
@@ -101,6 +113,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Generate strong passwords and see how long they’d take to crack.', 'Dark mode.'] }
   ],
   '/exchange': [
+    { version: '1.3.0', date: '2026-10-18', changes: ['A ⇄ button beside the amount flips between dollars to riel and riel to dollars, converting the amount so it stays the same money.'] },
     { version: '1.2.0', date: '2026-10-08', changes: ['Offline, or if the rate service is down, it uses the last rate seen on this device and says when it was from.', 'On a phone, pull down for a fresh rate.'] },
     { version: '1.1.1', date: '2026-10-07', changes: ['The page no longer runs wider than small phone screens.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.1.0', date: '2026-10-07', changes: ['On wide screens the gain-or-loss receipt sits beside the inputs and stays in view.'] },
@@ -194,10 +207,6 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '2.0.0', date: '2026-10-07', changes: ['Each purchase shows what you paid, what it’s worth now, and your gain or loss.', 'Sign in with Google to keep purchases and the price history on all your devices.', 'Import a CSV from “Add a purchase”; purchases already in your list are skipped.', 'The price card and purchases catch the light as you move the mouse.', PICKERS, TWO_CLICK] },
     { version: '1.1.0', date: '2026-10-05', changes: [EXAMPLE] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Live gold price per chi, damlung and gram, a unit converter, and what your gold is worth now.'] }
-  ],
-  '/ambient-studio': [
-    { version: '2.0.0', date: '2026-10-11', changes: ['Your YouTube Music: connect your Google account to play your playlists and liked songs here.', 'A queue with play all, shuffle, next and previous; songs that can’t play outside YouTube are marked and skipped.', 'Scenes, the sound mixer and the timers now sit alongside your music.'] },
-    { version: '1.0.0', date: '2026-10-11', changes: ['Scenes for focus, rain, fireplaces, forests, the ocean, night cities, sci-fi, lo-fi, sleep and plain noise, each with its own artwork and effect.', 'Play YouTube videos and playlists in the scene, or paste any public YouTube or YouTube Music link.', 'A sound mixer made in your browser: rain, thunder, wind, fire, waves, birds, a fan and white, pink and brown noise. It works offline.', 'Save your own mixes, favourite scenes and pick up where you left off.', 'Focus rounds with breaks, a countdown, and a sleep timer that fades the sound out.'] }
   ],
   '/settings': [
     { version: '3.0.0', date: '2026-10-08', changes: ['Density and animation settings.', 'Behaviour: keyboard shortcuts, confirm before delete and autosave.', 'Your data: export everything to one file and restore it with a preview.', 'About: what’s new across every app, and install it as an app.'] },

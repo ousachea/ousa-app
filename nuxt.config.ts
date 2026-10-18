@@ -2,14 +2,23 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  css: ['~/assets/css/main.css'],
+  // The fonts come from this site (public/fonts), so a page never waits on Google Fonts before it can show
+  css: ['~/assets/css/fonts.css', '~/assets/css/main.css'],
+  experimental: {
+    // Links fetch the page they go to when you point at or touch them, not as soon as they're on screen:
+    // the home page and the apps menu show every app, and fetching them all straight away competed with
+    // the page you're on. The service worker still saves every app for offline after the first visit.
+    defaults: { nuxtLink: { prefetchOn: { visibility: false, interaction: true } } }
+  },
   routeRules: {
     // The password saver now lives in the Passwords tool
     '/vault': { redirect: { to: '/password?tab=saved', status: 301 } },
     // The text case converter grew into Text tools
     '/case': { redirect: { to: '/text', status: 301 } },
     // The Phrase bank app was retired
-    '/phrases': { redirect: { to: '/', status: 301 } }
+    '/phrases': { redirect: { to: '/', status: 301 } },
+    // So was Ambient Studio
+    '/ambient-studio': { redirect: { to: '/', status: 301 } }
   },
   runtimeConfig: {
     public: {
@@ -68,9 +77,8 @@ export default defineNuxtConfig({
       link: [
         { rel: 'manifest', href: '/manifest.webmanifest' },
         { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
-        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Noto+Sans+Khmer:wght@400..700&display=swap' }
+        // The font nearly every page's text uses, fetched straight away rather than once the CSS asks for it
+        { rel: 'preload', href: '/fonts/bricolage-grotesque-latin.woff2', as: 'font', type: 'font/woff2', crossorigin: '' }
       ]
     }
   }

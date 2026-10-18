@@ -10,14 +10,9 @@ const { openPalette } = usePalette()
 const { vault } = useVault()
 const signedIn = computed(() => !['loading', 'signed-out'].includes(vault.status))
 
-// Condensed: every app in a column in the middle of the window (usePrefs). Only shown on screens wide
-// enough for it to make a difference.
+// Condensed: every app in a column in the middle of the window (toggleCondensed in usePrefs; Shift on its
+// own does the same). Only shown on screens wide enough for it to make a difference.
 const { prefs } = usePrefs()
-const { play } = useSound()
-function toggleCondensed() {
-  prefs.condensed = !prefs.condensed
-  play(prefs.condensed ? 'toggle-on' : 'toggle-off')
-}
 
 const isMac = ref(false)
 onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
@@ -54,7 +49,8 @@ function goBack(e: MouseEvent) {
         class="bar-btn condense"
         :class="{ on: prefs.condensed }"
         :aria-pressed="prefs.condensed"
-        :title="prefs.condensed ? 'Use the full width of the window' : 'Pack every app into a column in the middle'"
+        aria-keyshortcuts="Shift"
+        :title="prefs.condensed ? 'Use the full width of the window (Shift)' : 'Pack every app into a column in the middle (Shift)'"
         @click="toggleCondensed"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">

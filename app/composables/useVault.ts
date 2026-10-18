@@ -1,5 +1,6 @@
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, type User } from 'firebase/auth'
-import { addDoc, collection, deleteDoc, doc, getDocFromServer, onSnapshot, setDoc, updateDoc, type Unsubscribe } from 'firebase/firestore'
+import type { User } from 'firebase/auth'
+import type { Unsubscribe } from 'firebase/firestore'
+import type { FirebaseHandle, FirebaseSdk } from '~/composables/useFirebase'
 
 // What's stored inside each encrypted blob. The database only ever sees ciphertext.
 export interface VaultEntry {
@@ -49,8 +50,10 @@ function currentUser() {
   return user
 }
 
-const vaultRef = () => collection(useFirebase().db, 'users', currentUser().uid, 'vault')
-const checkRef = () => doc(useFirebase().db, 'users', currentUser().uid, 'meta', 'vault')
+// Everything below runs once signed in, so Firebase has loaded (useFirebase)
+const fs = () => useFirebase().sdk
+const vaultRef = () => fs().collection(useFirebase().db, 'users', currentUser().uid, 'vault')
+const checkRef = () => fs().doc(useFirebase().db, 'users', currentUser().uid, 'meta', 'vault')
 
 function authMessage(e: unknown) {
   const code = (e as { code?: string } | null)?.code ?? ''
@@ -78,7 +81,7 @@ function lock() {
 // Signed in but locked: has a master password been chosen yet?
 async function checkSetup() {
   try {
-    const snap = await getDocFromServer(checkRef())
+    const snap = await fs().getDocFromServer(checkRef())
     state.status = snap.exists() ? 'locked' : 'new'
   } catch (e) {
     if (!needsFirestoreSetup(e)) throw e
@@ -106,7 +109,7 @@ function loadItems(): Promise<void> {
   return new Promise((resolve, reject) => {
     let first = true
     listeners.count++
-    stopListening = onSnapshot(vaultRef(), async (snap) => {
+    stopListening = fs().onSnapshot(vaultRef(), async (snap) => {
       // Rules published since the setup screen showed up
       if (state.status === 'needs-setup') state.status = 'unlocked'
       for (const change of snap.docChanges()) {
@@ -160,9 +163,18 @@ async function start() {
     state.status = 'signed-out'
     return
   }
-  const { auth } = useFirebase()
+  // Who's signed in is only known once Firebase has loaded; 'loading' until then (useSignInGate shows
+  // 'checking'). Firebase couldn't load at all (offline on a first visit): treat it as signed out.
+  let auth: FirebaseHandle['auth']
+  let sdk: FirebaseSdk
+  try {
+    ({ auth, sdk } = await loadFirebase())
+  } catch {
+    state.status = 'signed-out'
+    return
+  }
 
-  onAuthStateChanged(auth, (user) => {
+  sdk.onAuthStateChanged(auth, (user) => {
     if (!user) {
       key = undefined
       stopVaultListener()
@@ -187,11 +199,14 @@ export function useVault() {
 
   // Single-owner mode: with NUXT_PUBLIC_OWNER_EMAIL set, Google suggests that account first
   async function signIn() {
-    const provider = new GoogleAuthProvider()
+    // The popup only opens straight from the click, so use Firebase as it is now (it loads just after the
+    // page); only if it somehow hasn't arrived yet does this wait for it
+    const fb = firebaseNow() ?? await loadFirebase()
+    const provider = new fb.sdk.GoogleAuthProvider()
     const ownerEmail = (useRuntimeConfig().public.ownerEmail as string | undefined)?.trim()
     provider.setCustomParameters(ownerEmail ? { login_hint: ownerEmail } : { prompt: 'select_account' })
     try {
-      const { user } = await signInWithPopup(useFirebase().auth, provider)
+      const { user } = await fb.sdk.signInWithPopup(fb.auth, provider)
       await signedInAs(user)
     } catch (e) {
       if ((e as { code?: string }).code === 'auth/popup-closed-by-user') return false
@@ -210,7 +225,7 @@ export function useVault() {
   // Derive the key in the browser and test it against the stored check value
   async function unlock(masterPassword: string) {
     const { key: candidate } = await deriveVaultKeys(state.email, masterPassword)
-    const snap = await getDocFromServer(checkRef())
+    const snap = await fs().getDocFromServer(checkRef())
     if (!snap.exists()) {
       state.status = 'new'
       throw new Error('This vault has no master password yet. Choose one.')
@@ -228,25 +243,25 @@ export function useVault() {
   async function setMasterPassword(masterPassword: string) {
     const { key: newKey } = await deriveVaultKeys(state.email, masterPassword)
     const check: VaultDoc = { ...(await encryptJson(newKey, CHECK_VALUE)), updatedAt: new Date().toISOString() }
-    await withTimeout(setDoc(checkRef(), check))
+    await withTimeout(fs().setDoc(checkRef(), check))
     await unlocked(newKey)
   }
 
   async function signOut() {
     lock()
-    await firebaseSignOut(useFirebase().auth)
+    await fs().signOut(useFirebase().auth)
   }
 
   async function save(entry: VaultEntry, id?: string) {
     if (!key) throw new Error('The vault is locked.')
     const row: VaultDoc = { ...(await encryptJson(key, entry)), updatedAt: new Date().toISOString() }
     // The listener shows the change as soon as it's written
-    if (id) await withTimeout(updateDoc(doc(vaultRef(), id), { ...row }))
-    else await withTimeout(addDoc(vaultRef(), row))
+    if (id) await withTimeout(fs().updateDoc(fs().doc(vaultRef(), id), { ...row }))
+    else await withTimeout(fs().addDoc(vaultRef(), row))
   }
 
   async function remove(id: string) {
-    await withTimeout(deleteDoc(doc(vaultRef(), id)))
+    await withTimeout(fs().deleteDoc(fs().doc(vaultRef(), id)))
     state.items = state.items.filter(item => item.id !== id)
   }
 

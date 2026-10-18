@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, reauthenticateWithPopup, signInWithPopup, type UserCredential } from 'firebase/auth'
+import type { UserCredential } from 'firebase/auth'
 import type { RawContact } from '~/utils/contactImport'
 
 // Reads the user's Google Contacts with the People API, straight from the browser.
@@ -11,7 +11,9 @@ const TOKEN_LIFETIME_MS = 55 * 60 * 1000
 let cached: { token: string, uid: string, expires: number } | undefined
 
 async function getToken() {
-  const { auth } = useFirebase()
+  // Straight from the click (a popup can't wait): Firebase is normally loaded by now; else wait for it
+  const { auth, sdk } = firebaseNow() ?? await loadFirebase()
+  const { GoogleAuthProvider } = sdk
   const user = auth.currentUser
   if (cached && user?.uid === cached.uid && Date.now() < cached.expires) return cached.token
 
@@ -22,10 +24,10 @@ async function getToken() {
     // Signed in: confirm the same account with the extra permission. Signed out: this also signs in, so trackers sync too.
     if (user) {
       provider.setCustomParameters({ login_hint: user.email ?? '' })
-      result = await reauthenticateWithPopup(user, provider)
+      result = await sdk.reauthenticateWithPopup(user, provider)
     } else {
       provider.setCustomParameters({ prompt: 'select_account' })
-      result = await signInWithPopup(auth, provider)
+      result = await sdk.signInWithPopup(auth, provider)
     }
   } catch (e) {
     const code = (e as { code?: string }).code

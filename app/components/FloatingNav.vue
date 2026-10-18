@@ -231,6 +231,26 @@ function onKeydown(e: KeyboardEvent) {
   e.preventDefault()
 }
 
+// Shift pressed and let go on its own toggles Condensed. Any other key in between (a capital, ?), a click
+// (Shift-click to select) or a long hold means Shift was for something else.
+let shiftDown = 0
+function onShiftWatch(e: KeyboardEvent) {
+  if (e.key === 'Shift') {
+    if (!e.repeat) shiftDown = Date.now()
+  } else {
+    shiftDown = 0
+  }
+}
+function onKeyup(e: KeyboardEvent) {
+  if (e.key !== 'Shift' || !shiftDown) return
+  const quick = Date.now() - shiftDown < 800
+  shiftDown = 0
+  if (!quick || e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return
+  if (!prefs.shortcuts || palette.open || document.querySelector('dialog[open]')) return
+  toggleCondensed()
+}
+const cancelShift = () => (shiftDown = 0)
+
 const isMac = ref(false)
 onMounted(() => {
   isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)
@@ -240,12 +260,18 @@ onMounted(() => {
   document.addEventListener('fullscreenchange', syncFullscreen)
   document.addEventListener('pointerdown', onPointerDown)
   document.addEventListener('keydown', onKeydown)
+  document.addEventListener('keydown', onShiftWatch, { capture: true })
+  document.addEventListener('keyup', onKeyup)
+  document.addEventListener('pointerdown', cancelShift, { capture: true })
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', syncFullscreen)
   document.removeEventListener('pointerdown', onPointerDown)
   document.removeEventListener('keydown', onKeydown)
+  document.removeEventListener('keydown', onShiftWatch, { capture: true })
+  document.removeEventListener('keyup', onKeyup)
+  document.removeEventListener('pointerdown', cancelShift, { capture: true })
 })
 </script>
 
@@ -352,7 +378,7 @@ onBeforeUnmount(() => {
             {{ isFullscreen ? 'Exit full screen' : 'Full screen' }}
           </button>
         </ClientOnly>
-        <p class="hint">Press a letter to open an app · <kbd>0</kbd>–<kbd>9</kbd> work anywhere · <kbd>Esc</kbd> back · <kbd>D</kbd> dark</p>
+        <p class="hint">Press a letter to open an app · <kbd>0</kbd>–<kbd>9</kbd> work anywhere · <kbd>Esc</kbd> back · <kbd>D</kbd> dark · <kbd>Shift</kbd> condensed</p>
       </footer>
     </div>
   </nav>

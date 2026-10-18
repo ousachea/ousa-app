@@ -107,12 +107,27 @@ function selectMode(value: Mode) {
   play('select')
 }
 
+// The ⇄ beside the amount: the other way round, the same money
+function swapDirection() {
+  selectDirection(direction.value === 'usd-khr' ? 'khr-usd' : 'usd-khr')
+}
+
+// The amount before the last switch, so switching straight back gives exactly that (riel is rounded to
+// 100, which would otherwise turn $100 into $100.01 after a round trip)
+let beforeSwitch: { direction: Direction, amount: number, became: number } | undefined
+
 function selectDirection(value: Direction) {
   if (direction.value === value) return
+  const back = beforeSwitch && beforeSwitch.direction === value && beforeSwitch.became === amount.value
   // Keep it the same money: convert the amount into the currency you'll now hand over
-  if (amount.value && market.value) {
-    const converted = convert(amount.value, direction.value, market.value)
+  if (back) {
+    amount.value = beforeSwitch!.amount
+    beforeSwitch = undefined
+  } else if (amount.value && market.value) {
+    const was = amount.value
+    const converted = convert(was, direction.value, market.value)
     amount.value = fromCurrency(value) === 'KHR' ? Math.round(converted / 100) * 100 : Math.round(converted * 100) / 100
+    beforeSwitch = { direction: direction.value, amount: was, became: amount.value }
   }
   direction.value = value
   play('select')
@@ -178,9 +193,21 @@ async function reloadRate() {
             </div>
             <label class="field">
               <span class="field-head">{{ mode === 'check' ? 'Amount you’ll hand over' : 'Amount you handed over' }} <span class="optional">or type any amount</span></span>
-              <span class="money input">
-                <span class="unit" aria-hidden="true">{{ from === 'USD' ? '$' : '៛' }}</span>
-                <input v-model.number="amount" type="number" :data-keys="from === 'KHR' ? 'riel' : undefined" inputmode="decimal" min="0" :step="from === 'USD' ? 0.01 : 100" :aria-label="`Amount in ${from}`">
+              <span class="amount-row">
+                <span class="money input">
+                  <span class="unit" aria-hidden="true">{{ from === 'USD' ? '$' : '៛' }}</span>
+                  <input v-model.number="amount" type="number" :data-keys="from === 'KHR' ? 'riel' : undefined" inputmode="decimal" min="0" :step="from === 'USD' ? 0.01 : 100" :aria-label="`Amount in ${from}`">
+                </span>
+                <!-- Flip the direction; the amount is converted so it stays the same money -->
+                <button
+                  type="button"
+                  class="swap"
+                  :aria-label="from === 'USD' ? 'Switch to riel to dollars' : 'Switch to dollars to riel'"
+                  :title="from === 'USD' ? 'Switch to riel to dollars' : 'Switch to dollars to riel'"
+                  @click.prevent="swapDirection"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" /></svg>
+                </button>
               </span>
             </label>
             <p v-if="amount && amount > 0 && market" class="preview-line">
@@ -285,6 +312,55 @@ async function reloadRate() {
 </template>
 
 <style scoped>
+/* The amount, with ⇄ beside it to flip the direction */
+.amount-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.amount-row .money {
+  flex: 1;
+  min-width: 0;
+}
+
+.swap {
+  flex: none;
+  width: 2.9rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 12px);
+  cursor: pointer;
+  transition: border-color var(--dur-fast, 0.15s), rotate 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.swap:hover {
+  border-color: var(--ink-3);
+}
+
+.swap:active {
+  rotate: 180deg;
+}
+
+.swap:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.swap svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .tabs {
   display: flex;
   justify-content: center;

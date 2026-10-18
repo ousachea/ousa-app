@@ -1,9 +1,9 @@
 import { toast } from 'vue-sonner'
-import { onAuthStateChanged } from 'firebase/auth'
 
-// The app's one sync session (CHECKLIST.md #77): started by plugins/sync.client.ts, it follows the
-// signed-in account, keeps every tracker in step with Firestore through a single listener, and sends
-// changes made on this device. Pages use it through useCollection; Settings shows its state.
+// The app's one sync session (CHECKLIST.md #77): started by plugins/sync.client.ts once the page is up, it
+// follows the signed-in account, keeps every tracker in step with Firestore through a single listener, and
+// sends changes made on this device. Pages use it through useCollection; Settings shows its state.
+// Firebase loads when the session starts (loadFirebase), so no page waits for it to show or to work.
 
 export type SessionStatus = 'loading' | 'device' | EngineStatus
 
@@ -114,9 +114,10 @@ function stepDown() {
 const lock = <T>(name: string, fn: () => Promise<T>) => navigator.locks ? navigator.locks.request(name, fn) as Promise<T> : fn()
 
 function begin(uid: string) {
-  const { db } = useFirebase()
+  const { db, sdk } = useFirebase()
   const e = new SyncEngine({
     db,
+    fs: sdk,
     uid,
     deviceId: deviceId(),
     collections: collections(),
@@ -151,17 +152,21 @@ export function startSync() {
     refresh()
     return
   }
-  const { auth } = useFirebase()
-  authResolved = auth.authStateReady()
-  onAuthStateChanged(auth, (user) => {
-    if (user?.uid === engine?.uid) return
-    end()
-    if (user) begin(user.uid)
-  })
-  authResolved.then(() => {
-    authKnown = true
-    refresh()
-  })
+  authResolved = loadFirebase()
+    .then(({ auth, sdk }) => {
+      sdk.onAuthStateChanged(auth, (user) => {
+        if (user?.uid === engine?.uid) return
+        end()
+        if (user) begin(user.uid)
+      })
+      return auth.authStateReady()
+    })
+    // Firebase couldn't load (offline on a first visit): this device's copy still works, as when signed out
+    .catch(() => {})
+    .then(() => {
+      authKnown = true
+      refresh()
+    })
 
   window.addEventListener('online', () => engine?.kick())
   window.addEventListener('offline', refresh)

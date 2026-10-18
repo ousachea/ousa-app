@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import jsQR from 'jsqr'
 import type { CornerStyle, DotStyle, Level, PlateShape, QrDesign } from '~/utils/qrSvg'
 
 const { play } = useSound()
@@ -107,7 +106,8 @@ const previewUrl = computed(() => (svg.value ? `data:image/svg+xml;charset=utf-8
 
 // Scanners need a dark code on a light background with clear contrast
 // ---------- Live scan check ----------
-// Decode the actual rendered design the way a phone camera would, so the page can say whether it scans
+// Decode the actual rendered design the way a phone camera would, so the page can say whether it scans.
+// The decoder (jsQR) loads with the first check rather than with the page, so the page works sooner.
 const scan = ref<'idle' | 'checking' | 'ok' | 'fail'>('idle')
 let scanTimer: ReturnType<typeof setTimeout> | undefined
 let scanRun = 0
@@ -133,6 +133,7 @@ async function checkScan() {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const { default: jsQR } = await import('jsqr')
     const decoded = jsQR(data.data, canvas.width, canvas.height)
     if (run !== scanRun) return
     const next = decoded?.data === text.value ? 'ok' : 'fail'

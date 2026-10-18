@@ -4,16 +4,18 @@
 // - Pages: network first (always the latest), falling back to the copy saved last time.
 // - Built files under /_nuxt/ have a hash in their name, so a saved copy never goes stale: cache first.
 // - /api/ requests always go to the network; the pages keep their own last-known answers.
-// - Icons, images and fonts: served from the cache straight away, refreshed in the background.
+// - Icons and images: served from the cache straight away, refreshed in the background. Fonts (/fonts/) never
+//   change, so they're served from the cache once saved.
 // After installing, every app page and the files it needs are fetched once in the background,
 // so apps you haven't opened yet also work offline.
-const VERSION = 'v5'
+const VERSION = 'v7'
 const PAGES = `pages-${VERSION}`
 const ASSETS = `assets-${VERSION}`
 const STATIC = `static-${VERSION}`
 
-const APP_PAGES = ['/', '/qr', '/phone', '/compress', '/text', '/password', '/exchange', '/things', '/eat', '/weight', '/budget', '/countdown', '/renewals', '/bookmarks', '/notes', '/battery', '/salary', '/speed', '/gold', '/ambient-studio', '/settings', '/trash']
-const SHELL = ['/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png']
+const APP_PAGES = ['/', '/qr', '/phone', '/compress', '/text', '/password', '/exchange', '/things', '/eat', '/weight', '/budget', '/countdown', '/renewals', '/bookmarks', '/notes', '/battery', '/salary', '/speed', '/gold', '/settings', '/trash']
+// The fonts nearly every page uses come with the shell, so text looks right offline from the first visit
+const SHELL = ['/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/fonts/bricolage-grotesque-latin.woff2', '/fonts/noto-sans-khmer-khmer.woff2']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(STATIC).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()))
@@ -58,11 +60,6 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return
   const url = new URL(req.url)
 
-  // Google Fonts: keep a copy so text looks right offline
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    event.respondWith(staleWhileRevalidate(req, STATIC))
-    return
-  }
   if (url.origin !== location.origin) return
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/__nuxt') || url.pathname.startsWith('/_nuxt/@')) return
 
@@ -70,8 +67,9 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirstPage(req))
     return
   }
-  if (url.pathname.startsWith('/_nuxt/')) {
-    event.respondWith(cacheFirst(req, ASSETS))
+  // Built files have a hash in their name, and the font files never change: a saved copy is always right
+  if (url.pathname.startsWith('/_nuxt/') || url.pathname.startsWith('/fonts/')) {
+    event.respondWith(cacheFirst(req, url.pathname.startsWith('/fonts/') ? STATIC : ASSETS))
     return
   }
   event.respondWith(staleWhileRevalidate(req, STATIC))

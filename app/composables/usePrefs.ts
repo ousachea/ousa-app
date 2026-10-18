@@ -79,6 +79,9 @@ function start() {
     if (saved.cubeColors === undefined && localStorage.getItem('ousa-app:cube-colors') === 'apps') prefs.cubeColors = 'apps'
     // A tab that used to be an app of its own (Renewals, now in Calendar): its pin moves to the app
     prefs.pinnedApps = [...new Set(prefs.pinnedApps.map(p => appFor(p)?.to ?? p))]
+    // Retired apps: their pins go, and Ambient Studio's saved mixes and settings with them
+    prefs.pinnedApps = prefs.pinnedApps.filter(p => p !== '/ambient-studio')
+    localStorage.removeItem('ousa-app:ambient-studio')
   } catch {}
   apply()
   // In a scope of its own: started from inside a component, the watch would otherwise stop when that
@@ -104,6 +107,18 @@ export function usePrefs() {
     prefs,
     reset: () => Object.assign(prefs, { ...DEFAULTS, pinnedApps: prefs.pinnedApps })
   }
+}
+
+/** Condensed (the top bar's middle button, or a press of Shift on its own): every app in a centred column */
+export function toggleCondensed() {
+  const { prefs } = usePrefs()
+  prefs.condensed = !prefs.condensed
+  useSound().play(prefs.condensed ? 'toggle-on' : 'toggle-off')
+  // On a window no wider than the column there's nothing to see change, so say when it will
+  const visible = window.innerWidth > 1360
+  toast(prefs.condensed ? 'Condensed on' : 'Full width on', {
+    description: visible ? 'Press Shift to switch back.' : 'Shows on windows wider than this one. Press Shift to switch back.'
+  })
 }
 
 /** Pin an app to the top of the menu, home page and palette, or unpin it (CHECKLIST.md #09) */
