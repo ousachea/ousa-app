@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // A subscription's icon (CHECKLIST.md #54). Automatic: the service's own site icon when the name is a
 // known service (Netflix, Spotify…), else a letter in a colour from the name. It can be set by hand:
-// 'svc:<service>' to look like another service, 'letter' for just the letter, or an image link.
+// 'svc:<service>' to look like another service, 'letter' for just the letter, 'ico:<set>:<name>' for an
+// icon from the library (IconLibrary) on the name's colour, or an image link.
 const props = defineProps<{ name: string, icon?: string }>()
 const broken = ref(false)
 
@@ -9,8 +10,10 @@ const service = computed(() => {
   if (props.icon?.startsWith('svc:')) return SERVICES.find(s => s.name === props.icon!.slice(4))
   return props.icon ? undefined : findService(props.name)
 })
+const glyph = computed(() => props.icon?.startsWith(ICON_LIBRARY_PREFIX) ? props.icon.slice(ICON_LIBRARY_PREFIX.length) : undefined)
 const src = computed(() => {
   if (props.icon?.startsWith('http')) return props.icon
+  if (glyph.value) return libraryIconUrl(glyph.value)
   return service.value ? siteLogo(service.value.domain) : undefined
 })
 watch(src, () => (broken.value = false))
@@ -26,7 +29,7 @@ const letter = computed(() => (props.name.trim()[0] ?? '?').toUpperCase())
 </script>
 
 <template>
-  <span class="renewal-icon" :class="{ image: src && !broken }" :style="{ '--c': color }" aria-hidden="true">
+  <span class="renewal-icon" :class="{ image: src && !broken && !glyph }" :style="{ '--c': color }" aria-hidden="true">
     <img v-if="src && !broken" :src="src" alt="" loading="lazy" referrerpolicy="no-referrer" @error="broken = true">
     <span v-else>{{ letter }}</span>
   </span>

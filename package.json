@@ -12,6 +12,7 @@
     "og:images": "npx -y -p playwright sh -c 'NODE_PATH=$(dirname $(which playwright))/../ node scripts/og-images.cjs'"
   },
   "dependencies": {
+    "@iconify-json/lucide": "^1.2.145",
     "@tiptap/core": "3.31.3",
     "@tiptap/extension-image": "3.31.3",
     "@tiptap/extension-list": "3.31.3",

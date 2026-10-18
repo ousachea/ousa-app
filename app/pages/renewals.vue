@@ -35,11 +35,26 @@ const iconFrom = (text: string) => {
   if (!t) return ''
   if (/^https?:\/\//i.test(t)) return t
   if (t.toLowerCase() === 'letter only') return 'letter'
+  const lib = /^icon:\s*([a-z0-9-]+)$/i.exec(t)
+  if (lib) return `${ICON_LIBRARY_PREFIX}lucide:${lib[1]!.toLowerCase()}`
   const svc = SERVICES.find(s => s.name.toLowerCase() === t.toLowerCase())
   return svc ? `svc:${svc.name}` : ''
 }
-const textFromIcon = (icon?: string) => (!icon ? '' : icon === 'letter' ? 'Letter only' : icon.startsWith('svc:') ? icon.slice(4) : icon)
+const textFromIcon = (icon?: string) => (!icon
+  ? ''
+  : icon === 'letter'
+    ? 'Letter only'
+    : icon.startsWith('svc:')
+      ? icon.slice(4)
+      : icon.startsWith(ICON_LIBRARY_PREFIX) ? `Icon: ${icon.split(':').pop()}` : icon)
 watch(iconText, t => (form.icon = iconFrom(t)))
+// The icon library, for names with no logo of their own: open by default for those, or on request
+const libraryOpen = ref(false)
+const noLogo = computed(() => form.name.trim().length > 1 && !form.icon && !knownService.value)
+const libraryIcon = computed({
+  get: () => form.icon.startsWith(ICON_LIBRARY_PREFIX) ? form.icon.slice(ICON_LIBRARY_PREFIX.length) : '',
+  set: (id: string) => (iconText.value = textFromIcon(id ? ICON_LIBRARY_PREFIX + id : ''))
+})
 
 // Category suggestion from the name, e.g. Netflix → Entertainment (CHECKLIST.md #30)
 const CATEGORY_OPTIONS = [{ value: '', label: 'No category' }, ...RENEWAL_CATEGORIES.map(c => ({ value: c, label: c }))]
@@ -213,6 +228,7 @@ function edit(r: Renewal) {
   shownEdit = { next, anchor: r.nextDate, cycle: r.cycle }
   Object.assign(form, { name: r.name, price: r.price, currency: r.currency, cycle: r.cycle, nextDate: next, category: r.category ?? '', icon: r.icon ?? '' })
   iconText.value = textFromIcon(r.icon)
+  libraryOpen.value = !!r.icon?.startsWith(ICON_LIBRARY_PREFIX)
   formOpen.value = true
   play('open')
 }
@@ -223,6 +239,7 @@ function cancel() {
   formOpen.value = false
   Object.assign(form, blank())
   iconText.value = ''
+  libraryOpen.value = false
 }
 
 // ---------- Import & export (CHECKLIST.md #18) ----------
@@ -359,6 +376,10 @@ function del(r: Renewal) {
             <RenewalIcon :name="form.name || '?'" :icon="form.icon" />
             <ComboInput v-model="iconText" :options="ICON_OPTIONS" placeholder="From the name. Or pick a service, “Letter only”, or paste an image link" aria-label="Icon" />
           </div>
+          <button type="button" class="link library-toggle" :aria-expanded="libraryOpen" @click="libraryOpen = !libraryOpen">
+            {{ libraryOpen ? 'Hide icon library' : noLogo ? 'No logo for this name. Choose an icon instead' : 'Choose from the icon library' }}
+          </button>
+          <IconLibrary v-if="libraryOpen" v-model="libraryIcon" />
         </div>
         <div class="actions">
           <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add subscription' }}</button>
@@ -371,11 +392,12 @@ function del(r: Renewal) {
     <div class="statement">
       <!-- Three numbered steps, the way every app here walks you through it -->
       <ClientOnly><DataSource :sync="sync" /></ClientOnly>
-      <Step :n="1" title="Add what you pay for" hint="Streaming, cloud storage, your phone plan: anything that renews. Tap one, or add your own." class="add-step">
-        <div class="panel quick-add" role="group" aria-label="Add a subscription">
+      <!-- In a card, since it overlaps the coloured band at the top of the page (as in Dates and Things) -->
+      <Step :n="1" title="Add what you pay for" hint="Streaming, cloud storage, your phone plan: anything that renews. Tap one, or add your own." class="panel add-step">
+        <div class="quick-add" role="group" aria-label="Add a subscription">
           <button v-for="name in QUICK_SERVICES" :key="name" type="button" class="quick-service" @click="openAddAs(name)">
             <RenewalIcon :name="name" />
-            <span>{{ name }}</span>
+            <span :title="name">{{ name }}</span>
           </button>
           <button type="button" class="quick-service other" @click="openAdd">
             <span class="plus" aria-hidden="true">+</span>
@@ -498,25 +520,27 @@ function del(r: Renewal) {
   color: var(--ink-2);
 }
 
-/* Step 1: well-known services, one tap each. Wraps on wide screens, swipes sideways on phones */
+/* Step 1: well-known services, one tap each. Compact chips that wrap, so none is ever cut off at the edge */
+.add-step {
+  padding: 1.25rem;
+}
+
 .quick-add {
-  padding: 0.75rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
+  gap: 0.4rem;
 }
 
 .quick-service {
-  padding: 0.7rem 0.4rem 0.6rem;
+  padding: 0.45rem 0.7rem 0.45rem 0.45rem;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.6rem;
   min-width: 0;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  text-align: center;
+  text-align: left;
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1px solid transparent;
@@ -526,45 +550,46 @@ function del(r: Renewal) {
   transition: border-color 0.15s, color 0.15s, transform 0.15s;
 }
 
+.quick-service > span:last-child {
+  min-width: 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.quick-service :deep(.renewal-icon),
+.quick-service .plus {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 10px;
+}
+
+.quick-service :deep(.renewal-icon img) {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
 .quick-service:hover {
   color: var(--ink);
   border-color: var(--line);
 }
 
 .quick-service:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .quick-service .plus {
-  width: 2.5rem;
-  height: 2.5rem;
+  flex: none;
   display: grid;
   place-items: center;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--accent);
   border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, var(--line));
-  border-radius: 12px;
 }
 
-@media (max-width: 719.98px) {
+@media (max-width: 419.98px) {
   .quick-add {
-    display: flex;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    scroll-padding-inline: 0.75rem;
-    scrollbar-width: none;
-  }
-
-  .quick-add::-webkit-scrollbar {
-    display: none;
-  }
-
-  .quick-service {
-    flex: none;
-    width: 6rem;
-    scroll-snap-align: start;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -688,6 +713,12 @@ function del(r: Renewal) {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.library-toggle {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
 }
 
 .icon-row > :last-child {

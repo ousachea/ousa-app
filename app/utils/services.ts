@@ -80,6 +80,19 @@ export function findService(name: string): KnownService | undefined {
     ?? SERVICES.find(s => n.startsWith(norm(s.name)) || s.aliases?.some(a => n.startsWith(a)))
 }
 
+// ---------- Icon library ----------
+
+// For services with no logo of their own: a line icon from Lucide, served by /api/icon. Saved as 'ico:lucide:<name>'
+export const ICON_LIBRARY_PREFIX = 'ico:'
+export const libraryIconUrl = (id: string, color = '#ffffff') => `/api/icon?id=${encodeURIComponent(id)}&color=${encodeURIComponent(color)}`
+// Shown before you search: the kinds of things people pay for every month
+export const SUGGESTED_ICONS = [
+  'tv', 'film', 'music', 'headphones', 'mic', 'gamepad-2', 'cloud', 'server', 'smartphone', 'wifi', 'globe', 'mail',
+  'newspaper', 'book-open', 'graduation-cap', 'dumbbell', 'heart-pulse', 'shield-check', 'house', 'zap', 'droplets', 'car',
+  'plane', 'shopping-cart', 'utensils', 'coffee', 'paw-print', 'baby', 'briefcase', 'code', 'bot', 'palette', 'camera',
+  'credit-card', 'key-round', 'gift'
+].map(n => `lucide:${n}`)
+
 // ---------- Bookmark folders ----------
 
 const SITE_FOLDERS: Record<string, string> = {
