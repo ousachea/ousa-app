@@ -170,6 +170,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Swipe through your saved foods and places until one sounds good.'] }
   ],
   '/weight': [
+    { version: '1.3.0', date: '2026-10-18', changes: ['Check your entries shows how much you gained or lost since the entry before, and over how many days when there’s a gap.', 'A total at the foot of your entries: how much you’ve gained or lost since your first entry.'] },
     { version: '1.3.0', date: '2026-10-08', changes: [BIN, UNDO, CHECK, 'On a phone, pull down to sync.'] },
     { version: '1.2.1', date: '2026-10-07', changes: ['The log form and trend use the whole phone screen, and the weight box no longer spills out.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.2.0', date: '2026-10-07', changes: [PICKERS, 'The trend chart uses the full width.', SYNC, TWO_CLICK] },

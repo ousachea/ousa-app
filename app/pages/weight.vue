@@ -120,6 +120,30 @@ const visible = computed(() => {
 })
 
 const latest = computed(() => sorted.value.at(-1))
+
+// Each entry against the one before it: how much you gained or lost, and over how many days
+const vsPrevious = computed(() => {
+  const out = new Map<string, { diff: number, days: number }>()
+  sorted.value.forEach((e, i) => {
+    const prev = sorted.value[i - 1]
+    if (prev) out.set(e.id, { diff: e.kg - prev.kg, days: Math.round((t(e.date) - t(prev.date)) / 86_400_000) })
+  })
+  return out
+})
+// "+0.4 kg" / "−0.6 kg" in the chosen unit; anything under 0.05 reads as the same
+const changeText = (diff: number) => {
+  const v = show(diff)
+  if (Math.abs(v) < 0.05) return 'Same'
+  return `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)} ${unit.value}`
+}
+// The whole log: from the first entry to the latest
+const overall = computed(() => {
+  const first = sorted.value[0]
+  const last = sorted.value.at(-1)
+  if (!first || !last || first === last) return undefined
+  return { diff: last.kg - first.kg, days: Math.round((t(last.date) - t(first.date)) / 86_400_000) }
+})
+const changeDir = (diff: number) => (Math.abs(show(diff)) < 0.05 ? 'same' : diff > 0 ? 'up' : 'down')
 const change = computed(() => {
   const list = visible.value
   return list.length >= 2 ? list.at(-1)!.kg - list[0]!.kg : undefined
@@ -313,14 +337,42 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
             <details ref="tableView" class="panel table-view">
               <summary>Show all {{ items.length }} {{ items.length === 1 ? 'entry' : 'entries' }}</summary>
               <table>
-                <thead><tr><th>Date</th><th>Weight</th><th><span class="sr-only">Actions</span></th></tr></thead>
+                <thead><tr><th>Date</th><th>Weight</th><th>Change</th><th><span class="sr-only">Actions</span></th></tr></thead>
                 <TransitionGroup tag="tbody" name="list">
                   <tr v-for="e in tableRows" :key="e.id" class="bulk-row" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, e.id)" :class="{ 'bulk-picked': sel.has(e.id) }">
                     <td><span class="bulk-cell"><BulkCheck v-if="sel.selecting" inline :checked="sel.has(e.id)" :label="`Select ${formatDate(e.date, true)}`" @pick="sel.pick(e.id, $event)" />{{ formatDate(e.date, true) }}</span></td>
                     <td class="num">{{ fmt(e.kg) }}</td>
+                    <!-- Against the entry before it: gained ▲ or lost ▼, and the gap when it isn't the day before -->
+                    <td class="change">
+                      <template v-if="vsPrevious.get(e.id)">
+                        <span class="delta" :class="changeDir(vsPrevious.get(e.id)!.diff)">
+                          <span aria-hidden="true">{{ changeDir(vsPrevious.get(e.id)!.diff) === 'up' ? '▲' : changeDir(vsPrevious.get(e.id)!.diff) === 'down' ? '▼' : '=' }}</span>
+                          {{ changeText(vsPrevious.get(e.id)!.diff) }}
+                          <span class="sr-only">{{ changeDir(vsPrevious.get(e.id)!.diff) === 'up' ? 'gained' : changeDir(vsPrevious.get(e.id)!.diff) === 'down' ? 'lost' : '' }} since the entry before</span>
+                        </span>
+                        <small v-if="vsPrevious.get(e.id)!.days > 1" class="gap">over {{ vsPrevious.get(e.id)!.days }} days</small>
+                      </template>
+                      <small v-else class="gap">First entry</small>
+                    </td>
                     <td class="act"><ConfirmDelete :name="`the entry for ${formatDate(e.date, true)}`" @confirm="del(e)" /></td>
                   </tr>
                 </TransitionGroup>
+                <!-- Since your first entry -->
+                <tfoot v-if="overall">
+                  <tr>
+                    <th scope="row">Total</th>
+                    <td class="num">{{ fmt(sorted.at(-1)!.kg) }}</td>
+                    <td class="change">
+                      <span class="delta" :class="changeDir(overall.diff)">
+                        <span aria-hidden="true">{{ changeDir(overall.diff) === 'up' ? '▲' : changeDir(overall.diff) === 'down' ? '▼' : '=' }}</span>
+                        {{ changeText(overall.diff) }}
+                        <span class="sr-only">{{ changeDir(overall.diff) === 'up' ? 'gained' : changeDir(overall.diff) === 'down' ? 'lost' : '' }} since your first entry</span>
+                      </span>
+                      <small class="gap">over {{ overall.days }} {{ overall.days === 1 ? 'day' : 'days' }}</small>
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
               </table>
             </details>
           </template>
@@ -596,6 +648,48 @@ th {
 
 .act {
   text-align: right;
+}
+
+/* Gained or lost since the entry before: arrows in plain ink, since which way is good depends on your goal */
+.change {
+  white-space: nowrap;
+}
+
+.delta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.delta [aria-hidden='true'] {
+  font-size: 0.7em;
+  color: var(--ink-3);
+}
+
+.delta.same {
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+/* The total under the entries, set apart by a heavier rule */
+tfoot th,
+tfoot td {
+  border-top: 2px solid var(--line);
+  border-bottom: 0;
+  padding-top: 0.6rem;
+}
+
+tfoot th {
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.gap {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
 }
 
 
