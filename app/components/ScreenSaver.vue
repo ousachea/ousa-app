@@ -1,11 +1,13 @@
 <script setup lang="ts">
-// Calendar's screen saver, in two looks (Calendar settings, or ← → while it's on):
+// Calendar's screen saver, in two looks (Calendar settings, the L key or the Switch look button):
 // - page: like a page from a printed wall calendar. The month's facts in a row along the top, the month's
-//   name huge between hairlines, every day listed week by week, and today's date as a giant number running
-//   off the bottom corner. The time sits in the top row; the paper slowly shifts through pale colours.
+//   name huge between hairlines, every day listed week by week, and the day as a giant number running off
+//   the bottom corner. ← → (or a sideways swipe) step a day, ↑ ↓ (or an up/down swipe) a month, and T
+//   comes back to today; it comes back by itself after a minute. The time in the top row is always now.
 // - clock: the time, weekday and date in big white type on glowing colours that slowly turn.
-// Full screen, keeps the screen awake, and any tap or other key closes it. The page owns the clock, so it
-// always matches the header.
+// Against burn-in, the whole screen glides slowly round a wide loop and its colours keep turning, so no
+// text or hairline stays on the same pixels. Full screen, keeps the screen awake, and any tap or other key
+// closes it. The page owns the clock, so it always matches the header.
 const props = defineProps<{ open: boolean, now: number, timeZone: string, time: string, seconds: string, period: string, khmer?: string }>()
 const emit = defineEmits<{ close: [] }>()
 const look = defineModel<'page' | 'clock'>('look', { default: 'page' })
@@ -15,16 +17,88 @@ function switchLook() {
   wake()
 }
 
-// ---------- The month, in the page's time zone ----------
-const today = computed(() => {
+// ---------- The day shown: today, or one you've stepped to ----------
+interface Ymd { year: number, month: number, day: number }
+const today = computed<Ymd>(() => {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: props.timeZone, year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(props.now)
   const get = (t: string) => Number(parts.find(p => p.type === t)?.value)
   return { year: get('year'), month: get('month'), day: get('day') }
 })
+const picked = ref<Ymd | null>(null)
+const shown = computed(() => picked.value ?? today.value)
+const isToday = computed(() => !picked.value)
+
 // Calendar maths in UTC, so the device's own time zone never shifts a day
-const weekdayName = (day: number) => new Date(Date.UTC(today.value.year, today.value.month - 1, day)).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })
+const fromUtc = (t: number): Ymd => {
+  const d = new Date(t)
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }
+}
+const BACK_TO_TODAY_MS = 60_000
+let backTimer: ReturnType<typeof setTimeout> | undefined
+
+/** Step through the calendar: `days` forward or back, or `months` (keeping the day, or the month's last) */
+function step(days: number, months = 0) {
+  const s = shown.value
+  let next: Ymd
+  if (months) {
+    const first = fromUtc(Date.UTC(s.year, s.month - 1 + months, 1))
+    const length = new Date(Date.UTC(first.year, first.month, 0)).getUTCDate()
+    next = { ...first, day: Math.min(s.day, length) }
+  } else {
+    next = fromUtc(Date.UTC(s.year, s.month - 1, s.day + days))
+  }
+  const t = today.value
+  picked.value = next.year === t.year && next.month === t.month && next.day === t.day ? null : next
+  wake()
+  // Left on another day, it comes back to today by itself
+  clearTimeout(backTimer)
+  if (picked.value) backTimer = setTimeout(() => (picked.value = null), BACK_TO_TODAY_MS)
+}
+function backToToday() {
+  clearTimeout(backTimer)
+  picked.value = null
+  wake()
+}
+
+// Sideways swipes step a day, up and down a month; a plain tap still closes
+let swipeFrom: { x: number, y: number } | undefined
+let swiped = false
+function onPointerDown(e: PointerEvent) {
+  swipeFrom = { x: e.clientX, y: e.clientY }
+  swiped = false
+}
+function onPointerUp(e: PointerEvent) {
+  if (!swipeFrom || look.value !== 'page') return
+  const dx = e.clientX - swipeFrom.x
+  const dy = e.clientY - swipeFrom.y
+  swipeFrom = undefined
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 50) return
+  swiped = true
+  if (Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1)
+  else step(0, dy < 0 ? 1 : -1)
+}
+function onClick() {
+  if (swiped) {
+    swiped = false
+    return
+  }
+  emit('close')
+}
+
+// Each date has its own paper colour: stepping a day turns the hue a little, a month a long way round.
+// Today is 0, so the colour cycle carries on from where it was when you come back.
+const dateHue = computed(() => {
+  if (!picked.value) return 0
+  const t = today.value
+  const p = picked.value
+  const months = (p.year - t.year) * 12 + (p.month - t.month)
+  return months * 67 + (p.day - t.day) * 25
+})
+
+const weekdayOf = (d: Ymd) => new Date(Date.UTC(d.year, d.month - 1, d.day)).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })
+const weekdayName = (day: number) => weekdayOf({ ...shown.value, day })
 const month = computed(() => {
-  const { year, month } = today.value
+  const { year, month } = shown.value
   const days = new Date(Date.UTC(year, month, 0)).getUTCDate()
   const weekdayOf = (d: number) => new Date(Date.UTC(year, month - 1, d)).getUTCDay() // 0 Sunday
   const all = Array.from({ length: days }, (_, i) => ({ day: i + 1, name: weekdayName(i + 1), sunday: weekdayOf(i + 1) === 0 }))
@@ -45,8 +119,9 @@ const month = computed(() => {
   }
 })
 const pad = (n: number) => String(n).padStart(2, '0')
-// For the clock look: "18 October 2026"
-const dateLine = computed(() => `${today.value.day} ${month.value.name} ${today.value.year}`)
+// For the clock look, always today: "18 October 2026"
+const monthName = (d: Ymd) => new Date(Date.UTC(d.year, d.month - 1, 1)).toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' })
+const dateLine = computed(() => `${today.value.day} ${monthName(today.value)} ${today.value.year}`)
 
 const dialog = ref<HTMLDialogElement>()
 // Only leave full screen if we went into it (phones may already be full screen, see fullscreen.client.ts)
@@ -97,16 +172,13 @@ function wake() {
   idleTimer = setTimeout(() => (idle.value = true), 3000)
 }
 
-// The page drifts a few pixels every minute so a screen left on doesn't keep one picture burnt in
-const drift = ref({ x: 0, y: 0 })
-watch(() => props.time, () => {
-  if (props.open) drift.value = { x: Math.round(Math.random() * 12 - 6), y: Math.round(Math.random() * 12 - 6) }
-})
 
 async function show() {
   const el = dialog.value
   if (!el || el.open) return
   el.showModal()
+  // Focus the screen saver itself, not its first button, so no focus ring sits on Switch look
+  el.focus()
   wake()
   // Opened some other way than the button: Chrome and Firefox still allow it a moment after the click
   enterFullscreen()
@@ -118,6 +190,8 @@ async function show() {
 
 function hide() {
   clearTimeout(idleTimer)
+  clearTimeout(backTimer)
+  picked.value = null
   wakeLock?.release().catch(() => {})
   wakeLock = undefined
   exitFullscreen()
@@ -135,6 +209,7 @@ function onFullscreenChange() {
   if (fsElement() && el?.open) {
     el.close()
     el.showModal()
+    el.focus()
     return
   }
   if (enteredFullscreen && !fsElement()) {
@@ -162,13 +237,27 @@ onBeforeUnmount(() => {
   hide()
 })
 
+const NAV_KEYS: Record<string, () => void> = {
+  ArrowLeft: () => step(-1),
+  ArrowRight: () => step(1),
+  ArrowUp: () => step(0, -1),
+  ArrowDown: () => step(0, 1),
+  t: backToToday,
+  Home: backToToday
+}
+
 function onKey(e: KeyboardEvent) {
   // Modifier keys alone (switching apps, a screenshot) leave it running
   if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return
   e.preventDefault()
-  // ← → switch the look; any other key closes
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') switchLook()
-  else emit('close')
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+  if (key === 'l') return switchLook()
+  // The arrows and T move through the calendar page; on the clock they do nothing rather than close
+  if (NAV_KEYS[key]) {
+    if (look.value === 'page') NAV_KEYS[key]()
+    return
+  }
+  emit('close')
 }
 </script>
 
@@ -176,41 +265,48 @@ function onKey(e: KeyboardEvent) {
   <dialog
     ref="dialog"
     class="saver"
+    tabindex="-1"
     :class="[`look-${look}`, { idle }]"
+    :style="{ '--date-hue': `${dateHue}deg` }"
     aria-label="Screen saver"
     @cancel.prevent="emit('close')"
     @keydown="onKey"
-    @click="emit('close')"
+    @click="onClick"
+    @pointerdown="onPointerDown"
+    @pointerup="onPointerUp"
     @pointermove="wake"
   >
-    <div v-if="look === 'page'" class="sheet" :style="{ translate: `${drift.x}px ${drift.y}px` }">
+    <div v-if="look === 'page'" class="sheet">
       <header class="facts">
         <p>{{ month.days }} Days<br>{{ month.weekends }} Weekends</p>
         <p>Begins {{ month.begins }}<br>Ends {{ month.ends }}</p>
-        <p class="clock" role="timer" aria-live="off">{{ time }}<span class="sec">:{{ seconds }}</span> {{ period }}<br>{{ weekdayName(today.day) }}</p>
-        <p class="issue">Issue {{ today.month }}<br>{{ today.year }}</p>
+        <p class="clock" role="timer" aria-live="off">{{ time }}<span class="sec">:{{ seconds }}</span> {{ period }}<br>{{ weekdayOf(today) }}</p>
+        <p class="issue">Issue {{ shown.month }}<br>{{ shown.year }}</p>
       </header>
 
       <h2 class="month">{{ month.name }}</h2>
 
-      <ol class="weeks" :aria-label="`${month.name} ${today.year}`">
+      <ol class="weeks" :aria-label="`${month.name} ${shown.year}`">
         <li v-for="(week, i) in month.weeks" :key="i">
-          <span v-for="d in week" :key="d.day" :class="{ today: d.day === today.day }" :aria-current="d.day === today.day ? 'date' : undefined">{{ pad(d.day) }}, {{ d.name }}/ </span>
+          <span v-for="d in week" :key="d.day" :class="{ today: d.day === shown.day }" :aria-current="d.day === shown.day ? 'date' : undefined">{{ pad(d.day) }}, {{ d.name }}/ </span>
         </li>
       </ol>
 
-      <p class="day" :aria-label="`Today, ${weekdayName(today.day)} ${today.day} ${month.name} ${today.year}`">{{ today.day }}</p>
+      <p class="day" aria-live="polite" :aria-label="`${isToday ? 'Today, ' : ''}${weekdayOf(shown)} ${shown.day} ${month.name} ${shown.year}`">{{ shown.day }}</p>
+      <!-- Stepped to another day: which, and how to come back -->
+      <p v-if="!isToday" class="away">{{ weekdayOf(shown) }} · <button type="button" class="link-today" @click.stop="backToToday">Back to today (T)</button></p>
     </div>
 
-    <div v-else class="face" :style="{ translate: `${drift.x / 2}vw ${drift.y / 2}vh` }" role="timer" aria-live="off">
+    <div v-else class="face" role="timer" aria-live="off">
       <p class="big-time">{{ time }}<span class="big-sec">:{{ seconds }}</span><span class="period">{{ period }}</span></p>
-      <p class="weekday">{{ weekdayName(today.day) }}</p>
+      <p class="weekday">{{ weekdayOf(today) }}</p>
       <p class="date">{{ dateLine }}</p>
       <p v-if="khmer" class="khmer" lang="km">{{ khmer }}</p>
     </div>
 
     <div class="hint">
-      <span>Tap or press any key to close · ← → for the other look</span>
+      <span v-if="look === 'page'">← → a day · ↑ ↓ a month (or swipe) · L the other look · tap or any other key closes</span>
+      <span v-else>L for the other look · tap or any key closes</span>
       <!-- For touch screens, which have no arrow keys -->
       <button type="button" class="look-switch" @click.stop="switchLook">Switch look</button>
     </div>
@@ -243,10 +339,18 @@ function onKey(e: KeyboardEvent) {
   cursor: none;
 }
 
-/* Page: pale paper, from pale blue through pale tints (one lap every two minutes) */
+/* Page: pastel paper that keeps changing colour (one lap a minute), and glides to a new colour for each
+   day or month you step to. Pale enough for the black type, saturated enough to see it change */
+@property --date-hue {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
 .look-page {
-  background: hsl(var(--hue) 62% 91%);
-  animation: hue-page 120s linear infinite;
+  background: hsl(calc(var(--hue) + var(--date-hue)) 80% 84%);
+  animation: hue-page 60s linear infinite;
+  transition: --date-hue 0.9s cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* Clock: two glows over a deep colour, all turning once a minute */
@@ -258,6 +362,11 @@ function onKey(e: KeyboardEvent) {
     radial-gradient(80% 90% at 90% 85%, hsl(calc(var(--hue) - 70deg) 80% 50%) 0%, transparent 65%),
     hsl(var(--hue) 70% 32%);
   animation: hue-clock 60s linear infinite;
+}
+
+/* Focused so its keys work; nothing to outline on a full-screen picture */
+.saver:focus {
+  outline: none;
 }
 
 .saver:not([open]) {
@@ -284,7 +393,7 @@ function onKey(e: KeyboardEvent) {
 
 /* Lite effects: the same colours, repainted twice a second instead of every frame */
 :root[data-effects='lite'] .look-page {
-  animation-timing-function: steps(240);
+  animation-timing-function: steps(120);
 }
 
 :root[data-effects='lite'] .look-clock {
@@ -297,7 +406,7 @@ function onKey(e: KeyboardEvent) {
   padding: clamp(0.9rem, 2.2vw, 2.25rem) clamp(1rem, 3vw, 3rem);
   display: flex;
   flex-direction: column;
-  transition: translate 3s ease-in-out;
+  animation: orbit 600s ease-in-out infinite;
   user-select: none;
 }
 
@@ -397,7 +506,7 @@ ol {
   justify-content: center;
   text-align: center;
   text-shadow: 0 0.04em 0.25em rgb(0 0 0 / 0.25);
-  transition: translate 3s ease-in-out;
+  animation: orbit 600s ease-in-out infinite;
   user-select: none;
 }
 
@@ -501,14 +610,38 @@ ol {
   }
 }
 
-/* Reduced motion: the colours still shift (no movement), but the page stays put */
-@media (prefers-reduced-motion: reduce) {
-  .sheet, .face { transition: none; translate: none !important; }
+/* ---------- Against burn-in: the whole screen glides round a wide loop every ten minutes ----------
+   A few pixels a minute: too slow to see moving, so it stays on even with reduced motion, but nothing
+   (the hairlines, the big numbers) sits on the same pixels for long. The clock look's type is bigger and
+   brighter, so it travels further. */
+.sheet { --orbit: 2.5vmin; }
+.face { --orbit: 5vmin; }
+
+@keyframes orbit {
+  0%, 100% { translate: 0 0; }
+  20% { translate: var(--orbit) calc(var(--orbit) * -0.6); }
+  40% { translate: calc(var(--orbit) * -0.8) calc(var(--orbit) * -1); }
+  60% { translate: calc(var(--orbit) * -1) calc(var(--orbit) * 0.8); }
+  80% { translate: calc(var(--orbit) * 0.6) var(--orbit); }
 }
 
-:root[data-motion='reduced'] .sheet,
-:root[data-motion='reduced'] .face {
-  transition: none;
-  translate: none !important;
+/* ---------- Stepped to another day ---------- */
+.away {
+  position: absolute;
+  right: clamp(1rem, 3vw, 3rem);
+  bottom: calc(clamp(10rem, 44vh, 36rem) * 0.8);
+  font-size: clamp(0.75rem, 1.05vw, 1.05rem);
+  font-weight: 700;
+}
+
+.link-today {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
 }
 </style>

@@ -235,7 +235,7 @@ function del(e: CountdownEvent) {
     <template #settings>
       <SettingRow v-model="cdPrefs.clock" title="Phnom Penh clock" description="The time and today’s date, in English and Khmer, in the header." />
       <SettingRow v-model="cdPrefs.holidays" title="Cambodian public holidays" description="The list of official days off beside your countdowns." />
-      <SettingChoice v-model="cdPrefs.saver" title="Screen saver" description="What the Screen saver button shows. While it’s on, ← and → switch between them." :options="[{ value: 'page', label: 'Calendar page' }, { value: 'clock', label: 'Big clock' }]" />
+      <SettingChoice v-model="cdPrefs.saver" title="Screen saver" description="What the Screen saver button shows. While it’s on, press L to switch; on the calendar page the arrows (or a swipe) move through days and months." :options="[{ value: 'page', label: 'Calendar page' }, { value: 'clock', label: 'Big clock' }]" />
     </template>
     <template #actions>
       <ClientOnly>
