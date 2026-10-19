@@ -30,6 +30,14 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.5.0',
+    date: '2026-10-19',
+    changes: [
+      'Settings → Gauges: every kind of dial the apps use, plus more you could build, with the code to copy. Click a dial for a random value, or Play to watch them all move.',
+      'Settings → App features shows each app as a card with its features, or as a table you can read without turning your head. Filter by feature and tick apps to compare.'
+    ]
+  },
+  {
     version: '2.4.0',
     date: '2026-10-19',
     changes: [
@@ -112,6 +120,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Check a Cambodian number and see its network.', 'Dark mode.'] }
   ],
   '/compress': [
+    { version: '1.3.0', date: '2026-10-19', changes: ['A dial shows how much smaller your files got in total.'] },
     { version: '1.2.0', date: '2026-10-07', changes: [PICKERS, WIDE] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Shrink PDFs too: make the photos inside smaller, or redraw each page.', 'No files handy? Try it with three example files.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Make images smaller without uploading them.', 'Dark mode.'] }
@@ -124,12 +133,14 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Switch text between lowercase, UPPERCASE, Title Case and Sentence case.'] }
   ],
   '/password': [
+    { version: '2.1.0', date: '2026-10-19', changes: ['The strength meter is a small dial: bits of randomness on red, orange and green bands at the same cutoffs as Weak, Fair and Strong.'] },
     { version: '2.0.0', date: '2026-10-07', changes: ['Sign in with your Google account. The vault keeps its own master password, which never leaves your device.', 'On wide screens the password and its settings sit side by side.', 'Adding and editing a saved password opens in a popup.', TWO_CLICK] },
     { version: '1.2.0', date: '2026-10-06', changes: ['Reset a forgotten master password by email.', 'Master passwords can be 6 characters or more.'] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Save passwords in a vault, encrypted on your device before they’re stored.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Generate strong passwords and see how long they’d take to crack.', 'Dark mode.'] }
   ],
   '/exchange': [
+    { version: '1.4.0', date: '2026-10-19', changes: ['The result shows a dial for how far the rate is from the market: worse to the left, better to the right, about the same in the middle.'] },
     { version: '1.3.0', date: '2026-10-18', changes: ['A ⇄ button beside the amount flips between dollars to riel and riel to dollars, converting the amount so it stays the same money.'] },
     { version: '1.2.0', date: '2026-10-08', changes: ['Offline, or if the rate service is down, it uses the last rate seen on this device and says when it was from.', 'On a phone, pull down for a fresh rate.'] },
     { version: '1.1.1', date: '2026-10-07', changes: ['The page no longer runs wider than small phone screens.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
@@ -137,11 +148,13 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['See if an exchange rate makes you gain or lose money, or track an exchange you made.'] }
   ],
   '/battery': [
+    { version: '1.2.0', date: '2026-10-19', changes: ['A health dial in the results: the needle on red, orange and green bands that match Replace, Worn, Good and Excellent.'] },
     { version: '1.1.1', date: '2026-10-07', changes: ['The phone model search no longer makes iPhones zoom in when you tap it.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.1.0', date: '2026-10-07', changes: [WIDE, 'The results stay in view, and fully reachable, while you scroll.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['See how much of your phone battery is really left compared with when it was new.'] }
   ],
   '/budget': [
+    { version: '1.2.0', date: '2026-10-19', changes: ['The overall monthly budget gets a dial showing how much is used, with a mark where the month is heading while that’s still under the limit.'] },
     { version: '1.1.0', date: '2026-10-12', changes: ['A numbered “How to use Budget” guide on the dashboard ticks off each step as you do it. Hide it any time, and bring it back with How to use.', 'Every subcategory has its own icon.'] },
     { version: '1.0.0', date: '2026-10-12', changes: [
       'Log expenses in a few taps, with categories like Food › Breakfast, Lunch and Dinner, in dollars or riel.',
@@ -154,18 +167,22 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-16', changes: ['My CV as an app: experience, selected work, skills, education and how to get in touch.', 'Save it as a PDF from the Save as PDF button.'] }
   ],
   '/claude': [
+    { version: '1.1.0', date: '2026-10-19', changes: ['Set a monthly budget to see what this period cost against it on a dial, how much is left or over, and what this rate comes to in a month. On both the API spend and Claude Code tabs.'] },
     { version: '1.0.0', date: '2026-10-18', changes: ['Your Claude API spend and tokens by day and model, from Anthropic’s Usage and Cost reports (needs an Admin API key, kept only in your browser).', 'Your Claude Code sessions, tokens and estimated cost by day, project and model, read from its logs when the app runs on your computer.'] }
   ],
   '/speed': [
+    { version: '2.0.0', date: '2026-10-19', changes: ['The dial is coloured by what the speed is good for: red too slow, orange browsing, yellow HD video, green 4K, blue big downloads. The fill climbs through the colours, and a strip under the dial shows which band you’re in.', 'Each use in “Good for” has its own colour, so they read apart at a glance.', 'Each test saves where and how it ran: your approximate location, IP address and provider, your device, and Wi‑Fi, mobile data or cable (detected on Android, picked by you elsewhere).', 'Past tests are grouped by day, with each day’s best speeds on its header; today’s opens by default.', 'Tidier under the dial and in Past tests: the status and button share a line, and the sort menu is smaller.'] },
     { version: '1.2.0', date: '2026-10-18', changes: ['Past tests are saved to your account when you’re signed in, so they’re on all your devices.', 'Sort past tests by newest, oldest, fastest download or upload, or lowest ping.', 'Icons show what each result is good for, in the result and beside every past test.'] },
     { version: '1.0.0', date: '2026-10-12', changes: ['Test your download, upload, ping and jitter, with a dial that follows the live speed.', 'See what your connection is good for, and how close you get to your plan’s speed.', 'Your last 30 tests stay on this device.'] }
   ],
   '/salary': [
+    { version: '1.2.0', date: '2026-10-19', changes: ['The share of the raise you keep is drawn as an animated ring.'] },
     { version: '1.1.1', date: '2026-10-07', changes: ['The raise-every-year table fits a phone screen without scrolling sideways.', 'The tax band boxes no longer make iPhones zoom in, and the switches are easier to tap.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
     { version: '1.1.0', date: '2026-10-07', changes: [WIDE, 'The pay statement stays in view, and fully reachable, while you scroll.'] },
     { version: '1.0.0', date: '2026-10-05', changes: ['Work out what a raise is really worth after Cambodian salary tax.'] }
   ],
   '/things': [
+    { version: '3.3.0', date: '2026-10-19', changes: ['A dial beside “Worth now” shows how much of what you paid everything still holds.'] },
     { version: '3.2.0', date: '2026-10-18', changes: ['No more automatic depreciation: what something is worth now stays at what you paid until you enter a resale price.', 'Company logos fill their tile, framed in the logo’s own colour, and Google shows its G.'] },
     { version: '3.1.0', date: '2026-10-11', changes: ['Tap a category under “Where the value is” to see only those things; tap it again to see everything.', 'Hide a category from the list with the eye beside it; tap its chip above the list to bring it back.', 'Leave something out of the totals (a work laptop, something lent out) from its right-click menu or by selecting several. It stays in the list, marked Not counted.', 'Import and export are now in Settings.'] },
     { version: '3.0.1', date: '2026-10-08', changes: ['Logos now show for Sony, Samsung, Google, Honor, Redmi, RedMagic and more brands.'] },
@@ -187,6 +204,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Swipe through your saved foods and places until one sounds good.'] }
   ],
   '/weight': [
+    { version: '1.4.0', date: '2026-10-19', changes: ['Set a goal weight to see how far you’ve come from your first entry on a dial, and how much is left to go. Works for losing or gaining.'] },
     { version: '1.3.0', date: '2026-10-18', changes: ['Check your entries shows how much you gained or lost since the entry before, and over how many days when there’s a gap.', 'A total at the foot of your entries: how much you’ve gained or lost since your first entry.'] },
     { version: '1.3.0', date: '2026-10-08', changes: [BIN, UNDO, CHECK, 'On a phone, pull down to sync.'] },
     { version: '1.2.1', date: '2026-10-07', changes: ['The log form and trend use the whole phone screen, and the weight box no longer spills out.', 'Small buttons like Edit and Delete are easier to tap on touch screens.'] },
@@ -195,6 +213,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Log your weight and see the trend.'] }
   ],
   '/countdown': [
+    { version: '2.6.0', date: '2026-10-19', changes: ['The featured countdown’s progress is a ring that closes as the day comes.'] },
     { version: '2.5.0', date: '2026-10-18', changes: ['Dates can repeat every week, month, 3 or 6 months, or year, so a birthday only needs adding once.', 'A 30-day timeline of your dates, renewals and public holidays.', 'Dates this week get the same Today, Tomorrow and This week badges as Renewals, and an all-day date stays up for its whole day.', 'A heads-up when something is today or tomorrow.', 'Time left reads the same everywhere in Calendar, holidays included.'] },
     { version: '2.4.0', date: '2026-10-18', changes: ['Renewals is now part of Calendar: switch between Dates and Renewals under the name. Your subscriptions and links to them are where they were.'] },
     { version: '2.3.0', date: '2026-10-18', changes: ['Countdown is now called Calendar.', 'Screen saver: the time, weekday and date in big type, full screen, on slowly shifting colours. It keeps the screen awake; tap or press any key to close it.', 'Example dates to try it with: click the app’s icon. Signed out, they show until you sign in.'] },
@@ -205,6 +224,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Count down to the dates that matter.'] }
   ],
   '/renewals': [
+    { version: '2.2.0', date: '2026-10-19', changes: ['Set a monthly limit to see what everything that renews costs a month against it, on a dial that turns orange near the limit and red over it.'] },
     { version: '2.1.0', date: '2026-10-18', changes: ['The 30-day timeline shows your dates and public holidays too, each in its own colour.', 'One heads-up a day for everything in Calendar due today or tomorrow: renewals, dates and holidays.'] },
     { version: '2.0.0', date: '2026-10-08', changes: ['Each subscription shows its service’s icon automatically; pick another, a letter, or your own image link.', 'A live countdown that gets more exact as the date nears: months, then weeks, days, hours, and minutes and seconds in the last hour.', 'Status at a glance: Safe, Upcoming, Soon, Due and Expired, in words as well as colour.', 'Prices and totals in both dollars and riel, using today’s rate.', 'See what everything costs per day, week, month, quarter, half-year or year.', 'New billing options: every 6 months, and one-off dates that expire.'] },
     { version: '1.4.0', date: '2026-10-08', changes: ['Sort by soonest, most expensive or name.', 'Give subscriptions a category; well-known services suggest one.', TRANSFER, 'New subscriptions start with the currency and billing you used last.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
@@ -230,6 +250,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Save links with tags and notes, and pin the ones you open every day.', 'Import bookmarks from your browser.'] }
   ],
   '/gold': [
+    { version: '2.3.0', date: '2026-10-19', changes: ['Under the price chart, a dial shows where today’s price sits between the range’s low and high.'] },
     { version: '2.2.0', date: '2026-10-08', changes: ['Offline it keeps the last saved price quietly instead of showing errors.', 'A Try again button when the live price can’t be reached.', BIN, UNDO, DRAFTS, CHECK] },
     { version: '2.1.0', date: '2026-10-07', changes: ['Click or tap anywhere on a purchase to edit it in a popup.'] },
     { version: '2.0.0', date: '2026-10-07', changes: ['Each purchase shows what you paid, what it’s worth now, and your gain or loss.', 'Sign in with Google to keep purchases and the price history on all your devices.', 'Import a CSV from “Add a purchase”; purchases already in your list are skipped.', 'The price card and purchases catch the light as you move the mouse.', PICKERS, TWO_CLICK] },
