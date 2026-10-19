@@ -682,6 +682,39 @@ function toggleFocus(on = !focusMode.value) {
   if (on) nextTick(() => editor.value?.focus('end'))
 }
 watch(openNote, n => !n && (focusMode.value = false))
+// Dim every paragraph but the one being written; remembered
+const focusDim = useRemembered<boolean>('notes-focus-dim', true, v => typeof v === 'boolean')
+// The bar and the pointer get out of the way while you type, and come back when the mouse moves
+const focusTyping = ref(false)
+let focusBarTimer: ReturnType<typeof setTimeout> | undefined
+function onFocusPointer() {
+  focusTyping.value = false
+  clearTimeout(focusBarTimer)
+  focusBarTimer = setTimeout(() => (focusTyping.value = true), 2500)
+}
+function onFocusKey(e: KeyboardEvent) {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.key === 'Escape') return
+  clearTimeout(focusBarTimer)
+  focusTyping.value = true
+}
+watch(focusMode, (on) => {
+  clearTimeout(focusBarTimer)
+  if (on) onFocusPointer()
+  else focusTyping.value = false
+})
+const focusWords = computed(() => editor.value?.words ?? 0)
+// Full screen as well, where the browser allows it
+const canFullscreen = ref(false)
+onMounted(() => (canFullscreen.value = !!document.documentElement.requestFullscreen && !isPhone.value))
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen()
+    else await document.documentElement.requestFullscreen()
+  } catch {}
+}
+watch(focusMode, on => !on && document.fullscreenElement && document.exitFullscreen().catch(() => {}))
+// The title's font size changes with focus mode, so its box is measured again
+watch(focusMode, () => nextTick(sizeTitle))
 // Esc leaves focus mode before the app's own Esc (go back, in FloatingNav) sees it; a popup or [[ list closes first
 function onFocusEscape(e: KeyboardEvent) {
   if (e.key !== 'Escape' || !focusMode.value || e.defaultPrevented || document.querySelector('dialog[open], .context-menu, .note-suggest')) return
@@ -968,7 +1001,7 @@ function listMenu() {
 </script>
 
 <template>
-  <ToolPage header="bar">
+  <ToolPage header="bar" settings-wide>
     <template #settings>
       <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
       <SettingChoice v-model="view" title="Show notes as" :options="VIEWS.map(v => ({ value: v, label: v === 'grid' ? 'Cards' : v[0]!.toUpperCase() + v.slice(1) }))" />
@@ -1173,8 +1206,26 @@ function listMenu() {
 
         <!-- ---------- 3: the editor ---------- -->
         <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step">
-        <section ref="editorPane" class="editor-pane" :class="{ 'focus-mode': focusMode }" aria-label="Note" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
+        <section ref="editorPane" class="editor-pane" :class="{ 'focus-mode': focusMode, 'is-typing': focusMode && focusTyping, 'dim': focusMode && focusDim }" aria-label="Note" @pointermove="focusMode && onFocusPointer()" @keydown="focusMode && onFocusKey($event)" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
           <template v-if="openNote">
+            <!-- Focus mode's only controls: a small bar that hides while you type -->
+            <div v-if="focusMode" class="focus-bar" role="toolbar" aria-label="Focus mode">
+              <span class="focus-status" :data-kind="status.kind"><span class="dot" aria-hidden="true" />{{ status.text }}</span>
+              <span class="focus-sep" aria-hidden="true" />
+              <span class="focus-count">{{ focusWords.toLocaleString() }} {{ focusWords === 1 ? 'word' : 'words' }}<template v-if="focusWords >= 220"> · {{ readingMinutes(focusWords) }} min</template></span>
+              <span class="focus-sep" aria-hidden="true" />
+              <button type="button" class="focus-tool" :class="{ on: focusDim }" :aria-pressed="focusDim" title="Dim everything but the paragraph you’re writing" @click="focusDim = !focusDim; play(focusDim ? 'toggle-on' : 'toggle-off')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5h14" opacity=".35" /><path d="M5 12h14" /><path d="M5 17.5h9" opacity=".35" /></svg>
+                <span>Dim</span>
+              </button>
+              <button v-if="canFullscreen" type="button" class="focus-tool" title="Full screen" aria-label="Full screen" @click="toggleFullscreen">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+              </button>
+              <button type="button" class="focus-tool exit" @click="toggleFocus(false)">
+                Done <kbd>Esc</kbd>
+              </button>
+            </div>
+
             <header class="editor-head">
               <button type="button" class="back" :aria-label="`Back to ${searching ? 'search' : listTitle}`" @click="closeNote">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg><span class="back-label">{{ searching ? 'Search' : listTitle }}</span>
@@ -1871,48 +1922,227 @@ time {
   inset: 0;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-width: thin;
+  background: var(--surface);
   border-radius: 0;
   box-shadow: none;
-  animation: focus-in 0.2s cubic-bezier(0.2, 0, 0, 1);
+  animation: focus-in 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 @keyframes focus-in {
-  from { opacity: 0; scale: 0.99; }
+  from { opacity: 0; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .editor-pane.focus-mode { animation: none; }
-}
-
-/* The header stays out of the way until you point at it */
-.focus-mode .editor-head {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: var(--surface);
-  opacity: 0.25;
-  transition: opacity 0.2s;
-}
-
-.focus-mode .editor-head:hover,
-.focus-mode .editor-head:focus-within {
-  opacity: 1;
-}
-
-.focus-mode .back,
-.focus-mode .head-actions > :not(.focus-btn),
+/* The page's own header, folder and links step aside; the focus bar replaces them */
+.focus-mode .editor-head,
 .focus-mode .note-place,
 .focus-mode .suggest,
 .focus-mode .archived-bar,
 .focus-mode .links,
-.focus-mode .details {
+.focus-mode .details,
+.focus-mode :deep(.counts) {
   display: none;
 }
 
+/* A comfortable column: bigger type, more air, and room below so the line you're on can sit mid-screen */
 .focus-mode > .sheet {
   width: 100%;
-  max-width: 44rem;
-  padding-top: 8vh;
+  max-width: 42rem;
+  padding: 18vh 0 45vh;
+}
+
+/* Your text size and spacing from Notes settings, a step bigger and airier */
+.focus-mode :deep(.note-body) {
+  font-size: calc(var(--note-size, 1.0625rem) * 1.18);
+  line-height: calc(var(--note-leading, 1.65) + 0.15);
+}
+
+.focus-mode .title-input {
+  font-size: 2.4rem;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  padding-bottom: 0.6rem;
+}
+
+/* Soft edges top and bottom, so lines fade in and out instead of being cut off */
+.editor-pane.focus-mode::before,
+.editor-pane.focus-mode::after {
+  content: '';
+  position: fixed;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  height: 12vh;
+  pointer-events: none;
+}
+
+.editor-pane.focus-mode::before {
+  top: 0;
+  background: linear-gradient(var(--surface), transparent);
+}
+
+.editor-pane.focus-mode::after {
+  bottom: 0;
+  background: linear-gradient(transparent, var(--surface));
+}
+
+/* Dim: every block but the one with the caret fades back */
+.focus-mode.dim :deep(.note-body > *) {
+  transition: opacity 0.35s ease;
+}
+
+.focus-mode.dim :deep(.note-body:has(> .has-focus) > :not(.has-focus)) {
+  opacity: 0.28;
+}
+
+/* While typing, the pointer hides too; moving the mouse brings it back */
+.focus-mode.is-typing {
+  cursor: none;
+}
+
+/* ---------- The focus bar ---------- */
+.focus-bar {
+  position: fixed;
+  z-index: 4;
+  top: 1rem;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.3rem 0.3rem 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--line), 0 10px 30px -12px rgb(var(--shadow) / 0.3);
+  translate: -50% 0;
+  transition: opacity 0.4s ease, translate 0.4s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.is-typing .focus-bar:not(:hover, :focus-within) {
+  opacity: 0;
+  translate: -50% -0.75rem;
+  pointer-events: none;
+}
+
+.focus-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.focus-status .dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.focus-status[data-kind='saving'] .dot { background: var(--blue); }
+.focus-status[data-kind='offline'] .dot,
+.focus-status[data-kind='demo'] .dot { background: var(--orange); }
+.focus-status[data-kind='error'] .dot { background: var(--red); }
+
+.focus-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-sep {
+  width: 1px;
+  height: 0.9rem;
+  margin: 0 0.25rem;
+  background: var(--line);
+}
+
+.focus-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2rem;
+  padding: 0 0.6rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.focus-tool:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.focus-tool.on {
+  color: var(--accent);
+}
+
+.focus-tool svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.focus-tool.exit {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.focus-tool.exit:hover {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.focus-tool kbd {
+  padding: 0.05rem 0.35rem;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-3);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-pane.focus-mode,
+  .focus-bar { animation: none; transition: none; }
+}
+
+/* Phones: the bar sits under the notch, the formatting bar stays above the keyboard */
+@media (max-width: 760px) {
+  .focus-bar {
+    top: max(0.6rem, env(safe-area-inset-top));
+  }
+
+  .focus-bar kbd,
+  .focus-tool span,
+  .focus-status {
+    display: none;
+  }
+
+  .focus-status + .focus-sep {
+    display: none;
+  }
+
+  .focus-mode > .sheet {
+    padding: 5.5rem 0 40vh;
+  }
+
+  .focus-mode :deep(.note-body) {
+    font-size: calc(var(--note-size, 1.0625rem) * 1.06);
+  }
+
+  .focus-mode .title-input {
+    font-size: 1.9rem;
+  }
 }
 
 .head-actions {

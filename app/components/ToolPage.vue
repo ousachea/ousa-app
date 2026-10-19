@@ -11,7 +11,8 @@ import type { Tool } from '~/utils/tools'
 type Header = 'hero' | 'bar' | 'band' | 'none'
 
 // siteBar: false leaves out the app's top bar, for a page with a nav of its own (the CV)
-const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header, siteBar?: boolean }>(), { width: 'var(--page-width)', tool: undefined, header: 'hero', siteBar: true })
+// settingsWide: a wider settings popup, for apps with many settings (Notes)
+const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header, siteBar?: boolean, settingsWide?: boolean }>(), { width: 'var(--page-width)', tool: undefined, header: 'hero', siteBar: true, settingsWide: false })
 
 const route = useRoute()
 const page = computed(() => props.tool ?? toolFor(route.path)!)
@@ -205,7 +206,7 @@ function openSignIn() {
       <ToolIcon v-if="header === 'band'" :name="tool.icon" class="band-art" aria-hidden="true" />
     </header>
 
-    <Modal v-if="hasSettings" :open="settingsOpen" :title="`${page.name} settings`" @close="settingsOpen = false">
+    <Modal v-if="hasSettings" :open="settingsOpen" :title="`${page.name} settings`" :wide="settingsWide" @close="settingsOpen = false">
       <template v-if="slots.settings">
         <div class="app-settings">
           <slot name="settings" />

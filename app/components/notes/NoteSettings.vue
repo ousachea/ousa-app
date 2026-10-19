@@ -4,7 +4,7 @@ import type { Folder } from '~/utils/folders'
 
 // Notes → Settings (#49): how the editor looks and behaves, remembered on this device (useNotePrefs)
 // `inline`: just the options, for the gear in the Notes header (ToolPage's settings dialog)
-defineProps<{ open?: boolean, folders: readonly Folder[], inline?: boolean }>()
+const props = defineProps<{ open?: boolean, folders: readonly Folder[], inline?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 const { prefs, reset } = useNotePrefs()
 
@@ -12,6 +12,11 @@ const FONTS = [{ value: 'sans', label: 'Sans' }, { value: 'serif', label: 'Serif
 const SIZES = [{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }] as const
 const LEADING = [{ value: 'tight', label: 'Tight' }, { value: 'normal', label: 'Normal' }, { value: 'relaxed', label: 'Relaxed' }] as const
 const WIDTHS = [{ value: 'center', label: 'Centred' }, { value: 'full', label: 'Full width' }] as const
+// Sub-folders indented under their parent, as in the folder list
+const folderOptions = computed(() => [
+  { value: '', label: 'No folder (or the open folder)' },
+  ...flatTree(props.folders).map(o => ({ value: o.folder.id, label: `${'— '.repeat(o.depth)}${o.folder.name}` }))
+])
 const PREVIEW = [{ value: 0, label: 'None' }, { value: 80, label: 'Short' }, { value: 140, label: 'Medium' }, { value: 240, label: 'Long' }] as const
 </script>
 
@@ -46,13 +51,10 @@ const PREVIEW = [{ value: 0, label: 'None' }, { value: 80, label: 'Short' }, { v
       <label class="row check"><span>Spellcheck</span><input v-model="prefs.spellcheck" type="checkbox"></label>
 
       <h3>Behaviour</h3>
-      <label class="row">
+      <div class="row">
         <span>New notes go in</span>
-        <select v-model="prefs.defaultFolder" class="input">
-          <option value="">No folder (or the open folder)</option>
-          <option v-for="o in flatTree(folders)" :key="o.folder.id" :value="o.folder.id">{{ '— '.repeat(o.depth) }}{{ o.folder.name }}</option>
-        </select>
-      </label>
+        <AppSelect v-model="prefs.defaultFolder" class="folder-select" aria-label="New notes go in" :options="folderOptions" />
+      </div>
       <p class="hint">Notes save by themselves as you type. Markdown shortcuts (# heading, - list, [ ] checklist, &gt; quote) always work.</p>
 
       <h3>Display</h3>
@@ -99,8 +101,8 @@ h3:first-child {
   font-size: 0.9rem;
 }
 
-.row select {
-  max-width: 60%;
+.folder-select {
+  width: min(20rem, 60%);
 }
 
 .check input {

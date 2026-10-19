@@ -299,6 +299,8 @@ watch(editor, (e) => {
 
 defineExpose({
   focus: focusAt,
+  /** Words in the note, kept current (focus mode shows them) */
+  words,
   /** The current HTML right now (to save before leaving) */
   html: () => (editor.value?.isEmpty ? '' : editor.value?.getHTML() ?? '')
 })

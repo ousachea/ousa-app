@@ -1,7 +1,7 @@
 import { InputRule, mergeAttributes, Node, type Extensions } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
-import { Placeholder } from '@tiptap/extensions'
+import { Focus, Placeholder } from '@tiptap/extensions'
 import Image from '@tiptap/extension-image'
 
 // The Notes editor's building blocks (Tiptap). Only the Notes page imports this, so the editor's code
@@ -74,6 +74,8 @@ export function noteExtensions(opts: { placeholder?: string, resolve?: (title: s
     TaskItem.configure({ nested: true }),
     Image.configure({ allowBase64: true }),
     Placeholder.configure({ placeholder: opts.placeholder ?? 'Start writing…' }),
+    // The top-level block holding the caret gets .has-focus; focus mode dims the others
+    Focus.configure({ className: 'has-focus', mode: 'shallowest' }),
     NoteLink.configure({ resolve: opts.resolve ?? (() => undefined) })
   ]
 }
