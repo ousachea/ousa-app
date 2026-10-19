@@ -28,6 +28,8 @@ const props = defineProps<{
   expanded?: boolean
   /** An item is being dragged with the mouse: every folder shows it can take it */
   itemDragging?: boolean
+  /** A folder's menu offers to add an item straight into it, worded like this ("Add a bookmark here") */
+  addItemLabel?: string
 }>()
 const emit = defineEmits<{
   'select': [id: string]
@@ -37,6 +39,7 @@ const emit = defineEmits<{
   'toggle': [id: string]
   'move-folder': [id: string, parentId: string, beforeId: string | null]
   'drop-bookmark': [bookmarkId: string, folderId: string]
+  'add-item': [folderId: string]
 }>()
 
 const { openMenu } = useContextMenu()
@@ -61,6 +64,7 @@ const rows = computed(() => {
 })
 
 const folderMenu = (f: Folder): MenuEntry[] => [
+  ...(props.addItemLabel ? [{ label: props.addItemLabel, icon: 'plus' as const, run: () => emit('add-item', f.id) }, '-' as const] : []),
   { label: 'Edit folder', icon: 'edit', run: () => emit('edit', f) },
   { label: 'Add a sub-folder', icon: 'folder', run: () => emit('add', f.id) },
   '-',

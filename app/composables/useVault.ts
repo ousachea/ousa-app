@@ -1,6 +1,5 @@
 import type { User } from 'firebase/auth'
 import type { Unsubscribe } from 'firebase/firestore'
-import type { FirebaseHandle, FirebaseSdk } from '~/composables/useFirebase'
 
 // What's stored inside each encrypted blob. The database only ever sees ciphertext.
 export interface VaultEntry {
@@ -164,15 +163,9 @@ async function start() {
     return
   }
   // Who's signed in is only known once Firebase has loaded; 'loading' until then (useSignInGate shows
-  // 'checking'). Firebase couldn't load at all (offline on a first visit): treat it as signed out.
-  let auth: FirebaseHandle['auth']
-  let sdk: FirebaseSdk
-  try {
-    ({ auth, sdk } = await loadFirebase())
-  } catch {
-    state.status = 'signed-out'
-    return
-  }
+  // 'checking'). Firebase couldn't load (offline on a first visit): signed out for now, and it keeps trying,
+  // so the saved session comes back by itself rather than looking like a sign-out
+  const { auth, sdk } = await loadFirebaseRetrying(() => (state.status = 'signed-out'))
 
   sdk.onAuthStateChanged(auth, (user) => {
     if (!user) {
@@ -188,8 +181,11 @@ async function start() {
   })
 
   await auth.authStateReady()
-  if (auth.currentUser) await signedInAs(auth.currentUser)
-  else state.status = 'signed-out'
+  if (auth.currentUser) {
+    if (state.status === 'loading' || state.status === 'signed-out') await signedInAs(auth.currentUser)
+  } else {
+    state.status = 'signed-out'
+  }
 
   for (const type of ['pointerdown', 'keydown'] as const) window.addEventListener(type, resetLockTimer, { passive: true })
 }

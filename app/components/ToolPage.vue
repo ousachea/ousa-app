@@ -137,7 +137,7 @@ function openSignIn() {
     <SiteBar v-if="siteBar" back />
 
     <header v-if="header !== 'none'" class="head">
-      <!-- The icon, with the sync dot on its corner for apps that save data -->
+      <!-- The icon; sync status is in the Apps menu -->
       <span class="icon-wrap">
       <button
         v-if="demo.supported.value && !locked"
@@ -156,7 +156,6 @@ function openSignIn() {
         </span>
       </button>
       <span v-else ref="stickerEl" class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
-      <ClientOnly><SyncDot /></ClientOnly>
       </span>
       <div class="head-text">
         <h1>{{ tool.name }}</h1>

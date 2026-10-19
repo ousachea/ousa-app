@@ -673,6 +673,24 @@ async function copyNote(n: Note) {
     toast.error('Could not copy')
   }
 }
+// Focus mode: the note fills the screen with only the title and the words; ⌘⇧F / Ctrl+Shift+F or Esc leaves it
+const focusMode = ref(false)
+function toggleFocus(on = !focusMode.value) {
+  if (on && !openNote.value) return
+  focusMode.value = on
+  play(on ? 'toggle-on' : 'toggle-off')
+  if (on) nextTick(() => editor.value?.focus('end'))
+}
+watch(openNote, n => !n && (focusMode.value = false))
+// Esc leaves focus mode before the app's own Esc (go back, in FloatingNav) sees it; a popup or [[ list closes first
+function onFocusEscape(e: KeyboardEvent) {
+  if (e.key !== 'Escape' || !focusMode.value || e.defaultPrevented || document.querySelector('dialog[open], .context-menu, .note-suggest')) return
+  e.preventDefault()
+  toggleFocus(false)
+}
+onMounted(() => window.addEventListener('keydown', onFocusEscape, { capture: true }))
+onBeforeUnmount(() => window.removeEventListener('keydown', onFocusEscape, { capture: true }))
+
 // The note centred or across the whole pane; remembered with the other Notes settings
 function toggleWidth() {
   notePrefs.width = notePrefs.width === 'full' ? 'center' : 'full'
@@ -731,6 +749,7 @@ function moreMenu(e: MouseEvent) {
   if (!n) return
   const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
   openMenu(matchMedia('(pointer: coarse)').matches ? null : { clientX: r.right - 220, clientY: r.bottom + 4 }, [
+    { label: focusMode.value ? 'Leave focus mode' : 'Focus mode', icon: 'open', hint: `${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+'}⇧F`, run: () => toggleFocus() },
     { label: 'Move to folder…', icon: 'folder', run: () => (moving.value = [n.id]) },
     { label: 'Version history', icon: 'refresh', run: () => (historyOpen.value = true) },
     { label: 'Duplicate', icon: 'duplicate', run: () => duplicate(n) },
@@ -886,6 +905,9 @@ function onKey(e: KeyboardEvent) {
     // Quick capture: ⌘⇧N / Ctrl+Shift+N where the browser allows it, Alt+Q everywhere
     e.preventDefault()
     quickOpen.value = true
+  } else if (mod && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault()
+    toggleFocus()
   } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'f') {
     e.preventDefault()
     pane.value = 'list'
@@ -1151,7 +1173,7 @@ function listMenu() {
 
         <!-- ---------- 3: the editor ---------- -->
         <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step">
-        <section ref="editorPane" class="editor-pane" aria-label="Note" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
+        <section ref="editorPane" class="editor-pane" :class="{ 'focus-mode': focusMode }" aria-label="Note" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
           <template v-if="openNote">
             <header class="editor-head">
               <button type="button" class="back" :aria-label="`Back to ${searching ? 'search' : listTitle}`" @click="closeNote">
@@ -1162,6 +1184,10 @@ function listMenu() {
                 <button v-if="status.kind === 'error' || status.kind === 'offline'" type="button" class="link" @click="sync.retry()">Retry</button>
               </span>
               <span class="head-actions">
+                <button type="button" class="icon-btn focus-btn" :class="{ on: focusMode }" :aria-pressed="focusMode" :aria-label="focusMode ? 'Leave focus mode' : 'Focus mode'" :title="focusMode ? 'Leave focus mode (Esc)' : 'Focus mode: only the writing'" @click="toggleFocus()">
+                  <svg v-if="focusMode" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
+                  <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+                </button>
                 <button type="button" class="icon-btn" :class="{ on: openNote.favorite }" :aria-pressed="!!openNote.favorite" :aria-label="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" :title="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" @click="toggleFavorite(openNote)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z" /></svg>
                 </button>
@@ -1222,6 +1248,7 @@ function listMenu() {
                 v-model="draft.html"
                 :notes="linkTargets"
                 :spellcheck="notePrefs.spellcheck"
+                :bare="focusMode"
                 placeholder="Start writing… Type # for a heading, - for a list, [ ] for a checklist, [[ to link a note."
                 @update:model-value="onEdit"
                 @open-note="followLink"
@@ -1836,6 +1863,57 @@ time {
 .status[data-kind='demo'] .dot { background: var(--orange); }
 .status[data-kind='error'] { color: var(--red); }
 .status[data-kind='error'] .dot { background: var(--red); }
+
+/* ---------- Focus mode: the note over everything, with only the title and the words ---------- */
+.editor-pane.focus-mode {
+  position: fixed;
+  z-index: 150;
+  inset: 0;
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 0;
+  box-shadow: none;
+  animation: focus-in 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes focus-in {
+  from { opacity: 0; scale: 0.99; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-pane.focus-mode { animation: none; }
+}
+
+/* The header stays out of the way until you point at it */
+.focus-mode .editor-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--surface);
+  opacity: 0.25;
+  transition: opacity 0.2s;
+}
+
+.focus-mode .editor-head:hover,
+.focus-mode .editor-head:focus-within {
+  opacity: 1;
+}
+
+.focus-mode .back,
+.focus-mode .head-actions > :not(.focus-btn),
+.focus-mode .note-place,
+.focus-mode .suggest,
+.focus-mode .archived-bar,
+.focus-mode .links,
+.focus-mode .details {
+  display: none;
+}
+
+.focus-mode > .sheet {
+  width: 100%;
+  max-width: 44rem;
+  padding-top: 8vh;
+}
 
 .head-actions {
   display: flex;

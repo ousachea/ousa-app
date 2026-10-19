@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
-import { Selection } from '@tiptap/pm/state'
+import { BubbleMenu } from '@tiptap/vue-3/menus'
+import { Selection, TextSelection, type EditorState } from '@tiptap/pm/state'
+import type { Editor } from '@tiptap/core'
 
 // The Notes editor (Tiptap): formatting toolbar, Markdown shortcuts, clickable checklists, links,
 // images pasted or dropped in (made smaller first), and [[ to link another note.
+// Selecting text (a double-click on a word, or a drag) brings up a small formatting bar right above it.
 // It reports every change (`update:modelValue`); the page decides when to save.
 const props = defineProps<{
   modelValue: string
@@ -12,6 +15,8 @@ const props = defineProps<{
   notes: { id: string, title: string }[]
   placeholder?: string
   spellcheck?: boolean
+  /** Focus mode: no toolbar on a computer, so only the writing shows; the bar on selected text still formats */
+  bare?: boolean
 }>()
 const emit = defineEmits<{
   'update:modelValue': [html: string]
@@ -73,11 +78,30 @@ const chain = () => editor.value!.chain().focus()
 const is = (name: string, attrs?: Record<string, unknown>) => !!editor.value?.isActive(name, attrs)
 const mod = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+'
 
+// ---------- Text style: one named dropdown for what kind of block the line is ----------
+// Each also has a Markdown shortcut, shown beside it
+const STYLES = [
+  { label: 'Normal text', md: '', run: () => chain().setParagraph().run(), active: () => is('paragraph') },
+  { label: 'Heading 1', md: '#', run: () => chain().setHeading({ level: 1 }).run(), active: () => is('heading', { level: 1 }) },
+  { label: 'Heading 2', md: '##', run: () => chain().setHeading({ level: 2 }).run(), active: () => is('heading', { level: 2 }) },
+  { label: 'Heading 3', md: '###', run: () => chain().setHeading({ level: 3 }).run(), active: () => is('heading', { level: 3 }) },
+  { label: 'Quote', md: '>', run: () => chain().toggleBlockquote().run(), active: () => is('blockquote') },
+  { label: 'Code block', md: '```', run: () => chain().toggleCodeBlock().run(), active: () => is('codeBlock') }
+]
+// A quote holds paragraphs, so it's checked before Normal text
+const styleName = () => (STYLES.slice(1).find(s => s.active()) ?? STYLES[0]!).label
+const { openMenu } = useContextMenu()
+function openStyles(e: MouseEvent) {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const current = styleName()
+  openMenu(matchMedia('(pointer: coarse)').matches ? null : { clientX: r.left, clientY: r.bottom + 4 }, STYLES.map(s => ({
+    label: s.label,
+    hint: s.label === current ? '✓' : s.md,
+    run: s.run
+  })), 'Text style')
+}
+
 const TOOLS: (Cmd | '|')[] = [
-  { key: 'h1', label: 'H1', title: 'Heading 1 (# )', icon: '', run: () => chain().toggleHeading({ level: 1 }).run(), active: () => is('heading', { level: 1 }) },
-  { key: 'h2', label: 'H2', title: 'Heading 2 (## )', icon: '', run: () => chain().toggleHeading({ level: 2 }).run(), active: () => is('heading', { level: 2 }) },
-  { key: 'h3', label: 'H3', title: 'Heading 3 (### )', icon: '', run: () => chain().toggleHeading({ level: 3 }).run(), active: () => is('heading', { level: 3 }) },
-  '|',
   { key: 'bold', label: 'Bold', title: `Bold (${mod}B)`, icon: 'M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z', run: () => chain().toggleBold().run(), active: () => is('bold') },
   { key: 'italic', label: 'Italic', title: `Italic (${mod}I)`, icon: 'M10 5h8M6 19h8M14 5l-4 14', run: () => chain().toggleItalic().run(), active: () => is('italic') },
   { key: 'underline', label: 'Underline', title: `Underline (${mod}U)`, icon: 'M7 4.5v6a5 5 0 0 0 10 0v-6M5.5 20h13', run: () => chain().toggleUnderline().run(), active: () => is('underline') },
@@ -88,11 +112,19 @@ const TOOLS: (Cmd | '|')[] = [
   { key: 'bullets', label: 'Bullet list', title: 'Bullet list (- )', icon: 'M9 6.5h11M9 12h11M9 17.5h11M4.75 6.5h.01M4.75 12h.01M4.75 17.5h.01', run: () => chain().toggleBulletList().run(), active: () => is('bulletList') },
   { key: 'numbers', label: 'Numbered list', title: 'Numbered list (1. )', icon: 'M10 6.5h10M10 12h10M10 17.5h10M4 5l1.5-1v5M3.8 15.2c.3-.8 2.7-1 2.6.6-.1 1-2.6 2-2.6 3.2h2.8', run: () => chain().toggleOrderedList().run(), active: () => is('orderedList') },
   { key: 'tasks', label: 'Checklist', title: 'Checklist ([ ] )', icon: 'M4 5.5h4.5V10H4zM4 14h4.5v4.5H4zM5 16.5l1 1 2-2.5M12 7.75h8M12 16.25h8', run: () => chain().toggleTaskList().run(), active: () => is('taskList') },
-  { key: 'quote', label: 'Quote', title: 'Quote (> )', icon: 'M5 7h5v5H6.5L5 16M14 7h5v5h-3.5L14 16', run: () => chain().toggleBlockquote().run(), active: () => is('blockquote') },
-  { key: 'codeblock', label: 'Code block', title: 'Code block (```)', icon: 'M4 5h16v14H4zM9 10l-2 2 2 2M15 10l2 2-2 2', run: () => chain().toggleCodeBlock().run(), active: () => is('codeBlock') },
   { key: 'hr', label: 'Divider', title: 'Divider (---)', icon: 'M4 12h16', run: () => chain().setHorizontalRule().run() },
   { key: 'image', label: 'Image', title: 'Add an image (or paste / drop one)', icon: 'M4 6h16v13H4zM4 15.5l4.5-4.5 4 4 2.5-2.5 5 5M15.5 9.5h.01', run: () => imageInput.value?.click() }
 ]
+
+// ---------- On selected text ----------
+// With a mouse only: phones have their own bar above the keyboard, and their own menu on a selection
+const BUBBLE_KEYS = ['bold', 'italic', 'underline', 'strike', 'code', 'link', '|', 'bullets', 'numbers', 'tasks']
+const BUBBLE: (Cmd | '|')[] = BUBBLE_KEYS.map(k => (k === '|' ? '|' : TOOLS.find((t): t is Cmd => t !== '|' && t.key === k)!))
+const showBubble = ({ editor: e, state }: { editor: Editor, state: EditorState }) => {
+  const sel = state.selection
+  return e.isEditable && sel instanceof TextSelection && !sel.empty && !!state.doc.textBetween(sel.from, sel.to).trim()
+    && !e.isActive('codeBlock') && matchMedia('(pointer: fine)').matches
+}
 
 // ---------- Links ----------
 function setLink() {
@@ -273,8 +305,13 @@ defineExpose({
 </script>
 
 <template>
-  <div class="note-editor" :style="{ '--keyboard': `${keyboard}px` }">
+  <div class="note-editor" :class="{ bare }" :style="{ '--keyboard': `${keyboard}px` }">
     <div class="toolbar" role="toolbar" aria-label="Formatting">
+      <button type="button" class="style-btn" aria-haspopup="menu" :aria-label="`Text style: ${styleName()}`" title="Text style" @mousedown.prevent @click="openStyles">
+        <span>{{ styleName() }}</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
+      </button>
+      <span class="sep" aria-hidden="true" />
       <template v-for="(t, i) in TOOLS" :key="t === '|' ? `sep${i}` : t.key">
         <span v-if="t === '|'" class="sep" aria-hidden="true" />
         <button
@@ -294,6 +331,31 @@ defineExpose({
       </template>
       <input ref="imageInput" type="file" accept="image/*" multiple hidden @change="onPickImage">
     </div>
+
+    <BubbleMenu v-if="editor" :editor="editor" :should-show="showBubble" :options="{ placement: 'top', offset: 8, flip: true, shift: { padding: 8 } }" class="bubble" role="toolbar" aria-label="Format selected text">
+      <button type="button" class="style-btn" aria-haspopup="menu" :aria-label="`Text style: ${styleName()}`" title="Text style" @mousedown.prevent @click="openStyles">
+        <span>{{ styleName() }}</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
+      </button>
+      <span class="sep" aria-hidden="true" />
+      <template v-for="(t, i) in BUBBLE" :key="t === '|' ? `bsep${i}` : t.key">
+        <span v-if="t === '|'" class="sep" aria-hidden="true" />
+        <button
+          v-else
+          type="button"
+          class="tool"
+          :class="{ on: t.active?.() }"
+          :aria-pressed="t.active ? !!t.active() : undefined"
+          :aria-label="t.label"
+          :title="t.title"
+          @mousedown.prevent
+          @click="t.run()"
+        >
+          <svg v-if="t.icon" viewBox="0 0 24 24" aria-hidden="true"><path :d="t.icon" /></svg>
+          <span v-else class="tool-text">{{ t.label }}</span>
+        </button>
+      </template>
+    </BubbleMenu>
 
     <EditorContent :editor="editor" class="content" />
 
@@ -388,6 +450,46 @@ defineExpose({
   stroke-linejoin: round;
 }
 
+/* The text style dropdown, named after the current style */
+.style-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  min-width: 7.5rem;
+  height: 2.25rem;
+  padding: 0 0.4rem 0 0.65rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+.style-btn:hover {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.style-btn svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bubble .style-btn {
+  min-width: 0;
+  height: 2rem;
+}
+
 .tool-text {
   font-size: 0.78rem;
   font-weight: 700;
@@ -403,6 +505,34 @@ defineExpose({
 .content {
   flex: 1;
   min-height: 0;
+}
+
+/* The bar on selected text */
+.bubble {
+  z-index: 350;
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.25rem;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--line), 0 12px 28px -8px rgb(var(--shadow) / 0.35);
+}
+
+.bubble .tool {
+  min-width: 2rem;
+  height: 2rem;
+}
+
+.bubble .sep {
+  margin: 0 0.15rem;
+}
+
+/* Focus mode on a computer: only the words */
+@media (min-width: 761px) {
+  .note-editor.bare .toolbar {
+    display: none;
+  }
 }
 
 .counts {
@@ -577,6 +707,11 @@ defineExpose({
     min-width: 2.75rem;
     height: 2.75rem;
     flex: none;
+  }
+
+  .style-btn {
+    flex: none;
+    height: 2.75rem;
   }
 
   .counts {

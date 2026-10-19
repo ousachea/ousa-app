@@ -66,6 +66,32 @@ const { prefs } = usePrefs()
 // It's the same Google account as the password vault.
 const { vault, signOut } = useVault()
 const signedIn = computed(() => !['loading', 'signed-out'].includes(vault.status))
+
+// Sync status lives here only: the open page's own lists when it has any, else the session as a whole
+const pageSync = useSyncSources()
+const session = useSync()
+const syncState = computed(() => {
+  const page = pageSync.state.value
+  if (page && page !== 'demo' && page !== 'device') return page
+  const s = session.state.status
+  return s === 'starting' ? 'loading' : s
+})
+const SYNC_COPY: Record<string, { label: string, detail?: string }> = {
+  'loading': { label: 'Connecting…' },
+  'device': { label: 'Connecting…' },
+  'saving': { label: 'Saving…' },
+  'synced': { label: 'Synced' },
+  'offline': { label: 'Offline', detail: 'Changes are kept on this device and sync when Firebase is back.' },
+  'error': { label: 'Sync error', detail: 'Firebase didn’t accept the latest changes. They’re safe on this device.' },
+  'needs-setup': { label: 'Needs setup', detail: 'Firebase needs a one-time setup before it can store your data.' }
+}
+const syncCopy = computed(() => SYNC_COPY[syncState.value] ?? SYNC_COPY.loading!)
+const syncWhy = computed(() => (syncState.value === 'offline' ? offlineHelp(session.state.offlineReason) : ''))
+function retrySync() {
+  pageSync.retry()
+  session.retry()
+  play('select')
+}
 const signInOpen = ref(false)
 
 function openSignIn() {
@@ -282,11 +308,14 @@ onBeforeUnmount(() => {
       <ClientOnly>
         <div v-if="vault.status !== 'loading'" class="account">
           <template v-if="signedIn">
-            <span class="live-dot" aria-hidden="true" />
-            <span class="account-text">
-              <strong>Live</strong>
+            <span class="live-dot" :data-state="syncState" aria-hidden="true" />
+            <span class="account-text" role="status">
+              <strong>{{ syncCopy.label }}</strong>
               <span class="email">{{ vault.email }}</span>
+              <span v-if="syncCopy.detail" class="sync-detail">{{ syncWhy || syncCopy.detail }}</span>
             </span>
+            <button v-if="syncState === 'offline' || syncState === 'error'" type="button" class="chip" @click="retrySync">Try again</button>
+            <NuxtLink v-else-if="syncState === 'needs-setup'" to="/settings#sync" class="chip" @click="open = false">Set up</NuxtLink>
             <button type="button" class="chip" @click="doSignOut">Sign out</button>
           </template>
           <template v-else>
@@ -527,6 +556,26 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background: #3ddc84;
   animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Anything but synced: a still dot in the state's colour */
+.live-dot[data-state='saving'] { background: var(--blue); }
+.live-dot[data-state='loading'] { background: var(--ink-3); }
+.live-dot[data-state='offline'],
+.live-dot[data-state='needs-setup'] { background: var(--orange); }
+.live-dot[data-state='error'] { background: var(--red); }
+.live-dot:not([data-state='synced'])::after { display: none; }
+
+.sync-detail {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+
+a.chip {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 @keyframes live-ping {

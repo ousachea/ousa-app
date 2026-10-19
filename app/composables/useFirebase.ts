@@ -55,6 +55,33 @@ export function loadFirebase(): Promise<FirebaseHandle> {
   return loading
 }
 
+/**
+ * loadFirebase, tried again until it works. A failed load (offline, a dropped connection, or in development
+ * Vite re-optimising its dependencies) used to leave the app showing signed out until a reload, though the
+ * session was still saved. `onFail` runs once, after the first failure, so the page can carry on meanwhile.
+ */
+export function loadFirebaseRetrying(onFail?: () => void): Promise<FirebaseHandle> {
+  return new Promise((resolve) => {
+    let failed = false
+    let attempt = 0
+    const tryNow = () => {
+      loadFirebase().then((fb) => {
+        window.removeEventListener('online', tryNow)
+        resolve(fb)
+      }, () => {
+        if (!failed) {
+          failed = true
+          onFail?.()
+          window.addEventListener('online', tryNow)
+        }
+        if (!firebaseConfigured()) return
+        setTimeout(tryNow, [2, 5, 15, 30, 60][Math.min(attempt++, 4)]! * 1000)
+      })
+    }
+    tryNow()
+  })
+}
+
 // Firebase waits for the page's own files (the browser's load event), so it never competes with them
 function pageLoaded() {
   if (document.readyState === 'complete') return Promise.resolve()

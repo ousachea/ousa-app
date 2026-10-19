@@ -152,21 +152,23 @@ export function startSync() {
     refresh()
     return
   }
-  authResolved = loadFirebase()
-    .then(({ auth, sdk }) => {
-      sdk.onAuthStateChanged(auth, (user) => {
-        if (user?.uid === engine?.uid) return
-        end()
-        if (user) begin(user.uid)
+  // Firebase couldn't load (offline on a first visit): this device's copy works as when signed out, and
+  // loading keeps being tried, so sync picks the saved session back up once it arrives
+  authResolved = new Promise<void>((resolve) => {
+    loadFirebaseRetrying(resolve)
+      .then(({ auth, sdk }) => {
+        sdk.onAuthStateChanged(auth, (user) => {
+          if (user?.uid === engine?.uid) return
+          end()
+          if (user) begin(user.uid)
+        })
+        return auth.authStateReady()
       })
-      return auth.authStateReady()
-    })
-    // Firebase couldn't load (offline on a first visit): this device's copy still works, as when signed out
-    .catch(() => {})
-    .then(() => {
-      authKnown = true
-      refresh()
-    })
+      .then(resolve)
+  }).then(() => {
+    authKnown = true
+    refresh()
+  })
 
   window.addEventListener('online', () => engine?.kick())
   window.addEventListener('offline', refresh)

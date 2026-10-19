@@ -260,6 +260,15 @@ function flash(id: string) {
   nextTick(() => document.getElementById(`bm-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
 }
 
+// The open folder is where a new link goes (save); this opens a folder and puts you in the address bar
+const savingTo = computed(() => (activeFolder.value && activeFolder.value !== UNFILED ? folderById(activeFolder.value) : undefined))
+function addInFolder(id = activeFolder.value) {
+  activeFolder.value = id
+  query.value = ''
+  linkField.value?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  focusField(linkField.value)
+}
+
 // A link that's already saved asks first (CHECKLIST.md #29)
 const duplicateOf = ref<Bookmark>()
 watch(linkInput, () => (duplicateOf.value = undefined))
@@ -985,6 +994,14 @@ async function refreshAllDetails() {
         :disabled="saving"
         @paste="onLinkPaste"
       >
+      <ClientOnly>
+        <button v-if="savingTo" type="button" class="omni-folder" :style="{ '--tag': folderColor(savingTo) }" :title="`New links go into ${pathText(folders, savingTo.id)}. Click to save to All bookmarks instead.`" @click="activeFolder = ALL_BOOKMARKS">
+          <FolderIcon :icon="savingTo.icon" :color="savingTo.color" />
+          <span class="omni-folder-name">{{ savingTo.name }}</span>
+          <svg class="omni-folder-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
+          <span class="sr-only">: saving into this folder. Save to All bookmarks instead</span>
+        </button>
+      </ClientOnly>
       <button v-if="canReadClipboard && !linkInput.trim() && !saving" type="button" class="omni-paste" title="Paste a link from the clipboard" @click="pasteFromClipboard">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9zM9 5.5H6.5A1.5 1.5 0 0 0 5 7v12.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5H15" /></svg>
         Paste
@@ -1115,6 +1132,8 @@ async function refreshAllDetails() {
             @move-folder="moveFolder"
             :item-dragging="draggingMarks"
             @drop-bookmark="(ids, folderId) => { draggingMarks = false; dropMarks(ids.split('\n'), folderId) }"
+            add-item-label="Add a bookmark here"
+            @add-item="addInFolder"
           />
 
           <div class="side-tools">
@@ -1133,6 +1152,9 @@ async function refreshAllDetails() {
               <FolderIcon v-if="activeFolderRecord" :icon="activeFolderRecord.icon" :color="activeFolderRecord.color" />
               {{ listTitle }}
             </h2>
+            <button v-if="savingTo" type="button" class="view-btn add-here" :aria-label="`Add a bookmark to ${savingTo.name}`" :title="`Add a bookmark to ${savingTo.name}`" @click="addInFolder()">
+              <ToolIcon name="plus" />
+            </button>
             <label class="search">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
               <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
@@ -1222,6 +1244,11 @@ async function refreshAllDetails() {
               <button type="button" class="btn btn-quiet btn-sm" @click="limit += PAGE">Show more ({{ shown.length - limit }} left)</button>
             </div>
           </template>
+
+          <div v-else-if="ready && items.length && savingTo && !query" class="empty">
+            <p>{{ savingTo.name }} is empty.</p>
+            <button type="button" class="btn btn-sm" @click="addInFolder()">Add a bookmark here</button>
+          </div>
 
           <div v-else-if="ready && items.length" class="empty">
             <p>Nothing matches{{ query ? ` “${query}”` : '' }}.</p>
@@ -1554,6 +1581,65 @@ async function refreshAllDetails() {
 .omnibox + :global(.field-error) {
   justify-content: center;
   margin-top: 0.6rem;
+}
+
+/* The folder a new link goes into, when one is open; clicking it saves to All bookmarks instead */
+.omni-folder {
+  flex: none;
+  max-width: 11rem;
+  min-height: 2rem;
+  padding: 0 0.55rem 0 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--tag, var(--accent)) 14%, var(--surface-2));
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.omni-folder:hover {
+  background: color-mix(in srgb, var(--tag, var(--accent)) 24%, var(--surface-2));
+}
+
+.omni-folder-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.omni-folder-x {
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+.omni-folder:hover .omni-folder-x { opacity: 1; }
+
+/* Same shape as the view switches beside it */
+.view-btn.add-here {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--accent);
+  background: var(--surface-2);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.add-here :deep(svg) {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .omni-icon {

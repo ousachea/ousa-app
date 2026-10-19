@@ -1,13 +1,13 @@
 import type { SyncState } from '~/composables/useCollection'
 
 // Where each list on the page keeps its data (DataSource registers one per list), gathered so the
-// app icon in the header can show a single sync dot for the whole page (components/SyncDot.vue).
+// Apps menu (FloatingNav) can show a single sync status for the whole page.
 // Only changed in the browser, after mount, so the server never shares it between visitors.
 export interface SyncSource { state: Ref<SyncState> | SyncState, retry: () => void }
 
 const sources = shallowReactive(new Map<symbol, SyncSource>())
 
-// The one the dot shows: whatever most needs your attention
+// The one the menu shows: whatever most needs your attention
 const RANK: SyncState[] = ['error', 'offline', 'needs-setup', 'saving', 'loading', 'device', 'demo', 'synced']
 
 export function useSyncSources() {
