@@ -1,14 +1,42 @@
 <script setup lang="ts">
 import type { FeatureKey } from '~/utils/features'
 
-// Settings → App features: every app against every feature (utils/features.ts).
-// Pick features to see only the apps that have them all; tick two or more apps to compare them,
-// and the features they don't share light up.
+// Settings → App features: every app against every feature (utils/features.ts), as cards (one per app,
+// its features as pills) or as a table (apps down, features across). Pick features to see only the apps
+// that have them all; tick two or more apps to compare them, and the features they don't share light up.
 const apps = TOOLS.filter(t => APP_FEATURES[t.to])
 const wanted = ref<FeatureKey[]>([])
 const comparing = ref<string[]>([])
 const onlyDiffs = ref(false)
 const { play } = useSound()
+
+// A line icon for each feature, in the column heads, the pills and the key
+const FEATURE_ICON: Record<FeatureKey, string> = {
+  sync: 'lucide:refresh-cw',
+  demo: 'lucide:flask-conical',
+  drag: 'lucide:grip-vertical',
+  folders: 'lucide:folder',
+  search: 'lucide:search',
+  views: 'lucide:layout-grid',
+  select: 'lucide:list-checks',
+  trash: 'lucide:trash-2',
+  quickAdd: 'lucide:zap',
+  drafts: 'lucide:file-pen',
+  formats: 'lucide:file-type',
+  copy: 'lucide:copy',
+  download: 'lucide:download'
+}
+
+// Cards or table, remembered; until you pick, phones get cards (the table is wide) and bigger screens the table
+type View = 'cards' | 'table'
+const savedView = useRemembered<View | ''>('features-view', '', v => v === '' || v === 'cards' || v === 'table')
+const narrow = ref(false)
+onMounted(() => (narrow.value = matchMedia('(max-width: 700px)').matches))
+const view = computed<View>(() => savedView.value || (narrow.value ? 'cards' : 'table'))
+function setView(v: View) {
+  savedView.value = v
+  play('select')
+}
 
 function toggleFeature(k: FeatureKey) {
   wanted.value = wanted.value.includes(k) ? wanted.value.filter(x => x !== k) : [...wanted.value, k]
@@ -22,6 +50,7 @@ function reset() {
   wanted.value = []
   comparing.value = []
   onlyDiffs.value = false
+  play('toggle-off')
 }
 
 const rows = computed(() => {
@@ -39,43 +68,78 @@ const differs = (k: FeatureKey) => {
 }
 const columns = computed(() => (onlyDiffs.value && compared.value.length ? FEATURES.filter(f => differs(f.key)) : FEATURES))
 const countOf = (to: string) => APP_FEATURES[to]?.length ?? 0
+const shareOf = (to: string) => countOf(to) / FEATURES.length
+const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) && columns.value.includes(f))
 </script>
 
 <template>
   <div class="features">
-    <div class="filters" role="group" aria-label="Show apps that have">
-      <span class="filters-label">Show apps with</span>
-      <button
-        v-for="f in FEATURES"
-        :key="f.key"
-        type="button"
-        class="chip"
-        :class="{ on: wanted.includes(f.key) }"
-        :aria-pressed="wanted.includes(f.key)"
-        :title="f.description"
-        @click="toggleFeature(f.key)"
-      >
-        {{ f.label }}
-      </button>
+    <!-- Filters, the view switch and Clear, together in one panel -->
+    <section class="panel toolbar">
+      <div class="toolbar-head">
+        <h3>Show apps with</h3>
+        <div class="views" role="radiogroup" aria-label="Show as">
+          <button type="button" role="radio" :aria-checked="view === 'cards'" @click="setView('cards')"><AppIcon name="lucide:layout-dashboard" />Cards</button>
+          <button type="button" role="radio" :aria-checked="view === 'table'" @click="setView('table')"><AppIcon name="lucide:table" />Table</button>
+        </div>
+      </div>
+      <div class="filters" role="group" aria-label="Show apps that have">
+        <button
+          v-for="f in FEATURES"
+          :key="f.key"
+          type="button"
+          class="chip"
+          :class="{ on: wanted.includes(f.key) }"
+          :aria-pressed="wanted.includes(f.key)"
+          :title="f.description"
+          @click="toggleFeature(f.key)"
+        >
+          <AppIcon :name="FEATURE_ICON[f.key]" />{{ f.label }}
+        </button>
+      </div>
+      <div class="compare-bar">
+        <p v-if="comparing.length < 2" class="note">
+          <AppIcon name="lucide:info" />
+          {{ comparing.length === 1 ? 'Tick one more app to compare them.' : 'Tick two or more apps to compare them.' }}
+        </p>
+        <template v-else>
+          <p class="note"><strong>Comparing {{ comparing.length }} apps.</strong> Features only some of them have are highlighted.</p>
+          <label class="check"><input v-model="onlyDiffs" type="checkbox">Only differences</label>
+        </template>
+        <span class="count">{{ rows.length }} of {{ apps.length }} apps</span>
+        <button v-if="wanted.length || comparing.length" type="button" class="btn btn-quiet btn-sm" @click="reset"><AppIcon name="lucide:x" />Clear</button>
+      </div>
+    </section>
+
+    <!-- ---------- Cards: one per app, its features as pills ---------- -->
+    <div v-if="view === 'cards'" class="cards">
+      <article v-for="a in rows" :key="a.to" class="panel card" :class="{ picked: comparing.includes(a.to) }">
+        <label class="card-head">
+          <span class="tile" :style="{ background: a.gradient ?? a.color, color: a.onColor ?? '#fff' }" aria-hidden="true"><ToolIcon :name="a.icon" /></span>
+          <span class="card-name">
+            <strong>{{ a.name }}</strong>
+            <small>{{ countOf(a.to) }} of {{ FEATURES.length }} features</small>
+          </span>
+          <input type="checkbox" :checked="comparing.includes(a.to)" :aria-label="`Compare ${a.name}`" @change="toggleCompare(a.to)">
+        </label>
+        <span class="bar" aria-hidden="true"><span :style="{ width: `${shareOf(a.to) * 100}%`, background: a.color }" /></span>
+        <ul v-if="featuresOf(a.to).length" class="pills">
+          <li v-for="f in featuresOf(a.to)" :key="f.key" :class="{ diff: differs(f.key), want: wanted.includes(f.key) }" :title="f.description">
+            <AppIcon :name="FEATURE_ICON[f.key]" />{{ f.label }}
+          </li>
+        </ul>
+        <p v-else class="none">{{ countOf(a.to) ? 'None of these differ.' : 'A single tool: no lists to save, so none of these apply.' }}</p>
+      </article>
     </div>
 
-    <div class="compare-bar">
-      <p v-if="comparing.length < 2" class="note">Tick two or more apps to compare them.</p>
-      <template v-else>
-        <p class="note"><strong>Comparing {{ comparing.length }} apps.</strong> Features only some of them have are highlighted.</p>
-        <label class="check"><input v-model="onlyDiffs" type="checkbox">Only show differences</label>
-      </template>
-      <button v-if="wanted.length || comparing.length" type="button" class="btn btn-quiet btn-sm" @click="reset">Clear</button>
-    </div>
-
-    <!-- The table scrolls sideways on its own on narrow screens; the app column stays put -->
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Features of each app">
+    <!-- ---------- Table: apps down, features across. Scrolls sideways on its own; the app column stays ---------- -->
+    <div v-else class="panel table-wrap" tabindex="0" role="region" aria-label="Features of each app">
       <table>
         <thead>
           <tr>
             <th scope="col" class="app-col">App</th>
-            <th v-for="f in columns" :key="f.key" scope="col" :title="f.description" :class="{ diff: differs(f.key) }">
-              <span>{{ f.label }}</span>
+            <th v-for="f in columns" :key="f.key" scope="col" :title="f.description" :class="{ diff: differs(f.key), want: wanted.includes(f.key) }">
+              <span class="col-head"><AppIcon :name="FEATURE_ICON[f.key]" /><span class="col-label">{{ f.label }}</span></span>
             </th>
           </tr>
         </thead>
@@ -84,13 +148,16 @@ const countOf = (to: string) => APP_FEATURES[to]?.length ?? 0
             <th scope="row" class="app-col">
               <label class="app">
                 <input type="checkbox" :checked="comparing.includes(a.to)" :aria-label="`Compare ${a.name}`" @change="toggleCompare(a.to)">
-                <span class="app-icon" :style="{ background: a.gradient ?? a.color, color: a.onColor ?? '#fff' }" aria-hidden="true"><ToolIcon :name="a.icon" /></span>
+                <span class="tile small" :style="{ background: a.gradient ?? a.color, color: a.onColor ?? '#fff' }" aria-hidden="true"><ToolIcon :name="a.icon" /></span>
                 <span class="app-name">{{ a.name }}</span>
-                <span class="app-count">{{ countOf(a.to) }}</span>
+                <span class="app-count" :title="`${countOf(a.to)} of ${FEATURES.length} features`">
+                  {{ countOf(a.to) }}
+                  <span class="mini-bar" aria-hidden="true"><span :style="{ width: `${shareOf(a.to) * 100}%`, background: a.color }" /></span>
+                </span>
               </label>
             </th>
-            <td v-for="f in columns" :key="f.key" :class="{ diff: differs(f.key) }">
-              <span v-if="hasFeature(a.to, f.key)" class="yes" :title="`${a.name}: ${f.label}`">
+            <td v-for="f in columns" :key="f.key" :class="{ diff: differs(f.key), want: wanted.includes(f.key) }">
+              <span v-if="hasFeature(a.to, f.key)" class="yes" :style="{ '--app': a.color }" :title="`${a.name}: ${f.label}`">
                 <AppIcon name="check" />
                 <span class="sr-only">Yes</span>
               </span>
@@ -99,17 +166,22 @@ const countOf = (to: string) => APP_FEATURES[to]?.length ?? 0
           </tr>
         </tbody>
       </table>
-      <p v-if="!rows.length" class="empty">No app has all of those. Take a feature off to see more.</p>
-      <p v-else-if="onlyDiffs && !columns.length" class="empty">These apps have exactly the same features.</p>
     </div>
 
-    <dl class="legend">
-      <div v-for="f in FEATURES" :key="f.key">
-        <dt>{{ f.label }}</dt>
-        <dd>{{ f.description }}</dd>
-      </div>
-    </dl>
-    <p class="note">Every app also has its own Settings and Import &amp; export, under the gear by its name.</p>
+    <p v-if="!rows.length" class="panel empty">No app has all of those. Take a feature off to see more.</p>
+    <p v-else-if="onlyDiffs && !columns.length" class="panel empty">These apps have exactly the same features.</p>
+
+    <!-- What each feature means, folded away until wanted -->
+    <details class="panel key">
+      <summary><AppIcon name="lucide:info" />What the features mean</summary>
+      <dl>
+        <div v-for="f in FEATURES" :key="f.key">
+          <dt><AppIcon :name="FEATURE_ICON[f.key]" />{{ f.label }}</dt>
+          <dd>{{ f.description }}</dd>
+        </div>
+      </dl>
+    </details>
+    <p class="foot">Every app also has its own Settings and Import &amp; export, under the gear by its name.</p>
   </div>
 </template>
 
@@ -117,44 +189,110 @@ const countOf = (to: string) => APP_FEATURES[to]?.length ?? 0
 .features {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
-.filters {
+/* ---------- Toolbar ---------- */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+}
+
+.toolbar-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.toolbar-head h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.views {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.views button {
+  display: inline-flex;
+  align-items: center;
   gap: 0.35rem;
-}
-
-.filters-label {
-  margin-right: 0.25rem;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--ink-2);
-}
-
-.chip {
   padding: 0.3rem 0.7rem;
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  background: none;
+  border: 0;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.views button[aria-checked='true'] {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(var(--shadow) / 0.15);
+}
+
+.views .app-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.7rem 0.32rem 0.55rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.chip .app-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--ink-3);
 }
 
 .chip:hover {
-  border-color: var(--ink-3);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink-3);
 }
 
 .chip.on {
   color: var(--on-accent, #fff);
   background: var(--accent);
-  border-color: var(--accent);
+  box-shadow: none;
+}
+
+.chip.on .app-icon {
+  color: inherit;
 }
 
 .compare-bar {
@@ -162,32 +300,168 @@ const countOf = (to: string) => APP_FEATURES[to]?.length ?? 0
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 1rem;
-  min-height: 2rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
 }
 
 .note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   margin: 0;
   font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
+.note .app-icon {
+  flex: none;
+  color: var(--ink-3);
+}
+
 .check {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   font-size: var(--text-sm);
   font-weight: 600;
 }
 
-.compare-bar .btn {
+.count {
   margin-left: auto;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
 }
 
+.compare-bar .btn .app-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* ---------- Cards ---------- */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: 0.75rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.95rem 1rem 1rem;
+  transition: box-shadow 0.15s;
+}
+
+.card.picked {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+}
+
+.card-name {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.card-name small {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+.tile {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  border-radius: 9px;
+}
+
+.tile.small {
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 0.85rem;
+  border-radius: 7px;
+}
+
+.bar,
+.mini-bar {
+  display: block;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: 999px;
+}
+
+.bar {
+  height: 5px;
+}
+
+.bar span,
+.mini-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pills li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem 0.2rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-radius: 999px;
+}
+
+.pills .app-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  color: var(--ink-3);
+}
+
+.pills li.want {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.pills li.diff {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--orange) 16%, var(--surface));
+}
+
+.none {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+}
+
+/* ---------- Table ---------- */
 .table-wrap {
   overflow-x: auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  padding: 0;
 }
 
 .table-wrap:focus-visible {
@@ -204,145 +478,229 @@ table {
 
 th,
 td {
-  padding: 0.45rem 0.4rem;
-  text-align: center;
   border-bottom: 1px solid var(--line);
 }
 
-tbody tr:last-child > * {
+tbody tr:last-child th,
+tbody tr:last-child td {
   border-bottom: 0;
 }
 
+/* From the top, so every icon sits on one line whether its name takes one line or two */
 thead th {
-  height: 7.5rem;
-  vertical-align: bottom;
+  padding: 0.8rem 0.1rem 0.65rem;
+  vertical-align: top;
   font-weight: 600;
   color: var(--ink-2);
-  white-space: nowrap;
 }
 
-/* Column names read upwards so thirteen of them fit */
-thead th:not(.app-col) span {
-  display: inline-block;
-  writing-mode: vertical-rl;
-  rotate: 180deg;
+/* Icon on top, the name level underneath, wrapping onto two short lines ("Recycle / Bin") */
+.col-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 3.1rem;
 }
 
+.col-head .app-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--ink-3);
+}
+
+.col-label {
+  max-width: 4rem;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: normal;
+}
+
+thead .app-col {
+  text-align: left;
+  vertical-align: bottom;
+  padding-left: 1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* The app column stays in view while the rest scrolls sideways */
 .app-col {
   position: sticky;
   left: 0;
   z-index: 1;
-  text-align: left;
+  min-width: 10rem;
   background: var(--surface);
   border-right: 1px solid var(--line);
 }
 
-thead .app-col {
-  vertical-align: bottom;
+tbody .app-col {
+  padding: 0.5rem 0.75rem 0.5rem 1rem;
+  text-align: left;
+  font-weight: 500;
 }
 
 .app {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 12rem;
-  font-weight: 600;
-  color: var(--ink);
+  gap: 0.45rem;
   cursor: pointer;
 }
 
-.app-icon {
-  flex: none;
-  width: 1.6rem;
-  height: 1.6rem;
-  display: grid;
-  place-items: center;
-  font-size: 0.95rem;
-  border-radius: 7px;
-}
-
+/* Long names wrap onto a second line rather than widening the column */
 .app-name {
   flex: 1;
-  white-space: nowrap;
+  min-width: 0;
+  line-height: 1.25;
 }
 
 .app-count {
-  min-width: 1.4rem;
-  font-size: var(--text-xs);
-  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
-  text-align: center;
   color: var(--ink-3);
 }
 
-tbody tr:hover > * {
-  background: var(--surface-2);
+.mini-bar {
+  width: 1.6rem;
+  height: 3px;
 }
 
-tr.picked > * {
+td {
+  padding: 0 0.1rem;
+  text-align: center;
+}
+
+tbody tr:hover th,
+tbody tr:hover td {
+  background: color-mix(in srgb, var(--ink) 3%, var(--surface));
+}
+
+tr.picked th,
+tr.picked td {
   background: color-mix(in srgb, var(--accent) 7%, var(--surface));
 }
 
-/* A feature the compared apps don't share */
-.diff {
-  background: color-mix(in srgb, var(--yellow) 18%, var(--surface));
+/* A feature you filtered by, and one the compared apps don't share */
+th.want,
+td.want {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
-thead th.diff {
-  color: var(--ink);
+th.diff,
+td.diff {
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
 }
 
+/* Has it: a small tick in the app's colour. Doesn't: a faint dot */
 .yes {
   display: inline-grid;
   place-items: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  color: #fff;
-  background: var(--green);
+  width: 1.3rem;
+  height: 1.3rem;
+  color: var(--app, var(--green));
+  background: color-mix(in srgb, var(--app, var(--green)) 14%, transparent);
   border-radius: 50%;
 }
 
-.yes svg {
-  width: 0.95rem;
-  height: 0.95rem;
-  fill: none;
-  stroke: currentColor;
+.yes .app-icon {
+  width: 0.8rem;
+  height: 0.8rem;
   stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .no {
   display: inline-block;
-  width: 0.5rem;
-  height: 2px;
-  background: var(--line);
-  border-radius: 2px;
-  vertical-align: middle;
+  width: 0.3rem;
+  height: 0.3rem;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 50%;
 }
 
 .empty {
   margin: 0;
-  padding: 1.25rem;
-  text-align: center;
-  color: var(--ink-2);
-}
-
-.legend {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 0.6rem 1.25rem;
-  margin: 0.25rem 0 0;
-}
-
-.legend dt {
+  padding: 1rem 1.15rem;
   font-size: var(--text-sm);
-  font-weight: 700;
+  color: var(--ink-2);
 }
 
-.legend dd {
-  margin: 0.1rem 0 0;
-  font-size: var(--text-xs);
+/* ---------- What the features mean ---------- */
+.key {
+  padding: 0;
+}
+
+.key summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.15rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.key summary::-webkit-details-marker {
+  display: none;
+}
+
+.key summary .app-icon {
+  color: var(--ink-3);
+}
+
+.key summary::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: auto;
+  border-right: 2px solid var(--ink-3);
+  border-bottom: 2px solid var(--ink-3);
+  rotate: 45deg;
+  translate: 0 -2px;
+  transition: rotate 0.2s;
+}
+
+.key[open] summary::after {
+  rotate: 225deg;
+  translate: 0 2px;
+}
+
+.key dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 0.85rem 1.25rem;
+  margin: 0;
+  padding: 0.25rem 1.15rem 1.1rem;
+}
+
+.key dt {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.key dt .app-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--ink-3);
+}
+
+.key dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
   color: var(--ink-2);
+}
+
+.foot {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
 }
 </style>
