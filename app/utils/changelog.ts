@@ -30,6 +30,15 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.3.0',
+    date: '2026-10-19',
+    changes: [
+      'Right-click opens the app’s own menu everywhere instead of the browser’s: search, back and reload, plus copy for selected text and open or copy for links. Text boxes keep the browser’s menu for spelling and paste, and Shift + right-click still shows it.',
+      'Sync status lives in the Apps menu now, not on each app’s icon: Synced, Saving, Offline, Sync error or Needs setup, with the reason and Try again when something’s wrong.',
+      'No more looking signed out after a dropped connection or an update: the app keeps trying and picks your session back up by itself.'
+    ]
+  },
+  {
     version: '2.2.0',
     date: '2026-10-18',
     changes: [
@@ -198,9 +207,11 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['See what your subscriptions cost each month and year, and what renews soon.'] }
   ],
   '/notes': [
+    { version: '1.1.0', date: '2026-10-19', changes: ['Select some text, or double-click a word, and a small formatting bar appears above it: bold, italic, underline, strikethrough, code, link, bullet list, numbered list and checklist.', 'Headings, quote and code block are one dropdown named after the current style, such as Normal text or Heading 2, with each one’s Markdown shortcut beside it.', 'Focus mode shows only the title and your words, full screen. Turn it on from the note’s header, the ⋯ menu or ⌘⇧F; Esc leaves it.'] },
     { version: '1.0.0', date: '2026-10-09', changes: ['Write notes with headings, lists, checklists you can tick, quotes, code, links and images.', 'Markdown shortcuts: # for a heading, - for a list, [ ] for a checklist, > for a quote.', 'Notes save by themselves as you type, work offline and sync to your other devices.', 'Folders (the same kind as Bookmarks), #tags, favourites at the top, Recent and Archived.', 'Link notes with [[ and see which notes link back.', 'Version history: go back to how a note was earlier.', 'Templates for meetings, projects and daily notes, or save your own.', 'Quick note (Q) saves a thought without opening the editor.', 'Search titles, text, folders and tags, with filters like tag:idea or is:favorite.', 'Import and export as Markdown, text, HTML or JSON; notes are in full backups too.', 'Select several to favourite, move, archive or delete them together.', SYNC, EXAMPLE, BIN, UNDO, MENU, SWIPE] }
   ],
   '/bookmarks': [
+    { version: '2.2.0', date: '2026-10-19', changes: ['With a folder open, the address bar shows that new links go into it; click the folder there to save to All bookmarks instead.', 'Add a bookmark straight into a folder with the + beside its name, or Add a bookmark here in the folder’s right-click menu.', 'An empty folder offers to add a bookmark.'] },
     { version: '2.1.0', date: '2026-10-08', changes: ['Find duplicates: bookmarks saved more than once, even under slightly different addresses (http/https, www, mobile site, trailing slash, #section, tracking codes).', 'Similar links too: the same site and title, or a page and the page just below it.', 'Pick which copy to keep and merge: folders, notes, pin and visits move onto it, and the rest go to the Recycle Bin. Or mark them as not duplicates.', 'Saving a link catches those same near-duplicates.'] },
     { version: '2.0.0', date: '2026-10-08', changes: ['Folders instead of tags, with folders inside folders. Your tags became folders automatically.', 'Give each folder an icon and a colour, and add folders from the top or bottom of the list.', 'A bookmark can be in several folders, shown as chips you can add and remove.', 'Drag a bookmark onto a folder to move it, or drag folders to reorder and nest them. Move to folder… in the right-click menu does the same.', 'Saving a link shows its title, description and preview image first, so you can edit them and choose folders.', 'The Recycle Bin link opens just your deleted bookmarks.'] },
     { version: '1.3.0', date: '2026-10-08', changes: ['A compact view: one line per bookmark.', 'Sort by recently updated or by folder.', 'Saving a link you already have asks first, and shows where it is.', 'New links suggest a folder based on the site.', 'Refresh a site’s icon from the right-click menu.', 'Drag pinned bookmarks into the order you like.', 'Import and export as JSON, CSV or your browser’s bookmarks file.', MENU, SWIPE, BIN, UNDO] },
