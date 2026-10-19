@@ -111,6 +111,9 @@ const accent = computed(() => (hydrated.value && prefs.accent !== 'apps'
   ? { override: true, color: `var(--${prefs.accent})`, on: '#fff' }
   : { override: false, color: tool.value.color, on: tool.value.onColor ?? '#fff' }))
 
+// Checkboxes (main.css) tick in the same ink as the app's buttons: dark on a light colour like yellow
+const checkInk = computed(() => (tool.value.onColor && tool.value.onColor !== '#fff' ? { '--check-mark': 'var(--check-mark-dark)', '--check-dash': 'var(--check-dash-dark)' } : {}))
+
 // Demo: on pages that have one, the app icon switches sample data on and off
 const demo = useDemoState(route.path)
 // Signed out (useSignInGate), an app runs on its example data until you sign in (useDemo holds it on).
@@ -134,7 +137,7 @@ function openSignIn() {
 </script>
 
 <template>
-  <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--accent-btn': tool.buttonColor, '--on-accent': tool.onColor ?? '#fff', '--width': props.width }">
+  <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--accent-btn': tool.buttonColor, '--on-accent': tool.onColor ?? '#fff', '--width': props.width, ...checkInk }">
     <SiteBar v-if="siteBar" back />
 
     <header v-if="header !== 'none'" class="head">
@@ -244,7 +247,7 @@ function openSignIn() {
     </Modal>
 
     <!-- The header keeps the app's own colour; buttons and highlights can use one accent everywhere -->
-    <div class="body" :style="accent.override ? { '--accent': accent.color, '--accent-btn': `var(--${prefs.accent}-btn, ${accent.color})`, '--on-accent': accent.on } : undefined">
+    <div class="body" :style="accent.override ? { '--accent': accent.color, '--accent-btn': `var(--${prefs.accent}-btn, ${accent.color})`, '--on-accent': accent.on, '--check-mark': 'var(--check-mark-light)', '--check-dash': 'var(--check-dash-light)' } : undefined">
       <SignInWall v-if="walled" :name="tool.name" :checking="gate.state.value === 'checking'" />
       <template v-else>
       <p v-if="example" class="demo-banner" role="status">

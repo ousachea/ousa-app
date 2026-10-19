@@ -109,7 +109,7 @@ export function usePrefs() {
   }
 }
 
-/** Condensed (the top bar's middle button, or a press of Shift on its own): every app in a centred column */
+/** Condensed (in the apps menu, or a press of Shift on its own): every app in a centred column */
 export function toggleCondensed() {
   const { prefs } = usePrefs()
   prefs.condensed = !prefs.condensed

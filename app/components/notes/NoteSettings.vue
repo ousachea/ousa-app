@@ -1,154 +1,112 @@
 <script setup lang="ts">
-import Modal from '~/components/Modal.vue'
 import type { Folder } from '~/utils/folders'
+import type { NoteSort, NoteView } from '~/utils/notes'
 
-// Notes → Settings (#49): how the editor looks and behaves, remembered on this device (useNotePrefs)
-// `inline`: just the options, for the gear in the Notes header (ToolPage's settings dialog)
-const props = defineProps<{ open?: boolean, folders: readonly Folder[], inline?: boolean }>()
-const emit = defineEmits<{ close: [] }>()
-const { prefs, reset } = useNotePrefs()
+// Notes → Settings (#49), in the app's settings popup (ToolPage). The same rows as every other app's
+// settings (SettingChoice, SettingRow), in three groups: writing (with a live preview of the text),
+// the list of notes, and where new notes go. Remembered on this device (useNotePrefs); sort and view
+// belong to the page, so they come in as models.
+const props = defineProps<{ folders: readonly Folder[], sorts: readonly { value: NoteSort, label: string }[] }>()
+const sort = defineModel<NoteSort>('sort', { required: true })
+const view = defineModel<NoteView>('view', { required: true })
+const { prefs, editorStyle, reset } = useNotePrefs()
+const { play } = useSound()
 
 const FONTS = [{ value: 'sans', label: 'Sans' }, { value: 'serif', label: 'Serif' }, { value: 'mono', label: 'Mono' }] as const
 const SIZES = [{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }] as const
 const LEADING = [{ value: 'tight', label: 'Tight' }, { value: 'normal', label: 'Normal' }, { value: 'relaxed', label: 'Relaxed' }] as const
 const WIDTHS = [{ value: 'center', label: 'Centred' }, { value: 'full', label: 'Full width' }] as const
+const VIEWS = [{ value: 'list', label: 'List' }, { value: 'grid', label: 'Cards' }, { value: 'compact', label: 'Compact' }] as const
+const PREVIEW = [{ value: 0, label: 'None' }, { value: 80, label: 'Short' }, { value: 140, label: 'Medium' }, { value: 240, label: 'Long' }] as const
 // Sub-folders indented under their parent, as in the folder list
 const folderOptions = computed(() => [
-  { value: '', label: 'No folder (or the open folder)' },
+  { value: '', label: 'No folder' },
   ...flatTree(props.folders).map(o => ({ value: o.folder.id, label: `${'— '.repeat(o.depth)}${o.folder.name}` }))
 ])
-const PREVIEW = [{ value: 0, label: 'None' }, { value: 80, label: 'Short' }, { value: 140, label: 'Medium' }, { value: 240, label: 'Long' }] as const
+
+function resetAll() {
+  reset()
+  play('toggle-off')
+}
 </script>
 
 <template>
-  <component :is="inline ? 'div' : Modal" v-bind="inline ? {} : { open, title: 'Notes settings' }" :class="{ 'inline-settings': inline }" @close="emit('close')">
-    <div class="settings">
-      <h3>Editor</h3>
-      <div class="row">
-        <span>Font</span>
-        <div class="seg" role="radiogroup" aria-label="Font">
-          <label v-for="o in FONTS" :key="o.value" :class="{ active: prefs.font === o.value }"><input v-model="prefs.font" type="radio" :value="o.value">{{ o.label }}</label>
-        </div>
-      </div>
-      <div class="row">
-        <span>Size</span>
-        <div class="seg" role="radiogroup" aria-label="Text size">
-          <label v-for="o in SIZES" :key="o.value" :class="{ active: prefs.size === o.value }"><input v-model="prefs.size" type="radio" :value="o.value">{{ o.label }}</label>
-        </div>
-      </div>
-      <div class="row">
-        <span>Line spacing</span>
-        <div class="seg" role="radiogroup" aria-label="Line spacing">
-          <label v-for="o in LEADING" :key="o.value" :class="{ active: prefs.leading === o.value }"><input v-model="prefs.leading" type="radio" :value="o.value">{{ o.label }}</label>
-        </div>
-      </div>
-      <div class="row">
-        <span>Note width</span>
-        <div class="seg" role="radiogroup" aria-label="Note width">
-          <label v-for="o in WIDTHS" :key="o.value" :class="{ active: prefs.width === o.value }"><input v-model="prefs.width" type="radio" :value="o.value">{{ o.label }}</label>
-        </div>
-      </div>
-      <label class="row check"><span>Spellcheck</span><input v-model="prefs.spellcheck" type="checkbox"></label>
+  <h3 class="settings-head">Writing</h3>
+  <!-- What a note looks like with these choices, as they change -->
+  <div class="sample" :style="editorStyle" aria-hidden="true">
+    <p class="sample-title">Weekend plans</p>
+    <p class="sample-text">Pick up the bike from the shop, then coffee with Dara at ten. Remember the charger, and book a table for Sunday.</p>
+  </div>
+  <SettingChoice v-model="prefs.font" title="Font" :options="FONTS" />
+  <SettingChoice v-model="prefs.size" title="Text size" :options="SIZES" />
+  <SettingChoice v-model="prefs.leading" title="Line spacing" :options="LEADING" />
+  <SettingChoice v-model="prefs.width" title="Note width" description="Centred keeps lines short and easy to read" :options="WIDTHS" />
+  <SettingRow v-model="prefs.spellcheck" title="Spellcheck" description="Underline words that look misspelled" />
 
-      <h3>Behaviour</h3>
-      <div class="row">
-        <span>New notes go in</span>
-        <AppSelect v-model="prefs.defaultFolder" class="folder-select" aria-label="New notes go in" :options="folderOptions" />
-      </div>
-      <p class="hint">Notes save by themselves as you type. Markdown shortcuts (# heading, - list, [ ] checklist, &gt; quote) always work.</p>
+  <h3 class="settings-head">Notes list</h3>
+  <SettingChoice v-model="sort" title="Sort by" :options="sorts" />
+  <SettingChoice v-model="view" title="Show notes as" :options="VIEWS" />
+  <SettingChoice v-model="prefs.previewLength" title="Preview" description="How much of each note shows under its title" :options="PREVIEW" />
+  <SettingRow v-model="prefs.showDetails" title="Details under a note" description="Created and edited dates, words and folder, at the foot of the open note" />
 
-      <h3>Display</h3>
-      <div class="row">
-        <span>Preview</span>
-        <div class="seg" role="radiogroup" aria-label="Preview length">
-          <label v-for="o in PREVIEW" :key="o.value" :class="{ active: prefs.previewLength === o.value }"><input v-model="prefs.previewLength" type="radio" :value="o.value">{{ o.label }}</label>
-        </div>
-      </div>
-      <label class="row check"><span>Show details under a note (dates, words, folder)</span><input v-model="prefs.showDetails" type="checkbox"></label>
+  <h3 class="settings-head">New notes</h3>
+  <SettingChoice v-model="prefs.defaultFolder" title="New notes go in" description="With a folder open, new notes go there instead" :options="folderOptions" />
 
-      <button type="button" class="link reset" @click="reset">Reset Notes settings</button>
-    </div>
-  </component>
+  <p class="foot">
+    <span>Notes save by themselves as you type. Markdown shortcuts always work: # heading, - list, [ ] checklist, &gt; quote.</span>
+    <button type="button" class="link" @click="resetAll">Reset Notes settings</button>
+  </p>
 </template>
 
 <style scoped>
-.inline-settings {
-  padding-top: 0.85rem;
+/* The preview: a slice of a note in the chosen font, size and spacing */
+.sample {
+  margin: 0.4rem 0 0.6rem;
+  padding: 1rem 1.15rem;
+  background: var(--surface-2);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
-.settings {
-  display: grid;
-  gap: 0.7rem;
+/* No hairline above or below the card: it belongs to the heading */
+.settings-head + .sample,
+.sample + * {
+  border-top: 0 !important;
 }
 
-h3 {
-  margin: 0.6rem 0 0;
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.sample p {
+  margin: 0;
+  font-family: var(--note-font, inherit);
+}
+
+.sample-title {
+  font-size: calc(var(--note-size) * 1.3);
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.sample-text {
+  margin-top: 0.35rem !important;
+  font-size: var(--note-size);
+  line-height: var(--note-leading);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding-top: 1rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
-h3:first-child {
-  margin-top: 0;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.9rem;
-}
-
-.folder-select {
-  width: min(20rem, 60%);
-}
-
-.check input {
-  width: 1.15rem;
-  height: 1.15rem;
-  accent-color: var(--accent);
-}
-
-.seg {
-  display: inline-flex;
-  padding: 0.2rem;
-  background: color-mix(in srgb, var(--ink) 5%, var(--surface));
-  border-radius: 12px;
-}
-
-.seg label {
-  padding: 0.4rem 0.7rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border-radius: 9px;
-  cursor: pointer;
-}
-
-.seg label.active {
-  background: var(--surface);
-  box-shadow: 0 1px 3px rgb(var(--shadow) / 0.15);
-}
-
-.seg label:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-}
-
-.seg input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.hint {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--ink-2);
-}
-
-.reset {
-  justify-self: start;
-  margin-top: 0.5rem;
+.foot span {
+  flex: 1 1 18rem;
 }
 </style>

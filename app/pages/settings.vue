@@ -260,7 +260,7 @@ const volume = computed({
                 </div>
               </div>
               <SettingChoice v-model="prefs.density" title="Density" description="How much room lists and cards get. Compact fits more on screen." :options="DENSITIES" />
-              <SettingRow v-model="prefs.condensed" title="Condensed" description="Packs every app into a column in the middle of the window, so nothing is far to reach on a wide screen. Also in the middle of the top bar, or press Shift on its own." />
+              <SettingRow v-model="prefs.condensed" title="Condensed" description="Packs every app into a column in the middle of the window, so nothing is far to reach on a wide screen. Also in the Apps menu, or press Shift on its own." />
             </div>
           </div>
 

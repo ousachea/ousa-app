@@ -406,6 +406,17 @@ onBeforeUnmount(() => {
             </span>
             {{ isFullscreen ? 'Exit full screen' : 'Full screen' }}
           </button>
+          <!-- Condensed: every app in a column in the middle; only on screens wide enough for it to matter -->
+          <button type="button" class="foot-link condense" :aria-pressed="prefs.condensed" aria-keyshortcuts="Shift" :title="prefs.condensed ? 'Use the full width of the window' : 'Pack every app into a column in the middle'" @click="toggleCondensed">
+            <span class="foot-icon screen" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path v-if="prefs.condensed" d="M3 12h6M6 9l3 3-3 3M21 12h-6M18 9l-3 3 3 3" />
+                <path v-else d="M9 12H3M6 9l-3 3 3 3M15 12h6M18 9l3 3-3 3" />
+                <path d="M12 5v14" />
+              </svg>
+            </span>
+            {{ prefs.condensed ? 'Full width' : 'Condensed' }}<kbd>Shift</kbd>
+          </button>
         </ClientOnly>
         <p class="hint">Press a letter to open an app · <kbd>0</kbd>–<kbd>9</kbd> work anywhere · <kbd>Esc</kbd> back · <kbd>D</kbd> dark · <kbd>Shift</kbd> condensed</p>
       </footer>
@@ -801,6 +812,13 @@ button.foot-link {
 
 button.foot-link:hover {
   background: var(--surface-2);
+}
+
+/* Narrower than a condensed column already: nothing to switch */
+@media (max-width: 1360px) {
+  .foot-link.condense {
+    display: none;
+  }
 }
 
 .foot-icon.screen {

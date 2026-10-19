@@ -30,6 +30,14 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.4.0',
+    date: '2026-10-19',
+    changes: [
+      'Condensed moves from the top bar into the Apps menu, next to Full screen. Shift on its own still switches it.',
+      'Checkboxes have a new look in every app: a rounded square in the app’s colour with a tick, and a dash when only some are chosen.'
+    ]
+  },
+  {
     version: '2.3.0',
     date: '2026-10-19',
     changes: [
@@ -207,6 +215,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['See what your subscriptions cost each month and year, and what renews soon.'] }
   ],
   '/notes': [
+    { version: '1.3.0', date: '2026-10-19', changes: ['Notes settings are laid out like every other app’s, in three groups: Writing, Notes list and New notes.', 'A live preview shows a note in your font, text size and line spacing as you change them.'] },
     { version: '1.2.0', date: '2026-10-19', changes: ['Focus mode is calmer: bigger text in a narrower column, room to write in the middle of the screen, and soft edges at the top and bottom.', 'A small bar shows the save status and word count, with Dim, Full screen and Done; it hides while you type and the mouse brings it back.', 'Dim fades everything but the paragraph you’re writing. Switch it off from the bar; it’s remembered.', 'Notes settings open wider, and New notes go in uses the app’s own dropdown.'] },
     { version: '1.1.0', date: '2026-10-19', changes: ['Select some text, or double-click a word, and a small formatting bar appears above it: bold, italic, underline, strikethrough, code, link, bullet list, numbered list and checklist.', 'Headings, quote and code block are one dropdown named after the current style, such as Normal text or Heading 2, with each one’s Markdown shortcut beside it.', 'Focus mode shows only the title and your words, full screen. Turn it on from the note’s header, the ⋯ menu or ⌘⇧F; Esc leaves it.'] },
     { version: '1.0.0', date: '2026-10-09', changes: ['Write notes with headings, lists, checklists you can tick, quotes, code, links and images.', 'Markdown shortcuts: # for a heading, - for a list, [ ] for a checklist, > for a quote.', 'Notes save by themselves as you type, work offline and sync to your other devices.', 'Folders (the same kind as Bookmarks), #tags, favourites at the top, Recent and Archived.', 'Link notes with [[ and see which notes link back.', 'Version history: go back to how a note was earlier.', 'Templates for meetings, projects and daily notes, or save your own.', 'Quick note (Q) saves a thought without opening the editor.', 'Search titles, text, folders and tags, with filters like tag:idea or is:favorite.', 'Import and export as Markdown, text, HTML or JSON; notes are in full backups too.', 'Select several to favourite, move, archive or delete them together.', SYNC, EXAMPLE, BIN, UNDO, MENU, SWIPE] }

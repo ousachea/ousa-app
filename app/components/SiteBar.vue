@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// The bar at the top of every page: the way back (or home) on the left, the Condensed switch in the
-// middle, search and the apps menu on the right. It sits in the page like any other row, at the page's
+// The bar at the top of every page: the way back (or home) on the left, search and the apps menu on
+// the right (Condensed is in the apps menu). It sits in the page like any other row, at the page's
 // own width, so it never covers anything.
 const props = defineProps<{ back?: boolean }>()
 
@@ -9,10 +9,6 @@ const { open, toggleMenu } = useAppMenu()
 const { openPalette } = usePalette()
 const { vault } = useVault()
 const signedIn = computed(() => !['loading', 'signed-out'].includes(vault.status))
-
-// Condensed: every app in a column in the middle of the window (toggleCondensed in usePrefs; Shift on its
-// own does the same). Only shown on screens wide enough for it to make a difference.
-const { prefs } = usePrefs()
 
 const isMac = ref(false)
 onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
@@ -42,25 +38,6 @@ function goBack(e: MouseEvent) {
       <AppLogo class="logo" />
       <span class="brand-name">Ousa’s Apps</span>
     </NuxtLink>
-
-    <ClientOnly>
-      <button
-        type="button"
-        class="bar-btn condense"
-        :class="{ on: prefs.condensed }"
-        :aria-pressed="prefs.condensed"
-        aria-keyshortcuts="Shift"
-        :title="prefs.condensed ? 'Use the full width of the window (Shift)' : 'Pack every app into a column in the middle (Shift)'"
-        @click="toggleCondensed"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path v-if="prefs.condensed" d="M3 12h6M6 9l3 3-3 3M21 12h-6M18 9l-3 3 3 3" />
-          <path v-else d="M9 12H3M6 9l-3 3 3 3M15 12h6M18 9l3 3-3 3" />
-          <path d="M12 5v14" />
-        </svg>
-        <span class="label">Condensed</span>
-      </button>
-    </ClientOnly>
 
     <div class="tools">
       <button type="button" class="bar-btn search" aria-keyshortcuts="Control+K Meta+K" title="Search everything" @click="open = false; openPalette()">
@@ -102,9 +79,8 @@ function goBack(e: MouseEvent) {
 .site-bar {
   width: 100%;
   max-width: var(--width, var(--page-width));
-  /* Equal sides keep the middle button in the true centre */
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
   min-height: 3rem;
@@ -169,36 +145,9 @@ function goBack(e: MouseEvent) {
   white-space: nowrap;
 }
 
-/* ---------- Middle: Condensed ---------- */
-.condense {
-  grid-column: 2;
-  justify-self: center;
-  color: var(--ink-2);
-}
-
-.condense svg {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.condense.on {
-  color: var(--ink);
-  box-shadow: 0 0 0 1.5px var(--ink-3);
-}
-
-/* Narrower than a condensed column already: nothing to switch */
-@media (max-width: 1360px) {
-  .bar-btn.condense {
-    display: none;
-  }
-}
-
 /* ---------- Right: search and apps ---------- */
 .tools {
-  grid-column: 3;
+  grid-column: 2;
   justify-self: end;
   display: flex;
   align-items: center;

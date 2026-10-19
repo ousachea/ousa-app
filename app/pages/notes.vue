@@ -1003,9 +1003,7 @@ function listMenu() {
 <template>
   <ToolPage header="bar" settings-wide>
     <template #settings>
-      <SettingChoice v-model="sort" title="Sort by" :options="SORTS" />
-      <SettingChoice v-model="view" title="Show notes as" :options="VIEWS.map(v => ({ value: v, label: v === 'grid' ? 'Cards' : v[0]!.toUpperCase() + v.slice(1) }))" />
-      <NoteSettings inline :folders="folders" />
+      <NoteSettings v-model:sort="sort" v-model:view="view" :folders="folders" :sorts="SORTS" />
     </template>
     <template #transfer>
       <button type="button" class="btn btn-quiet btn-sm" @click="transferOpen = true">More formats…</button>
