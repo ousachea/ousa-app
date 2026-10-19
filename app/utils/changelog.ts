@@ -34,7 +34,11 @@ export const APP_RELEASES: Release[] = [
     date: '2026-10-19',
     changes: [
       'Settings → Gauges: every kind of dial the apps use, plus more you could build, with the code to copy. Click a dial for a random value, or Play to watch them all move.',
-      'Settings → App features shows each app as a card with its features, or as a table you can read without turning your head. Filter by feature and tick apps to compare.'
+      'Settings → App features shows each app as a card with its features, or as a table you can read without turning your head. Filter by feature and tick apps to compare.',
+      'Pick a font in Settings → Appearance: the app’s own Bricolage, your device’s, rounded, serif or mono. Nothing extra is downloaded.',
+      'A text size slider, from Small to Huge, makes all the text bigger or smaller, and keeps a larger size you’ve set in your browser.',
+      'Icons across the apps come from one library, so the same thing looks the same everywhere.',
+      'Settings → Logos & icons lists every icon and brand logo the apps show, which apps use each one, and searches them all.'
     ]
   },
   {
@@ -133,7 +137,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Switch text between lowercase, UPPERCASE, Title Case and Sentence case.'] }
   ],
   '/password': [
-    { version: '2.1.0', date: '2026-10-19', changes: ['The strength meter is a small dial: bits of randomness on red, orange and green bands at the same cutoffs as Weak, Fair and Strong.'] },
+    { version: '2.1.0', date: '2026-10-19', changes: ['The strength meter is a small dial: bits of randomness on red, orange and green bands at the same cutoffs as Weak, Fair and Strong.', 'An animated eye shows and hides a saved password.', 'Icons next to each point of “How your passwords are protected”.'] },
     { version: '2.0.0', date: '2026-10-07', changes: ['Sign in with your Google account. The vault keeps its own master password, which never leaves your device.', 'On wide screens the password and its settings sit side by side.', 'Adding and editing a saved password opens in a popup.', TWO_CLICK] },
     { version: '1.2.0', date: '2026-10-06', changes: ['Reset a forgotten master password by email.', 'Master passwords can be 6 characters or more.'] },
     { version: '1.1.0', date: '2026-10-05', changes: ['Save passwords in a vault, encrypted on your device before they’re stored.'] },
@@ -182,7 +186,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Work out what a raise is really worth after Cambodian salary tax.'] }
   ],
   '/things': [
-    { version: '3.3.0', date: '2026-10-19', changes: ['A dial beside “Worth now” shows how much of what you paid everything still holds.'] },
+    { version: '3.3.0', date: '2026-10-19', changes: ['A dial beside “Worth now” shows how much of what you paid everything still holds.', 'Devices from brands like Apple, Xiaomi, Dell and DJI show the maker’s logo.'] },
     { version: '3.2.0', date: '2026-10-18', changes: ['No more automatic depreciation: what something is worth now stays at what you paid until you enter a resale price.', 'Company logos fill their tile, framed in the logo’s own colour, and Google shows its G.'] },
     { version: '3.1.0', date: '2026-10-11', changes: ['Tap a category under “Where the value is” to see only those things; tap it again to see everything.', 'Hide a category from the list with the eye beside it; tap its chip above the list to bring it back.', 'Leave something out of the totals (a work laptop, something lent out) from its right-click menu or by selecting several. It stays in the list, marked Not counted.', 'Import and export are now in Settings.'] },
     { version: '3.0.1', date: '2026-10-08', changes: ['Logos now show for Sony, Samsung, Google, Honor, Redmi, RedMagic and more brands.'] },
@@ -224,7 +228,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Count down to the dates that matter.'] }
   ],
   '/renewals': [
-    { version: '2.2.0', date: '2026-10-19', changes: ['Set a monthly limit to see what everything that renews costs a month against it, on a dial that turns orange near the limit and red over it.'] },
+    { version: '2.2.0', date: '2026-10-19', changes: ['Set a monthly limit to see what everything that renews costs a month against it, on a dial that turns orange near the limit and red over it.', 'Known services show their brand’s own logo, in its colours.'] },
     { version: '2.1.0', date: '2026-10-18', changes: ['The 30-day timeline shows your dates and public holidays too, each in its own colour.', 'One heads-up a day for everything in Calendar due today or tomorrow: renewals, dates and holidays.'] },
     { version: '2.0.0', date: '2026-10-08', changes: ['Each subscription shows its service’s icon automatically; pick another, a letter, or your own image link.', 'A live countdown that gets more exact as the date nears: months, then weeks, days, hours, and minutes and seconds in the last hour.', 'Status at a glance: Safe, Upcoming, Soon, Due and Expired, in words as well as colour.', 'Prices and totals in both dollars and riel, using today’s rate.', 'See what everything costs per day, week, month, quarter, half-year or year.', 'New billing options: every 6 months, and one-off dates that expire.'] },
     { version: '1.4.0', date: '2026-10-08', changes: ['Sort by soonest, most expensive or name.', 'Give subscriptions a category; well-known services suggest one.', TRANSFER, 'New subscriptions start with the currency and billing you used last.', MENU, SWIPE, BIN, UNDO, DRAFTS, CHECK] },
