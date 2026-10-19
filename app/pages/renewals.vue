@@ -28,7 +28,7 @@ const lastCycle = useRemembered<Renewal['cycle']>('renewals-cycle', 'monthly', v
 const blank = (): Omit<Renewal, 'id'> => ({ name: '', price: 0, currency: lastCurrency.value, cycle: lastCycle.value, nextDate: isoToday(), category: '', icon: '' })
 
 // Icon (#54): type a service to look like it, "Letter only", or paste an image link; empty = automatic
-const ICON_OPTIONS = [{ value: 'Letter only' }, ...SERVICES.map(s => ({ value: s.name, logo: siteLogo(s.domain) }))]
+const ICON_OPTIONS = [{ value: 'Letter only' }, ...SERVICES.map(s => ({ value: s.name, logo: s.brand ? brandLogoUrl(s.brand) : siteLogo(s.domain) }))]
 const iconText = ref('')
 const iconFrom = (text: string) => {
   const t = text.trim()
@@ -136,6 +136,25 @@ const monthlyUsd = computed(() => {
   }
   return sum
 })
+// A monthly limit for everything that renews (0 = none), on this device; the dial (components/gauge)
+// shows the monthly total against it
+const limitUsd = useRemembered<number>('renewals-limit', 0, v => typeof v === 'number' && v >= 0)
+const limitShare = computed(() => (limitUsd.value && monthlyUsd.value !== undefined ? monthlyUsd.value / limitUsd.value : 0))
+const limitTone = computed(() => (limitShare.value > 1 ? 'var(--red)' : limitShare.value >= 0.8 ? 'var(--orange)' : 'var(--green)'))
+const limitDraft = ref('')
+const editingLimit = ref(false)
+function editLimit() {
+  limitDraft.value = limitUsd.value ? String(limitUsd.value) : ''
+  editingLimit.value = true
+}
+function saveLimit() {
+  const v = Number(limitDraft.value.replace(/[$,\s]/g, ''))
+  if (!Number.isFinite(v) || v < 0) return
+  limitUsd.value = Math.round(v * 100) / 100
+  editingLimit.value = false
+  play(v ? 'success' : 'toggle-off')
+}
+
 // The chosen period's total, in dollars (converted for riel below)
 const periodUsd = computed(() => monthlyUsd.value === undefined ? undefined : monthlyUsd.value * PERIODS.find(p => p.value === period.value)!.perMonth)
 const totalText = (usd: number) => showIn.value === 'KHR' && rate.value
@@ -427,6 +446,24 @@ function del(r: Renewal) {
                     <button v-for="c in (['both', 'USD', 'KHR'] as const)" :key="c" type="button" class="link" :aria-pressed="showIn === c" @click="showIn = c">{{ c === 'both' ? 'both' : c === 'USD' ? '$' : '៛' }}</button>
                   </span>
                 </span>
+              </div>
+              <div class="limit">
+                <span class="label">Monthly limit</span>
+                <form v-if="!limitUsd || editingLimit" class="limit-form" @submit.prevent="saveLimit">
+                  <label class="limit-input"><span aria-hidden="true">$</span><input v-model="limitDraft" class="input" inputmode="decimal" placeholder="50" aria-label="Monthly limit in US dollars" autocomplete="off"></label>
+                  <button type="submit" class="btn btn-sm">Set</button>
+                  <button v-if="editingLimit" type="button" class="link" @click="editingLimit = false">Cancel</button>
+                </form>
+                <button v-else type="button" class="limit-view" :title="`${Math.round(limitShare * 100)}% of $${limitUsd} a month. Click to change.`" @click="editLimit">
+                  <span class="limit-dial" aria-hidden="true">
+                    <Gauge :value="Math.min(limitShare, 1)" :min="0" :max="1" :start-angle="60" :end-angle="300" :radius="200" :padding="22" fit="content" transition :initial-value="0">
+                      <GaugeTrack :width="34" color="var(--ink)" :opacity="0.08" />
+                      <GaugeArc :width="34" :color="limitTone" />
+                      <GaugeText :y="-10" :font-size="92" weight="bold" color="var(--ink)">{{ Math.round(limitShare * 100) }}%</GaugeText>
+                    </Gauge>
+                  </span>
+                  <span class="total-note">of ${{ limitUsd.toLocaleString('en-US') }}</span>
+                </button>
               </div>
               <div>
                 <span class="label">Due soon</span>
@@ -729,6 +766,44 @@ function del(r: Renewal) {
 .summary > div {
   display: flex;
   flex-direction: column;
+}
+
+.limit-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.limit-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--ink-2);
+}
+
+.limit-input .input {
+  width: 5rem;
+}
+
+.limit-view {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  margin-top: 0.3rem;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.limit-dial {
+  width: 4.75rem;
 }
 
 .label {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import type { EffectsPreference } from '~/composables/useEffects'
-import type { Density, MotionPreference, Prefs } from '~/composables/usePrefs'
+import { TEXT_SIZE, type Density, type FontChoice, type MotionPreference, type Prefs } from '~/composables/usePrefs'
 import { getPack, packNames, type CueName, type PackName } from 'uisfx'
 
 const sound = useSound()
@@ -11,17 +11,19 @@ const { theme, setTheme } = useTheme()
 // ---------- Sections ----------
 // One section at a time, picked from the menu down the side (a row of chips on phones). The hash keeps
 // the old links working (#sync, #data, #about), and "Find a setting" narrows the menu by keyword.
-type SectionId = 'appearance' | 'performance' | 'behaviour' | 'sync' | 'data' | 'sound' | 'features' | 'about'
+type SectionId = 'appearance' | 'performance' | 'behaviour' | 'sync' | 'data' | 'sound' | 'features' | 'gauges' | 'icons' | 'about'
 interface Section { id: SectionId, label: string, hint: string, icon: string, keywords: string }
 const SECTIONS: Section[] = [
-  { id: 'appearance', label: 'Appearance', hint: 'Theme, colours and density', icon: 'M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.6 0-.5-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.6 17 3 12 3zM7.5 12.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM10 8.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM14.5 8.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z', keywords: 'theme dark light mode accent colour color cube stickers density compact spacious comfortable condensed narrow width centre center' },
-  { id: 'performance', label: 'Performance', hint: 'Low-spec PC mode, effects, animations', icon: 'M13 3L5 13.5h6L10 21l8-10.5h-6z', keywords: 'low spec slow old computer pc fast smooth lite effects blur animations motion reduce speed' },
-  { id: 'behaviour', label: 'Behaviour', hint: 'Shortcuts, keyboards, deleting, autosave', icon: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4', keywords: 'keyboard shortcuts phone keypad full screen confirm delete autosave forms drafts default view list grid' },
-  { id: 'sync', label: 'Account & sync', hint: 'Sign in and sync your devices', icon: 'M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9M18.5 3.5v3.6h-3.6M5.5 20.5v-3.6h3.6', keywords: 'sign in sign out google account firebase sync devices cloud login' },
-  { id: 'data', label: 'Your data', hint: 'Back up and restore', icon: 'M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14', keywords: 'backup restore export import file data download' },
-  { id: 'sound', label: 'Sound', hint: 'Effects, volume and style', icon: 'M5 9.5h3l4.5-4v13l-4.5-4H5zM16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11', keywords: 'sound effects volume audio style pack mute' },
-  { id: 'features', label: 'App features', hint: 'What each app can do', icon: 'M4 5h16v14H4zM4 10h16M9.5 5v14', keywords: 'features compare apps table drag drop folders search sync demo which app' },
-  { id: 'about', label: 'About', hint: 'Version, what’s new, install', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5.5M12 7.6v.1', keywords: 'about version what’s new changelog install app shortcuts help' }
+  { id: 'appearance', label: 'Appearance', hint: 'Theme, colours, font and density', icon: 'lucide:palette', keywords: 'theme dark light mode accent colour color font typeface serif mono rounded text size bigger smaller cube stickers density compact spacious comfortable condensed narrow width centre center' },
+  { id: 'performance', label: 'Performance', hint: 'Low-spec PC mode, effects, animations', icon: 'lucide:zap', keywords: 'low spec slow old computer pc fast smooth lite effects blur animations motion reduce speed' },
+  { id: 'behaviour', label: 'Behaviour', hint: 'Shortcuts, keyboards, deleting, autosave', icon: 'lucide:sliders-horizontal', keywords: 'keyboard shortcuts phone keypad full screen confirm delete autosave forms drafts default view list grid' },
+  { id: 'sync', label: 'Account & sync', hint: 'Sign in and sync your devices', icon: 'lucide:refresh-cw', keywords: 'sign in sign out google account firebase sync devices cloud login' },
+  { id: 'data', label: 'Your data', hint: 'Back up and restore', icon: 'lucide:download', keywords: 'backup restore export import file data download' },
+  { id: 'sound', label: 'Sound', hint: 'Effects, volume and style', icon: 'lucide:volume-2', keywords: 'sound effects volume audio style pack mute' },
+  { id: 'features', label: 'App features', hint: 'What each app can do', icon: 'lucide:table', keywords: 'features compare apps table drag drop folders search sync demo which app' },
+  { id: 'gauges', label: 'Gauges', hint: 'Every dial the apps use, to copy', icon: 'lucide:gauge', keywords: 'gauge dial meter needle ring arc reference components code design' },
+  { id: 'icons', label: 'Logos & icons', hint: 'Every icon and logo the apps use, and where', icon: 'lucide:shapes', keywords: 'icons logos brands lucide simple icons svg reference components code design' },
+  { id: 'about', label: 'About', hint: 'Version, what’s new, install', icon: 'lucide:info', keywords: 'about version what’s new changelog install app shortcuts help' }
 ]
 const isSection = (h: string): h is SectionId => SECTIONS.some(s => s.id === h)
 
@@ -102,6 +104,31 @@ const themeChoice = computed({
 })
 
 const { prefs } = usePrefs()
+// Font: each shown in itself. All but the first are already on the device, so they look a little
+// different on a Mac, Windows or a phone
+const FONTS: { value: FontChoice, label: string, hint: string }[] = [
+  { value: 'bricolage', label: 'Bricolage', hint: 'The app’s own' },
+  { value: 'system', label: 'System', hint: 'Your device’s' },
+  { value: 'rounded', label: 'Rounded', hint: 'Soft and friendly' },
+  { value: 'serif', label: 'Serif', hint: 'Like a book' },
+  { value: 'mono', label: 'Mono', hint: 'Like code' }
+]
+// Text size: any pixel size on the slider, with named points to jump to
+const TEXT_SIZE_POINTS = [
+  { px: 14, label: 'Small' },
+  { px: 16, label: 'Default' },
+  { px: 18, label: 'Large' },
+  { px: 20, label: 'Larger' },
+  { px: 22, label: 'Huge' }
+]
+function pickTextSize(px: number) {
+  prefs.textSize = px
+  sound.play('select')
+}
+function chooseFont(f: FontChoice) {
+  prefs.font = f
+  sound.play('select')
+}
 const DENSITIES: { value: Density, label: string }[] = [
   { value: 'spacious', label: 'Spacious' },
   { value: 'comfortable', label: 'Comfortable' },
@@ -203,13 +230,13 @@ const volume = computed({
       <div class="settings">
         <nav v-sticky-fit class="snav" aria-label="Settings sections">
           <label class="find">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+            <AppIcon name="search" />
             <input v-model="find" type="search" placeholder="Find a setting" aria-label="Find a setting">
           </label>
           <ul class="snav-list">
             <li v-for="s in found" :key="s.id">
               <button type="button" class="snav-item" :aria-current="current === s.id ? 'page' : undefined" @click="open(s.id)">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="s.icon" /></svg>
+                <AppIcon :name="s.icon" />
                 <span class="snav-text">
                   <span class="snav-label">{{ s.label }}</span>
                   <span class="snav-hint">{{ s.hint }}</span>
@@ -259,6 +286,65 @@ const volume = computed({
                   </label>
                 </div>
               </div>
+              <div class="setting-choice stacked">
+                <div class="text">
+                  <span class="title">Font</span>
+                  <span class="desc">The typeface for every app. Khmer text always uses Noto Sans Khmer.</span>
+                </div>
+                <div class="fonts" role="radiogroup" aria-label="Font">
+                  <label v-for="f in FONTS" :key="f.value" class="font-opt" :class="{ active: prefs.font === f.value }" :style="{ '--sample': `var(--font-${f.value})` }">
+                    <input type="radio" name="font" :value="f.value" :checked="prefs.font === f.value" @change="chooseFont(f.value)">
+                    <span class="font-aa" aria-hidden="true">Aa</span>
+                    <span class="font-name">{{ f.label }}</span>
+                    <span class="font-hint">{{ f.hint }}</span>
+                  </label>
+                </div>
+              </div>
+              <div class="setting-choice">
+                <div class="text">
+                  <span id="text-size-title" class="title">Text size</span>
+                  <span class="desc">Makes all text, and the room around it, smaller or bigger.</span>
+                </div>
+                <div class="size-control">
+                  <span class="size-a" aria-hidden="true">A</span>
+                  <div class="size-track" :style="{ '--min': TEXT_SIZE.min, '--max': TEXT_SIZE.max }">
+                    <input
+                      v-model.number="prefs.textSize"
+                      type="range"
+                      :min="TEXT_SIZE.min"
+                      :max="TEXT_SIZE.max"
+                      step="1"
+                      list="text-size-marks"
+                      aria-labelledby="text-size-title"
+                      :aria-valuetext="`${prefs.textSize} pixels${TEXT_SIZE_POINTS.find(p => p.px === prefs.textSize) ? `, ${TEXT_SIZE_POINTS.find(p => p.px === prefs.textSize)!.label}` : ''}`"
+                      @change="sound.play('select')"
+                    >
+                    <datalist id="text-size-marks"><option v-for="p in TEXT_SIZE_POINTS" :key="p.px" :value="p.px" /></datalist>
+                    <div class="size-points">
+                      <button
+                        v-for="p in TEXT_SIZE_POINTS"
+                        :key="p.px"
+                        type="button"
+                        class="size-point"
+                        :class="{ on: prefs.textSize === p.px }"
+                        :style="{ '--at': p.px }"
+                        :aria-pressed="prefs.textSize === p.px"
+                        @click="pickTextSize(p.px)"
+                      >
+                        {{ p.label }}
+                      </button>
+                    </div>
+                  </div>
+                  <span class="size-a big" aria-hidden="true">A</span>
+                  <output class="size-value">{{ prefs.textSize }} px</output>
+                </div>
+              </div>
+              <div class="type-preview" aria-label="Preview">
+                <span class="preview-label">Preview</span>
+                <strong class="preview-title">Gold tracker</strong>
+                <p>Live gold price in chi and damlung, and what your gold is worth now.</p>
+                <p class="preview-row"><span class="preview-num">$4,148.00</span><span class="preview-km">សួស្តី · តម្លៃមាស</span><span class="btn btn-sm preview-button" aria-hidden="true">Add purchase</span></p>
+              </div>
               <SettingChoice v-model="prefs.density" title="Density" description="How much room lists and cards get. Compact fits more on screen." :options="DENSITIES" />
               <SettingRow v-model="prefs.condensed" title="Condensed" description="Packs every app into a column in the middle of the window, so nothing is far to reach on a wide screen. Also in the Apps menu, or press Shift on its own." />
             </div>
@@ -268,7 +354,7 @@ const volume = computed({
           <div v-else-if="current === 'performance'" class="group">
             <section class="panel lowspec" :class="{ on: prefs.lowSpec }">
               <div class="lowspec-head">
-                <span class="lowspec-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z" /></svg></span>
+                <span class="lowspec-icon" aria-hidden="true"><AppIcon name="zap" /></span>
                 <SettingRow v-model="lowSpec" class="lowspec-row" title="Low-spec PC mode" description="Makes every app lighter, so it runs smoothly and quickly on an old or slow computer." />
               </div>
               <ul class="lowspec-list">
@@ -386,6 +472,16 @@ const volume = computed({
           <!-- App features -->
           <div v-else-if="current === 'features'" class="group">
             <AppFeatures />
+          </div>
+
+          <!-- Gauges: a reference for the dial parts -->
+          <div v-else-if="current === 'gauges'" class="group">
+            <GaugeGallery />
+          </div>
+
+          <!-- Logos & icons: the shared library the apps draw from -->
+          <div v-else-if="current === 'icons'" class="group">
+            <IconGallery />
           </div>
 
           <!-- About -->
@@ -640,6 +736,209 @@ const volume = computed({
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+}
+
+/* Text size: a slider between a small and a big A, with named points under it to jump to */
+.size-control {
+  flex: 1 1 22rem;
+  max-width: 30rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.size-track {
+  /* The browser's slider thumb: the points line up with where its middle stops */
+  --thumb: 16px;
+  position: relative;
+  flex: 1;
+  min-width: 10rem;
+}
+
+.size-points {
+  position: relative;
+  height: 1.6rem;
+}
+
+.size-point {
+  position: absolute;
+  top: 0;
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * (var(--at) - var(--min)) / (var(--max) - var(--min)));
+  translate: -50% 0;
+  padding: 0.1rem 0.35rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ink-3);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--dur-fast), background-color var(--dur-fast);
+}
+
+/* A tick above each name */
+.size-point::before {
+  content: '';
+  position: absolute;
+  top: -0.3rem;
+  left: 50%;
+  width: 1px;
+  height: 0.3rem;
+  background: var(--line);
+}
+
+.size-point:hover {
+  color: var(--ink);
+}
+
+.size-point.on {
+  color: var(--accent);
+}
+
+.size-point:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.size-a {
+  flex: none;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.size-a.big {
+  font-size: 1.25rem;
+}
+
+.size-value {
+  flex: none;
+  min-width: 3.4rem;
+  height: 2rem;
+  display: grid;
+  place-items: center end;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Font: a card per typeface, each drawn in itself */
+.setting-choice.stacked {
+  flex-flow: column nowrap;
+  align-items: stretch;
+}
+
+.fonts {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.5rem;
+}
+
+.font-opt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.75rem 0.85rem;
+  font-family: var(--sample);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--dur-fast), background-color var(--dur-fast), scale var(--dur-fast);
+}
+
+.font-opt:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.font-opt:active {
+  scale: 0.97;
+}
+
+.font-opt.active {
+  background: var(--surface);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.font-opt:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.font-opt input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.font-aa {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.font-name {
+  font-weight: 600;
+}
+
+.font-hint {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+/* How the chosen font and size read, with a number, Khmer and a button */
+.type-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.25rem 0 0.85rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.type-preview p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.preview-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.preview-title {
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  margin-top: 0.35rem !important;
+}
+
+.preview-num {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.preview-button {
+  pointer-events: none;
 }
 
 .swatches {

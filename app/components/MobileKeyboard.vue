@@ -496,13 +496,13 @@ watch(() => route.path, () => field.value && close())
           </div>
           <!-- On the phone's keyboard: a way back to the app's -->
           <button v-if="!sheet && prefs.textKeyboard" type="button" tabindex="-1" class="chip" aria-label="Use the app keyboard" @click="useAppKeyboard">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" /></svg>
+            <AppIcon name="keyboard" />
           </button>
           <button v-if="!sheet" type="button" tabindex="-1" class="chip done" @click="done">
             Done
           </button>
           <button v-if="isText" type="button" tabindex="-1" class="chip hide" aria-label="Hide keyboard" @click="done">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+            <AppIcon name="chevron-down" />
           </button>
         </div>
 
@@ -562,7 +562,7 @@ watch(() => route.path, () => field.value && close())
               {{ layer === 'abc' ? '123' : 'ABC' }}
             </button>
             <button type="button" tabindex="-1" class="key fn" aria-label="Use your phone’s keyboard, for Khmer, emoji or voice" title="Phone keyboard: Khmer, emoji, voice" @click="usePhoneKeyboard">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.4 2.4 3.4 5.2 3.4 8.5s-1 6.1-3.4 8.5c-2.4-2.4-3.4-5.2-3.4-8.5s1-6.1 3.4-8.5z" /></svg>
+              <AppIcon name="globe" />
             </button>
             <button v-if="kind === 'email'" type="button" tabindex="-1" class="key letter" :class="{ pressed: pressed === '@' }" data-k="@" @pointerdown="keyDown('@')" @pointerup="keyUp" @pointerleave="keyUp" @pointercancel="keyUp">@</button>
             <button v-if="kind === 'url'" type="button" tabindex="-1" class="key letter" :class="{ pressed: pressed === '/' }" data-k="/" @pointerdown="keyDown('/')" @pointerup="keyUp" @pointerleave="keyUp" @pointercancel="keyUp">/</button>

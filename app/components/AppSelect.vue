@@ -126,7 +126,7 @@ function onListKey(e: KeyboardEvent) {
       @keydown="onTriggerKey"
     >
       <span class="value">{{ label }}</span>
-      <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
+      <AppIcon class="chevron" name="chevron-down" />
     </button>
 
     <div
@@ -174,7 +174,7 @@ function onListKey(e: KeyboardEvent) {
           @click="pick(i)"
         >
           <span>{{ o.label }}</span>
-          <svg v-if="o.value === model" class="check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          <AppIcon v-if="o.value === model" class="check" name="check" />
         </li>
         <li v-if="!shown.length" class="no-match" role="presentation">Nothing matches “{{ filter }}”</li>
       </ul>

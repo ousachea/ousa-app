@@ -9,15 +9,15 @@ const store = useBudgetStore()
 const { play } = useSound()
 
 const TABS: { value: BudgetTab, label: string, icon: string }[] = [
-  { value: 'dashboard', label: 'Dashboard', icon: 'M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z' },
-  { value: 'transactions', label: 'Transactions', icon: 'M5 7h14M5 12h14M5 17h9' },
-  { value: 'budgets', label: 'Budgets', icon: 'M12 3a9 9 0 1 0 9 9h-9z M15 3.5A9 9 0 0 1 20.5 9H15z' },
-  { value: 'categories', label: 'Categories', icon: 'M4 5h7v6H4zM13 5h7v6h-7zM4 13h7v6H4zM13 13h7v6h-7z' },
-  { value: 'recurring', label: 'Recurring', icon: 'M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4' },
-  { value: 'income', label: 'Income', icon: 'M12 19V5M6 11l6-6 6 6' },
-  { value: 'savings', label: 'Savings goals', icon: 'M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6L12 16.4 6.6 19.3l1.3-6L3.3 9.2l6.1-.6z' },
-  { value: 'reports', label: 'Reports', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
-  { value: 'settings', label: 'Settings', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 15H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.6 4.4V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5.3z' }
+  { value: 'dashboard', label: 'Dashboard', icon: 'lucide:layout-dashboard' },
+  { value: 'transactions', label: 'Transactions', icon: 'lucide:list' },
+  { value: 'budgets', label: 'Budgets', icon: 'lucide:chart-pie' },
+  { value: 'categories', label: 'Categories', icon: 'lucide:layout-grid' },
+  { value: 'recurring', label: 'Recurring', icon: 'lucide:repeat' },
+  { value: 'income', label: 'Income', icon: 'lucide:arrow-up' },
+  { value: 'savings', label: 'Savings goals', icon: 'lucide:star' },
+  { value: 'reports', label: 'Reports', icon: 'lucide:chart-column' },
+  { value: 'settings', label: 'Settings', icon: 'lucide:settings' }
 ]
 
 // App settings (the gear in the header): which section opens first
@@ -76,7 +76,7 @@ usePullToRefresh(async () => {
           :aria-current="tab === t.value ? 'page' : undefined"
           @click="selectTab(t.value)"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="t.icon" /></svg>
+          <AppIcon :name="t.icon" />
           <span>{{ t.label }}</span>
           <ClientOnly><span v-if="badge(t.value)" class="count" :aria-label="`${badge(t.value)} need attention`">{{ badge(t.value) }}</span></ClientOnly>
         </button>
@@ -103,7 +103,7 @@ usePullToRefresh(async () => {
 
       <!-- Phones: Quick Add stays in reach of the thumb on every section -->
       <button type="button" class="quick-add" aria-label="Add expense" @click="store.openEntry()">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        <AppIcon name="plus" />
         <span>Expense</span>
       </button>
 

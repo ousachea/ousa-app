@@ -320,7 +320,7 @@ onBeforeUnmount(() => {
           </template>
           <template v-else>
             <span class="cloud" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .4-8A6 6 0 0 0 6.3 9.6 4.5 4.5 0 0 0 7 18.5z" /></svg>
+              <AppIcon name="cloud" />
             </span>
             <span class="account-text">
               <strong>Saved on this device</strong>
@@ -346,7 +346,7 @@ onBeforeUnmount(() => {
       </div>
 
       <label class="search">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+        <AppIcon name="search" />
         <input
           ref="searchInput"
           v-model="query"
@@ -401,19 +401,14 @@ onBeforeUnmount(() => {
         <ClientOnly>
           <button v-if="canFullscreen" type="button" class="foot-link" data-fullscreen-toggle :aria-pressed="isFullscreen" @click="toggleFullscreen">
             <span class="foot-icon screen" aria-hidden="true">
-              <svg v-if="isFullscreen" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
-              <svg v-else viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+              <AppIcon :name="isFullscreen ? 'minimize' : 'maximize'" />
             </span>
             {{ isFullscreen ? 'Exit full screen' : 'Full screen' }}
           </button>
           <!-- Condensed: every app in a column in the middle; only on screens wide enough for it to matter -->
           <button type="button" class="foot-link condense" :aria-pressed="prefs.condensed" aria-keyshortcuts="Shift" :title="prefs.condensed ? 'Use the full width of the window' : 'Pack every app into a column in the middle'" @click="toggleCondensed">
             <span class="foot-icon screen" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path v-if="prefs.condensed" d="M3 12h6M6 9l3 3-3 3M21 12h-6M18 9l-3 3 3 3" />
-                <path v-else d="M9 12H3M6 9l-3 3 3 3M15 12h6M18 9l3 3-3 3" />
-                <path d="M12 5v14" />
-              </svg>
+              <AppIcon :name="prefs.condensed ? 'fold-horizontal' : 'unfold-horizontal'" />
             </span>
             {{ prefs.condensed ? 'Full width' : 'Condensed' }}<kbd>Shift</kbd>
           </button>

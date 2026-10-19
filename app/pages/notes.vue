@@ -1021,10 +1021,10 @@ function listMenu() {
           <h2 class="phone-title">Folders</h2>
           <div class="new-row">
             <button type="button" class="btn new-btn" title="New note (A, Alt+N)" @click="newNote()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>New note
+              <AppIcon name="plus" />New note
             </button>
             <button type="button" class="btn new-more" aria-label="New note from a template, or a quick note" title="Templates and quick note" @click="newMenu">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
+              <AppIcon name="chevron-down" />
             </button>
           </div>
 
@@ -1049,13 +1049,13 @@ function listMenu() {
           >
             <template #views>
               <nav class="views-nav" aria-label="Notes">
-                <button v-for="v in ([[NOTES_ALL, 'All notes', counts.all, 'M5 4.5h10l4 4v11H5zM14.5 4.5V9h4.5M8.5 12.5h7M8.5 16h5'], [NOTES_FAVORITES, 'Favourites', counts.favorites, 'M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z'], [NOTES_RECENT, 'Recent', 0, 'M12 4.5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15zM12 8v4l2.5 2'], [NOTES_ARCHIVED, 'Archived', counts.archived, 'M4 5h16v4H4zM5.5 9v10h13V9M10 13h4']] as const)" :key="v[0]" type="button" class="view-row" :class="{ on: active === v[0] && !searching }" :aria-current="active === v[0] ? 'true' : undefined" @click="showList(v[0])">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="v[3]" /></svg>
+                <button v-for="v in ([[NOTES_ALL, 'All notes', counts.all, 'lucide:file-text'], [NOTES_FAVORITES, 'Favourites', counts.favorites, 'lucide:star'], [NOTES_RECENT, 'Recent', 0, 'lucide:clock'], [NOTES_ARCHIVED, 'Archived', counts.archived, 'lucide:archive']] as const)" :key="v[0]" type="button" class="view-row" :class="{ on: active === v[0] && !searching }" :aria-current="active === v[0] ? 'true' : undefined" @click="showList(v[0])">
+                  <AppIcon :name="v[3]" />
                   <span>{{ v[1] }}</span>
                   <b v-if="v[2]">{{ v[2] }}</b>
                 </button>
                 <NuxtLink to="/trash?app=/notes" class="view-row">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5" /></svg>
+                  <AppIcon name="trash-2" />
                   <span>Recycle Bin</span>
                 </NuxtLink>
               </nav>
@@ -1077,11 +1077,11 @@ function listMenu() {
           <!-- Phones: Apple Notes' bottom bar -->
           <div class="phone-bar">
             <button type="button" class="bar-btn" aria-label="New folder" title="New folder" @click="openNewFolder()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5zM12 11v5M9.5 13.5h5" /></svg>
+              <AppIcon name="folder-plus" />
             </button>
             <span class="bar-count">{{ counts.all }} {{ counts.all === 1 ? 'note' : 'notes' }}</span>
             <button type="button" class="bar-btn" aria-label="New note" title="New note" @click="newNote()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5v-6" /><path d="M17.6 4.4a1.4 1.4 0 0 1 2 2L12 14l-2.7.7.7-2.7z" /></svg>
+              <AppIcon name="square-pen" />
             </button>
           </div>
         </aside>
@@ -1094,10 +1094,10 @@ function listMenu() {
           <div class="list-bar">
             <div class="phone-nav">
               <button type="button" class="back phone-back" @click="showFolders">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>Folders
+                <AppIcon name="chevron-left" />Folders
               </button>
               <button type="button" class="icon-btn" aria-label="Sort, view and select" title="Sort and view" @click="listMenu">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><circle cx="8.3" cy="12" r=".9" /><circle cx="12" cy="12" r=".9" /><circle cx="15.7" cy="12" r=".9" /></svg>
+                <AppIcon name="circle-ellipsis" />
               </button>
             </div>
             <div class="list-head">
@@ -1105,7 +1105,7 @@ function listMenu() {
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             </div>
             <label class="search">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+              <AppIcon name="search" />
               <input ref="searchInput" v-model="query" type="search" placeholder="Search notes" aria-label="Search notes" title="Words, or folder:work tag:idea is:favorite is:archived before:2026-10-01 after:…" @keydown.enter.prevent="shown[0] && openNoteById(shown[0].id)">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
@@ -1113,9 +1113,7 @@ function listMenu() {
               <span class="count">{{ shown.length }} {{ shown.length === 1 ? 'note' : 'notes' }}</span>
               <div class="views" role="radiogroup" aria-label="View">
                 <button v-for="v in VIEWS" :key="v" type="button" role="radio" class="view-btn" :aria-checked="view === v" :title="v[0]!.toUpperCase() + v.slice(1)" @click="view = v">
-                  <svg v-if="v === 'list'" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11" /><circle cx="4.75" cy="6.5" r="1.1" /><circle cx="4.75" cy="12" r="1.1" /><circle cx="4.75" cy="17.5" r="1.1" /></svg>
-                  <svg v-else-if="v === 'grid'" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></svg>
-                  <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 9.7h16M4 14.3h16M4 19h16" /></svg>
+                  <AppIcon :name="v === 'list' ? 'list' : v === 'grid' ? 'layout-grid' : 'align-justify'" />
                   <span class="sr-only">{{ v }}</span>
                 </button>
               </div>
@@ -1142,11 +1140,11 @@ function listMenu() {
                   @dragstart="onNoteDrag($event, n)"
                   @click.capture="sel.onRowClick($event, n.id)"
                 >
-                  <span v-if="!sel.selecting" class="drag-grip corner end" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg></span>
+                  <span v-if="!sel.selecting" class="drag-grip corner end" aria-hidden="true"><AppIcon name="grip-vertical" /></span>
                   <BulkCheck v-if="sel.selecting" :checked="sel.has(n.id)" :label="`Select ${displayTitle(n)}`" @pick="sel.pick(n.id, $event)" />
                   <button type="button" class="note-open" :aria-current="n.id === openId ? 'true' : undefined" @click="openNoteById(n.id)">
                     <span class="note-title">
-                      <svg v-if="n.favorite" class="fav" viewBox="0 0 24 24" aria-label="Favourite"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z" /></svg>
+                      <AppIcon v-if="n.favorite" class="fav" name="star" role="img" aria-label="Favourite" aria-hidden="false" />
                       <template v-for="(p, j) in titleParts(n)" :key="j"><mark v-if="p.hit">{{ p.t }}</mark><template v-else>{{ p.t }}</template></template>
                     </span>
                     <span v-if="view !== 'compact' && notePrefs.previewLength" class="note-preview"><template v-for="(p, j) in previewParts(n)" :key="j"><mark v-if="p.hit">{{ p.t }}</mark><template v-else>{{ p.t }}</template></template></span>
@@ -1192,11 +1190,11 @@ function listMenu() {
 
           <div class="phone-bar">
             <button type="button" class="bar-btn" aria-label="New from a template, or a quick note" title="Templates" @click="newMenu">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 4h8l4 4v10.5A1.5 1.5 0 0 1 17 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4zM9 12h6M9 15.5h4" /></svg>
+              <AppIcon name="file-text" />
             </button>
             <span class="bar-count">{{ shown.length }} {{ shown.length === 1 ? 'note' : 'notes' }}</span>
             <button type="button" class="bar-btn" aria-label="New note" title="New note" @click="newNote()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5v-6" /><path d="M17.6 4.4a1.4 1.4 0 0 1 2 2L12 14l-2.7.7.7-2.7z" /></svg>
+              <AppIcon name="square-pen" />
             </button>
           </div>
         </section>
@@ -1217,7 +1215,7 @@ function listMenu() {
                 <span>Dim</span>
               </button>
               <button v-if="canFullscreen" type="button" class="focus-tool" title="Full screen" aria-label="Full screen" @click="toggleFullscreen">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+                <AppIcon name="maximize" />
               </button>
               <button type="button" class="focus-tool exit" @click="toggleFocus(false)">
                 Done <kbd>Esc</kbd>
@@ -1226,7 +1224,7 @@ function listMenu() {
 
             <header class="editor-head">
               <button type="button" class="back" :aria-label="`Back to ${searching ? 'search' : listTitle}`" @click="closeNote">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg><span class="back-label">{{ searching ? 'Search' : listTitle }}</span>
+                <AppIcon name="chevron-left" /><span class="back-label">{{ searching ? 'Search' : listTitle }}</span>
               </button>
               <span class="status" :data-kind="status.kind" aria-live="polite">
                 <span class="dot" aria-hidden="true" /><span class="status-text">{{ status.text }}</span>
@@ -1234,28 +1232,26 @@ function listMenu() {
               </span>
               <span class="head-actions">
                 <button type="button" class="icon-btn focus-btn" :class="{ on: focusMode }" :aria-pressed="focusMode" :aria-label="focusMode ? 'Leave focus mode' : 'Focus mode'" :title="focusMode ? 'Leave focus mode (Esc)' : 'Focus mode: only the writing'" @click="toggleFocus()">
-                  <svg v-if="focusMode" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
-                  <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+                  <AppIcon :name="focusMode ? 'minimize' : 'maximize'" />
                 </button>
                 <button type="button" class="icon-btn" :class="{ on: openNote.favorite }" :aria-pressed="!!openNote.favorite" :aria-label="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" :title="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" @click="toggleFavorite(openNote)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z" /></svg>
+                  <AppIcon name="star" />
                 </button>
                 <button type="button" class="icon-btn width-btn" :class="{ on: notePrefs.width === 'full' }" :aria-pressed="notePrefs.width === 'full'" aria-label="Full width" :title="notePrefs.width === 'full' ? 'Centre the note' : 'Full width'" @click="toggleWidth">
-                  <svg v-if="notePrefs.width === 'full'" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h5M20 12h-5M7 9l2.5 3L7 15M17 9l-2.5 3 2.5 3" /></svg>
-                  <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12h17M6.5 9l-3 3 3 3M17.5 9l3 3-3 3" /></svg>
+                  <AppIcon :name="notePrefs.width === 'full' ? 'fold-horizontal' : 'move-horizontal'" />
                 </button>
                 <button type="button" class="icon-btn" aria-label="Copy note" title="Copy note" @click="copyNote(openNote)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.2" /><path d="M15.5 8.5V6.7a2.2 2.2 0 0 0-2.2-2.2H6.7a2.2 2.2 0 0 0-2.2 2.2v6.6a2.2 2.2 0 0 0 2.2 2.2h1.8" /></svg>
+                  <AppIcon name="copy" />
                 </button>
                 <button type="button" class="icon-btn history-btn" aria-label="Version history" title="Version history" @click="historyOpen = true">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v3h3M12 8v4l2.5 2" /></svg>
+                  <AppIcon name="history" />
                 </button>
                 <button type="button" class="icon-btn" aria-label="More actions" title="More" @click="moreMenu">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="18.5" cy="12" r="1.3" /></svg>
+                  <AppIcon name="ellipsis" />
                 </button>
                 <button v-if="isPhone && editingText" type="button" class="done" @pointerdown.prevent @click="doneEditing">Done</button>
                 <button v-else-if="isPhone" type="button" class="icon-btn compose" aria-label="New note" title="New note" @click="newNote()">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5v-6" /><path d="M17.6 4.4a1.4 1.4 0 0 1 2 2L12 14l-2.7.7.7-2.7z" /></svg>
+                  <AppIcon name="square-pen" />
                 </button>
               </span>
             </header>

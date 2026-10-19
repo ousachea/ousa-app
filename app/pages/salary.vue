@@ -708,8 +708,11 @@ function switchCurrency(next) {
               class="ring"
               role="img"
               :aria-label="keepRate === null ? 'No raise yet' : `You keep ${Math.round(keepRate)}% of the raise`"
-              :style="{ '--sweep': `${Math.max(0, Math.min(100, keepRate ?? 0))}%` }"
             >
+              <Gauge class="ring-gauge" :value="Math.max(0, Math.min(100, keepRate ?? 0))" :start-angle="180" :end-angle="540" :radius="200" :padding="18" transition :initial-value="0">
+                <GaugeTrack :width="36" color="#fff" :opacity="0.18" />
+                <GaugeArc :width="36" color="#7ee2a8" />
+              </Gauge>
               <span><strong>{{ keepRate === null ? '—' : `${Math.round(keepRate)}%` }}</strong>of the raise is yours</span>
             </div>
             <dl class="lift">
@@ -1080,16 +1083,21 @@ function switchCurrency(next) {
 
 /* The share of the raise you keep, as a ring */
 .ring {
+  position: relative;
   width: 9rem;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  background: conic-gradient(#7ee2a8 0 var(--sweep), rgb(255 255 255 / 0.18) var(--sweep) 100%);
-  transition: background 0.4s;
+}
+
+/* The ring (components/gauge) underneath, the words in its middle */
+.ring-gauge {
+  position: absolute;
+  inset: 0;
 }
 
 .ring span {
+  position: relative;
   width: calc(100% - 1.5rem);
   aspect-ratio: 1;
   display: flex;

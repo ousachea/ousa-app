@@ -696,8 +696,21 @@ function del(t: Thing) {
           <Step :n="2" title="See what it’s all worth" hint="What you paid, and what each is worth now once you enter a resale price.">
             <section v-if="items.length" class="panel summary">
               <div class="totals">
-                <span class="label">Worth now</span>
-                <strong class="worth">{{ rate ? formatMoney(totals.now, 'USD') : '…' }}</strong>
+                <div class="worth-row">
+                  <div>
+                    <span class="label">Worth now</span>
+                    <strong class="worth">{{ rate ? formatMoney(totals.now, 'USD') : '…' }}</strong>
+                  </div>
+                  <!-- How much of what you paid it all still holds (components/gauge) -->
+                  <div v-if="totals.paid" class="kept-dial" role="img" :aria-label="`Still worth ${Math.round((totals.now / totals.paid) * 100)}% of what you paid`">
+                    <Gauge :value="Math.min(totals.now / totals.paid, 1)" :min="0" :max="1" :start-angle="45" :end-angle="315" :radius="200" :padding="22" fit="content" transition :initial-value="0">
+                      <GaugeTrack :width="34" color="var(--ink)" :opacity="0.08" />
+                      <GaugeArc :width="34" color="var(--accent)" />
+                      <GaugeText :y="-8" :font-size="88" weight="bold" color="var(--ink)">{{ Math.round((totals.now / totals.paid) * 100) }}%</GaugeText>
+                      <GaugeText :y="80" :font-size="34" weight="semibold" color="var(--ink-2)">kept</GaugeText>
+                    </Gauge>
+                  </div>
+                </div>
                 <dl class="stats">
                   <div><dt>Paid</dt><dd>{{ formatMoney(totals.paid, 'USD') }}</dd></div>
                   <div>
@@ -756,10 +769,7 @@ function del(t: Thing) {
                       :title="hiddenTypes.includes(c.category) ? 'Show in the list' : 'Hide from the list'"
                       @click="toggleHidden(c.category)"
                     >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <template v-if="hiddenTypes.includes(c.category)"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4 9.5 6-.4.8-1.2 2-2.3 3.1M6.6 6.6C4.6 7.9 3.2 9.8 2.5 12c1 2 4.5 6 9.5 6 1.7 0 3.2-.5 4.5-1.2" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></template>
-                        <template v-else><path d="M2.5 12C3.5 10 7 6 12 6s8.5 4 9.5 6c-1 2-4.5 6-9.5 6s-8.5-4-9.5-6z" /><circle cx="12" cy="12" r="3" /></template>
-                      </svg>
+                      <AppIcon :name="hiddenTypes.includes(c.category) ? 'eye-off' : 'eye'" />
                     </button>
                   </li>
                 </ul>
@@ -825,7 +835,7 @@ function del(t: Thing) {
                     <b>{{ formatMoney(t.price, t.currency) }}</b>
                     <small>{{ formatDate(t.purchaseDate) }}</small>
                   </div>
-                  <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+                  <AppIcon class="arrow" name="arrow-right" />
                   <div class="col end">
                     <span class="k">Worth now</span>
                     <b>{{ formatMoney(worth(t), t.currency) }}</b>
@@ -879,7 +889,7 @@ function del(t: Thing) {
             <b>{{ formatMoney(viewing.price, viewing.currency) }}</b>
             <small>{{ formatDate(viewing.purchaseDate) }}</small>
           </div>
-          <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+          <AppIcon class="arrow" name="arrow-right" />
           <div class="col end">
             <span class="k">Worth now</span>
             <b>{{ formatMoney(worth(viewing), viewing.currency) }}</b>
@@ -1095,6 +1105,24 @@ function del(t: Thing) {
 }
 
 /* ---------- Summary: totals on the left, where the value is on the right ---------- */
+.worth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.worth-row > div:first-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kept-dial {
+  flex: none;
+  width: 5.25rem;
+}
+
 .summary {
   padding: 1.4rem 1.5rem;
   display: grid;

@@ -998,12 +998,12 @@ async function refreshAllDetails() {
         <button v-if="savingTo" type="button" class="omni-folder" :style="{ '--tag': folderColor(savingTo) }" :title="`New links go into ${pathText(folders, savingTo.id)}. Click to save to All bookmarks instead.`" @click="activeFolder = ALL_BOOKMARKS">
           <FolderIcon :icon="savingTo.icon" :color="savingTo.color" />
           <span class="omni-folder-name">{{ savingTo.name }}</span>
-          <svg class="omni-folder-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
+          <AppIcon class="omni-folder-x" name="x" />
           <span class="sr-only">: saving into this folder. Save to All bookmarks instead</span>
         </button>
       </ClientOnly>
       <button v-if="canReadClipboard && !linkInput.trim() && !saving" type="button" class="omni-paste" title="Paste a link from the clipboard" @click="pasteFromClipboard">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9zM9 5.5H6.5A1.5 1.5 0 0 0 5 7v12.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5H15" /></svg>
+        <AppIcon name="clipboard" />
         Paste
       </button>
       <button type="submit" class="btn" :disabled="saving">
@@ -1100,7 +1100,7 @@ async function refreshAllDetails() {
           v-bind="{ ...menuFor(() => bookmarkMenu(b), b.title), ...reorderPinned.bind(b, i) }"
           @click="opened(b)"
         >
-          <span class="drag-grip corner" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg></span>
+          <span class="drag-grip corner" aria-hidden="true"><AppIcon name="grip-vertical" /></span>
           <span class="ribbon" aria-hidden="true" />
           <span class="tile-icon">
             <img v-if="b.icon && !brokenIcons.has(b.icon)" :src="b.icon" alt="" referrerpolicy="no-referrer" @error="brokenIcons.add(b.icon)">
@@ -1138,7 +1138,7 @@ async function refreshAllDetails() {
 
           <div class="side-tools">
             <button v-if="items.length" type="button" class="btn btn-quiet btn-sm details-btn" :disabled="fetchingDetails" title="Read every site’s preview image, description, icon and name again" @click="refreshAllDetails">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4.5v4h-4" /></svg>
+              <AppIcon name="rotate-cw" />
               {{ fetchingDetails ? 'Getting site details…' : 'Get site details' }}
             </button>
             <button type="button" class="link" @click="dupesOpen = true">Find duplicates<template v-if="duplicateCount"> <span class="count-pill">{{ duplicateCount }}</span></template></button>
@@ -1156,7 +1156,7 @@ async function refreshAllDetails() {
               <ToolIcon name="plus" />
             </button>
             <label class="search">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+              <AppIcon name="search" />
               <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
@@ -1164,21 +1164,21 @@ async function refreshAllDetails() {
             <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             <div class="views" role="radiogroup" aria-label="View">
               <button type="button" role="radio" class="view-btn" :aria-checked="view === 'list'" title="List" @click="setView('list')">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11" /><circle cx="4.75" cy="6.5" r="1.1" /><circle cx="4.75" cy="12" r="1.1" /><circle cx="4.75" cy="17.5" r="1.1" /></svg>
+                <AppIcon name="list" />
                 <span class="sr-only">List</span>
               </button>
               <button type="button" role="radio" class="view-btn" :aria-checked="view === 'grid'" title="Grid" @click="setView('grid')">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></svg>
+                <AppIcon name="layout-grid" />
                 <span class="sr-only">Grid</span>
               </button>
               <button type="button" role="radio" class="view-btn" :aria-checked="view === 'compact'" title="Compact" @click="setView('compact')">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 9.7h16M4 14.3h16M4 19h16" /></svg>
+                <AppIcon name="align-justify" />
                 <span class="sr-only">Compact</span>
               </button>
             </div>
             <div v-if="view !== 'compact'" class="views">
               <button type="button" class="view-btn" :aria-pressed="showImages" :title="showImages ? 'Hide preview images' : 'Show preview images'" @click="toggleImages">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" /><circle cx="9" cy="10" r="1.6" /><path d="M20.5 15.5l-4.5-4.5-8.5 8" /><path v-if="!showImages" d="M4 4l16 16" /></svg>
+                <AppIcon :name="showImages ? 'image' : 'image-off'" />
                 <span class="sr-only">Preview images</span>
               </button>
             </div>
@@ -1189,11 +1189,11 @@ async function refreshAllDetails() {
               <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ 'flash': flashId === b.id, 'picked': sel.has(b.id), 'is-pinned': b.pinned, 'is-dupe': duplicateIds.has(b.id) }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @dragend="draggingMarks = false" @click.capture="sel.onRowClick($event, b.id)">
                 <!-- Drag to a folder: the whole row with a mouse, this grip with a finger -->
                 <button v-if="folders.length" type="button" class="grip" tabindex="-1" :aria-label="`Drag ${b.title} to a folder`" title="Drag to a folder" @pointerdown="touchDrag.start($event, dragIdsFor(b), dragLabel(dragIdsFor(b)))" @touchstart.stop @click.stop.prevent>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg>
+                  <AppIcon name="grip-vertical" />
                 </button>
                 <!-- Pinned: a ribbon hanging from the top edge -->
                 <span v-if="b.pinned" class="pin-ribbon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg>
+                  <AppIcon name="pin" />
                 </span>
                 <!-- The page's own preview image: a cover on cards, a thumbnail in the list -->
                 <img v-if="b.image && view !== 'compact' && !brokenImages.has(b.image)" class="mark-image" :src="b.image" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenImages = new Set(brokenImages).add(b.image!)">
@@ -1207,7 +1207,7 @@ async function refreshAllDetails() {
                   </label>
                 </span>
                 <div class="mark-body">
-                  <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<span v-if="b.pinned" class="sr-only"> (pinned)</span><svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" /></svg><span class="sr-only"> (opens in a new tab)</span></a>
+                  <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<span v-if="b.pinned" class="sr-only"> (pinned)</span><AppIcon class="ext" name="external-link" /><span class="sr-only"> (opens in a new tab)</span></a>
                   <span class="mark-meta">
                     <template v-if="b.siteName && b.siteName.toLowerCase() !== b.title.toLowerCase()">{{ b.siteName }} · </template>{{ hostOf(b.url) }} · added {{ ago(b.createdAt) }}<template v-if="b.visits"> · opened {{ b.visits }}×</template>
                     <button v-if="duplicateIds.has(b.id)" type="button" class="dupe-badge" title="Saved more than once. Open Find duplicates to merge them." @click="dupesOpen = true">Duplicate</button>
@@ -1230,10 +1230,10 @@ async function refreshAllDetails() {
                 </div>
                 <div class="mark-actions menu-dup">
                   <button type="button" class="icon-btn" :class="{ on: b.pinned }" :aria-pressed="b.pinned" :aria-label="b.pinned ? `Unpin ${b.title}` : `Pin ${b.title}`" :title="b.pinned ? 'Unpin' : 'Pin to the top'" @click="togglePin(b)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg>
+                    <AppIcon name="pin" />
                   </button>
                   <button type="button" class="icon-btn" :aria-label="`Edit ${b.title}`" title="Edit" @click="edit(b)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+                    <AppIcon name="pencil" />
                   </button>
                   <ConfirmDelete :name="b.title" @confirm="del(b)" />
                 </div>

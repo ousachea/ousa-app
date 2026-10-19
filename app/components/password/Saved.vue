@@ -216,8 +216,19 @@ onBeforeUnmount(() => clearTimeout(clipboardTimer))
                   <dt>Password</dt>
                   <dd class="secret">{{ revealed.has(item.id) ? item.password : '••••••••••••' }}</dd>
                   <span class="pair">
-                    <button type="button" class="btn btn-quiet btn-sm" :aria-pressed="revealed.has(item.id)" @click="toggleReveal(item.id)">
-                      {{ revealed.has(item.id) ? 'Hide' : 'Show' }}
+                    <button
+                      type="button"
+                      class="btn btn-quiet btn-sm reveal"
+                      :aria-pressed="revealed.has(item.id)"
+                      :aria-label="revealed.has(item.id) ? 'Hide password' : 'Show password'"
+                      :title="revealed.has(item.id) ? 'Hide password' : 'Show password'"
+                      @click="toggleReveal(item.id)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true" :class="{ off: revealed.has(item.id) }">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z" />
+                        <circle class="pupil" cx="12" cy="12" r="3" />
+                        <path class="slash" d="M3 3l18 18" pathLength="1" />
+                      </svg>
                     </button>
                     <button type="button" class="btn btn-quiet btn-sm" @click="copy(item.password, 'password')">Copy</button>
                   </span>
@@ -238,11 +249,26 @@ onBeforeUnmount(() => clearTimeout(clipboardTimer))
           <div class="panel how">
             <h2>How your passwords are protected</h2>
             <ul>
-              <li>Each entry is encrypted with AES-256 in this browser before it’s sent. Firebase only stores scrambled data.</li>
-              <li>Your master password never leaves this device. The key that unlocks the vault exists only in this tab.</li>
-              <li>The vault locks itself after 5 minutes without activity, and whenever the page reloads.</li>
-              <li>Copied passwords are cleared from the clipboard after 30 seconds.</li>
-              <li>Site icons load straight from each site, never through a third-party service.</li>
+              <li>
+                <AppIcon name="lock" />
+                <span>Each entry is encrypted with AES-256 in this browser before it’s sent. Firebase only stores scrambled data.</span>
+              </li>
+              <li>
+                <AppIcon name="key-round" />
+                <span>Your master password never leaves this device. The key that unlocks the vault exists only in this tab.</span>
+              </li>
+              <li>
+                <AppIcon name="clock" />
+                <span>The vault locks itself after 5 minutes without activity, and whenever the page reloads.</span>
+              </li>
+              <li>
+                <AppIcon name="clipboard-check" />
+                <span>Copied passwords are cleared from the clipboard after 30 seconds.</span>
+              </li>
+              <li>
+                <AppIcon name="globe" />
+                <span>Site icons load straight from each site, never through a third-party service.</span>
+              </li>
             </ul>
           </div>
         </aside>
@@ -498,12 +524,67 @@ dd.secret {
 
 .how ul {
   margin: 0.75rem 0 0;
-  padding-left: 1.1rem;
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
   font-size: 0.9rem;
   color: var(--ink-2);
+}
+
+.how li {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.how li .app-icon {
+  font-size: 1rem;
+  /* Sit on the first line of text */
+  margin-top: 0.15em;
+  color: var(--ink-3);
+}
+
+.reveal {
+  padding: 0;
+  width: 2.1rem;
+}
+
+.reveal svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Revealed: a slash draws across the eye and the pupil narrows */
+.reveal .slash {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.reveal .pupil {
+  transform-origin: 12px 12px;
+  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.reveal .off .slash {
+  stroke-dashoffset: 0;
+}
+
+.reveal .off .pupil {
+  transform: scale(0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal .slash,
+  .reveal .pupil {
+    transition: none;
+  }
 }
 
 @media (max-width: 960px) {

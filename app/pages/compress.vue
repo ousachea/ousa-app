@@ -497,12 +497,23 @@ onBeforeUnmount(clearAll)
         <p v-if="busy" class="busy" role="status">
           Compressing… {{ items.length - busy }} of {{ items.length }} done
         </p>
-        <p v-else-if="totals.count">
+        <div v-else-if="totals.count" class="saved">
+          <!-- How much smaller, on a dial (components/gauge); a file that grew leaves it empty -->
+          <div class="saved-dial" aria-hidden="true">
+            <Gauge :value="Math.max(0, totals.saved)" :min="0" :max="1" :start-angle="45" :end-angle="315" :radius="200" :padding="22" fit="content" transition :initial-value="0">
+              <GaugeTrack :width="34" color="var(--ink)" :opacity="0.08" />
+              <GaugeArc :width="34" :color="totals.saved >= 0 ? 'var(--green)' : 'var(--orange)'" />
+              <GaugeValue :y="-6" :font-size="90" weight="bold" color="var(--ink)" :format="v => `${Math.round(v * 100)}%`" />
+              <GaugeText :y="80" :font-size="34" weight="semibold" color="var(--ink-2)">saved</GaugeText>
+            </Gauge>
+          </div>
+          <p>
           <strong>{{ formatBytes(totals.before) }} to {{ formatBytes(totals.after) }}</strong>
           <span :class="totals.saved >= 0 ? 'good' : 'warn'">
             {{ totals.saved >= 0 ? `${Math.round(totals.saved * 100)}% smaller` : `${Math.abs(Math.round(totals.saved * 100))}% larger` }}
           </span>
-        </p>
+          </p>
+        </div>
         <div class="summary-actions">
           <button type="button" class="btn btn-quiet btn-sm" @click="clearAllWithSound">Clear all</button>
           <button type="button" class="btn btn-sm" :disabled="!totals.count" @click="downloadAll">Download all</button>
@@ -716,6 +727,17 @@ onBeforeUnmount(clearAll)
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.saved {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.saved-dial {
+  flex: none;
+  width: 4.75rem;
 }
 
 .summary p {

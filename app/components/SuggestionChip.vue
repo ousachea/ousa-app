@@ -7,7 +7,7 @@ const emit = defineEmits<{ use: [], ignore: [] }>()
 <template>
   <div class="suggestion" role="status">
     <span class="text">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8zM18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" /></svg>
+      <AppIcon name="sparkles" />
       {{ label }}: <strong>{{ value }}</strong>
     </span>
     <button type="button" class="link" @click="emit('use')">Use suggestion</button>

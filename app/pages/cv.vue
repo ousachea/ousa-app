@@ -654,8 +654,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
           <button type="button" class="hero-email" :class="{ copied }" :aria-label="`Copy ${cv.profile.email}`" @click="copyEmail">
             <span class="hero-email-text">{{ cv.profile.email }}</span>
             <span class="copy-icon" aria-hidden="true">
-              <svg v-if="copied" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-              <svg v-else viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2.5" /><path d="M5 15V7a2 2 0 0 1 2-2h8" /></svg>
+              <AppIcon :name="copied ? 'check' : 'copy'" />
             </span>
           </button>
           <a :href="mailto('Project enquiry')" class="hero-btn magnetic">
@@ -981,8 +980,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
           <button type="button" class="hero-email" :class="{ copied }" :aria-label="`Copy ${cv.profile.email}`" @click="copyEmail">
             <span class="hero-email-text">{{ cv.profile.email }}</span>
             <span class="copy-icon" aria-hidden="true">
-              <svg v-if="copied" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-              <svg v-else viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2.5" /><path d="M5 15V7a2 2 0 0 1 2-2h8" /></svg>
+              <AppIcon :name="copied ? 'check' : 'copy'" />
             </span>
           </button>
           <a :href="mailto('Booking a call')" class="hero-btn magnetic">

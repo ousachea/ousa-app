@@ -1,4 +1,5 @@
 import QRCode from 'qrcode'
+import icons from '#build/app-icons.mjs'
 
 // Draws a QR code as SVG from the raw module matrix, so it can be styled and decorated.
 // Coordinates are in "modules" (one QR square = 1 unit); the SVG scales to any size.
@@ -45,14 +46,17 @@ export interface QrIcon {
   colored?: boolean
 }
 
+// The line icons come from the shared icon library, drawn in the QR's icon colour
+const lucide = (id: string) => icons[id.slice('lucide:'.length)] ?? ''
+
 export const QR_ICONS: QrIcon[] = [
-  { id: 'link', label: 'Link', viewBox: '0 0 24 24', markup: '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>' },
-  { id: 'wifi', label: 'Wi-Fi', viewBox: '0 0 24 24', markup: '<path d="M2.5 9a14 14 0 0 1 19 0"/><path d="M5.5 12.5a9.5 9.5 0 0 1 13 0"/><path d="M8.6 16a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19.5" r="1.3" fill="currentColor" stroke="none"/>' },
-  { id: 'phone', label: 'Phone', viewBox: '0 0 24 24', markup: '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/>' },
-  { id: 'mail', label: 'Email', viewBox: '0 0 24 24', markup: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>' },
-  { id: 'pin', label: 'Location', viewBox: '0 0 24 24', markup: '<path d="M12 21.5s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9.5" r="2.5"/>' },
-  { id: 'heart', label: 'Heart', viewBox: '0 0 24 24', markup: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/>' },
-  { id: 'star', label: 'Star', viewBox: '0 0 24 24', markup: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/>' },
+  { id: 'link', label: 'Link', viewBox: '0 0 24 24', markup: lucide('lucide:link') },
+  { id: 'wifi', label: 'Wi-Fi', viewBox: '0 0 24 24', markup: lucide('lucide:wifi') },
+  { id: 'phone', label: 'Phone', viewBox: '0 0 24 24', markup: lucide('lucide:smartphone') },
+  { id: 'mail', label: 'Email', viewBox: '0 0 24 24', markup: lucide('lucide:mail') },
+  { id: 'pin', label: 'Location', viewBox: '0 0 24 24', markup: lucide('lucide:map-pin') },
+  { id: 'heart', label: 'Heart', viewBox: '0 0 24 24', markup: lucide('lucide:heart') },
+  { id: 'star', label: 'Star', viewBox: '0 0 24 24', markup: lucide('lucide:star') },
   {
     id: 'cube',
     label: 'Ousa’s Apps',

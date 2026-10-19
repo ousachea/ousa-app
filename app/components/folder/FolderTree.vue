@@ -163,7 +163,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
     <button v-if="!expanded" type="button" class="phone-toggle" :aria-expanded="openOnPhone" @click="openOnPhone = !openOnPhone">
       <FolderIcon icon="folder" />
       <span class="phone-current">{{ activeName }}</span>
-      <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
+      <AppIcon class="chev" name="chevron-down" />
     </button>
 
     <div class="tree-body">
@@ -200,7 +200,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
             :aria-label="`${collapsed.includes(r.folder.id) ? 'Open' : 'Close'} ${r.folder.name}`"
             @click="emit('toggle', r.folder.id)"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+            <AppIcon name="chevron-right" />
           </button>
           <button
             type="button"
@@ -227,7 +227,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
             <b>{{ r.total }}</b>
           </button>
           <button type="button" class="more" :aria-label="`Actions for ${r.folder.name}`" title="Folder actions" @click="onMore($event, r.folder)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="18.5" cy="12" r="1.3" /></svg>
+            <AppIcon name="ellipsis" />
           </button>
         </div>
       </TransitionGroup>

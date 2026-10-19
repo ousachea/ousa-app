@@ -132,7 +132,7 @@ useAppSeo({
         <p>Small tools for everyday jobs, and simple trackers for the things in your life. Click an icon on the cube to open it, or anywhere else to shuffle.</p>
         <button type="button" class="swipe-hint" :class="{ nudge: !swiped }" @click="goToPage(1)">
           Swipe for the apps
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+          <AppIcon name="chevron-right" />
         </button>
       </div>
       <section v-for="group in GROUPS" :key="group.name" class="group" :aria-labelledby="`group-${group.name}`">
@@ -147,9 +147,9 @@ useAppSeo({
             :class="{ 'page-start': spots.get(tool.to)?.start, 'last-app': lastApp === tool.to }"
             :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--on-accent': tool.onColor ?? '#fff', '--col': spots.get(tool.to)?.col, '--row': spots.get(tool.to)?.row }"
           >
-            <span v-if="group.name === 'Pinned'" class="drag-grip corner" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg></span>
+            <span v-if="group.name === 'Pinned'" class="drag-grip corner" aria-hidden="true"><AppIcon name="grip-vertical" /></span>
             <span v-if="tool.demo" class="demo-badge" title="Open it and click the app’s icon to see it with example data">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>Try it
+              <AppIcon name="play" />Try it
             </span>
             <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
             <strong>{{ tool.name }}</strong>

@@ -106,7 +106,7 @@ function del(e: Entry) {
 
 // ---------- Data for the chart ----------
 // Weight settings (the gear in the header): the chart's starting range; the unit is remembered as you switch
-const { prefs: weightPrefs } = useAppPrefs('weight', { range: 90 })
+const { prefs: weightPrefs } = useAppPrefs('weight', { range: 90, goalKg: 0 })
 const range = ref(90)
 const pickedRange = smoothRef(range) // picking a range cross-fades the chart
 onMounted(() => (range.value = weightPrefs.range))
@@ -120,6 +120,33 @@ const visible = computed(() => {
 })
 
 const latest = computed(() => sorted.value.at(-1))
+
+// ---------- Goal ----------
+// A target weight (0 = none), kept in kg with the other Weight settings. The dial (components/gauge) shows how
+// far you've come from your first entry towards it, losing or gaining alike.
+const goal = computed(() => Number(weightPrefs.goalKg) || 0)
+const first = computed(() => sorted.value[0])
+const toGo = computed(() => (latest.value && goal.value ? latest.value.kg - goal.value : 0))
+const progress = computed(() => {
+  if (!goal.value || !first.value || !latest.value) return 0
+  const whole = first.value.kg - goal.value
+  if (Math.abs(whole) < 0.05) return 1
+  return Math.max(0, Math.min(1, (first.value.kg - latest.value.kg) / whole))
+})
+const reached = computed(() => !!goal.value && Math.abs(toGo.value) < 0.05)
+const goalDraft = ref('')
+const editingGoal = ref(false)
+function editGoal() {
+  goalDraft.value = goal.value ? show(goal.value).toFixed(1) : ''
+  editingGoal.value = true
+}
+function saveGoal() {
+  const v = Number(goalDraft.value.replace(',', '.'))
+  if (!Number.isFinite(v) || v < 0) return
+  weightPrefs.goalKg = v ? Math.round((unit.value === 'kg' ? v : v / LB_PER_KG) * 100) / 100 : 0
+  editingGoal.value = false
+  play(v ? 'success' : 'toggle-off')
+}
 
 // Each entry against the one before it: how much you gained or lost, and over how many days
 const vsPrevious = computed(() => {
@@ -263,6 +290,32 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
                 <span class="label">Change in this range</span>
                 <strong>{{ change > 0 ? '+' : change < 0 ? '−' : '' }}{{ fmt(Math.abs(change)) }}</strong>
                 <span class="sub">{{ change > 0 ? 'Up' : change < 0 ? 'Down' : 'No change' }} since {{ formatDate(visible[0]!.date) }}</span>
+              </div>
+              <div class="goal">
+                <span class="label">Goal</span>
+                <form v-if="!goal || editingGoal" class="goal-form" @submit.prevent="saveGoal">
+                  <label class="goal-input">
+                    <span class="sr-only">Goal weight in {{ unit }}</span>
+                    <input v-model="goalDraft" class="input" inputmode="decimal" :placeholder="show(latest!.kg - (unit === 'kg' ? 3 : 3 / LB_PER_KG)).toFixed(1)" autocomplete="off">
+                    <span>{{ unit }}</span>
+                  </label>
+                  <button type="submit" class="btn btn-sm">{{ goal ? 'Save' : 'Set goal' }}</button>
+                  <button v-if="editingGoal" type="button" class="link" @click="editingGoal = false">Cancel</button>
+                </form>
+                <div v-else class="goal-view">
+                  <div class="goal-dial" role="img" :aria-label="reached ? 'Goal reached' : `${Math.round(progress * 100)}% of the way to ${fmt(goal)}`">
+                    <Gauge :value="progress" :min="0" :max="1" :start-angle="45" :end-angle="315" :radius="200" :padding="22" fit="content" transition :initial-value="0">
+                      <GaugeTrack :width="30" color="var(--ink)" :opacity="0.08" />
+                      <GaugeArc :width="30" :color="reached ? 'var(--green)' : 'var(--accent)'" />
+                      <GaugeValue :y="0" :font-size="82" weight="bold" color="var(--ink)" :format="v => `${Math.round(v * 100)}%`" />
+                    </Gauge>
+                  </div>
+                  <div class="goal-text">
+                    <strong>{{ fmt(goal) }}</strong>
+                    <span class="sub">{{ reached ? 'Reached. Nice work.' : `${fmt(Math.abs(toGo))} to go` }}</span>
+                    <button type="button" class="link" @click="editGoal">Change</button>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -477,6 +530,49 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+/* The goal takes the whole width under the two numbers */
+.stats .goal {
+  grid-column: 1 / -1;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.goal-form,
+.goal-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-top: 0.4rem;
+}
+
+.goal-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-2);
+}
+
+.goal-input .input {
+  width: 6.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats .goal-view {
+  flex-direction: row;
+}
+
+.goal-dial {
+  flex: none;
+  width: 6.5rem;
+}
+
+.stats .goal-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .stats div {

@@ -11,7 +11,7 @@ watch(() => props.filled, (f) => {
 <template>
   <div class="more" :class="{ open }">
     <button type="button" class="more-toggle" :aria-expanded="open" @click="open = !open">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+      <AppIcon name="chevron-right" />
       {{ label }}
     </button>
     <Transition name="collapse">

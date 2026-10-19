@@ -64,7 +64,7 @@ const tip = computed(() => {
     <span v-if="armed && text" class="armed-label">Sure?</span>
     <slot v-else>
       <template v-if="text">Delete</template>
-      <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5" /></svg>
+      <AppIcon v-else name="trash-2" />
     </slot>
     <span v-if="armed" class="sr-only" role="status">Click again to delete{{ what }}</span>
   </button>

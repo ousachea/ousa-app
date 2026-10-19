@@ -246,7 +246,7 @@ function del(e: CountdownEvent) {
           <span class="now-date km" lang="km">{{ todayKhmer }}</span>
         </div>
         <button type="button" class="btn btn-quiet btn-sm saver-btn" title="The time and date in big type, full screen" @click="openSaver">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12.5" rx="2.5" /><path d="M8.5 21h7M12 17v4" /><path d="M12 8v3l2 1.5" /></svg>
+          <AppIcon name="monitor" />
           Screen saver
         </button>
         <ScreenSaver
@@ -307,8 +307,13 @@ function del(e: CountdownEvent) {
                 <h2>{{ featured.title }}</h2>
                 <p class="when-text">{{ formatWhen(featured) }}</p>
                 <div class="featured-progress">
-                  <span class="bar" role="img" :aria-label="`${Math.floor(featured.progress * 100)}% of the wait has passed`">
-                    <span :style="{ transform: `scaleX(${featured.progress})` }" />
+                  <!-- A ring that closes as the day comes (components/gauge) -->
+                  <span class="ring-dial" role="img" :aria-label="`${Math.floor(featured.progress * 100)}% of the wait has passed`">
+                    <Gauge :value="featured.progress" :min="0" :max="1" :start-angle="180" :end-angle="540" :radius="200" :padding="24" transition :initial-value="0">
+                      <GaugeTrack :width="40" color="#fff" :opacity="0.22" />
+                      <GaugeArc :width="40" color="#fff" />
+                      <GaugeValue :font-size="104" weight="bold" color="#fff" :format="v => `${Math.floor(v * 100)}%`" />
+                    </Gauge>
                   </span>
                   <span class="bar-text">{{ Math.floor(featured.progress * 100) }}% of the wait done</span>
                 </div>
@@ -358,7 +363,7 @@ function del(e: CountdownEvent) {
                 <span class="links page-actions">
                   <CalendarAdd :title="e.title" :date="e.nextDate" :time="e.time" :repeat="e.repeat" details="Counting down in Ousa’s Apps" label="Calendar" />
                   <span class="menu-dup"><button type="button" class="icon-btn" :aria-label="`Edit ${e.title}`" title="Edit" @click="edit(e)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+                    <AppIcon name="pencil" />
                   </button>
                     <ConfirmDelete :name="e.title" @confirm="del(e)" /></span>
                 </span>
@@ -623,20 +628,9 @@ function del(e: CountdownEvent) {
   max-width: 26rem;
 }
 
-.featured-progress .bar {
-  flex: 1;
-  height: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.22);
-}
-
-.featured-progress .bar span {
-  display: block;
-  height: 100%;
-  background: #fff;
-  border-radius: inherit;
-  transform-origin: left;
+.ring-dial {
+  flex: none;
+  width: 3.75rem;
 }
 
 .bar-text {

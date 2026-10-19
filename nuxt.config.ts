@@ -64,8 +64,8 @@ export default defineNuxtConfig({
           tagPosition: 'head'
         },
         {
-          // Density and reduced motion from Settings, before first paint (see composables/usePrefs.ts)
-          innerHTML: "(function(){try{var p=JSON.parse(localStorage.getItem('ousa-app:prefs')||'{}');var r=document.documentElement;r.dataset.density=p.density||'comfortable';if(p.motion==='reduced'||p.lowSpec)r.dataset.motion='reduced';if(p.lowSpec)r.dataset.lowspec='';if(p.condensed)r.dataset.condensed=''}catch(e){}})()",
+          // Density, font, text size and reduced motion from Settings, before first paint (see composables/usePrefs.ts)
+          innerHTML: "(function(){try{var p=JSON.parse(localStorage.getItem('ousa-app:prefs')||'{}');var r=document.documentElement;r.dataset.density=p.density||'comfortable';if(p.font&&p.font!=='bricolage')r.dataset.font=p.font;var t=typeof p.textSize==='number'?p.textSize:{small:15,large:17,larger:18}[p.textSize];if(t&&t!==16)r.style.fontSize=Math.min(22,Math.max(13,t))/16*100+'%';if(p.motion==='reduced'||p.lowSpec)r.dataset.motion='reduced';if(p.lowSpec)r.dataset.lowspec='';if(p.condensed)r.dataset.condensed=''}catch(e){}})()",
           tagPosition: 'head'
         },
         {

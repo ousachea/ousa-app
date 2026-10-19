@@ -7,9 +7,19 @@ const BASE = 'https://speed.cloudflare.com'
 export interface ServerInfo {
   /** Cloudflare's code for the data centre that answered, like SIN or HKG */
   colo?: string
-  /** Where Cloudflare thinks you are */
+  /** Where Cloudflare thinks you are, from your IP address (approximate) */
   city?: string
   country?: string
+  /** Your public IP address, as the speed server saw it */
+  ip?: string
+  /** Your provider's network number, like 38623 */
+  asn?: string
+  timezone?: string
+  /** Your internet provider's name, like "Ezecom" */
+  isp?: string
+  region?: string
+  /** The data centre's city, like Singapore */
+  coloCity?: string
 }
 
 export interface PingResult {
@@ -47,6 +57,24 @@ function serverMs(res: Response) {
   return m ? Number(m[1]) : 0
 }
 
+/**
+ * Who and where you are as Cloudflare sees you: IP address, provider, approximate place and the data
+ * centre that answers. The ping's own headers carry some of this too, but browsers don't always get them.
+ * Empty if it can't be reached; the test doesn't depend on it.
+ */
+export async function fetchConnection(signal: AbortSignal): Promise<ServerInfo> {
+  try {
+    const res = await fetch(`${BASE}/meta`, { cache: 'no-store', signal })
+    // The data centre comes as { iata: 'SIN', city: 'Singapore', … } here, but as a bare code in the headers
+    const m = await res.json() as { clientIp?: string, asn?: number, asOrganization?: string, city?: string, region?: string, country?: string, colo?: string | { iata?: string, city?: string } }
+    const colo = typeof m.colo === 'string' ? m.colo : m.colo?.iata
+    const coloCity = typeof m.colo === 'object' ? m.colo?.city : undefined
+    return { ip: m.clientIp, asn: m.asn ? String(m.asn) : undefined, isp: m.asOrganization, city: m.city, region: m.region, country: m.country, colo, coloCity }
+  } catch {
+    return {}
+  }
+}
+
 export async function measurePing(signal: AbortSignal, onSample: (ms: number, i: number, of: number) => void, count = 12): Promise<PingResult> {
   const times: number[] = []
   let server: ServerInfo = {}
@@ -60,7 +88,10 @@ export async function measurePing(signal: AbortSignal, onSample: (ms: number, i:
       server = {
         colo: res.headers.get('cf-meta-colo') ?? undefined,
         city: res.headers.get('cf-meta-city') ?? undefined,
-        country: res.headers.get('cf-meta-country') ?? undefined
+        country: res.headers.get('cf-meta-country') ?? undefined,
+        ip: res.headers.get('cf-meta-ip') ?? undefined,
+        asn: res.headers.get('cf-meta-asn') ?? undefined,
+        timezone: res.headers.get('cf-meta-timezone') ?? undefined
       }
       continue
     }
@@ -218,14 +249,10 @@ export interface Verdict {
   ok: boolean
 }
 
-/** A small line icon for each use (16×16, drawn with a stroke) */
-export const VERDICT_ICONS: Record<VerdictKey, string[]> = {
-  browse: ['M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0z', 'M2 8h12', 'M8 2c2.2 2.2 2.2 9.8 0 12M8 2C5.8 4.2 5.8 11.8 8 14'],
-  hd: ['M2 3.5h12v8H2z', 'M6 14h4', 'M7 5.8v3.4l2.8-1.7z'],
-  uhd: ['M4 4.5v4h3M6 4.5v7', 'M9.5 4.5v7M12.5 4.5 9.6 8l2.9 3.5'],
-  calls: ['M2 4.5h8v7H2z', 'M10 7l4-2.2v6.4L10 9'],
-  games: ['M5 5h6a3.2 3.2 0 0 1 2.9 4.6l-.5 1.1a1.7 1.7 0 0 1-2.8.4L9.6 10H6.4l-1 1.1a1.7 1.7 0 0 1-2.8-.4l-.5-1.1A3.2 3.2 0 0 1 5 5z', 'M5.5 6.8v2M4.5 7.8h2', 'M10.3 7.3h.01M11.5 8.5h.01'],
-  downloads: ['M8 2v8M4.5 6.6 8 10l3.5-3.4', 'M3 13.5h10']
+/** A line icon for each use, from the shared icon library */
+export const VERDICT_ICONS: Record<VerdictKey, string> = {
+  browse: 'lucide:globe', hd: 'lucide:tv-minimal-play', uhd: 'lucide:monitor-play',
+  calls: 'lucide:video', games: 'lucide:gamepad-2', downloads: 'lucide:hard-drive-download'
 }
 
 /** What the connection is good for, from the numbers that matter for each */

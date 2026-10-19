@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// A subscription's icon (CHECKLIST.md #54). Automatic: the service's own site icon when the name is a
-// known service (Netflix, Spotify…), else a letter in a colour from the name. It can be set by hand:
-// 'svc:<service>' to look like another service, 'letter' for just the letter, 'ico:<set>:<name>' for an
+// A subscription's icon (CHECKLIST.md #54). Automatic: the service's logo when the name is a known
+// service (Netflix, Spotify…; from the shared library, else its own site icon), else a letter in a
+// colour from the name. It can be set by hand: 'svc:<service>' to look like another service, 'letter' for just the letter, 'ico:<set>:<name>' for an
 // icon from the library (IconLibrary) on the name's colour, or an image link.
 const props = defineProps<{ name: string, icon?: string }>()
 const broken = ref(false)
@@ -14,7 +14,8 @@ const glyph = computed(() => props.icon?.startsWith(ICON_LIBRARY_PREFIX) ? props
 const src = computed(() => {
   if (props.icon?.startsWith('http')) return props.icon
   if (glyph.value) return libraryIconUrl(glyph.value)
-  return service.value ? siteLogo(service.value.domain) : undefined
+  if (!service.value) return undefined
+  return service.value.brand ? brandLogoUrl(service.value.brand) : siteLogo(service.value.domain)
 })
 watch(src, () => (broken.value = false))
 

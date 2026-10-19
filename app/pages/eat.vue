@@ -703,7 +703,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
         </div>
         <!-- Start the deck full screen; once you're going it's just a way to get more room -->
         <button v-if="!focus && current && !chosen && !duel" type="button" class="btn start-btn" :class="{ 'btn-quiet': liked.length }" @click="setFocus(true)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+          <AppIcon name="maximize" />
           {{ liked.length ? 'Full screen' : 'Start deciding' }}
         </button>
 
@@ -735,7 +735,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           </TransitionGroup>
           <div v-if="!chosen && !duel" class="shortlist-actions">
             <button v-if="shortlist.length > 1" type="button" class="btn narrow-btn" @click="narrow">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z" /></svg>
+              <AppIcon name="funnel" />
               Narrow it down
             </button>
             <button type="button" class="btn btn-quiet" @click="pickOne">{{ shortlist.length > 1 ? 'Pick at random' : `Eat ${shortlist[0]!.name}` }}</button>
@@ -769,10 +769,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
             <label class="thumb-img" :style="photoStyle(s)" :title="s.image ? 'Replace photo' : 'Add a photo'">
               <input type="file" accept="image/*" :aria-label="s.image ? `Replace photo of ${s.name}` : `Add a photo of ${s.name}`" @change="setPhoto(s, $event)">
               <!-- No photo yet: what it is, a bowl for a food, a pin for a place -->
-              <svg v-if="!s.image" class="thumb-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <template v-if="s.kind === 'food'"><path d="M3.5 11h17a8.5 8.5 0 0 1-17 0z" /><path d="M8 7.5c0-1 1-1.5 1-2.5M12 7.5c0-1 1-1.5 1-2.5M16 7.5c0-1 1-1.5 1-2.5" /></template>
-                <template v-else><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></template>
-              </svg>
+              <AppIcon v-if="!s.image" class="thumb-icon" :name="s.kind === 'food' ? 'soup' : 'map-pin'" />
               <span class="thumb-hint" aria-hidden="true">{{ s.image ? 'Replace photo' : '+ Photo' }}</span>
             </label>
             <span class="thumb-name">{{ s.name }}</span>

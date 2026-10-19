@@ -80,6 +80,13 @@ const result = computed(() => {
 })
 
 // Currency the result is counted in: what you receive (check), or what you started with (track)
+// The receipt's dial (components/gauge): how far this rate is from the market, worse to the left and better
+// to the right, with "about the same" (±0.1%) in the middle. Beyond ±2% the needle stays at the end.
+const VS_MARKET_ZONES = [
+  { to: -0.1, color: 'var(--red)' },
+  { to: 0.1, color: 'var(--ink-3)' },
+  { to: 2, color: 'var(--green)' }
+]
 const resultCurrency = computed(() => (mode.value === 'check' ? to.value : from.value))
 const otherCurrency = computed(() => (resultCurrency.value === 'KHR' ? 'USD' : 'KHR'))
 
@@ -206,7 +213,7 @@ async function reloadRate() {
                   :title="from === 'USD' ? 'Switch to riel to dollars' : 'Switch to dollars to riel'"
                   @click.prevent="swapDirection"
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" /></svg>
+                  <AppIcon name="arrow-left-right" />
                 </button>
               </span>
             </label>
@@ -275,6 +282,14 @@ async function reloadRate() {
             <span>{{ receiptTime }}</span>
           </header>
           <p class="rate-line">1 USD = {{ rate!.toLocaleString('en-US') }} ៛ <span>· market {{ Math.round(market!).toLocaleString('en-US') }} ៛</span></p>
+          <div class="vs-market" aria-hidden="true">
+            <Gauge :value="result.percent * 100" :min="-2" :max="2" :start-angle="90" :end-angle="270" :radius="200" :padding="64" fit="content" transition :initial-value="0">
+              <GaugeZones :zones="VS_MARKET_ZONES" :width="18" :gap="1.5" end-cap="round" />
+              <GaugeTickLabels :values="[-2, 0, 2]" :offset="44" :font-size="28" color="var(--ink-3)" weight="semibold" :format="v => v === 0 ? 'market' : `${v > 0 ? '+' : '−'}${Math.abs(v)}%`" />
+              <GaugeNeedle variant="pointer" :length="0.72" :width="16" :tail="0" color="currentColor" />
+              <GaugeHub :radius="12" color="currentColor" />
+            </Gauge>
+          </div>
           <p class="verdict">
             <template v-if="result.verdict === 'fair'">About the same as the market</template>
             <template v-else>
@@ -579,6 +594,11 @@ async function reloadRate() {
 .rate-line span {
   font-weight: 400;
   color: var(--ink-3);
+}
+
+.vs-market {
+  width: min(100%, 12rem);
+  margin: 0 0 0.75rem;
 }
 
 .verdict {

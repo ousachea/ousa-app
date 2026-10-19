@@ -6,6 +6,10 @@ const KEY = 'ousa-app:prefs'
 
 export type Density = 'spacious' | 'comfortable' | 'compact'
 export type MotionPreference = 'system' | 'full' | 'reduced'
+/** The typeface: the app's own (Bricolage Grotesque), or one already on the device, so nothing is downloaded */
+export type FontChoice = 'bricolage' | 'system' | 'rounded' | 'serif' | 'mono'
+/** Text size in pixels (TEXT_SIZE.min–max); 16 is the browser's own */
+export const TEXT_SIZE = { min: 13, max: 22, default: 16 } as const
 
 export interface Prefs {
   /** Ask for a second click before moving something to the Recycle Bin (permanent deletes always ask) */
@@ -22,6 +26,9 @@ export interface Prefs {
   phoneFullscreen: boolean
   density: Density
   motion: MotionPreference
+  font: FontChoice
+  /** Text size in px: scales all text, and the spacing measured from it */
+  textSize: number
   /** Apps pinned to the top of the menu and home page, in order */
   pinnedApps: string[]
   /** Button and highlight colour: each app's own ('apps'), or one colour everywhere (a palette name like 'blue') */
@@ -45,6 +52,8 @@ const DEFAULTS: Prefs = {
   phoneFullscreen: true,
   density: 'comfortable',
   motion: 'system',
+  font: 'bricolage',
+  textSize: TEXT_SIZE.default,
   pinnedApps: [],
   accent: 'apps',
   cubeColors: 'cube',
@@ -59,6 +68,10 @@ let started = false
 function apply() {
   const root = document.documentElement
   root.dataset.density = prefs.density
+  if (prefs.font === 'bricolage') delete root.dataset.font
+  else root.dataset.font = prefs.font
+  // As a share of the browser's size, so someone who set a bigger default in their browser keeps it
+  root.style.fontSize = prefs.textSize === TEXT_SIZE.default ? '' : `${prefs.textSize / 16 * 100}%`
   if (prefs.motion === 'reduced' || prefs.lowSpec) root.dataset.motion = 'reduced'
   else delete root.dataset.motion
   if (prefs.lowSpec) root.dataset.lowspec = ''
@@ -79,6 +92,10 @@ function start() {
     if (saved.cubeColors === undefined && localStorage.getItem('ousa-app:cube-colors') === 'apps') prefs.cubeColors = 'apps'
     // A tab that used to be an app of its own (Renewals, now in Calendar): its pin moves to the app
     prefs.pinnedApps = [...new Set(prefs.pinnedApps.map(p => appFor(p)?.to ?? p))]
+    // Text size used to be four steps
+    const steps: Record<string, number> = { small: 15, large: 17, larger: 18 }
+    if (typeof saved.textSize === 'string') prefs.textSize = steps[saved.textSize] ?? TEXT_SIZE.default
+    prefs.textSize = Math.min(TEXT_SIZE.max, Math.max(TEXT_SIZE.min, Math.round(prefs.textSize)))
     // Retired apps: their pins go, and Ambient Studio's saved mixes and settings with them
     prefs.pinnedApps = prefs.pinnedApps.filter(p => p !== '/ambient-studio')
     localStorage.removeItem('ousa-app:ambient-studio')

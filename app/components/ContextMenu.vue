@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MenuItem } from '~/composables/useContextMenu'
+import type { MenuIcon, MenuItem } from '~/composables/useContextMenu'
 import type { ToolIconName } from '~/utils/tools'
 
 // The app's right-click / long-press menu (useContextMenu, CHECKLIST.md #26, #27).
@@ -17,6 +17,12 @@ const actionable = computed(() => items.value.filter((i): i is MenuItem => i !==
 
 const TOOL_ICONS = new Set(['trash', 'activity', 'plus', 'search', 'renewals', 'bookmarks', 'things', 'countdown'])
 const isToolIcon = (i?: string): i is ToolIconName => !!i && TOOL_ICONS.has(i)
+// The menu's own icons, from the shared icon library
+const MENU_ICONS: Record<MenuIcon, string> = {
+  'open': 'lucide:arrow-right', 'new-tab': 'lucide:external-link', 'edit': 'lucide:pencil', 'copy': 'lucide:copy',
+  'duplicate': 'lucide:copy-plus', 'delete': 'lucide:trash-2', 'restore': 'lucide:rotate-ccw', 'refresh': 'lucide:rotate-cw',
+  'folder': 'lucide:folder', 'pin': 'lucide:pin', 'calendar': 'lucide:calendar', 'star': 'lucide:star', 'select': 'lucide:square-check'
+}
 
 watch(() => menu.open, async (open) => {
   if (!open) {
@@ -110,21 +116,7 @@ onBeforeUnmount(() => {
           >
             <span class="icon" aria-hidden="true">
               <ToolIcon v-if="isToolIcon(item.icon)" :name="item.icon" />
-              <svg v-else-if="item.icon" viewBox="0 0 24 24">
-                <path v-if="item.icon === 'open'" d="M5 12h14M13 6l6 6-6 6" />
-                <path v-else-if="item.icon === 'new-tab'" d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" />
-                <path v-else-if="item.icon === 'edit'" d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16zM13.5 6.5l4 4" />
-                <path v-else-if="item.icon === 'copy'" d="M9 9h10v10H9zM5 15V5h10" />
-                <path v-else-if="item.icon === 'duplicate'" d="M8 8h11v11H8zM5 16V5h11M13.5 11v5M11 13.5h5" />
-                <path v-else-if="item.icon === 'delete'" d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5" />
-                <path v-else-if="item.icon === 'restore'" d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" />
-                <path v-else-if="item.icon === 'refresh'" d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4" />
-                <path v-else-if="item.icon === 'folder'" d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />
-                <path v-else-if="item.icon === 'pin'" d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" />
-                <path v-else-if="item.icon === 'select'" d="M6 4.5h12A1.5 1.5 0 0 1 19.5 6v12a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5zM8.5 12l2.5 2.5 4.5-5" />
-                <path v-else-if="item.icon === 'calendar'" d="M4 6.5h16v13H4zM4 10.5h16M8.5 4v4M15.5 4v4" />
-                <path v-else-if="item.icon === 'star'" d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z" />
-              </svg>
+              <AppIcon v-else-if="item.icon" :name="MENU_ICONS[item.icon]" />
             </span>
             <span class="label">{{ item.label }}</span>
             <kbd v-if="item.hint && !menu.sheet">{{ item.hint }}</kbd>

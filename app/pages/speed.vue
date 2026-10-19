@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import { DIAL_STOPS, dialFraction, formatBytes, measureDownload, measurePing, measureUpload, VERDICT_ICONS, verdicts, type ServerInfo } from '~/utils/speedTest'
+import { DIAL_STOPS, dialFraction, fetchConnection, formatBytes, measureDownload, measurePing, measureUpload, VERDICT_ICONS, verdicts, type ServerInfo, type VerdictKey } from '~/utils/speedTest'
 
 // Speed test: ping, then download, then upload, on one dial whose needle glides to the live speed.
 // Every result is kept as a past test (useCollection 'speed'): synced to your account when signed in,
@@ -16,10 +16,77 @@ interface SpeedResult {
   jitter: number
   colo?: string
   bytes: number
+  // Where and how it was run (all optional; older tests don't have them)
+  ip?: string
+  isp?: string
+  city?: string
+  country?: string
+  os?: string
+  network?: Network
 }
 
+type Network = 'wifi' | 'mobile' | 'cable'
+const NETWORKS: { value: Network, label: string, icon: string }[] = [
+  { value: 'wifi', label: 'Wi-Fi', icon: 'lucide:wifi' },
+  { value: 'mobile', label: 'Mobile data', icon: 'lucide:signal' },
+  { value: 'cable', label: 'Cable', icon: 'lucide:ethernet-port' }
+]
+const networkLabel = (n?: Network) => NETWORKS.find(x => x.value === n)?.label
+
 const { play } = useSound()
-const { prefs: sp } = useAppPrefs('speed', { seconds: 10, unit: 'mbps', plan: 0 })
+const { prefs: sp } = useAppPrefs('speed', { seconds: 10, unit: 'mbps', plan: 0, network: '' })
+
+// ---------- This device and its connection ----------
+// The OS from the browser's own description of the device
+function osName() {
+  const ua = navigator.userAgent
+  const platform = (navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform
+  let os = platform || ''
+  if (/iPhone|iPod/.test(ua)) os = 'iOS'
+  else if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) os = 'iPadOS'
+  else if (/Android/.test(ua)) os = `Android ${/Android (\d+)/.exec(ua)?.[1] ?? ''}`.trim()
+  else if (!os) os = /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'macOS' : /CrOS/.test(ua) ? 'ChromeOS' : /Linux/.test(ua) ? 'Linux' : 'Unknown'
+  if (os === 'Chrome OS') os = 'ChromeOS'
+  const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : ''
+  return browser ? `${os} · ${browser}` : os
+}
+const os = ref('')
+// Wi-Fi, mobile data or cable: Chrome on Android says which; other browsers don't, so you pick, and it's remembered
+const detectedNetwork = ref<Network>()
+const network = ref<Network | ''>('')
+onMounted(() => {
+  os.value = osName()
+  const type = (navigator as { connection?: { type?: string } }).connection?.type
+  detectedNetwork.value = type === 'wifi' ? 'wifi' : type === 'cellular' ? 'mobile' : type === 'ethernet' ? 'cable' : undefined
+  network.value = detectedNetwork.value ?? (sp.network as Network | '')
+})
+function pickNetwork(n: Network) {
+  network.value = network.value === n ? '' : n
+  sp.network = network.value
+  // Changed after a test: that test is corrected too
+  if (phase.value === 'done' && lastId.value) tests.update(lastId.value, { network: network.value || undefined }, { quiet: true })
+  play('select')
+}
+const lastId = ref<string>()
+// "KH" → "Cambodia"
+const countryName = (code?: string) => {
+  if (!code) return ''
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) ?? code
+  } catch {
+    return code
+  }
+}
+// "Cloudflare Singapore (SIN)", or just the code when the city isn't known
+const serverLabel = computed(() => {
+  const { colo, coloCity } = server.value
+  if (!colo) return 'Cloudflare'
+  return coloCity ? `Cloudflare ${coloCity} (${colo})` : `Cloudflare ${colo}`
+})
+function copyIp() {
+  if (!server.value.ip) return
+  navigator.clipboard.writeText(server.value.ip).then(() => toast('IP address copied'), () => toast.error('Couldn’t copy'))
+}
 
 const phase = ref<Phase>('idle')
 const progress = ref(0)
@@ -56,6 +123,56 @@ const history = computed(() => [...tests.items.value].sort((a, b) => {
   if (sort.value === 'ping') return a.ping - b.ping
   return b.at.localeCompare(a.at)
 }))
+// ---------- Past tests, a day at a time ----------
+// Grouped by the day they ran (newest day first, oldest first when sorted that way); within a day, the
+// chosen sort. Today's day opens by default, or the latest day when there's nothing from today yet.
+const timeFmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const dayOf = (iso: string) => localIsoDate(new Date(iso))
+function dayTitle(key: string) {
+  const today = localIsoDate()
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (key === today) return 'Today'
+  if (key === localIsoDate(yesterday)) return 'Yesterday'
+  const d = new Date(`${key}T00:00`)
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', ...(d.getFullYear() !== new Date().getFullYear() && { year: 'numeric' }) })
+}
+const days = computed(() => {
+  const groups = new Map<string, SpeedResult[]>()
+  for (const h of history.value) {
+    const key = dayOf(h.at)
+    const list = groups.get(key)
+    if (list) list.push(h)
+    else groups.set(key, [h])
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (sort.value === 'oldest' ? a.localeCompare(b) : b.localeCompare(a)))
+    .map(([key, items]) => ({
+      key,
+      title: dayTitle(key),
+      items,
+      bestDown: Math.max(...items.map(h => h.down)),
+      bestUp: Math.max(...items.map(h => h.up))
+    }))
+})
+const openDays = ref(new Set<string>())
+let daysOpened = false
+watch(days, (list) => {
+  if (daysOpened || !list.length) return
+  daysOpened = true
+  const today = localIsoDate()
+  openDays.value = new Set([list.some(d => d.key === today) ? today : [...list].sort((a, b) => b.key.localeCompare(a.key))[0]!.key])
+}, { immediate: true })
+function toggleDay(key: string) {
+  const next = new Set(openDays.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  openDays.value = next
+  play(next.has(key) ? 'open' : 'close')
+}
+// The colour of the band a speed falls in, as on the dial
+const bandColor = (mbps: number) => (BANDS.find(b => mbps < b.to) ?? BANDS.at(-1)!).color
+
 // What each past test was good enough for, as icons
 const goodFor = (h: SpeedResult) => verdicts(h.down, h.up, h.ping, h.jitter).filter(v => v.ok)
 
@@ -83,31 +200,55 @@ function fmt(mbps: number | null) {
 
 // ---------- The dial ----------
 
-// A 270° dial opening at the bottom; angles in degrees, 0 pointing right, clockwise
-const CX = 160
-const CY = 160
+// A 270° dial opening at the bottom, drawn with the gauge parts (components/gauge). Its scale isn't even
+// (0, 1, 5, 10 … 1000 Mbps; DIAL_STOPS), so the gauge runs 0–1 and each stop sits at its share of the sweep.
+// The box matches the one the Go button and readout are laid over: the dial's middle is 160 down of 268.
 const R = 128
-const START = 135
-const SWEEP = 270
-const polar = (deg: number, r = R) => {
-  const a = (deg * Math.PI) / 180
-  return [CX + r * Math.cos(a), CY + r * Math.sin(a)] as const
+const STOP_AT = DIAL_STOPS.map((_, i) => i / (DIAL_STOPS.length - 1))
+const stopLabel = (f: number) => {
+  const v = DIAL_STOPS[Math.round(f * (DIAL_STOPS.length - 1))]!
+  return v >= 1000 ? '1G' : String(v)
 }
-const ARC = (() => {
-  const [x1, y1] = polar(START)
-  const [x2, y2] = polar(START + SWEEP)
-  return `M ${x1} ${y1} A ${R} ${R} 0 1 1 ${x2} ${y2}`
-})()
-const TICKS = DIAL_STOPS.map((v, i) => {
-  const deg = START + (SWEEP * i) / (DIAL_STOPS.length - 1)
-  const [x1, y1] = polar(deg, R - 16)
-  const [x2, y2] = polar(deg, R - 24)
-  const [lx, ly] = polar(deg, R - 40)
-  return { v, x1, y1, x2, y2, lx, ly }
-})
 const fraction = computed(() => dialFraction(shown.value))
-const needle = computed(() => START + SWEEP * fraction.value)
-const tipPos = computed(() => polar(needle.value))
+// What a speed is good for, as bands of colour on the dial. The cutoffs match the "Good for" list (verdicts in
+// utils/speedTest.ts); while uploading the same bands say what an upload that fast is good for. The fill, the
+// needle's tip and the live reading all take the colour of the band the speed is in.
+const BANDS = [
+  { to: 1, color: 'var(--red)', range: 'Under 1', down: 'Too slow for much', up: 'Too slow to send much', downShort: 'Too slow', upShort: 'Too slow', downIcon: 'lucide:snail', upIcon: 'lucide:snail' },
+  { to: 5, color: 'var(--orange)', range: '1–5', down: 'Browsing and messages', up: 'Photos and messages', downShort: 'Browsing', upShort: 'Photos', downIcon: 'lucide:globe', upIcon: 'lucide:image' },
+  { to: 25, color: 'color-mix(in srgb, var(--yellow) 75%, var(--orange))', range: '5–25', down: 'HD video', up: 'Video calls', downShort: 'HD video', upShort: 'Video calls', downIcon: 'lucide:tv-minimal-play', upIcon: 'lucide:video' },
+  { to: 100, color: 'var(--green)', range: '25–100', down: '4K video', up: 'Uploading video', downShort: '4K video', upShort: 'Video', downIcon: 'lucide:monitor-play', upIcon: 'lucide:cloud-upload' },
+  { to: Infinity, color: 'var(--blue)', range: '100+', down: 'Big downloads fast', up: 'Big uploads fast', downShort: 'Big files', upShort: 'Big files', downIcon: 'lucide:hard-drive-download', upIcon: 'lucide:hard-drive-upload' }
+]
+// Each use in "Good for" has a colour of its own, well apart from the others, so the six icons
+// read apart at a glance (sharing the dial's band colours made pairs of them identical)
+const USE_COLOR: Record<VerdictKey, string> = {
+  browse: 'var(--blue)',
+  hd: 'var(--orange)',
+  uhd: 'var(--purple)',
+  calls: 'var(--teal)',
+  games: 'var(--pink)',
+  downloads: 'var(--green)'
+}
+// The same bands in the dial's own units (0–1 along the sweep)
+const BAND_ZONES = BANDS.map(b => ({ to: b.to === Infinity ? 1 : dialFraction(b.to), color: b.color }))
+const bandIndex = computed(() => BANDS.findIndex(b => shown.value < b.to))
+const showBand = computed(() => (phase.value === 'download' || phase.value === 'upload' || phase.value === 'done') && shown.value > 0)
+// Hands the band's colour to everything drawn in the dial's colour (--meter-a / --meter-b)
+const bandStyle = computed(() => {
+  if (!showBand.value) return undefined
+  const c = BANDS[bandIndex.value]!.color
+  return { '--meter-a': c, '--meter-b': c }
+})
+
+// Labels light up once the needle has passed them
+const labelColor = (f: number) => (f > 0 && fraction.value >= f - 1e-6 ? 'var(--ink)' : 'var(--ink-3)')
+// The short pointer near the rim, in the SVG's own degrees (0 pointing right, clockwise)
+const needle = computed(() => 135 + 270 * fraction.value)
+const tipPos = computed(() => {
+  const a = (needle.value * Math.PI) / 180
+  return [R * Math.cos(a), R * Math.sin(a)] as const
+})
 
 // The needle eases after the live reading with a frame-rate-independent spring, so it glides instead
 // of stepping each time a new reading arrives
@@ -149,13 +290,17 @@ async function start() {
   play('start')
   try {
     phase.value = 'ping'
+    // Who and where, fetched alongside the ping so it doesn't slow the test down
+    const connection = fetchConnection(signal)
     const p = await measurePing(signal, (ms, i, of) => {
       pingSamples.value = [...pingSamples.value, ms]
       progress.value = i / of
     })
     ping.value = p.ping
     jitter.value = p.jitter
-    server.value = p.server
+    // The lookup's answers, falling back to whatever the ping's own headers said
+    const found = await connection
+    server.value = { ...p.server, ...Object.fromEntries(Object.entries(found).filter(([, v]) => v)) }
 
     phase.value = 'download'
     progress.value = 0
@@ -194,15 +339,23 @@ async function start() {
 
     phase.value = 'done'
     play('success')
-    tests.add({
+    lastId.value = tests.add({
       at: new Date().toISOString(),
       down: d.mbps,
       up: u.mbps,
       ping: p.ping,
       jitter: p.jitter,
-      colo: p.server.colo,
-      bytes: bytesUsed.value
-    })
+      colo: server.value.colo,
+      bytes: bytesUsed.value,
+      ip: server.value.ip,
+      isp: server.value.isp ?? (server.value.asn ? `AS${server.value.asn}` : undefined),
+      city: server.value.city,
+      country: server.value.country,
+      os: os.value || undefined,
+      network: network.value || undefined
+    }).id
+    // The new test shows under Today, opened
+    openDays.value = new Set([...openDays.value, localIsoDate()])
     // Only the newest are kept
     const byAge = [...tests.items.value].sort((a, b) => b.at.localeCompare(a.at))
     for (const old of byAge.slice(KEEP_TESTS)) tests.remove(old.id, { undoAdd: true })
@@ -294,9 +447,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </template>
 
     <div class="speed" :class="`phase-${phase}`">
-      <section class="dial-card panel" aria-label="Speed test">
+      <section class="dial-card panel" aria-label="Speed test" :style="bandStyle">
         <div class="dial-wrap">
-          <svg class="dial" viewBox="0 0 320 268" role="img" :aria-label="phase === 'idle' ? 'Speed dial' : `${PHASE_LABEL[phase]}: ${fmt(shown)} ${unitLabel}`">
+          <Gauge class="dial" :value="fraction" :min="0" :max="1" :start-angle="45" :end-angle="315" :radius="R" view-box="-160 -160 320 268" role="img" :aria-label="phase === 'idle' ? 'Speed dial' : `${PHASE_LABEL[phase]}: ${fmt(shown)} ${unitLabel}`">
             <defs>
               <linearGradient id="speed-fill" x1="0" y1="1" x2="1" y2="0">
                 <stop offset="0%" stop-color="var(--meter-a)" />
@@ -306,23 +459,27 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 <feGaussianBlur stdDeviation="6" />
               </filter>
             </defs>
-            <path class="track" :d="ARC" pathLength="100" />
+            <!-- The bands, faint under the fill: what each stretch of the dial is good for -->
+            <GaugeZones :zones="BAND_ZONES" :width="14" :gap="0.8" end-cap="round" :opacity="0.22" />
             <!-- The filled part: a soft glow underneath and the bar on top -->
-            <path class="fill glow" :d="ARC" pathLength="100" :style="{ strokeDasharray: `${fraction * 100} 101`, opacity: fraction > 0.002 ? undefined : 0 }" filter="url(#speed-glow)" />
-            <path class="fill" :d="ARC" pathLength="100" :style="{ strokeDasharray: `${fraction * 100} 101`, opacity: fraction > 0.002 ? undefined : 0 }" />
-            <!-- Progress through this part of the test, as a thin inner ring -->
-            <circle v-if="running" class="prog" :cx="CX" :cy="CY" r="72" pathLength="100" :style="{ strokeDasharray: `${progress * 100} 101`, opacity: progress > 0.005 ? undefined : 0 }" />
-            <g class="ticks">
-              <template v-for="t in TICKS" :key="t.v">
-                <line :x1="t.x1" :y1="t.y1" :x2="t.x2" :y2="t.y2" />
-                <text :x="t.lx" :y="t.ly" :class="{ lit: shown >= t.v && t.v > 0 }">{{ t.v >= 1000 ? '1G' : t.v }}</text>
+            <!-- The filled part: a glow in the colour of the band the speed is in, then the fill itself in each
+                 band's own colour up to the speed, so you can see which bands it has passed. Only the first
+                 is rounded: the next one is drawn over its far end, so the joins stay square -->
+            <template v-if="fraction > 0.002">
+              <GaugeArc class="fill" :width="14" color="url(#speed-fill)" :opacity="0.45" filter="url(#speed-glow)" />
+              <template v-for="(z, i) in BAND_ZONES" :key="i">
+                <GaugeArc v-if="fraction > (BAND_ZONES[i - 1]?.to ?? 0)" class="fill" :from="BAND_ZONES[i - 1]?.to ?? 0" :to="Math.min(fraction, z.to)" :width="14" :color="z.color" :cap="i === 0 ? 'round' : 'butt'" />
               </template>
-            </g>
-            <g class="needle" :style="{ transform: `rotate(${needle}deg)` }">
-              <path d="M 230 155 L 276 160 L 230 165 Z" />
+            </template>
+            <!-- Progress through this part of the test, as a thin inner ring -->
+            <circle v-if="running" class="prog" r="72" pathLength="100" transform="rotate(-90)" :style="{ strokeDasharray: `${progress * 100} 101`, opacity: progress > 0.005 ? undefined : 0 }" />
+            <GaugeTicks :values="STOP_AT" :length="8" :offset="-20" color="var(--line)" />
+            <GaugeTickLabels class="labels" :values="STOP_AT" :offset="-40" :font-size="11" weight="semibold" :color="labelColor" :format="stopLabel" />
+            <g class="needle" :transform="`rotate(${needle})`">
+              <path d="M 70 -5 L 116 0 L 70 5 Z" />
             </g>
             <circle class="tip" :cx="tipPos[0]" :cy="tipPos[1]" r="6" />
-          </svg>
+          </Gauge>
 
           <!-- Start sits in the middle of the dial; while testing, the live speed takes its place -->
           <Transition name="swap" mode="out-in">
@@ -333,8 +490,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             </button>
             <div v-else key="read" class="readout" aria-live="off">
               <span class="phase-tag" :class="phase">
-                <svg v-if="phase === 'download' || phase === 'done'" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" /></svg>
-                <svg v-else-if="phase === 'upload'" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14V3M3.5 7.5 8 3l4.5 4.5" /></svg>
+                <AppIcon v-if="phase === 'download' || phase === 'done'" name="arrow-down" />
+                <AppIcon v-else-if="phase === 'upload'" name="arrow-up" />
                 {{ PHASE_LABEL[phase] }}
               </span>
               <span class="big">{{ phase === 'ping' ? (ping ?? (pingSamples.at(-1) ? Math.round(pingSamples.at(-1)!) : '–')) : fmt(shown) }}</span>
@@ -343,12 +500,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           </Transition>
         </div>
 
-        <p class="status" :class="{ bad: phase === 'error' }" role="status">{{ status }}</p>
+        <!-- The key to the colours: a strip of the five bands, like the dial laid flat, with the one the
+             speed is in lit up -->
+        <ol class="scale" :class="{ live: showBand }" :aria-label="phase === 'upload' ? 'What each upload speed is good for, in Mbps' : 'What each speed is good for, in Mbps'">
+          <li v-for="(b, i) in BANDS" :key="b.range" :class="{ on: showBand && i === bandIndex, ahead: showBand && i > bandIndex }" :style="{ '--band': b.color }" :title="phase === 'upload' ? b.up : b.down" :aria-current="showBand && i === bandIndex ? 'true' : undefined">
+            <span class="scale-bar" aria-hidden="true" />
+            <AppIcon class="scale-icon" :name="phase === 'upload' ? b.upIcon : b.downIcon" />
+            <span class="scale-name">{{ phase === 'upload' ? b.upShort : b.downShort }}</span>
+            <span class="scale-range">{{ b.range }}</span>
+          </li>
+        </ol>
 
-        <div class="actions">
-          <button v-if="running" type="button" class="btn btn-quiet btn-sm" @click="stop">Stop</button>
-          <button v-else-if="phase === 'done'" type="button" class="btn" @click="start">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 11.9 4M13.5 2.5V5h-2.5" /></svg>
+        <!-- What's happening, and what you can do about it -->
+        <div class="dial-foot" :class="{ solo: !running && phase !== 'done' }">
+          <p class="status" :class="[`is-${phase}`, { bad: phase === 'error' }]" role="status"><span class="status-dot" aria-hidden="true" />{{ status }}</p>
+          <button v-if="running" type="button" class="btn btn-quiet btn-sm" @click="stop">
+            <AppIcon name="square" />
+            Stop
+          </button>
+          <button v-else-if="phase === 'done'" type="button" class="btn btn-sm" @click="start">
+            <AppIcon name="rotate-cw" />
             Test again
           </button>
         </div>
@@ -362,7 +533,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         </div>
         <div class="stat down" :class="{ active: phase === 'download', has: down !== null }">
           <span class="stat-label">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" /></svg>
+            <AppIcon name="arrow-down" />
             Download
           </span>
           <span class="stat-value"><RollingNumber :value="phase === 'download' ? fmt(live) : fmt(down)" /><small>{{ unitLabel }}</small></span>
@@ -373,7 +544,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         </div>
         <div class="stat up" :class="{ active: phase === 'upload', has: up !== null }">
           <span class="stat-label">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14V3M3.5 7.5 8 3l4.5 4.5" /></svg>
+            <AppIcon name="arrow-up" />
             Upload
           </span>
           <span class="stat-value"><RollingNumber :value="phase === 'upload' ? fmt(live) : fmt(up)" /><small>{{ unitLabel }}</small></span>
@@ -388,11 +559,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <section v-if="phase === 'done'" class="result panel" aria-label="What this connection is good for">
           <h2>Good for</h2>
           <ul class="verdicts">
-            <li v-for="(v, i) in good" :key="v.label" :class="{ ok: v.ok }" :style="{ '--i': i }">
+            <li v-for="(v, i) in good" :key="v.label" :class="{ ok: v.ok }" :style="{ '--i': i, '--use': USE_COLOR[v.key] }">
               <!-- What it's for, with a tick or a cross on its corner -->
               <span class="use-icon" aria-hidden="true">
-                <svg viewBox="0 0 16 16"><path v-for="d in VERDICT_ICONS[v.key]" :key="d" :d="d" /></svg>
-                <svg class="mark" viewBox="0 0 16 16"><path v-if="v.ok" d="M3.5 8.5 6.5 11.5 12.5 4.5" /><path v-else d="M4.5 4.5l7 7M11.5 4.5l-7 7" /></svg>
+                <AppIcon :name="VERDICT_ICONS[v.key]" />
+                <AppIcon class="mark" :name="v.ok ? 'check' : 'x'" />
               </span>
               {{ v.label }}
               <span class="sr-only">{{ v.ok ? 'yes' : 'not really' }}</span>
@@ -405,34 +576,89 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             </div>
             <div class="plan-bar"><span :style="{ width: `${Math.min(100, planShare * 100)}%` }" /></div>
           </div>
-          <p class="meta">
-            <span v-if="server.colo">Server: Cloudflare {{ server.colo }}</span>
-            <span v-if="server.city">You: {{ server.city }}{{ server.country ? `, ${server.country}` : '' }}</span>
-            <span>Data used: {{ formatBytes(bytesUsed) }}</span>
-          </p>
+          <!-- Where and how this test ran; saved with it -->
+          <dl class="conn">
+            <div>
+              <dt><AppIcon name="lucide:map-pin" />Location</dt>
+              <dd>{{ server.city ? [server.city, server.region !== server.city ? server.region : '', countryName(server.country)].filter(Boolean).join(', ') : 'Unknown' }}<small>Approximate, from your IP address</small></dd>
+            </div>
+            <div>
+              <dt><AppIcon name="lucide:globe" />IP address</dt>
+              <dd>
+                <span class="ip">{{ server.ip ?? 'Unknown' }}</span>
+                <button v-if="server.ip" type="button" class="link" @click="copyIp">Copy</button>
+                <small>{{ server.isp ?? (server.asn ? `AS${server.asn}` : 'Provider unknown') }}</small>
+              </dd>
+            </div>
+            <div>
+              <dt><AppIcon name="lucide:laptop" />Device</dt>
+              <dd>{{ os || 'Unknown' }}</dd>
+            </div>
+            <div class="conn-network">
+              <dt><AppIcon :name="NETWORKS.find(n => n.value === network)?.icon ?? 'lucide:wifi'" />Network</dt>
+              <dd>
+                <span class="net-pick" role="radiogroup" aria-label="Network type">
+                  <button v-for="n in NETWORKS" :key="n.value" type="button" role="radio" :aria-checked="network === n.value" @click="pickNetwork(n.value)">{{ n.label }}</button>
+                </span>
+                <small>{{ detectedNetwork ? 'Detected by your browser' : 'Your browser doesn’t say, so pick one; it’s remembered' }}</small>
+              </dd>
+            </div>
+            <div>
+              <dt><AppIcon name="lucide:server" />Server</dt>
+              <dd>{{ serverLabel }}<small>Data used: {{ formatBytes(bytesUsed) }}</small></dd>
+            </div>
+          </dl>
         </section>
       </Transition>
 
       <section v-if="history.length" class="history panel" aria-label="Past tests">
         <div class="history-head">
           <h2>Past tests</h2>
-          <AppSelect v-model="sort" class="history-sort" aria-label="Sort past tests" :options="SORTS" />
-          <button type="button" class="link" @click="clearHistory">Clear</button>
+          <div class="history-tools">
+            <AppSelect v-model="sort" class="history-sort" aria-label="Sort past tests" :options="SORTS" />
+            <button type="button" class="btn btn-quiet btn-sm clear-btn" title="Clear past tests" @click="clearHistory">
+              <AppIcon name="trash-2" />
+              Clear
+            </button>
+          </div>
         </div>
-        <TransitionGroup tag="ul" name="list" class="history-list">
-          <li v-for="h in history" :key="h.id">
-            <span class="when">
-              {{ dateFmt.format(new Date(h.at)) }}
-              <!-- What it was good enough for -->
-              <span class="uses" :aria-label="`Good for: ${goodFor(h).map(v => v.label).join(', ') || 'not much'}`">
-                <svg v-for="v in goodFor(h)" :key="v.key" viewBox="0 0 16 16" aria-hidden="true"><title>{{ v.label }}</title><path v-for="d in VERDICT_ICONS[v.key]" :key="d" :d="d" /></svg>
-              </span>
-            </span>
-            <span class="h-down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" /></svg>{{ fmt(h.down) }}</span>
-            <span class="h-up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14V3M3.5 7.5 8 3l4.5 4.5" /></svg>{{ fmt(h.up) }}</span>
-            <span class="h-ping">{{ Math.round(h.ping) }} ms</span>
-          </li>
-        </TransitionGroup>
+        <div class="days">
+          <section v-for="d in days" :key="d.key" class="day" :class="{ open: openDays.has(d.key) }">
+            <h3 class="day-h">
+              <button type="button" class="day-head" :aria-expanded="openDays.has(d.key)" :aria-controls="`day-${d.key}`" @click="toggleDay(d.key)">
+                <span class="day-title">{{ d.title }}</span>
+                <span class="day-count">{{ d.items.length }} {{ d.items.length === 1 ? 'test' : 'tests' }}</span>
+                <span class="day-best" :aria-label="`Best ${fmt(d.bestDown)} down, ${fmt(d.bestUp)} up`">
+                  <span class="best-label" aria-hidden="true">Best</span>
+                  <span class="best-down" :style="{ '--band': bandColor(d.bestDown) }"><AppIcon name="arrow-down" />{{ fmt(d.bestDown) }}</span>
+                  <span class="best-up"><AppIcon name="arrow-up" />{{ fmt(d.bestUp) }}</span>
+                </span>
+                <AppIcon class="chev" name="chevron-down" />
+              </button>
+            </h3>
+            <div :id="`day-${d.key}`" class="day-body" :inert="!openDays.has(d.key)">
+              <div class="day-inner">
+                <TransitionGroup tag="ul" name="list" class="history-list">
+                  <li v-for="h in d.items" :key="h.id">
+                    <span class="h-time">{{ timeFmt.format(new Date(h.at)) }}</span>
+                    <span class="h-info">
+                      <span v-if="h.city || h.network || h.os" class="where" :title="h.ip ? `IP ${h.ip}${h.isp ? ` · ${h.isp}` : ''}` : undefined">
+                        {{ [h.city, networkLabel(h.network), h.os?.split(' · ')[0]].filter(Boolean).join(' · ') }}
+                      </span>
+                      <!-- What it was good enough for -->
+                      <span class="uses" :aria-label="`Good for: ${goodFor(h).map(v => v.label).join(', ') || 'not much'}`">
+                        <span v-for="v in goodFor(h)" :key="v.key" :title="v.label" :style="{ color: USE_COLOR[v.key] }"><AppIcon :name="VERDICT_ICONS[v.key]" /></span>
+                      </span>
+                    </span>
+                    <span class="h-down" :style="{ '--band': bandColor(h.down) }"><AppIcon name="arrow-down" />{{ fmt(h.down) }}</span>
+                    <span class="h-up"><AppIcon name="arrow-up" />{{ fmt(h.up) }}</span>
+                    <span class="h-ping">{{ Math.round(h.ping) }} ms</span>
+                  </li>
+                </TransitionGroup>
+              </div>
+            </div>
+          </section>
+        </div>
         <p class="hint">Speeds in {{ unitLabel }}. {{ tests.sync.signedIn.value ? 'Saved to your account, on all your devices.' : 'Kept on this device; sign in to keep them in your account.' }} The icons show what each was good enough for.</p>
       </section>
     </div>
@@ -519,24 +745,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   overflow: visible;
 }
 
-.track,
 .fill {
-  fill: none;
-  stroke-width: 14;
-  stroke-linecap: round;
+  transition: stroke 0.4s;
 }
 
-.track {
-  stroke: var(--surface-2);
-}
-
-.fill {
-  stroke: url(#speed-fill);
-  transition: stroke 0.4s, opacity 0.3s;
-}
-
-.fill.glow {
-  opacity: 0.45;
+/* The fill's colour eases from band to band */
+.dial stop {
+  transition: stop-color 0.4s;
 }
 
 .prog {
@@ -546,32 +761,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   stroke-linecap: round;
   opacity: 0.35;
   transition: stroke-dasharray 0.12s linear, opacity 0.3s;
-  transform: rotate(-90deg);
-  transform-origin: 160px 160px;
 }
 
-.ticks line {
-  stroke: var(--line);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-.ticks text {
-  fill: var(--ink-3);
-  font-size: 11px;
-  font-weight: 600;
-  text-anchor: middle;
-  dominant-baseline: middle;
-  font-variant-numeric: tabular-nums;
+.labels :deep(text) {
   transition: fill 0.3s;
 }
 
-.ticks text.lit {
-  fill: var(--ink);
-}
-
 .needle {
-  transform-origin: 160px 160px;
   fill: var(--ink);
   opacity: 0;
   transition: opacity 0.4s;
@@ -729,23 +925,152 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   transform: translate(-50%, -40%);
 }
 
-.status {
-  margin: 0.25rem 0 0;
-  min-height: 1.4em;
+.scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  width: min(100%, 30rem);
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scale li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0 0.15rem 0.45rem;
   text-align: center;
+  border-radius: 10px;
+  transition: background-color 0.3s, opacity 0.3s;
+}
+
+/* The band's colour along the top; together the five read as the dial's arc laid flat */
+.scale-bar {
+  align-self: stretch;
+  height: 6px;
+  margin-bottom: 0.35rem;
+  background: var(--band);
+  border-radius: 999px;
+  opacity: 0.55;
+  transition: height 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+
+.scale-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--band);
+}
+
+.scale-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scale-range {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+/* While a speed is showing, the bands it hasn't reached step back, the ones it has passed stay, and its own
+   comes forward, as on the dial */
+.scale li.ahead {
+  opacity: 0.45;
+}
+
+.scale li.on {
+  background: color-mix(in srgb, var(--band) 12%, transparent);
+}
+
+.scale li.on .scale-bar {
+  height: 8px;
+  opacity: 1;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--band) 55%, transparent);
+}
+
+.scale li.on .scale-name {
+  color: var(--ink);
+}
+
+/* ---------- Under the dial: status and the button ---------- */
+.dial-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: min(100%, 30rem);
+  min-height: 3.25rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
+/* Nothing to press (before a test; Go is in the dial): the status sits in the middle */
+.dial-foot.solo {
+  justify-content: center;
+}
+
+.dial-foot .btn {
+  flex: none;
+}
+
+.dial-foot .btn .app-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.status-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+
+.status.is-ping .status-dot,
+.status.is-download .status-dot,
+.status.is-upload .status-dot {
+  background: var(--meter-a);
+  animation: status-pulse 1s ease-in-out infinite alternate;
+}
+
+.status.is-done .status-dot {
+  background: var(--green);
+}
+
+.status.bad .status-dot {
+  background: var(--bad-ink);
+}
+
+@keyframes status-pulse {
+  to { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot { animation: none !important; }
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
   color: var(--ink-2);
   font-weight: 500;
 }
 
 .status.bad {
   color: var(--bad-ink);
-}
-
-.actions {
-  min-height: 2.75rem;
-  display: flex;
-  align-items: center;
-  margin-top: 0.75rem;
 }
 
 /* ---------- Stat cards ---------- */
@@ -895,7 +1220,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .verdicts li.ok .use-icon {
-  background: color-mix(in srgb, var(--green) 14%, var(--surface));
+  background: color-mix(in srgb, var(--use, var(--green)) 16%, var(--surface));
 }
 
 .verdicts svg {
@@ -904,12 +1229,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   height: 1.1rem;
   fill: none;
   stroke: var(--ink-3);
-  stroke-width: 1.6;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .verdicts li.ok svg {
+  stroke: var(--use, var(--good-ink));
+}
+
+.verdicts li.ok .mark {
   stroke: var(--good-ink);
 }
 
@@ -976,13 +1305,95 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   }
 }
 
-.meta {
+.conn {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: 0.9rem 1.25rem;
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.conn div {
+  min-width: 0;
+}
+
+.conn dt {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.conn dt .app-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.conn dd {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  margin: 1rem 0 0;
-  font-size: var(--text-sm);
+  align-items: baseline;
+  gap: 0.15rem 0.5rem;
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.conn small {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.ip {
+  font-variant-numeric: tabular-nums;
+}
+
+.conn-network {
+  grid-column: span 2;
+}
+
+@media (max-width: 520px) {
+  .conn-network {
+    grid-column: auto;
+  }
+}
+
+.net-pick {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.net-pick button {
+  padding: 0.3rem 0.65rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: var(--ink-2);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
+}
+
+.net-pick button[aria-checked='true'] {
+  color: var(--on-accent);
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.where {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ink-3);
 }
 
 .rise-enter-active {
@@ -998,55 +1409,191 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .history-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem 1rem;
+  margin-bottom: 1rem;
 }
 
-.history-sort {
+.history .history-head h2 {
+  margin: 0;
+}
+
+.history-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-left: auto;
+}
+
+/* A compact pill, the same height as the Clear button beside it */
+.history-sort {
   width: auto;
-  min-width: 10rem;
+  min-width: 9.5rem;
+}
+
+.history-sort :deep(.trigger) {
+  min-height: 2.25rem;
+  padding: 0.3rem 0.65rem 0.3rem 0.85rem;
   font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: 999px;
 }
 
-/* The date, with what that test was good enough for in small icons underneath */
-.history-list .when {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
+.history-sort :deep(.chevron) {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
-.uses {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  color: var(--good-ink);
+.clear-btn {
+  min-height: 2.25rem;
 }
 
-.history-list .uses svg {
+.clear-btn .app-icon {
   width: 0.95rem;
   height: 0.95rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
-.history-list {
+/* ---------- A day at a time ---------- */
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.day {
+  background: var(--surface-2);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.day-h {
   margin: 0;
+  font-size: inherit;
+}
+
+.day-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem 0.7rem 1rem;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+
+.day-head:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.day-title {
+  font-weight: 700;
+}
+
+.day-count {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.day-best {
+  display: inline-flex;
+  gap: 0.6rem;
+  margin-left: auto;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-best > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.best-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.best-down .app-icon {
+  color: var(--band);
+}
+
+.best-up .app-icon {
+  color: var(--cyan);
+}
+
+.day-best .app-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.chev {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--ink-3);
+  transition: rotate 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.day.open .chev {
+  rotate: 180deg;
+}
+
+/* Opens and closes smoothly: the body's one row grows from nothing to its height */
+.day-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.day.open .day-body {
+  grid-template-rows: 1fr;
+}
+
+.day-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day-body,
+  .chev { transition: none; }
+}
+
+/* ---------- The tests in a day ---------- */
+.history-list {
+  margin: 0 0.6rem 0.6rem;
   padding: 0;
   list-style: none;
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .history-list li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 5rem 5rem 4rem;
+  grid-template-columns: 3.25rem minmax(0, 1fr) 4.75rem 4.75rem 3.5rem;
+  grid-template-areas: 'time info down up ping';
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 0;
+  padding: 0.6rem 0.75rem;
   border-top: 1px solid var(--line);
   font-variant-numeric: tabular-nums;
 }
@@ -1055,9 +1602,39 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   border-top: 0;
 }
 
-.when {
-  color: var(--ink-2);
+.h-time {
+  grid-area: time;
   font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* Where it ran, with what that test was good enough for in small icons */
+.h-info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.where {
+  overflow: hidden;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.history-list .uses .app-icon {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .h-down,
@@ -1065,21 +1642,41 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
-.h-down svg {
-  color: var(--accent);
+.h-down { grid-area: down; }
+.h-up { grid-area: up; }
+
+.h-down .app-icon {
+  color: var(--band, var(--accent));
 }
 
-.h-up svg {
+.h-up .app-icon {
   color: var(--cyan);
 }
 
 .h-ping {
+  grid-area: ping;
   color: var(--ink-2);
   text-align: right;
   font-size: var(--text-sm);
+}
+
+/* Phones: the numbers on one line, where it ran and what it was good for underneath */
+@media (max-width: 560px) {
+  .history-list li {
+    grid-template-columns: 3rem minmax(0, 1fr) minmax(0, 1fr) 3.25rem;
+    grid-template-areas:
+      'time down up ping'
+      '. info info info';
+    row-gap: 0.3rem;
+  }
+
+  .day-best .best-up,
+  .day-best .best-label {
+    display: none;
+  }
 }
 
 .hint {

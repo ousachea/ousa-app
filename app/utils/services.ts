@@ -17,55 +17,57 @@ export interface KnownService {
   domain: string
   /** Brand colour for the letter tile when the icon can't load */
   color: string
+  /** Its logo in the shared library (Simple Icons), used before the website's own icon */
+  brand?: string
 }
 
 export const SERVICES: KnownService[] = [
-  { name: 'Netflix', category: 'Entertainment', domain: 'netflix.com', color: '#e50914' },
-  { name: 'YouTube Premium', aliases: ['youtube'], category: 'Entertainment', domain: 'youtube.com', color: '#ff0000' },
+  { name: 'Netflix', category: 'Entertainment', domain: 'netflix.com', color: '#e50914', brand: 'netflix' },
+  { name: 'YouTube Premium', aliases: ['youtube'], category: 'Entertainment', domain: 'youtube.com', color: '#ff0000', brand: 'youtube' },
   { name: 'Disney+', aliases: ['disney plus', 'disney'], category: 'Entertainment', domain: 'disneyplus.com', color: '#113ccf' },
   { name: 'Prime Video', aliases: ['amazon prime', 'prime'], category: 'Entertainment', domain: 'primevideo.com', color: '#1a98ff' },
-  { name: 'HBO Max', aliases: ['max', 'hbo'], category: 'Entertainment', domain: 'max.com', color: '#002be7' },
-  { name: 'Apple TV+', aliases: ['apple tv'], category: 'Entertainment', domain: 'tv.apple.com', color: '#1b1f2a' },
+  { name: 'HBO Max', aliases: ['max', 'hbo'], category: 'Entertainment', domain: 'max.com', color: '#002be7', brand: 'hbomax' },
+  { name: 'Apple TV+', aliases: ['apple tv'], category: 'Entertainment', domain: 'tv.apple.com', color: '#1b1f2a', brand: 'appletv' },
   { name: 'Viu', category: 'Entertainment', domain: 'viu.com', color: '#f5b400' },
   { name: 'iQIYI', aliases: ['iqiyi'], category: 'Entertainment', domain: 'iq.com', color: '#00be06' },
-  { name: 'Spotify', category: 'Music', domain: 'spotify.com', color: '#1db954' },
-  { name: 'Apple Music', category: 'Music', domain: 'music.apple.com', color: '#fa243c' },
-  { name: 'YouTube Music', category: 'Music', domain: 'music.youtube.com', color: '#ff0000' },
-  { name: 'iCloud+', aliases: ['icloud', 'apple one'], category: 'Cloud & storage', domain: 'icloud.com', color: '#3693f3' },
+  { name: 'Spotify', category: 'Music', domain: 'spotify.com', color: '#1db954', brand: 'spotify' },
+  { name: 'Apple Music', category: 'Music', domain: 'music.apple.com', color: '#fa243c', brand: 'applemusic' },
+  { name: 'YouTube Music', category: 'Music', domain: 'music.youtube.com', color: '#ff0000', brand: 'youtubemusic' },
+  { name: 'iCloud+', aliases: ['icloud', 'apple one'], category: 'Cloud & storage', domain: 'icloud.com', color: '#3693f3', brand: 'icloud' },
   { name: 'Google One', aliases: ['google drive', 'google storage'], category: 'Cloud & storage', domain: 'one.google.com', color: '#1a73e8' },
-  { name: 'Dropbox', category: 'Cloud & storage', domain: 'dropbox.com', color: '#0061fe' },
+  { name: 'Dropbox', category: 'Cloud & storage', domain: 'dropbox.com', color: '#0061fe', brand: 'dropbox' },
   { name: 'OneDrive', category: 'Cloud & storage', domain: 'onedrive.live.com', color: '#0078d4' },
   { name: 'Microsoft 365', aliases: ['office 365', 'office'], category: 'Software', domain: 'microsoft.com', color: '#d83b01' },
   { name: 'Adobe Creative Cloud', aliases: ['adobe', 'photoshop', 'lightroom'], category: 'Software', domain: 'adobe.com', color: '#fa0f00' },
-  { name: 'Figma', category: 'Software', domain: 'figma.com', color: '#a259ff' },
+  { name: 'Figma', category: 'Software', domain: 'figma.com', color: '#a259ff', brand: 'figma' },
   { name: 'Canva', category: 'Software', domain: 'canva.com', color: '#00c4cc' },
-  { name: 'Notion', category: 'Software', domain: 'notion.so', color: '#1b1f2a' },
-  { name: 'GitHub', aliases: ['github pro', 'copilot', 'github copilot'], category: 'Software', domain: 'github.com', color: '#24292f' },
-  { name: '1Password', aliases: ['one password'], category: 'Software', domain: '1password.com', color: '#0572ec' },
+  { name: 'Notion', category: 'Software', domain: 'notion.so', color: '#1b1f2a', brand: 'notion' },
+  { name: 'GitHub', aliases: ['github pro', 'copilot', 'github copilot'], category: 'Software', domain: 'github.com', color: '#24292f', brand: 'github' },
+  { name: '1Password', aliases: ['one password'], category: 'Software', domain: '1password.com', color: '#0572ec', brand: '1password' },
   { name: 'Zoom', category: 'Software', domain: 'zoom.us', color: '#2d8cff' },
   { name: 'Slack', category: 'Software', domain: 'slack.com', color: '#4a154b' },
-  { name: 'NordVPN', aliases: ['nord', 'vpn'], category: 'Software', domain: 'nordvpn.com', color: '#4687ff' },
-  { name: 'ExpressVPN', category: 'Software', domain: 'expressvpn.com', color: '#da3940' },
+  { name: 'NordVPN', aliases: ['nord', 'vpn'], category: 'Software', domain: 'nordvpn.com', color: '#4687ff', brand: 'nordvpn' },
+  { name: 'ExpressVPN', category: 'Software', domain: 'expressvpn.com', color: '#da3940', brand: 'expressvpn' },
   { name: 'ChatGPT Plus', aliases: ['chatgpt', 'openai'], category: 'AI', domain: 'chatgpt.com', color: '#10a37f' },
-  { name: 'Claude Pro', aliases: ['claude', 'anthropic'], category: 'AI', domain: 'claude.ai', color: '#d97757' },
-  { name: 'Gemini Advanced', aliases: ['gemini'], category: 'AI', domain: 'gemini.google.com', color: '#4285f4' },
+  { name: 'Claude Pro', aliases: ['claude', 'anthropic'], category: 'AI', domain: 'claude.ai', color: '#d97757', brand: 'claude' },
+  { name: 'Gemini Advanced', aliases: ['gemini'], category: 'AI', domain: 'gemini.google.com', color: '#4285f4', brand: 'googlegemini' },
   { name: 'Smart', aliases: ['smart axiata', 'smart plan'], category: 'Phone & internet', domain: 'smart.com.kh', color: '#009a3e' },
   { name: 'Cellcard', category: 'Phone & internet', domain: 'cellcard.com.kh', color: '#f58220' },
   { name: 'Metfone', category: 'Phone & internet', domain: 'metfone.com.kh', color: '#e3001b' },
   { name: 'EZECOM', aliases: ['ezecom'], category: 'Phone & internet', domain: 'ezecom.com.kh', color: '#0b4ea2' },
   { name: 'Opennet', category: 'Phone & internet', domain: 'opennet.com.kh', color: '#e30613' },
-  { name: 'Telegram Premium', aliases: ['telegram'], category: 'Phone & internet', domain: 'telegram.org', color: '#229ed9' },
+  { name: 'Telegram Premium', aliases: ['telegram'], category: 'Phone & internet', domain: 'telegram.org', color: '#229ed9', brand: 'telegram' },
   { name: 'Xbox Game Pass', aliases: ['game pass', 'xbox'], category: 'Gaming', domain: 'xbox.com', color: '#107c10' },
-  { name: 'PlayStation Plus', aliases: ['ps plus', 'playstation'], category: 'Gaming', domain: 'playstation.com', color: '#003791' },
+  { name: 'PlayStation Plus', aliases: ['ps plus', 'playstation'], category: 'Gaming', domain: 'playstation.com', color: '#003791', brand: 'playstation' },
   { name: 'Nintendo Switch Online', aliases: ['nintendo'], category: 'Gaming', domain: 'nintendo.com', color: '#e60012' },
-  { name: 'Duolingo', aliases: ['super duolingo'], category: 'Learning', domain: 'duolingo.com', color: '#58cc02' },
-  { name: 'Coursera', category: 'Learning', domain: 'coursera.org', color: '#0056d2' },
+  { name: 'Duolingo', aliases: ['super duolingo'], category: 'Learning', domain: 'duolingo.com', color: '#58cc02', brand: 'duolingo' },
+  { name: 'Coursera', category: 'Learning', domain: 'coursera.org', color: '#0056d2', brand: 'coursera' },
   { name: 'LinkedIn Premium', aliases: ['linkedin'], category: 'Learning', domain: 'linkedin.com', color: '#0a66c2' },
-  { name: 'Medium', category: 'News & reading', domain: 'medium.com', color: '#1b1f2a' },
+  { name: 'Medium', category: 'News & reading', domain: 'medium.com', color: '#1b1f2a', brand: 'medium' },
   { name: 'Kindle Unlimited', aliases: ['kindle'], category: 'News & reading', domain: 'amazon.com', color: '#ff9900' },
-  { name: 'Strava', category: 'Health & fitness', domain: 'strava.com', color: '#fc4c02' },
+  { name: 'Strava', category: 'Health & fitness', domain: 'strava.com', color: '#fc4c02', brand: 'strava' },
   { name: 'Grab Unlimited', aliases: ['grab', 'grabunlimited'], category: 'Shopping & delivery', domain: 'grab.com', color: '#00b14f' },
-  { name: 'pandapro', aliases: ['foodpanda', 'panda pro'], category: 'Shopping & delivery', domain: 'foodpanda.com.kh', color: '#d70f64' },
+  { name: 'pandapro', aliases: ['foodpanda', 'panda pro'], category: 'Shopping & delivery', domain: 'foodpanda.com.kh', color: '#d70f64', brand: 'foodpanda' },
   { name: 'Amazon Prime', aliases: ['amazon'], category: 'Shopping & delivery', domain: 'amazon.com', color: '#ff9900' }
 ]
 
@@ -85,6 +87,8 @@ export function findService(name: string): KnownService | undefined {
 // For services with no logo of their own: a line icon from Lucide, served by /api/icon. Saved as 'ico:lucide:<name>'
 export const ICON_LIBRARY_PREFIX = 'ico:'
 export const libraryIconUrl = (id: string, color = '#ffffff') => `/api/icon?id=${encodeURIComponent(id)}&color=${encodeURIComponent(color)}`
+/** A brand's logo from the library (Simple Icons) in its brand colour, e.g. brandLogoUrl('stripe') */
+export const brandLogoUrl = (slug: string) => `/api/icon?id=simple-icons:${encodeURIComponent(slug)}`
 // Shown before you search: the kinds of things people pay for every month
 export const SUGGESTED_ICONS = [
   'tv', 'film', 'music', 'headphones', 'mic', 'gamepad-2', 'cloud', 'server', 'smartphone', 'wifi', 'globe', 'mail',

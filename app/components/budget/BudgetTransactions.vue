@@ -168,7 +168,7 @@ const describe = computed(() => {
     <section class="panel b-panel filters" aria-label="Filters">
       <div class="filter-row">
         <label class="search input">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+          <AppIcon name="search" />
           <input v-model="searchText" type="search" placeholder="Search notes, merchants, tags…" aria-label="Search transactions">
         </label>
         <div class="segmented kinds" role="radiogroup" aria-label="Type">

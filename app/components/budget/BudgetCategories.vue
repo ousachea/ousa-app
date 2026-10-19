@@ -193,7 +193,7 @@ const nameOf = (id: string) => categoryById.value.get(id)?.name ?? ''
       <li v-for="(c, i) in tops" :key="c.id" class="panel cat" :class="[`slot-${c.color}`, { archived: c.archived }]">
         <div class="cat-row">
           <button v-if="kind === 'expense'" type="button" class="expand" :aria-expanded="open.has(c.id)" :aria-label="`${open.has(c.id) ? 'Hide' : 'Show'} subcategories of ${c.name}`" @click="toggle(c.id)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+            <AppIcon name="chevron-right" />
           </button>
           <span class="icon" aria-hidden="true">{{ c.icon }}</span>
           <span class="name">

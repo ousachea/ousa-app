@@ -91,7 +91,7 @@ const countOf = (to: string) => APP_FEATURES[to]?.length ?? 0
             </th>
             <td v-for="f in columns" :key="f.key" :class="{ diff: differs(f.key) }">
               <span v-if="hasFeature(a.to, f.key)" class="yes" :title="`${a.name}: ${f.label}`">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 12.5l3.5 3.5 7.5-8" /></svg>
+                <AppIcon name="check" />
                 <span class="sr-only">Yes</span>
               </span>
               <span v-else class="no"><span class="sr-only">No</span></span>

@@ -79,7 +79,7 @@ function go(s: { run: () => void }) {
     <ol class="steps">
       <li v-for="(s, i) in steps" :key="s.title" class="step" :class="{ done: s.done, next: i === next }">
         <span class="num" :aria-label="s.done ? `Step ${i + 1}, done` : `Step ${i + 1}`">
-          <svg v-if="s.done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          <AppIcon v-if="s.done" name="check" />
           <template v-else>{{ i + 1 }}</template>
         </span>
         <div class="body">

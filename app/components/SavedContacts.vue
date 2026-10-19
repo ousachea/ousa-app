@@ -207,7 +207,7 @@ const contactMenu = (c: Contact): MenuEntry[] => [
             <span v-else class="net-tag bad">{{ checkOf(c).match ? 'Wrong length' : 'Invalid' }}</span>
             <span class="row-actions menu-dup">
               <button type="button" class="icon-btn" :aria-label="`Edit ${c.name || c.phone}`" title="Edit" @click="openEdit(c)">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+                <AppIcon name="pencil" />
               </button>
               <ConfirmDelete :name="c.name || c.phone" @confirm="del(c)" />
             </span>

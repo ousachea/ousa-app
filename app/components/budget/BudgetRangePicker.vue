@@ -41,11 +41,11 @@ const to = computed({ get: () => range.value.to, set: v => (range.value = { from
     </div>
     <div v-if="mode === 'month'" class="month">
       <button type="button" class="btn btn-quiet btn-sm arrow" aria-label="Previous month" @click="shift(-1)">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+        <AppIcon name="chevron-left" />
       </button>
       <strong aria-live="polite">{{ formatRange(range) }}</strong>
       <button type="button" class="btn btn-quiet btn-sm arrow" aria-label="Next month" :disabled="isThisMonth" @click="shift(1)">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        <AppIcon name="chevron-right" />
       </button>
     </div>
     <div v-else-if="mode === 'custom'" class="custom">

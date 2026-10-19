@@ -222,6 +222,7 @@ function refresh() {
           <div v-else-if="!apiView" class="panel loading" aria-busy="true">Loading your usage report…</div>
 
           <template v-if="apiView">
+            <ClaudeBudget :spent="apiView.spent" :days="days" />
             <div class="stats">
               <div class="panel stat"><span class="k">Spent</span><b>{{ usd(apiView.spent) }}</b><small>last {{ days }} days</small></div>
               <div class="panel stat"><span class="k">Tokens</span><b>{{ compact(apiView.tokens) }}</b><small>{{ compact(apiView.output) }} written by Claude</small></div>
@@ -267,6 +268,7 @@ function refresh() {
         <div v-else-if="!codeView" class="panel loading" aria-busy="true">Reading Claude Code’s logs… the first time takes a few seconds.</div>
 
         <template v-if="codeView">
+          <ClaudeBudget :spent="codeView.total.cost" :days="days" estimated />
           <div class="stats">
             <div class="panel stat"><span class="k">At API prices</span><b>{{ usd(codeView.total.cost) }}</b><small>estimated, last {{ days }} days</small></div>
             <div class="panel stat"><span class="k">Tokens</span><b>{{ compact(codeView.total.tokens) }}</b><small>{{ pctOf(codeView.total.cacheRead, codeView.total.tokens) }} read from the cache</small></div>

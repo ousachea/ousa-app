@@ -101,6 +101,17 @@ const showSpending = (l: BudgetLimit, range: { from: string, to: string }) =>
           </div>
           <button type="button" class="link" @click="openForm(l)">Edit</button>
         </div>
+        <!-- The overall budget also gets a dial (components/gauge): how much is used, and a mark where the month
+             is heading when that's still under the limit -->
+        <div v-if="l.scope === 'overall'" class="overall-dial" :class="`is-${s.level}`" aria-hidden="true">
+          <Gauge :value="Math.min(s.share ?? 0, 1)" :min="0" :max="1" :start-angle="60" :end-angle="300" :radius="200" :padding="24" fit="content" transition :initial-value="0">
+            <GaugeTrack :width="28" color="var(--ink)" :opacity="0.08" />
+            <GaugeArc :width="28" color="var(--dial)" />
+            <GaugeMarks v-if="s.projected !== undefined && s.limit && s.projected < s.limit" :values="[s.projected / s.limit]" :length="44" :width="5" color="var(--ink-2)" />
+            <GaugeText :y="-12" :font-size="76" weight="bold" color="var(--ink)">{{ s.share === undefined ? '…' : `${Math.round(s.share * 100)}%` }}</GaugeText>
+            <GaugeText :y="58" :font-size="26" weight="semibold" color="var(--ink-2)">used</GaugeText>
+          </Gauge>
+        </div>
         <BudgetMeter :share="s.share" :level="s.level" :label="`${nameOf(l)} budget`" :pace="s.projected !== undefined && s.limit ? s.projected / s.limit : undefined" />
         <div class="figures">
           <button type="button" class="link spent" @click="showSpending(l, s.range)">Spent <strong class="b-num">{{ money(s.spent.value) }}</strong></button>
@@ -212,6 +223,36 @@ const showSpending = (l: BudgetLimit, range: { from: string, to: string }) =>
 .budget.overall {
   grid-column: 1 / -1;
 }
+
+/* Wide enough: the dial on the left, the name, bar and figures beside it */
+@media (min-width: 640px) {
+  .budget.overall {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    align-content: center;
+    gap: 0.75rem 1.75rem;
+  }
+
+  .budget.overall > * {
+    grid-column: 2;
+  }
+
+  .budget.overall > .overall-dial {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    align-self: center;
+  }
+}
+
+.overall-dial {
+  --dial: var(--budget-ok);
+  width: min(100%, 11rem);
+  margin-inline: auto;
+}
+
+.overall-dial.is-warn,
+.overall-dial.is-reached { --dial: var(--budget-warn); }
+.overall-dial.is-over { --dial: var(--budget-over); }
 
 
 .top {

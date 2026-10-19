@@ -73,7 +73,7 @@ watch([editor, () => props.spellcheck], ([e, on]) => {
 }, { immediate: true })
 
 // ---------- Toolbar ----------
-type Cmd = { key: string, label: string, title: string, icon: string, run: () => void, active?: () => boolean }
+type Cmd = { key: string, label: string, title: string, /** from the shared icon library */ icon: string, run: () => void, active?: () => boolean }
 const chain = () => editor.value!.chain().focus()
 const is = (name: string, attrs?: Record<string, unknown>) => !!editor.value?.isActive(name, attrs)
 const mod = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+'
@@ -102,18 +102,18 @@ function openStyles(e: MouseEvent) {
 }
 
 const TOOLS: (Cmd | '|')[] = [
-  { key: 'bold', label: 'Bold', title: `Bold (${mod}B)`, icon: 'M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z', run: () => chain().toggleBold().run(), active: () => is('bold') },
-  { key: 'italic', label: 'Italic', title: `Italic (${mod}I)`, icon: 'M10 5h8M6 19h8M14 5l-4 14', run: () => chain().toggleItalic().run(), active: () => is('italic') },
-  { key: 'underline', label: 'Underline', title: `Underline (${mod}U)`, icon: 'M7 4.5v6a5 5 0 0 0 10 0v-6M5.5 20h13', run: () => chain().toggleUnderline().run(), active: () => is('underline') },
-  { key: 'strike', label: 'Strikethrough', title: `Strikethrough (${mod}⇧S)`, icon: 'M4.5 12h15M16 6.5c-.8-1.3-2.3-2-4-2-2.5 0-4 1.3-4 3.2 0 1.2.7 2 1.8 2.6M8 17.3c.8 1.4 2.3 2.2 4.2 2.2 2.6 0 4.3-1.4 4.3-3.4 0-.6-.1-1.1-.4-1.6', run: () => chain().toggleStrike().run(), active: () => is('strike') },
-  { key: 'code', label: 'Inline code', title: `Inline code (${mod}E)`, icon: 'M9 8l-4 4 4 4M15 8l4 4-4 4', run: () => chain().toggleCode().run(), active: () => is('code') },
-  { key: 'link', label: 'Link', title: `Link (${mod}K with text selected)`, icon: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', run: () => setLink(), active: () => is('link') },
+  { key: 'bold', label: 'Bold', title: `Bold (${mod}B)`, icon: 'lucide:bold', run: () => chain().toggleBold().run(), active: () => is('bold') },
+  { key: 'italic', label: 'Italic', title: `Italic (${mod}I)`, icon: 'lucide:italic', run: () => chain().toggleItalic().run(), active: () => is('italic') },
+  { key: 'underline', label: 'Underline', title: `Underline (${mod}U)`, icon: 'lucide:underline', run: () => chain().toggleUnderline().run(), active: () => is('underline') },
+  { key: 'strike', label: 'Strikethrough', title: `Strikethrough (${mod}⇧S)`, icon: 'lucide:strikethrough', run: () => chain().toggleStrike().run(), active: () => is('strike') },
+  { key: 'code', label: 'Inline code', title: `Inline code (${mod}E)`, icon: 'lucide:code', run: () => chain().toggleCode().run(), active: () => is('code') },
+  { key: 'link', label: 'Link', title: `Link (${mod}K with text selected)`, icon: 'lucide:link', run: () => setLink(), active: () => is('link') },
   '|',
-  { key: 'bullets', label: 'Bullet list', title: 'Bullet list (- )', icon: 'M9 6.5h11M9 12h11M9 17.5h11M4.75 6.5h.01M4.75 12h.01M4.75 17.5h.01', run: () => chain().toggleBulletList().run(), active: () => is('bulletList') },
-  { key: 'numbers', label: 'Numbered list', title: 'Numbered list (1. )', icon: 'M10 6.5h10M10 12h10M10 17.5h10M4 5l1.5-1v5M3.8 15.2c.3-.8 2.7-1 2.6.6-.1 1-2.6 2-2.6 3.2h2.8', run: () => chain().toggleOrderedList().run(), active: () => is('orderedList') },
-  { key: 'tasks', label: 'Checklist', title: 'Checklist ([ ] )', icon: 'M4 5.5h4.5V10H4zM4 14h4.5v4.5H4zM5 16.5l1 1 2-2.5M12 7.75h8M12 16.25h8', run: () => chain().toggleTaskList().run(), active: () => is('taskList') },
-  { key: 'hr', label: 'Divider', title: 'Divider (---)', icon: 'M4 12h16', run: () => chain().setHorizontalRule().run() },
-  { key: 'image', label: 'Image', title: 'Add an image (or paste / drop one)', icon: 'M4 6h16v13H4zM4 15.5l4.5-4.5 4 4 2.5-2.5 5 5M15.5 9.5h.01', run: () => imageInput.value?.click() }
+  { key: 'bullets', label: 'Bullet list', title: 'Bullet list (- )', icon: 'lucide:list', run: () => chain().toggleBulletList().run(), active: () => is('bulletList') },
+  { key: 'numbers', label: 'Numbered list', title: 'Numbered list (1. )', icon: 'lucide:list-ordered', run: () => chain().toggleOrderedList().run(), active: () => is('orderedList') },
+  { key: 'tasks', label: 'Checklist', title: 'Checklist ([ ] )', icon: 'lucide:list-checks', run: () => chain().toggleTaskList().run(), active: () => is('taskList') },
+  { key: 'hr', label: 'Divider', title: 'Divider (---)', icon: 'lucide:minus', run: () => chain().setHorizontalRule().run() },
+  { key: 'image', label: 'Image', title: 'Add an image (or paste / drop one)', icon: 'lucide:image', run: () => imageInput.value?.click() }
 ]
 
 // ---------- On selected text ----------
@@ -311,7 +311,7 @@ defineExpose({
     <div class="toolbar" role="toolbar" aria-label="Formatting">
       <button type="button" class="style-btn" aria-haspopup="menu" :aria-label="`Text style: ${styleName()}`" title="Text style" @mousedown.prevent @click="openStyles">
         <span>{{ styleName() }}</span>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
+        <AppIcon name="chevron-down" />
       </button>
       <span class="sep" aria-hidden="true" />
       <template v-for="(t, i) in TOOLS" :key="t === '|' ? `sep${i}` : t.key">
@@ -327,7 +327,7 @@ defineExpose({
           @mousedown.prevent
           @click="t.run()"
         >
-          <svg v-if="t.icon" viewBox="0 0 24 24" aria-hidden="true"><path :d="t.icon" /></svg>
+          <AppIcon v-if="t.icon" :name="t.icon" />
           <span v-else class="tool-text">{{ t.label }}</span>
         </button>
       </template>
@@ -337,7 +337,7 @@ defineExpose({
     <BubbleMenu v-if="editor" :editor="editor" :should-show="showBubble" :options="{ placement: 'top', offset: 8, flip: true, shift: { padding: 8 } }" class="bubble" role="toolbar" aria-label="Format selected text">
       <button type="button" class="style-btn" aria-haspopup="menu" :aria-label="`Text style: ${styleName()}`" title="Text style" @mousedown.prevent @click="openStyles">
         <span>{{ styleName() }}</span>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
+        <AppIcon name="chevron-down" />
       </button>
       <span class="sep" aria-hidden="true" />
       <template v-for="(t, i) in BUBBLE" :key="t === '|' ? `bsep${i}` : t.key">
@@ -353,7 +353,7 @@ defineExpose({
           @mousedown.prevent
           @click="t.run()"
         >
-          <svg v-if="t.icon" viewBox="0 0 24 24" aria-hidden="true"><path :d="t.icon" /></svg>
+          <AppIcon v-if="t.icon" :name="t.icon" />
           <span v-else class="tool-text">{{ t.label }}</span>
         </button>
       </template>

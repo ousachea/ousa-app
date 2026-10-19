@@ -217,7 +217,7 @@ const wordCount = (s: string) => (s.match(/[\p{L}\p{N}]+/gu) ?? []).length
               @keydown="onSplitKey"
             >
               <span class="grip" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5" /></svg>
+                <AppIcon name="chevrons-left-right" />
               </span>
             </div>
           </div>

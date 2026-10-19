@@ -46,7 +46,7 @@ function onClick(e: MouseEvent) {
       <header class="modal-head">
         <h2>{{ title }}</h2>
         <button type="button" class="close" aria-label="Close" @click="emit('close')">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <AppIcon name="x" />
         </button>
       </header>
       <!-- Only while open: a closed popup's form shouldn't sit in the page, and content that depends on

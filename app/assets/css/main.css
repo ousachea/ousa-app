@@ -119,6 +119,32 @@
   --density: 1.45;
 }
 
+/* Font (Settings → Appearance): the app's own, or one already on the device, so nothing is downloaded.
+   Khmer always falls back to Noto Sans Khmer. The stacks are variables so the picker can show each one */
+:root {
+  --font-bricolage: 'Bricolage Grotesque', 'Noto Sans Khmer', ui-sans-serif, system-ui, sans-serif;
+  --font-system: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Khmer', sans-serif;
+  --font-rounded: ui-rounded, 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Quicksand, Nunito, 'Arial Rounded MT Bold', 'Noto Sans Khmer', system-ui, sans-serif;
+  --font-serif: ui-serif, 'New York', 'Iowan Old Style', Charter, Georgia, Cambria, 'Noto Sans Khmer', serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, 'Noto Sans Khmer', monospace;
+}
+
+:root[data-font='system'] {
+  --font: var(--font-system);
+}
+
+:root[data-font='rounded'] {
+  --font: var(--font-rounded);
+}
+
+:root[data-font='serif'] {
+  --font: var(--font-serif);
+}
+
+:root[data-font='mono'] {
+  --font: var(--font-mono);
+}
+
 /* Set on <html> by the theme script in nuxt.config before the page paints */
 :root[data-theme='dark'] {
   --bg: #0e1116;

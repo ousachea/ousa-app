@@ -658,7 +658,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                   </label>
                 </div>
                 <button v-if="source === 'api'" type="button" class="refresh" :disabled="loading" @click="refresh">
-                  <svg viewBox="0 0 24 24" aria-hidden="true" :class="{ spinning: loading }"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" /></svg>
+                  <AppIcon :class="{ spinning: loading }" name="rotate-cw" />
                   {{ loading ? 'Loading…' : w.refresh }}
                 </button>
               </div>
@@ -731,9 +731,18 @@ const PURITIES: { value: Purity, label: string }[] = [
                     <span>{{ new Date(hover.time).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</span>
                   </div>
                 </div>
+                <!-- Where the price sits between this range's low and high, on a dial (components/gauge) -->
                 <div class="chart-scale">
-                  <span>Low {{ money(chart.min, 0) }}</span>
-                  <span>High {{ money(chart.max, 0) }}</span>
+                  <span>Low<br><strong>{{ money(chart.min, 0) }}</strong></span>
+                  <span class="range-dial" role="img" :aria-label="`Now ${money(chart.xy.at(-1)!.price, 0)}, between ${money(chart.min, 0)} and ${money(chart.max, 0)}`">
+                    <Gauge :value="chart.xy.at(-1)!.price" :min="chart.min" :max="chart.max === chart.min ? chart.min + 1 : chart.max" :start-angle="90" :end-angle="270" :radius="200" :padding="26" fit="content" transition>
+                      <GaugeTrack :width="22" color="var(--ink)" :opacity="0.08" />
+                      <GaugeArc :width="22" color="var(--gold)" />
+                      <GaugeNeedle variant="pointer" :length="0.72" :width="16" :tail="0" color="var(--ink)" />
+                      <GaugeHub :radius="12" color="var(--ink)" />
+                    </Gauge>
+                  </span>
+                  <span class="high">High<br><strong>{{ money(chart.max, 0) }}</strong></span>
                 </div>
               </template>
               <p v-else class="muted">Refresh the price a few times and the chart fills in.</p>
@@ -766,11 +775,11 @@ const PURITIES: { value: Purity, label: string }[] = [
               </div>
               <div class="pl-legend">
                 <span class="up">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+                  <AppIcon name="arrow-up" />
                   {{ w.gained }} <strong>{{ money(totals.up) }}</strong><small>{{ w.on }}</small><em>{{ asGold(totals.upGrams) }}</em><small>· {{ totals.upCount }} {{ w.buys }}</small>
                 </span>
                 <span class="down" :class="{ none: !totals.downCount }">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+                  <AppIcon name="arrow-down" />
                   {{ w.lost }} <strong>{{ money(totals.down) }}</strong><small>{{ w.on }}</small><em>{{ asGold(totals.downGrams) }}</em><small>· {{ totals.downCount }} {{ w.buys }}</small>
                 </span>
               </div>
@@ -822,7 +831,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                     <!-- Per-unit prices only add something when more than one unit was bought -->
                     <small v-if="p.weight !== 1">{{ money(paidPerUnit(p)) }} {{ w.each }} {{ w[p.unit] }}</small>
                   </div>
-                  <svg class="p-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+                  <AppIcon class="p-arrow" name="arrow-right" />
                   <div class="p-col">
                     <span class="p-label">{{ w.worth }}</span>
                     <strong>{{ spot ? money(valueOf(p)) : '—' }}</strong>
@@ -833,7 +842,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                 <footer class="p-foot">
                   <span v-if="spot" class="p-result">
                     <span class="p-badge">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="gainOf(p) >= 0 ? 'M12 19V5M6 11l6-6 6 6' : 'M12 5v14M6 13l6 6 6-6'" /></svg>
+                      <AppIcon :name="gainOf(p) >= 0 ? 'arrow-up' : 'arrow-down'" />
                       {{ gainOf(p) >= 0 ? w.gain : w.loss }}
                     </span>
                     <strong>{{ signed(gainOf(p)) }}</strong>
@@ -888,11 +897,7 @@ const PURITIES: { value: Purity, label: string }[] = [
       <!-- Phones only (CSS): the bar of tabs at the foot of the screen; the bulk bar takes its place while selecting -->
       <nav v-if="!sel.selecting" class="tab-bar" aria-label="Gold tracker">
         <button v-for="t in TABS" :key="t" type="button" :class="{ active: tab === t }" :aria-current="tab === t ? 'page' : undefined" @click="pickTab(t)">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path v-if="t === 'price'" d="M3 17l6-6 4 4 8-8M15 7h6v6" />
-            <path v-else-if="t === 'gold'" d="M4 20h16M6 20l1.5-5h9L18 20M8.5 15L10 10h4l1.5 5M10.6 10l1.4-5 1.4 5" />
-            <path v-else d="M12 4v16M8 20h8M5 8h14M5 8l-2.5 6a2.5 2.5 0 0 0 5 0zM19 8l-2.5 6a2.5 2.5 0 0 0 5 0z" />
-          </svg>
+          <AppIcon :name="t === 'price' ? 'trending-up' : t === 'gold' ? 'coins' : 'scale'" />
           <span>{{ t === 'price' ? w.tabPrice : t === 'gold' ? w.myGold : w.tabUnits }}</span>
           <i v-if="t === 'gold' && purchases.length" class="tab-count">{{ purchases.length }}</i>
         </button>
@@ -1312,10 +1317,24 @@ const PURITIES: { value: Purity, label: string }[] = [
 .chart-scale {
   display: flex;
   justify-content: space-between;
-  margin-top: 0.3rem;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-top: 0.6rem;
   font-size: 0.8rem;
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
+}
+
+.chart-scale strong {
+  color: var(--ink);
+}
+
+.chart-scale .high {
+  text-align: right;
+}
+
+.range-dial {
+  width: 6rem;
 }
 
 /* ---------- Price by unit ---------- */

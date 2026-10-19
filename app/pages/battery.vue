@@ -302,6 +302,15 @@ const status = computed(() => {
   return { key: 'replace', label: 'Replace', note: 'Below 70% — expect fast drain and possible slowdowns or shutdowns.' }
 })
 
+// Health dial (components/gauge): the needle on bands that match the status above it.
+// 50% and below all read as Replace, so the dial starts there and has room for the bands that matter.
+const HEALTH_ZONES = [
+  { to: 70, color: 'var(--pb-replace)' },
+  { to: 80, color: 'var(--pb-worn)' },
+  { to: 90, color: 'var(--pb-good)' },
+  { to: 100, color: 'var(--pb-great)' }
+]
+
 // Battery graphic: the outline is the design capacity, the hatched tail is
 // capacity lost to wear, and the fill is the charge in the battery now.
 const usableWidth = computed(() => clamp(health.value, 0, 100))
@@ -822,7 +831,7 @@ onMounted(async () => {
 
           <div v-if="sharedView" class="detect" role="status">
             <span class="detect-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M7 9V1.8M4.2 4.4L7 1.6l2.8 2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /><path d="M2.5 7.5v3.2c0 .7.6 1.3 1.3 1.3h6.4c.7 0 1.3-.6 1.3-1.3V7.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+              <AppIcon name="share" :size="16" />
             </span>
             <div class="detect-body">
               <strong>You're viewing a shared result</strong>
@@ -833,7 +842,7 @@ onMounted(async () => {
           <Transition name="detect">
             <div v-if="detection && !detectDismissed" class="detect" role="status">
               <span class="detect-icon" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="4" y="1.5" width="8" height="13" rx="2" stroke="currentColor" stroke-width="1.3" /><path d="M7 12.5h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" /></svg>
+                <AppIcon name="smartphone" :size="16" />
                 <span class="detect-ping" />
               </span>
               <div class="detect-body">
@@ -862,7 +871,7 @@ onMounted(async () => {
                 </template>
               </div>
               <button type="button" class="detect-close" aria-label="Dismiss" @click="detectDismissed = true">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+                <AppIcon name="x" :size="10" />
               </button>
             </div>
           </Transition>
@@ -909,10 +918,7 @@ onMounted(async () => {
               </div>
 
               <div class="pm-search">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                  <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3" />
-                  <path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                </svg>
+                <AppIcon name="search" :size="14" />
                 <input
                   v-model="query"
                   type="text"
@@ -939,7 +945,7 @@ onMounted(async () => {
                   @pointerenter="activeIndex = 0"
                 >
                   <span>Other — enter capacity manually</span>
-                  <svg v-if="model === ''" class="pm-check" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5l2.5 2.5 4.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  <AppIcon v-if="model === ''" class="pm-check" name="check" :size="12" />
                 </div>
 
                 <section v-for="group in filteredGroups" :key="group.label" role="group" :aria-label="group.label">
@@ -960,7 +966,7 @@ onMounted(async () => {
                       <span class="pm-name">{{ name }}</span>
                       <span class="pm-mah">{{ fmt(mah) }} <small>mAh</small></span>
                       <span class="pm-bar" :style="{ '--w': `${Math.min(100, mah / 80)}%` }" />
-                      <svg v-if="model === name" class="pm-check" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5l2.5 2.5 4.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                      <AppIcon v-if="model === name" class="pm-check" name="check" :size="12" />
                     </div>
                   </div>
                 </section>
@@ -1056,16 +1062,27 @@ onMounted(async () => {
             <button type="button" class="share-btn" :class="shareState" :aria-label="shareState === 'copied' ? 'Copied' : 'Share result'" @click="shareResult">
               <Transition name="pm-swap" mode="out-in">
                 <span v-if="shareState === 'copied'" key="ok" class="share-inner">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7.5l2.5 2.5L11 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  <AppIcon name="check" :size="14" />
                   Copied
                 </span>
                 <span v-else-if="shareState === 'failed'" key="fail" class="share-inner">Couldn't copy</span>
                 <span v-else key="idle" class="share-inner">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 9V1.8M4.2 4.4L7 1.6l2.8 2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /><path d="M2.5 7.5v3.2c0 .7.6 1.3 1.3 1.3h6.4c.7 0 1.3-.6 1.3-1.3V7.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" /></svg>
+                  <AppIcon name="share" :size="14" />
                   Share
                 </span>
               </Transition>
             </button>
+          </div>
+
+          <div class="health-dial">
+            <Gauge :value="health" :min="50" :max="100" :start-angle="90" :end-angle="270" :radius="200" :padding="34" fit="content" transition :initial-value="50" role="img" :aria-label="`Battery health ${fmt(health, 1)}%: ${status.label}`">
+              <GaugeZones :zones="HEALTH_ZONES" :width="22" :gap="1.2" end-cap="round" />
+              <GaugeTicks :values="[60, 70, 80, 90]" :length="10" :offset="-22" color="var(--line)" :width="2.5" />
+              <GaugeTickLabels :values="[50, 70, 80, 90, 100]" :offset="-46" :font-size="17" color="var(--gray)" weight="semibold" />
+              <GaugeNeedle variant="pointer" :length="0.56" :width="15" :tail="0" color="var(--ink)" />
+              <GaugeHub :radius="11" color="var(--ink)" />
+              <GaugeHub :radius="4.5" color="var(--pb-card)" />
+            </Gauge>
           </div>
 
           <div ref="batteryRef" class="battery ambient-motion" :class="{ flash: batteryFlash }" role="img" :aria-label="`${fmt(health, 1)}% of original capacity, ${fmt(newEquivalentPct, 1)}% of original charge`">
@@ -1179,7 +1196,7 @@ onMounted(async () => {
           <span class="dot" aria-hidden="true" />
           <strong>{{ status.label }}</strong>
           <span>{{ fmt(health, 1) }}% · {{ fmt(currentMax) }} mAh</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          <AppIcon name="chevron-down" />
         </button>
       </Transition>
 
@@ -1697,6 +1714,7 @@ onMounted(async () => {
 .status.s-over { color: var(--pb-over); }
 
 /* BATTERY */
+.health-dial { width: min(100%, 17rem); margin: -0.5rem auto 1.25rem; }
 .battery { display: flex; align-items: center; gap: 4px; scroll-margin: 6rem 0 2rem; }
 .battery.flash .cell { animation: battery-flash 1.1s cubic-bezier(.2, .8, .2, 1) 0.35s; }
 @keyframes battery-flash {

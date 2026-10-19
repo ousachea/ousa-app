@@ -169,7 +169,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
       :aria-label="`${ariaLabel ?? 'Date'}: ${label || placeholder || 'Pick a date'}`"
       @click="open ? close() : openPicker()"
     >
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
+      <AppIcon class="icon" name="calendar" />
       <span class="value">{{ label || placeholder || 'Pick a date' }}</span>
     </button>
     <!-- Keeps the browser's "please fill in this field" check for required dates -->
@@ -187,14 +187,14 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
     >
       <header class="cal-head">
         <button type="button" class="nav" :aria-label="view === 'days' ? 'Previous month' : 'Earlier'" @click="step(-1)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+          <AppIcon name="chevron-left" />
         </button>
         <button type="button" class="title" :disabled="view === 'years'" @click="zoomOut">
           {{ title }}
-          <svg v-if="view !== 'years'" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
+          <AppIcon v-if="view !== 'years'" name="chevron-down" />
         </button>
         <button type="button" class="nav" :aria-label="view === 'days' ? 'Next month' : 'Later'" @click="step(1)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+          <AppIcon name="chevron-right" />
         </button>
       </header>
 

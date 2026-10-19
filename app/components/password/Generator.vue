@@ -23,6 +23,13 @@ const timeToCrack = computed(() => crackTime(rating.value.bits))
 const scaleAt = computed(() => crackScale(crackSeconds(rating.value.bits)))
 // Where the strength labels change (60 and 75 bits), on the same scale
 const bands = { weak: crackScale(crackSeconds(60)), fair: crackScale(crackSeconds(75)) }
+// The strength dial (components/gauge): bits of randomness on bands at the same cutoffs as the labels
+const STRENGTH_ZONES = [
+  { to: 60, color: 'var(--red)' },
+  { to: 75, color: 'var(--orange)' },
+  { to: 100, color: 'var(--green)' },
+  { to: 160, color: 'color-mix(in srgb, var(--green) 65%, var(--ink))' }
+]
 
 // Generate in the browser only: never render a password on the server
 function regenerate() {
@@ -125,8 +132,12 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
           </ClientOnly>
 
           <div class="meter" :data-level="rating.level">
-            <div class="bars" aria-hidden="true">
-              <span v-for="n in 4" :key="n" :class="{ on: n <= rating.level }" />
+            <div class="dial" aria-hidden="true">
+              <Gauge :value="rating.bits" :min="20" :max="160" :start-angle="90" :end-angle="270" :radius="200" :padding="30" fit="content" transition>
+                <GaugeZones :zones="STRENGTH_ZONES" :width="30" :gap="2" end-cap="round" />
+                <GaugeNeedle variant="pointer" :length="0.78" :width="22" :tail="0" color="var(--ink)" />
+                <GaugeHub :radius="16" color="var(--ink)" />
+              </Gauge>
             </div>
             <p>
               <strong>{{ rating.label }}</strong>
@@ -372,24 +383,10 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   gap: 1rem;
 }
 
-.bars {
+.dial {
   flex: none;
-  display: flex;
-  gap: 0.3rem;
+  width: 5.5rem;
 }
-
-.bars span {
-  width: 2.25rem;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--line);
-  transition: background-color 0.2s;
-}
-
-.meter[data-level='1'] .bars .on { background: var(--red); }
-.meter[data-level='2'] .bars .on { background: var(--orange); }
-.meter[data-level='3'] .bars .on,
-.meter[data-level='4'] .bars .on { background: var(--green); }
 
 .meter p {
   margin: 0;

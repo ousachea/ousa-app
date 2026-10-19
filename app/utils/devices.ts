@@ -46,27 +46,30 @@ export const NEW_TYPES = THING_TYPES.filter(t => !t.legacy)
 
 // ---------- Companies (#50: their own site icon is the logo) ----------
 
-/** `logo`: a file of our own (public/logos) for a company whose site icon isn't its logo */
-export interface Company { name: string, domain: string, logo?: string }
+/**
+ * `logo`: a file of our own (public/logos) for a company whose site icon isn't its logo.
+ * `brand`: its logo in the shared library (Simple Icons), for brands whose mark fits a square tile.
+ */
+export interface Company { name: string, domain: string, logo?: string, brand?: string }
 
 export const COMPANIES: Company[] = [
-  { name: 'Apple', domain: 'apple.com' }, { name: 'Samsung', domain: 'samsung.com' }, { name: 'Google', domain: 'google.com', logo: '/logos/google.svg' },
-  { name: 'Xiaomi', domain: 'mi.com' }, { name: 'OPPO', domain: 'oppo.com' }, { name: 'vivo', domain: 'vivo.com' },
-  { name: 'OnePlus', domain: 'oneplus.com' }, { name: 'realme', domain: 'realme.com' }, { name: 'Huawei', domain: 'huawei.com' },
+  { name: 'Apple', domain: 'apple.com', brand: 'apple' }, { name: 'Samsung', domain: 'samsung.com' }, { name: 'Google', domain: 'google.com', logo: '/logos/google.svg' },
+  { name: 'Xiaomi', domain: 'mi.com', brand: 'xiaomi' }, { name: 'OPPO', domain: 'oppo.com' }, { name: 'vivo', domain: 'vivo.com' },
+  { name: 'OnePlus', domain: 'oneplus.com', brand: 'oneplus' }, { name: 'realme', domain: 'realme.com' }, { name: 'Huawei', domain: 'huawei.com', brand: 'huawei' },
   { name: 'Honor', domain: 'honor.com' }, { name: 'Redmi', domain: 'mi.com' }, { name: 'POCO', domain: 'po.co' },
   { name: 'RedMagic', domain: 'redmagic.gg' }, { name: 'Nubia', domain: 'nubia.com' }, { name: 'ZTE', domain: 'zte.com.cn' },
-  { name: 'Nothing', domain: 'nothing.tech' }, { name: 'Motorola', domain: 'motorola.com' }, { name: 'Nokia', domain: 'nokia.com' },
+  { name: 'Nothing', domain: 'nothing.tech' }, { name: 'Motorola', domain: 'motorola.com', brand: 'motorola' }, { name: 'Nokia', domain: 'nokia.com' },
   { name: 'Infinix', domain: 'infinixmobility.com' }, { name: 'Tecno', domain: 'tecno-mobile.com' }, { name: 'iQOO', domain: 'iqoo.com' },
-  { name: 'Lenovo', domain: 'lenovo.com' }, { name: 'Dell', domain: 'dell.com' }, { name: 'HP', domain: 'hp.com' },
-  { name: 'ASUS', domain: 'asus.com' }, { name: 'Acer', domain: 'acer.com' }, { name: 'MSI', domain: 'msi.com' },
+  { name: 'Lenovo', domain: 'lenovo.com' }, { name: 'Dell', domain: 'dell.com', brand: 'dell' }, { name: 'HP', domain: 'hp.com', brand: 'hp' },
+  { name: 'ASUS', domain: 'asus.com' }, { name: 'Acer', domain: 'acer.com' }, { name: 'MSI', domain: 'msi.com', brand: 'msi' },
   { name: 'LG', domain: 'lg.com' }, { name: 'Sony', domain: 'sony.com' }, { name: 'TCL', domain: 'tcl.com' },
-  { name: 'Logitech', domain: 'logitech.com' }, { name: 'Keychron', domain: 'keychron.com' }, { name: 'Razer', domain: 'razer.com' },
+  { name: 'Logitech', domain: 'logitech.com' }, { name: 'Keychron', domain: 'keychron.com' }, { name: 'Razer', domain: 'razer.com', brand: 'razer' },
   { name: 'Lofree', domain: 'lofree.co' }, { name: 'AULA', domain: 'aulagear.com' }, { name: 'VGN', domain: 'vgngaming.com', logo: '/logos/vgn.svg' },
   { name: 'Bose', domain: 'bose.com' }, { name: 'JBL', domain: 'jbl.com' }, { name: 'Garmin', domain: 'garmin.com' },
   { name: 'Fujifilm', domain: 'fujifilm.com' }, { name: 'Canon', domain: 'canon.com' }, { name: 'Nikon', domain: 'nikon.com' },
-  { name: 'GoPro', domain: 'gopro.com' }, { name: 'DJI', domain: 'dji.com' }, { name: 'Nintendo', domain: 'nintendo.com' },
-  { name: 'Microsoft', domain: 'microsoft.com' }, { name: 'Valve', domain: 'steamdeck.com' }, { name: 'Honda', domain: 'honda.com' },
-  { name: 'Yamaha', domain: 'yamaha.com' }, { name: 'Toyota', domain: 'toyota.com' }, { name: 'Panasonic', domain: 'panasonic.com' },
+  { name: 'GoPro', domain: 'gopro.com' }, { name: 'DJI', domain: 'dji.com', brand: 'dji' }, { name: 'Nintendo', domain: 'nintendo.com' },
+  { name: 'Microsoft', domain: 'microsoft.com' }, { name: 'Valve', domain: 'steamdeck.com' }, { name: 'Honda', domain: 'honda.com', brand: 'honda' },
+  { name: 'Yamaha', domain: 'yamaha.com' }, { name: 'Toyota', domain: 'toyota.com', brand: 'toyota' }, { name: 'Panasonic', domain: 'panasonic.com' },
   { name: 'Sharp', domain: 'sharp.com' }, { name: 'Philips', domain: 'philips.com' }
 ]
 
@@ -82,7 +85,7 @@ export const siteLogo = (domain: string) => `/api/logo?domain=${encodeURICompone
 export const companyLogo = (name?: string) => {
   const c = companyOf(name)
   // Some brands' site icons aren't their logo (Google's store bag, a tiny favicon, VGN's site), so they have files of their own
-  if (c) return c.logo ?? siteLogo(c.domain)
+  if (c) return c.logo ?? (c.brand ? brandLogoUrl(c.brand) : siteLogo(c.domain))
   const word = name?.trim().toLowerCase()
   return word && /^[a-z0-9]{2,20}$/.test(word) ? siteLogo(`${word}.com`) : undefined
 }

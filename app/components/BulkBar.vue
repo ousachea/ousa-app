@@ -5,13 +5,9 @@ import type { BulkAction, BulkSelect } from '~/composables/useBulkSelect'
 // It's moved to <body> so it floats over everything; it borrows the page's accent colour.
 const props = defineProps<{ select: BulkSelect, actions: BulkAction[], label: string, /** plural, e.g. 'bookmarks' */ noun: string }>()
 
-const ICONS: Record<BulkAction['icon'], string[]> = {
-  pin: ['M7 3.5h10a1 1 0 0 1 1 1v16l-6-4.2-6 4.2v-16a1 1 0 0 1 1-1z'],
-  star: ['M12 3.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8z'],
-  move: ['M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z', 'M10 13.5h6M13.5 11l2.5 2.5-2.5 2.5'],
-  copy: ['M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1', 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'],
-  delete: ['M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10.5 11v5M13.5 11v5'],
-  archive: ['M4 5h16v4H4z', 'M5.5 9v10h13V9M10 13h4']
+const ICONS: Record<BulkAction['icon'], string> = {
+  pin: 'lucide:bookmark', star: 'lucide:star', move: 'lucide:folder-input',
+  copy: 'lucide:link', delete: 'lucide:trash-2', archive: 'lucide:archive'
 }
 
 function run(a: BulkAction) {
@@ -31,7 +27,7 @@ onBeforeUnmount(() => document.body.classList.remove('bulk-open'))
         <div v-if="select.selecting" class="bulk-bar" role="toolbar" :aria-label="label" :style="select.accent ? { '--accent': select.accent } : undefined">
           <div class="bulk-head">
             <button type="button" class="bulk-close" aria-label="Stop selecting" title="Done (Esc)" @click="select.stop()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></svg>
+              <AppIcon name="x" />
             </button>
             <span class="bulk-count" aria-live="polite">
               <template v-if="select.selected.size">{{ select.selected.size }} selected<span v-if="select.hiddenCount" class="bulk-hidden"> · {{ select.hiddenCount }} not shown</span></template>
@@ -49,7 +45,7 @@ onBeforeUnmount(() => document.body.classList.remove('bulk-open'))
               :disabled="!select.selected.size"
               @click="run(a)"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path v-for="d in ICONS[a.icon]" :key="d" :d="d" /></svg>
+              <AppIcon :name="ICONS[a.icon]" />
               <span>{{ a.label }}</span>
             </button>
           </div>

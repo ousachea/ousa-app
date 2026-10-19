@@ -107,7 +107,7 @@ function onKey(e: KeyboardEvent) {
 <template>
   <span class="calendar-add">
     <button ref="trigger" type="button" class="trigger" :aria-expanded="open" aria-haspopup="menu" @click="toggle">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4M12 13v4M10 15h4" /></svg>
+      <AppIcon name="calendar-plus" />
       {{ label ?? 'Add to calendar' }}
     </button>
     <div ref="menu" popover="manual" class="menu" :class="[`from-${placement}`, { 'is-open': open }]" role="menu" @keydown="onKey">
@@ -116,7 +116,7 @@ function onKey(e: KeyboardEvent) {
         <span>Google Calendar<small>Opens in a new tab</small></span>
       </a>
       <button type="button" role="menuitem" @click="downloadIcs">
-        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14" /></svg></span>
+        <span class="icon" aria-hidden="true"><AppIcon name="download" /></span>
         <span>Apple, Outlook or phone<small>Downloads an .ics file</small></span>
       </button>
     </div>

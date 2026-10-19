@@ -13,9 +13,7 @@ const ready = computed(() => pull.pull >= 72)
     role="status"
     :aria-label="pull.refreshing ? 'Refreshing' : ready ? 'Release to refresh' : 'Pull to refresh'"
   >
-    <svg viewBox="0 0 24 24" aria-hidden="true" :style="{ rotate: pull.refreshing ? undefined : `${pull.pull * 4}deg` }">
-      <path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4" />
-    </svg>
+    <AppIcon name="rotate-cw" :style="{ rotate: pull.refreshing ? undefined : `${pull.pull * 4}deg` }" />
   </div>
 </template>
 
