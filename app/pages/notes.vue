@@ -360,6 +360,11 @@ function leaveNote() {
   if (n && !n.title.trim() && !n.text.trim() && !n.html.includes('<img') && n.createdAt === n.updatedAt) remove(n.id, { undoAdd: true })
 }
 
+// ---------- Reading a note on a computer ----------
+// With a note open, folders and the list stay in view (narrower) so you keep your place; they step
+// back while you write and come forward when you reach for them
+const reading = computed(() => !isPhone.value && !!openNote.value && !sel.selecting && !focusMode.value)
+
 function closeNote() {
   // Opened as a history step: going back closes it (the route watcher below does the rest)
   if (pushedNote && route.query.note) {
@@ -822,6 +827,15 @@ function archiveSelected() {
   if (archived && picked.value.some(n => n.id === openId.value)) closeNote()
   toast(`${notesText(before.length)} ${archived ? 'archived' : 'back in your notes'}`, { action: { label: 'Undo', onClick: () => before.forEach(b => replace(b)) } })
 }
+// The selection, for the summary beside the list (computers): how many, which, and what they hold
+const pickedTitles = computed(() => sortNotes(picked.value, 'modified').map(displayTitle))
+const pickedWords = computed(() => picked.value.reduce((n, x) => n + wordCount(x.text), 0))
+const somePicked = computed(() => sel.selected.size > 0 && !sel.allShownSelected)
+// Several notes go out as a .zip of Markdown files (one per note, in their folders); one as a .md
+function exportPicked() {
+  exportNotes('picked', picked.value.length > 1 ? 'zip' : 'md')
+}
+
 const bulkActions = computed<BulkAction[]>(() => [
   { label: allFavourite(picked.value) ? 'Unfavourite' : 'Favourite', icon: 'star', run: () => bulkFavourite(picked.value, update, replace, notesText) },
   { label: 'Move', icon: 'move', run: () => (moving.value = picked.value.map(n => n.id)) },
@@ -844,9 +858,11 @@ const transferOpen = ref(false)
 const settingsOpen = useAppSettingsOpen()
 
 const exportedNote = (n: Note) => ({ title: displayTitle(n), html: n.html, markdown: htmlToMarkdown(n.html), folder: folderPath(n), tags: n.tags, favorite: !!n.favorite, archived: !!n.archived, createdAt: n.createdAt, updatedAt: n.updatedAt })
-function exportNotes(scope: 'current' | 'all' | 'one', format: 'md' | 'zip' | 'txt' | 'html' | 'json', one?: Note) {
+function exportNotes(scope: 'current' | 'all' | 'one' | 'picked', format: 'md' | 'zip' | 'txt' | 'html' | 'json', one?: Note) {
   flushSave()
-  const list = scope === 'all' ? sortNotes(notes.value, 'modified') : [one ?? openNote.value].filter((n): n is Note => !!n)
+  const list = scope === 'all' ? sortNotes(notes.value, 'modified')
+    : scope === 'picked' ? sortNotes(picked.value, 'modified')
+      : [one ?? openNote.value].filter((n): n is Note => !!n)
   if (!list.length) return
   const single = list.length === 1 && scope !== 'all'
   const base = single ? safeFileName(displayTitle(list[0]!)) : dated('notes', format).replace(/\.\w+$/, '')
@@ -1039,11 +1055,11 @@ function listMenu() {
       <span>Markdown, text, HTML or JSON.</span>
     </template>
     <template #actions>
-      <ClientOnly><span class="aside-tools"><BulkToggle v-if="notes.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly>
+      <ClientOnly><span class="aside-tools"><DataSource :sync="sync" /></span></ClientOnly>
     </template>
 
     <ClientOnly>
-      <div class="notes-app" :data-pane="pane" :class="{ 'has-open': !!openNote }">
+      <div class="notes-app" :data-pane="pane" :class="{ 'has-open': !!openNote, reading }">
         <!-- ---------- 1: views, folders, tags ---------- -->
         <Step :n="1" title="Choose a folder" hint="Or a view: favourites, recent, archived." class="side-step">
         <aside class="side">
@@ -1144,8 +1160,19 @@ function listMenu() {
               <input ref="searchInput" v-model="query" type="search" placeholder="Search notes" aria-label="Search notes" title="Words, or folder:work tag:idea is:favorite is:archived before:2026-10-01 after:…" @keydown.enter.prevent="shown[0] && openNoteById(shown[0].id)">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
-            <div class="list-tools">
+            <!-- Selecting: a select-all box, the count and Done take over the row -->
+            <div v-if="sel.selecting" class="list-tools picking">
+              <label class="pick-all">
+                <input type="checkbox" :checked="sel.allShownSelected" :indeterminate="somePicked" :aria-label="sel.allShownSelected ? 'Select none' : 'Select all'" @change="sel.toggleAll()">
+                <span>{{ sel.selected.size ? `${sel.selected.size} selected` : 'Select all' }}</span>
+              </label>
+              <button type="button" class="pick-done" @click="sel.stop()">Done</button>
+            </div>
+            <div v-else class="list-tools">
               <span class="count">{{ shown.length }} {{ shown.length === 1 ? 'note' : 'notes' }}</span>
+              <button v-if="shown.length" type="button" class="select-btn" title="Select several notes to move, archive, export or delete together" @click="sel.start()">
+                <AppIcon name="square-check" />Select
+              </button>
               <div class="views" role="radiogroup" aria-label="View">
                 <button v-for="v in VIEWS" :key="v" type="button" role="radio" class="view-btn" :aria-checked="view === v" :title="v[0]!.toUpperCase() + v.slice(1)" @click="view = v">
                   <AppIcon :name="v === 'list' ? 'list' : v === 'grid' ? 'layout-grid' : 'align-justify'" />
@@ -1176,7 +1203,11 @@ function listMenu() {
                   @click.capture="sel.onRowClick($event, n.id)"
                 >
                   <span v-if="!sel.selecting" class="drag-grip corner end" aria-hidden="true"><AppIcon name="grip-vertical" /></span>
-                  <BulkCheck v-if="sel.selecting" :checked="sel.has(n.id)" :label="`Select ${displayTitle(n)}`" @pick="sel.pick(n.id, $event)" />
+                  <!-- Select mode: the app's own checkbox on the card's left; the note slides over to make room. The
+                       row's click picks it (Shift for a range), so the box only shows the state -->
+                  <span class="check-col" :aria-hidden="!sel.selecting || undefined">
+                    <input type="checkbox" class="note-check" :checked="sel.has(n.id)" :tabindex="sel.selecting ? 0 : -1" :aria-label="`Select ${displayTitle(n)}`">
+                  </span>
                   <button type="button" class="note-open" :aria-current="n.id === openId ? 'true' : undefined" @click="openNoteById(n.id)">
                     <span class="note-title">
                       <AppIcon v-if="n.favorite" class="fav" name="star" role="img" aria-label="Favourite" aria-hidden="false" />
@@ -1238,7 +1269,33 @@ function listMenu() {
         <!-- ---------- 3: the editor ---------- -->
         <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step">
         <section ref="editorPane" class="editor-pane" :class="{ 'focus-mode': focusMode, 'is-typing': focusMode && focusTyping, 'dim': focusMode && focusDim }" aria-label="Note" @pointermove="focusMode && onFocusPointer()" @keydown="focusMode && onFocusKey($event)" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
-          <template v-if="openNote">
+          <!-- Selecting (beside the list, on a computer): what's picked and what to do with it -->
+          <div v-if="sel.selecting && !isPhone" class="pick-summary">
+            <div class="pick-stack" :class="{ empty: !picked.length }" aria-hidden="true">
+              <span v-for="(t, i) in pickedTitles.slice(0, 3).reverse()" :key="t + i" class="pick-sheet" :style="{ '--i': Math.min(pickedTitles.length, 3) - 1 - i }">{{ t }}</span>
+              <span v-if="!picked.length" class="pick-sheet ghost"><AppIcon name="square-check" /></span>
+            </div>
+            <h3 class="pick-count">{{ picked.length ? `${notesText(picked.length)} selected` : 'Select notes' }}</h3>
+            <p class="pick-hint">
+              <template v-if="picked.length">{{ pickedWords.toLocaleString() }} {{ pickedWords === 1 ? 'word' : 'words' }} in all. Click more to add them; Shift-click picks a range.</template>
+              <template v-else>Click notes in the list to pick them. Shift-click picks a range, <kbd>⌘</kbd><kbd>A</kbd> picks them all.</template>
+            </p>
+            <ul v-if="picked.length" class="pick-titles">
+              <li v-for="(t, i) in pickedTitles.slice(0, 6)" :key="t + i">{{ t }}</li>
+              <li v-if="pickedTitles.length > 6" class="more">and {{ pickedTitles.length - 6 }} more</li>
+            </ul>
+            <div class="pick-actions">
+              <button v-for="a in bulkActions" :key="a.label" type="button" class="pick-action" :class="{ danger: a.danger }" :disabled="!picked.length" @click="a.run()">
+                <AppIcon :name="({ star: 'star', move: 'folder-input', archive: 'archive', delete: 'trash-2', pin: 'pin', copy: 'link' } as const)[a.icon]" />{{ a.label }}
+              </button>
+              <button type="button" class="pick-action" :disabled="!picked.length" :title="picked.length > 1 ? 'One Markdown file per note, in a .zip' : 'As a Markdown file'" @click="exportPicked">
+                <AppIcon name="download" />Export
+              </button>
+            </div>
+            <button type="button" class="link pick-cancel" @click="sel.stop()">Done selecting <kbd>Esc</kbd></button>
+          </div>
+
+          <template v-else-if="openNote">
             <!-- Focus mode's only controls: a small bar that hides while you type -->
             <div v-if="focusMode" class="focus-bar" role="toolbar" aria-label="Focus mode">
               <span class="focus-status" :data-kind="status.kind"><span class="dot" aria-hidden="true" />{{ status.text }}</span>
@@ -1387,7 +1444,8 @@ function listMenu() {
     <QuickNote :open="quickOpen" @close="quickOpen = false" @save="saveQuick" />
     <NoteHistory :open="historyOpen" :versions="openNote ? versionsOf(openNote.id) : []" :note-title="openNote ? displayTitle(openNote) : ''" @close="historyOpen = false" @restore="restoreVersion" />
     <NoteTransfer :open="transferOpen" :has-current="!!openNote" :count="notes.length" @close="transferOpen = false" @export="(s, f) => exportNotes(s, f)" @import="importFiles" />
-    <BulkBar :select="sel" :actions="bulkActions" label="Selected notes" noun="notes" />
+    <!-- Phones: the bar at the bottom. Computers have the summary beside the list instead -->
+    <BulkBar v-if="isPhone" :select="sel" :actions="bulkActions" label="Selected notes" noun="notes" />
   </ToolPage>
 </template>
 
@@ -1573,6 +1631,48 @@ function listMenu() {
   background: var(--surface);
   border-radius: 18px;
   box-shadow: 0 0 0 1px var(--line);
+  container: list-pane / inline-size;
+}
+
+/* A narrow list (beside a centred note on a laptop): the sort menu shrinks to fit and the count
+   gives way, so nothing runs off the edge */
+@container list-pane (max-width: 16rem) {
+  .list-head .sort {
+    min-width: 0;
+    max-width: 8.5rem;
+    flex: 0 1 auto;
+  }
+
+  .list-head .sort :deep(button) {
+    min-height: 2.25rem;
+    padding-inline: 0.6rem 0.4rem;
+    font-size: 0.82rem;
+  }
+
+  .list-tools .count {
+    display: none;
+  }
+
+  /* The folder name gives way (it ellipsizes) rather than pushing the header wider */
+  .list-head h2,
+  .list-head,
+  .search,
+  .list-tools {
+    min-width: 0;
+  }
+
+  .list-head h2 {
+    flex: 1 1 auto;
+    font-size: 1.05rem;
+  }
+
+  .list-tools .select-btn {
+    margin-left: 0;
+  }
+
+  .list-tools:not(.picking) {
+    padding-left: 0.35rem;
+  }
 }
 
 .list-bar {
@@ -2398,6 +2498,354 @@ time {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- Reading: a note open, folders and the list still in view ----------
+   They narrow to give the note room, and step back while you write; hovering or tabbing into one
+   brings it forward */
+/* The note in the middle of the page, at its full width; folders and the list keep theirs and sit to
+   its left, reaching out past the page's edge (and the window's, on smaller screens) to make room */
+.notes-app.reading {
+  --left: calc(13rem + 17.5rem + 2 * 1.25rem);
+  --note: min(46rem, 100%);
+  grid-template-columns: 13rem 17.5rem var(--note);
+  width: calc(var(--left) + var(--note));
+  margin-left: calc(50% - var(--note) / 2 - var(--left));
+}
+
+.notes-app.reading .side-step,
+.notes-app.reading .list-step {
+  opacity: 0.72;
+  transition: opacity 0.2s ease-out;
+}
+
+.notes-app.reading .side-step:hover,
+.notes-app.reading .side-step:focus-within,
+.notes-app.reading .list-step:hover,
+.notes-app.reading .list-step:focus-within {
+  opacity: 1;
+}
+
+/* Mid-size screens put folders above; the list and note share the row */
+@media (max-width: 1100px) {
+  .notes-app.reading {
+    width: auto;
+    margin-left: 0;
+    grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .check-col,
+  .notes-app.reading .side-step,
+  .notes-app.reading .list-step {
+    transition: none;
+  }
+}
+
+/* ---------- Selecting several ---------- */
+/* Select sits beside the count; while selecting, the row is the select-all box, the count and Done */
+.select-btn {
+  margin-left: auto;
+  margin-right: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.select-btn:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.select-btn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.list-tools.picking {
+  min-height: 2rem;
+  margin: 0 0.2rem;
+  padding: 0.2rem 0.35rem 0.2rem 0.55rem;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border-radius: 10px;
+}
+
+.pick-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.pick-done {
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--on-accent, #fff);
+  background: var(--accent-btn, var(--accent));
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Each note's checkbox: a column on the card's left that opens as select mode starts, so the note
+   slides over to make room; centred on the card */
+.note-row {
+  display: flex;
+  align-items: center;
+}
+
+.note-row > .note-open {
+  flex: 1;
+  min-width: 0;
+}
+
+.check-col {
+  flex: none;
+  width: 0;
+  margin-left: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.2s var(--ease-out, ease-out), margin 0.2s var(--ease-out, ease-out), opacity 0.15s ease-out;
+}
+
+.note-list.selecting .check-col {
+  width: 1.5rem;
+  margin-left: 0.7rem;
+  opacity: 1;
+}
+
+.note-check {
+  font-size: 1.05rem;
+}
+
+.note-list.selecting .note-open {
+  padding-left: 0.6rem;
+}
+
+/* Picked: a soft tint in the app's colour, no heavy outline */
+.note-list .note-row.bulk-picked {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+/* Cards: the box sits inside the card's top-right corner, and the card itself takes the tint */
+.note-list.grid .note-row {
+  position: relative;
+}
+
+.note-list.grid .check-col,
+.note-list.grid.selecting .check-col {
+  position: absolute;
+  z-index: 1;
+  top: 0.8rem;
+  right: 0.8rem;
+  width: auto;
+  margin: 0;
+}
+
+.note-list.grid.selecting .note-open {
+  padding-left: 0.75rem;
+  padding-right: 2.6rem;
+}
+
+.note-list.grid .note-row.bulk-picked {
+  background: none;
+}
+
+.note-list.grid .note-row.bulk-picked .note-open {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.note-row.bulk-picked .note-open:hover {
+  background: none;
+}
+
+/* Beside the list: a stack of the picked notes, how many, and the actions as big buttons */
+.pick-summary {
+  min-height: 60vh;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.pick-stack {
+  position: relative;
+  width: 11rem;
+  height: 8.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pick-sheet {
+  position: absolute;
+  inset: 0;
+  padding: 0.9rem;
+  display: block;
+  overflow: hidden;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px var(--line), 0 10px 24px -14px rgb(var(--shadow) / 0.45);
+  rotate: calc(var(--i, 0) * -5deg);
+  translate: calc(var(--i, 0) * -6px) calc(var(--i, 0) * 4px);
+  transition: rotate 0.2s, translate 0.2s;
+}
+
+.pick-sheet::after {
+  content: '';
+  position: absolute;
+  left: 0.9rem;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  height: 2.6rem;
+  background: repeating-linear-gradient(var(--line) 0 2px, transparent 2px 0.75rem);
+  opacity: 0.8;
+}
+
+.pick-sheet.ghost {
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+
+.pick-sheet.ghost::after {
+  display: none;
+}
+
+.pick-sheet.ghost svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.pick-count {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.015em;
+}
+
+.pick-hint {
+  margin: 0;
+  max-width: 26rem;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.pick-titles {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  max-width: 30rem;
+}
+
+.pick-titles li {
+  max-width: 14rem;
+  padding: 0.15rem 0.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  border-radius: 999px;
+}
+
+.pick-titles li.more {
+  color: var(--ink-3);
+  background: none;
+}
+
+.pick-actions {
+  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.4rem, 1fr));
+  gap: 0.5rem;
+  width: min(100%, 36rem);
+}
+
+.pick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.8rem 0.5rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s, scale 0.12s;
+}
+
+.pick-action svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.pick-action:hover:not(:disabled) {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.pick-action.danger:hover:not(:disabled) {
+  color: var(--bad-ink);
+  background: color-mix(in srgb, var(--red) 10%, var(--surface));
+}
+
+.pick-action:active:not(:disabled) {
+  scale: 0.97;
+}
+
+.pick-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pick-cancel {
+  margin-top: 0.5rem;
+  font-size: var(--text-sm);
+}
+
+/* Phones: selecting shows the select-all row (the rest of the list's tools stay hidden) */
+@media (max-width: 760px) {
+  .list-tools.picking {
+    display: flex;
+    margin-bottom: 0.4rem;
+  }
+}
+
 .editor-empty {
   display: grid;
   justify-items: center;
@@ -2645,6 +3093,10 @@ kbd {
     background: var(--surface);
     border-radius: 0;
     box-shadow: 0 0 0 1px var(--line);
+  }
+
+  .note-list:not(.grid) .note-row.bulk-picked {
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   }
 
   .note-list:not(.grid) .note-row + .note-row {
