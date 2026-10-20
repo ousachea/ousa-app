@@ -15,13 +15,15 @@ let returnFocus: HTMLElement | null = null
 const items = computed(() => menu.items)
 const actionable = computed(() => items.value.filter((i): i is MenuItem => i !== '-' && !i.disabled))
 
-const TOOL_ICONS = new Set(['trash', 'activity', 'plus', 'search', 'renewals', 'bookmarks', 'things', 'countdown'])
-const isToolIcon = (i?: string): i is ToolIconName => !!i && TOOL_ICONS.has(i)
+// Any icon that isn't one of the menu's own (below) is an app icon (ToolIcon: list, trash, plus…).
+// Checking against a short list of app icons instead left out ones like 'list' (Save as template),
+// and the missing icon broke the whole menu.
+const isToolIcon = (i?: string): i is ToolIconName => !!i && !(i in MENU_ICONS)
 // The menu's own icons, from the shared icon library
 const MENU_ICONS: Record<MenuIcon, string> = {
   'open': 'lucide:arrow-right', 'new-tab': 'lucide:external-link', 'edit': 'lucide:pencil', 'copy': 'lucide:copy',
   'duplicate': 'lucide:copy-plus', 'delete': 'lucide:trash-2', 'restore': 'lucide:rotate-ccw', 'refresh': 'lucide:rotate-cw',
-  'folder': 'lucide:folder', 'pin': 'lucide:pin', 'calendar': 'lucide:calendar', 'star': 'lucide:star', 'select': 'lucide:square-check'
+  'folder': 'lucide:folder', 'pin': 'lucide:pin', 'calendar': 'lucide:calendar', 'star': 'lucide:star', 'select': 'lucide:square-check', 'share': 'lucide:share-2'
 }
 
 watch(() => menu.open, async (open) => {

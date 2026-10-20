@@ -5,7 +5,8 @@
 // the whole SDK back into every page.
 export { initializeApp } from 'firebase/app'
 export {
-  connectAuthEmulator, getAuth, GoogleAuthProvider, onAuthStateChanged, reauthenticateWithPopup, signInWithPopup, signOut
+  connectAuthEmulator, EmailAuthProvider, getAuth, GoogleAuthProvider, linkWithCredential, onAuthStateChanged, reauthenticateWithPopup,
+  signInWithEmailAndPassword, signInWithPopup, signOut, unlink, updatePassword
 } from 'firebase/auth'
 export {
   addDoc, collection, connectFirestoreEmulator, deleteDoc, doc, getDocFromServer, getDocsFromServer, initializeFirestore,

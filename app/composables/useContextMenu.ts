@@ -15,7 +15,7 @@ export interface MenuItem {
   run: () => void
 }
 
-export type MenuIcon = 'open' | 'new-tab' | 'edit' | 'copy' | 'duplicate' | 'delete' | 'restore' | 'refresh' | 'folder' | 'pin' | 'calendar' | 'star' | 'select'
+export type MenuIcon = 'open' | 'new-tab' | 'edit' | 'copy' | 'duplicate' | 'delete' | 'restore' | 'refresh' | 'folder' | 'pin' | 'calendar' | 'star' | 'select' | 'share'
 
 /** Items, or `'-'` for a divider */
 export type MenuEntry = MenuItem | '-'

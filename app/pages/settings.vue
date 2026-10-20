@@ -17,7 +17,7 @@ const SECTIONS: Section[] = [
   { id: 'appearance', label: 'Appearance', hint: 'Theme, colours, font and density', icon: 'lucide:palette', keywords: 'theme dark light mode accent colour color font typeface serif mono rounded text size bigger smaller cube stickers density compact spacious comfortable condensed narrow width centre center' },
   { id: 'performance', label: 'Performance', hint: 'Low-spec PC mode, effects, animations', icon: 'lucide:zap', keywords: 'low spec slow old computer pc fast smooth lite effects blur animations motion reduce speed' },
   { id: 'behaviour', label: 'Behaviour', hint: 'Shortcuts, keyboards, deleting, autosave', icon: 'lucide:sliders-horizontal', keywords: 'keyboard shortcuts phone keypad full screen confirm delete autosave forms drafts default view list grid' },
-  { id: 'sync', label: 'Account & sync', hint: 'Sign in and sync your devices', icon: 'lucide:refresh-cw', keywords: 'sign in sign out google account firebase sync devices cloud login' },
+  { id: 'sync', label: 'Account & sync', hint: 'Sign in and sync your devices', icon: 'lucide:refresh-cw', keywords: 'sign in sign out google account firebase sync devices cloud login quick password' },
   { id: 'data', label: 'Your data', hint: 'Back up and restore', icon: 'lucide:download', keywords: 'backup restore export import file data download' },
   { id: 'sound', label: 'Sound', hint: 'Effects, volume and style', icon: 'lucide:volume-2', keywords: 'sound effects volume audio style pack mute' },
   { id: 'features', label: 'App features', hint: 'What each app can do', icon: 'lucide:table', keywords: 'features compare apps table drag drop folders search sync demo which app' },
@@ -41,6 +41,9 @@ watch(found, (list) => {
 })
 
 const panel = ref<HTMLElement>()
+// Settings / Appearance in the top bar
+useBreadcrumbTrail(() => [{ label: SECTIONS.find(s => s.id === current.value)?.label ?? '' }])
+
 function open(id: SectionId) {
   if (id === current.value) return
   viewTransition(() => (current.value = id))
@@ -414,6 +417,7 @@ const volume = computed({
                 <button type="button" class="link" @click="signOut">Sign out</button>
               </template>
             </div>
+            <QuickPassword v-if="signedIn" />
           </div>
 
           <!-- Your data -->

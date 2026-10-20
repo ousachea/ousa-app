@@ -5,6 +5,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // Shared bookmark folders (/shared/<id>): anyone with the link can read one; only the account
+    // that shared it can change or stop sharing it
+    match /shares/{shareId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.owner == request.auth.uid;
+      allow update: if request.auth != null && resource.data.owner == request.auth.uid
+        && request.resource.data.owner == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+    }
+
     // The CV page (/cv): anyone can read it; only the owner's Google account can change it.
     // Keep the email in step with NUXT_PUBLIC_OWNER_EMAIL.
     match /public/cv {

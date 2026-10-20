@@ -36,9 +36,10 @@ Built with [Nuxt](https://nuxt.com) (Vue 3, Nitro, Vite) and Firebase (Google si
 | What should I eat? | Swipe through your saved foods and places until one sounds good |
 | Weight | Log your weight and see the trend |
 | Calendar | Count down to dates, with Cambodian public holidays and a full-screen clock screen saver; its Renewals tab shows what your subscriptions cost and when they renew |
-| Bookmarks | Save links in folders and pin the ones you open every day; each site’s preview image, description and icon fill in, and duplicates are flagged |
-| Notes | Fast notes with folders, checklists, links between notes and version history |
+| Bookmarks | Save links in folders and pin the ones you open every day; paste one link or several at once, and each site’s preview image, description and icon fill in. Pin folders, pin a link to the top of its folder, share a folder as a public page, and duplicates are flagged |
+| Notes | Fast notes with folders, checklists, tables, links between notes and version history; focus mode, and Markdown in and out (a .zip of .md files works with Obsidian) |
 | Gold tracker | Live gold price in chi and damlung, and what your gold is worth now |
+| 2048 | The sliding-tile game: arrow keys or swipe, undo a move, and your best score is kept |
 
 ### Screenshots
 
@@ -76,10 +77,10 @@ app’s own keys on top. The 🌐 key switches a field to the phone’s keyboard
   <img src="docs/screenshots/phone-bookmarks-keys.png" width="200" alt="Bookmarks with the app’s keyboard: link keys like https:// and .com above the letters, with / and . beside the space bar">
 </p>
 
-Shared across the apps: search everything (⌘K / Ctrl K), the apps menu (M), example data from each app’s icon,
+Shared across the apps: search everything (⌘K / Ctrl K), the apps menu (M), a breadcrumb in the top bar (Ousa’s Apps › the app › its folder or section), example data from each app’s icon,
 each app’s own settings (the Settings button in its header), right-click or long-press menus (rows don’t repeat
-their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, each app’s own keyboard on phones (a keypad with its amounts, steps or network prefixes for numbers, and a full keyboard with its own keys for text), full screen on phones from your first tap, light and dark themes, sounds, and installing it as an app
-on a phone or computer.
+their buttons), select several and act on them together, a Recycle Bin that keeps deleted things for 30 days, each app’s own keyboard on phones (a keypad with its amounts, steps or network prefixes for numbers, and a full keyboard with its own keys for text), full screen on phones from your first tap, a splash screen when it opens on a phone, light and dark themes, sounds, and installing it as an app
+on a phone or computer. A quick sign-in password (Settings → Account & sync) signs you back in without the Google window.
 
 **Import and export** live in Settings: each app’s settings popup has Import & export for that app’s data and
 settings (with CSV, browser bookmarks or Markdown where the app has them, under More formats), and the main
@@ -101,10 +102,13 @@ browser; sign-in and sync stay off.
 ### Firebase (sign-in and sync)
 
 1. In the [Firebase console](https://console.firebase.google.com), create a project, add a **web app**, enable
-   **Google** sign-in under Authentication, and create a **Firestore** database.
+   **Google** sign-in under Authentication, and create a **Firestore** database. For the quick sign-in password,
+   also enable **Email/Password** sign-in (it's linked to the same Google account, so it opens the same data).
 2. Publish the rules in [`firestore.rules`](firestore.rules): each signed-in user can only read and write their own
    data under `users/{uid}`. The CV page (`/cv`) is the one public document, `public/cv`: anyone can read it, and
    only the owner's Google account can edit it (the email in the rule should match `NUXT_PUBLIC_OWNER_EMAIL`).
+   Shared bookmark folders live in `shares/{id}`: anyone with the link can read one (at `/shared/<id>`), and only
+   the account that shared it can change or delete it. Bookmarks' own notes are never part of a share.
 3. Create a `.env` file in the project root (it’s git-ignored):
 
    ```bash
@@ -155,7 +159,8 @@ accept the certificate warning.
 
 ```
 app/
-  pages/          one page per app (qr.vue, notes.vue, …), plus settings, trash and the home page
+  pages/          one page per app (qr.vue, notes.vue, …), plus settings, trash, the home page and shared/[id]
+                  (a shared bookmark folder, readable without signing in)
   components/     shared UI: ToolPage (every app's header), SiteBar (top bar), FloatingNav (apps menu),
                   CommandPalette, ContextMenu, BulkBar, Modal, SettingRow / SettingChoice, …
   composables/    shared behaviour: useCollection (a synced list), useSync, useVault, usePrefs,
@@ -163,7 +168,7 @@ app/
   utils/          the app list (tools.ts), sync engine (sync.ts), backups (backup.ts), money, dates, per-app logic
   assets/css/     main.css: colours, spacing and shared styles for every app
 server/
-  api/            exchange rate, holidays, link previews, site logos, food photos
+  api/            exchange rate, holidays, link previews, site logos, food photos, shared bookmark folders
   routes/         robots.txt and sitemap.xml
 public/           icons, share images, manifest
 ```

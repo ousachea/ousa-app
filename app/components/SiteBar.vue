@@ -10,6 +10,18 @@ const { openPalette } = usePalette()
 const { vault } = useVault()
 const signedIn = computed(() => !['loading', 'signed-out'].includes(vault.status))
 
+// Breadcrumbs inside an app: Ousa’s Apps › the app (› its tab) › where you are in it (useBreadcrumbs)
+const route = useRoute()
+const page = computed(() => (props.back ? pageFor(route.path) : undefined))
+const app = computed(() => (page.value?.app ? toolFor(page.value.app) : page.value))
+const { trail, root } = useBreadcrumbs()
+const deeper = computed(() => !!trail.value.length || page.value !== app.value)
+function toRoot(e: MouseEvent) {
+  if (!root.value || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+  e.preventDefault()
+  root.value()
+}
+
 const isMac = ref(false)
 onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
 
@@ -27,17 +39,35 @@ function goBack(e: MouseEvent) {
 
 <template>
   <header class="site-bar">
-    <NuxtLink
-      to="/"
-      class="brand"
-      :aria-label="back ? 'Back, Ousa’s Apps' : 'Ousa’s Apps'"
-      :title="back ? 'Back (Esc)' : undefined"
-      @click="goBack"
-    >
-      <AppIcon v-if="back" class="chev" name="chevron-left" />
-      <AppLogo class="logo" />
-      <span class="brand-name">Ousa’s Apps</span>
-    </NuxtLink>
+    <nav class="crumbs" :class="{ deep: deeper }" aria-label="Breadcrumb">
+      <NuxtLink
+        to="/"
+        class="brand"
+        :aria-label="back ? 'Back, Ousa’s Apps' : 'Ousa’s Apps'"
+        :title="back ? 'Back (Esc)' : undefined"
+        @click="goBack"
+      >
+        <AppIcon v-if="back" class="chev" name="chevron-left" />
+        <AppLogo class="logo" />
+        <span class="brand-name">Ousa’s Apps</span>
+      </NuxtLink>
+      <ClientOnly>
+        <ol v-if="app" class="trail">
+          <li class="crumb app-crumb">
+            <NuxtLink v-if="deeper" :to="app.to" class="crumb-link" @click="toRoot">{{ app.name }}</NuxtLink>
+            <span v-else class="crumb-here" aria-current="page">{{ app.name }}</span>
+          </li>
+          <li v-if="page && page !== app" class="crumb" :class="{ mid: trail.length }">
+            <span v-if="!trail.length" class="crumb-here" aria-current="page">{{ page.name }}</span>
+            <NuxtLink v-else :to="page.to" class="crumb-link" @click="toRoot">{{ page.name }}</NuxtLink>
+          </li>
+          <li v-for="(c, i) in trail" :key="`${i}-${c.label}`" class="crumb" :class="{ mid: i < trail.length - 1 }">
+            <button v-if="i < trail.length - 1 && c.go" type="button" class="crumb-link" @click="c.go()">{{ c.label }}</button>
+            <span v-else class="crumb-here" aria-current="page">{{ c.label }}</span>
+          </li>
+        </ol>
+      </ClientOnly>
+    </nav>
 
     <div class="tools">
       <button type="button" class="bar-btn search" aria-keyshortcuts="Control+K Meta+K" title="Search everything" @click="open = false; openPalette()">
@@ -87,9 +117,16 @@ function goBack(e: MouseEvent) {
   padding-top: max(0px, env(safe-area-inset-top) - 1rem);
 }
 
-/* ---------- Left: back to the apps ---------- */
-.brand {
+/* ---------- Left: back to the apps, and the breadcrumb trail ---------- */
+.crumbs {
   grid-column: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.brand {
+  flex: none;
   justify-self: start;
   display: inline-flex;
   align-items: center;
@@ -143,6 +180,72 @@ function goBack(e: MouseEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Inside an app the bar reads like a path: Ousa’s Apps / Bookmarks / Work / Banking */
+.trail {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.crumb {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Every step but the app gives way first when space runs out */
+.app-crumb {
+  flex: none;
+}
+
+.crumb::before {
+  content: '/';
+  flex: none;
+  margin: 0 0.15rem;
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.crumb-link,
+.crumb-here {
+  min-width: 0;
+  max-width: 14rem;
+  padding: 0.35rem 0.45rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 9px;
+}
+
+.crumb-link {
+  font: inherit;
+  color: var(--ink-2);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition: background-color var(--dur-fast, 0.15s), color var(--dur-fast, 0.15s);
+}
+
+.crumb-link:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.crumb-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.crumb-here {
+  color: var(--ink);
 }
 
 /* ---------- Right: search and apps ---------- */
@@ -271,6 +374,29 @@ function goBack(e: MouseEvent) {
   .bar-btn svg {
     width: 1.25rem;
     height: 1.25rem;
+  }
+
+  /* With a trail, the logo stands for Ousa’s Apps, and only the app and where you are show */
+  .deep .brand-name {
+    display: none;
+  }
+
+  .deep .brand {
+    padding-right: 0.25rem;
+  }
+
+  .trail {
+    font-size: 0.9rem;
+  }
+
+  .crumb.mid {
+    display: none;
+  }
+
+  .crumb-link,
+  .crumb-here {
+    max-width: 9rem;
+    padding: 0.35rem 0.3rem;
   }
 }
 

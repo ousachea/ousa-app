@@ -9,6 +9,9 @@ useHead({ link: [{ key: 'favicon', rel: 'icon', type: 'image/svg+xml', href: () 
 // Share-image cards are screenshotted alone, without the menu or toasts on top
 const route = useRoute()
 const bare = computed(() => route.path.startsWith('/og-card/'))
+// Opening the site on its home page (from a phone's home screen, say) starts with a splash; only the
+// page it was opened on counts, so it's decided once
+const launchedHome = route.path === '/'
 </script>
 
 <template>
@@ -16,6 +19,7 @@ const bare = computed(() => route.path.startsWith('/og-card/'))
     <NuxtRouteAnnouncer />
     <NuxtPage />
     <template v-if="!bare">
+      <LaunchSplash v-if="launchedHome" />
       <FloatingNav />
       <ClientOnly>
         <CommandPalette />

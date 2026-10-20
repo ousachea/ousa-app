@@ -1,11 +1,13 @@
 <script setup lang="ts">
 // Import / Export (Notes, #39). The page does the work; this is the choice.
 // Export: this note or every note, as Markdown, plain text, HTML or JSON (all notes as JSON keeps
-// folders, tags, favourites and dates for a full restore). Import: .md, .txt, .html or .json files.
+// folders, tags, favourites and dates for a full restore). All notes as Markdown can be one .md per
+// note in a .zip, in their folders, for Obsidian and other notes apps. Import: .md, .txt, .html, .json
+// or a .zip of them.
 defineProps<{ open: boolean, hasCurrent: boolean, count: number }>()
 const emit = defineEmits<{
   close: []
-  export: [scope: 'current' | 'all', format: 'md' | 'txt' | 'html' | 'json']
+  export: [scope: 'current' | 'all', format: 'md' | 'zip' | 'txt' | 'html' | 'json']
   import: [files: File[]]
 }>()
 
@@ -19,6 +21,9 @@ const FORMATS = [
 const scope = ref<'current' | 'all'>('current')
 const format = ref<(typeof FORMATS)[number]['value']>('md')
 const input = ref<HTMLInputElement>()
+// All notes as Markdown: a .zip with one file per note (in folders), or every note in one .md
+const mdLayout = ref<'zip' | 'one'>('zip')
+const chosen = (current: boolean) => (format.value === 'md' && (!current || scope.value === 'all') && mdLayout.value === 'zip' ? 'zip' : format.value)
 
 function onFiles(e: Event) {
   const el = e.target as HTMLInputElement
@@ -42,16 +47,21 @@ function onFiles(e: Event) {
           <strong>{{ f.label }}</strong><span>{{ f.hint }}</span>
         </label>
       </div>
-      <p v-if="scope === 'all' && format !== 'json'" class="hint">All notes go in one file, one after another.</p>
+      <div v-if="(scope === 'all' || !hasCurrent) && format === 'md'" class="seg" role="radiogroup" aria-label="Markdown files">
+        <label :class="{ active: mdLayout === 'zip' }"><input v-model="mdLayout" type="radio" value="zip">A file per note (.zip)</label>
+        <label :class="{ active: mdLayout === 'one' }"><input v-model="mdLayout" type="radio" value="one">One file</label>
+      </div>
+      <p v-if="(scope === 'all' || !hasCurrent) && format === 'md'" class="hint">{{ mdLayout === 'zip' ? 'One .md file per note, in folders like yours. Opens in Obsidian and most notes apps, and imports back here.' : 'Every note in one .md file, one after another. Imports back here as separate notes.' }}</p>
+      <p v-else-if="scope === 'all' && format !== 'json'" class="hint">All notes go in one file, one after another.</p>
       <p v-if="scope === 'all' && format === 'json'" class="hint">Keeps folders, tags, favourites and dates, so it can be imported back exactly.</p>
-      <button type="button" class="btn" :disabled="scope === 'current' && !hasCurrent" @click="emit('export', hasCurrent ? scope : 'all', format)">Download</button>
+      <button type="button" class="btn" :disabled="scope === 'current' && !hasCurrent" @click="emit('export', hasCurrent ? scope : 'all', chosen(hasCurrent))">Download</button>
     </section>
 
     <section class="part">
       <h3>Import</h3>
-      <p class="hint">Markdown, text, HTML or JSON files. Titles, folders, tags and dates are kept when the file has them; notes you already have are skipped.</p>
+      <p class="hint">Markdown files (or a .zip of them, from Obsidian, Bear or this app), text, HTML or JSON. Titles, folders, tags and dates are kept when the file has them; notes you already have are skipped.</p>
       <button type="button" class="btn btn-quiet" @click="input?.click()">Choose files…</button>
-      <input ref="input" type="file" accept=".md,.markdown,.txt,.html,.htm,.json,text/markdown,text/plain,text/html,application/json" multiple hidden @change="onFiles">
+      <input ref="input" type="file" accept=".md,.markdown,.zip,.txt,.html,.htm,.json,text/markdown,text/plain,text/html,application/json,application/zip" multiple hidden @change="onFiles">
     </section>
   </Modal>
 </template>

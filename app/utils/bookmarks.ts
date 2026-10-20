@@ -17,9 +17,36 @@ export interface Bookmark {
   lastOpened?: string // ISO
   updatedAt?: string // ISO, last edited by hand
   pinOrder?: number // place on the pinned shelf, set by dragging
+  folderPins?: Record<string, string> // folder id → ISO time it was pinned at the top of that folder
+  detailsAt?: string // ISO, when the site's details were last read; Get site details skips it for a while
 }
 
 export type NewBookmark = Omit<Bookmark, 'id'>
+
+/** "nuxt.com" or "https://…" as a link, or undefined when it isn't one */
+export function parseLink(raw: string) {
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`)
+    return url.hostname.includes('.') && !/\s/.test(raw) ? url : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** Every link in some pasted text (one per line, or with spaces or commas between), in order, without repeats */
+export function linksIn(text: string): URL[] {
+  const seen = new Set<string>()
+  const out: URL[] = []
+  for (const raw of text.split(/[\s,]+/)) {
+    const token = raw.replace(/^[<(["']+|[>)\]"'.;]+$/g, '')
+    if (!token || !/[.]/.test(token)) continue
+    const url = parseLink(token)
+    if (!url || seen.has(url.href)) continue
+    seen.add(url.href)
+    out.push(url)
+  }
+  return out
+}
 
 // "https://www.github.com/nuxt" -> "github.com"
 export function hostOf(url: string) {

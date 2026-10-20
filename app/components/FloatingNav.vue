@@ -30,6 +30,7 @@ const MENU_KEYS: Record<string, string> = {
   '/battery': 'a', // bAttery
   '/salary': 's',
   '/gold': 'g',
+  '/2048': 'f', // the game's tiles: Four by four
   '/settings': ',' // like Settings on a Mac
 }
 const RESERVED = new Set(['m', 'd'])
@@ -137,11 +138,16 @@ const unseenRelease = useUnseenRelease()
 const pins = computed(() => (hydrated.value ? prefs.pinnedApps : []))
 const pinnedTools = computed(() => pins.value.map(p => TOOLS.find(t => t.to === p)).filter((t): t is Tool => !!t))
 const unpinned = (t: Tool) => !pins.value.includes(t.to)
-const groups = computed(() => [
-  { name: 'Pinned', items: pinnedTools.value.filter(matches) },
-  { name: 'Tools', items: TOOLS.filter(t => !t.group || t.group === 'Tools').filter(unpinned).filter(matches) },
-  { name: 'Life', items: TOOLS.filter(t => t.group === 'Life').filter(unpinned).filter(matches) }
-].filter(g => g.items.length))
+// Home already shows every app, so the menu only lists them inside an app, leaving out the one that's open
+const onHome = computed(() => route.path === '/')
+const notOpen = (t: Tool) => t.to !== route.path
+const groups = computed(() => onHome.value
+  ? []
+  : [
+      { name: 'Pinned', items: pinnedTools.value.filter(notOpen).filter(matches) },
+      { name: 'Tools', items: TOOLS.filter(t => !t.group || t.group === 'Tools').filter(unpinned).filter(notOpen).filter(matches) },
+      { name: 'Life', items: TOOLS.filter(t => t.group === 'Life').filter(unpinned).filter(notOpen).filter(matches) }
+    ].filter(g => g.items.length))
 const results = computed(() => groups.value.flatMap(g => g.items))
 
 function openFirst() {
@@ -277,9 +283,7 @@ function onKeyup(e: KeyboardEvent) {
 }
 const cancelShift = () => (shiftDown = 0)
 
-const isMac = ref(false)
 onMounted(() => {
-  isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)
   canFullscreen.value = !!document.fullscreenEnabled
   syncFullscreen()
   // Esc or F11 can leave full screen too; keep the button's label in step
@@ -303,7 +307,7 @@ onBeforeUnmount(() => {
 
 <template>
   <nav ref="root" class="fab" :class="{ open }" aria-label="Apps" :style="{ 'top': `${place.top}px`, 'right': `${place.right}px`, '--menu-top': `${place.top}px` }">
-    <div id="fab-menu" class="sheet" :class="{ 'on-home': route.path === '/' }" :inert="!open">
+    <div id="fab-menu" class="sheet" :inert="!open">
       <!-- Account: live sync status, or a way to sign in -->
       <ClientOnly>
         <div v-if="vault.status !== 'loading'" class="account">
@@ -331,13 +335,9 @@ onBeforeUnmount(() => {
         </div>
       </ClientOnly>
 
-      <!-- Search everything and Quick Add, for touch screens and anyone who doesn't know the keys -->
+      <!-- Quick Add, for touch screens and anyone who doesn't know the keys. Search everything is the
+           Search button beside Apps in the top bar -->
       <div class="quick">
-        <button type="button" class="quick-btn" aria-keyshortcuts="Control+K Meta+K" @click="open = false; openPalette()">
-          <span class="quick-icon" aria-hidden="true"><ToolIcon name="search" /></span>
-          Search everything
-          <kbd class="quick-kbd">{{ isMac ? '⌘' : 'Ctrl' }} K</kbd>
-        </button>
         <button type="button" class="quick-btn add" aria-keyshortcuts="A" @click="open = false; openPalette('add')">
           <span class="quick-icon" aria-hidden="true"><ToolIcon name="plus" /></span>
           Add
@@ -345,7 +345,7 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <label class="search">
+      <label v-if="!onHome" class="search">
         <AppIcon name="search" />
         <input
           ref="searchInput"
@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
         <kbd>/</kbd>
       </label>
 
-      <div class="groups">
+      <div v-if="!onHome" class="groups">
         <section v-for="g in groups" :key="g.name" class="group" :aria-label="g.name">
           <h2>{{ g.name }}</h2>
           <ul>
@@ -602,7 +602,6 @@ a.chip {
 /* ---------- Search everything / Add ---------- */
 .quick {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.5rem;
 }
 
@@ -903,15 +902,6 @@ kbd {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-/* On a phone's home page every app is already on screen as an icon, so the menu leaves out its
-   own list of them (and the search that filters it); the letter shortcuts still work */
-@media (max-width: 720px) {
-  .on-home .search,
-  .on-home .groups {
-    display: none;
-  }
 }
 
 /* Phones: still three across, each tile its icon over its name, like a home screen */

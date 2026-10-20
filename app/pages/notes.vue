@@ -149,6 +149,15 @@ const searching = computed(() => !!searchText.value.trim())
 
 const VIEW_LABEL: Record<string, string> = { [NOTES_ALL]: 'All notes', [NOTES_FAVORITES]: 'Favourites', [NOTES_RECENT]: 'Recent', [NOTES_ARCHIVED]: 'Archived', [NOTES_UNFILED]: 'Not in a folder' }
 const listTitle = computed(() => VIEW_LABEL[active.value] ?? folderById(active.value)?.name ?? 'All notes')
+// The top bar's path: Notes / Work / Projects (or Favourites…), then the note that's open
+useBreadcrumbTrail(() => {
+  const where = isFolderChoice(active.value)
+    ? ancestorsOf(folders.value, active.value).map(f => ({ label: f.name, go: () => showList(f.id) }))
+    : active.value === NOTES_ALL ? [] : [{ label: VIEW_LABEL[active.value] ?? 'All notes', go: () => showList(active.value) }]
+  // On a phone the note only counts while it's on screen; a computer shows it beside the list
+  const n = isPhone.value && pane.value !== 'editor' ? undefined : openNote.value
+  return n ? [...where, { label: displayTitle(n) }] : where.map((c, i) => (i === where.length - 1 ? { label: c.label } : c))
+}, () => showList(NOTES_ALL))
 
 const scoped = computed(() => {
   const a = active.value
@@ -579,6 +588,7 @@ function newMenu(e: MouseEvent) {
   const items: MenuEntry[] = [
     { label: 'Blank note', icon: 'edit', run: () => newNote() },
     { label: 'Quick note…', icon: 'plus', run: () => (quickOpen.value = true) },
+    { label: 'Import Markdown…', icon: 'open', run: () => (transferOpen.value = true) },
     '-',
     ...BUILT_IN_TEMPLATES.map(t => ({ label: t.name, icon: 'list', run: () => fromTemplate(t) }) as MenuEntry),
     ...(own.length ? ['-' as const, ...own.map(t => ({ label: t.name, icon: 'star', run: () => fromTemplate(t) }) as MenuEntry)] : []),
@@ -834,7 +844,7 @@ const transferOpen = ref(false)
 const settingsOpen = useAppSettingsOpen()
 
 const exportedNote = (n: Note) => ({ title: displayTitle(n), html: n.html, markdown: htmlToMarkdown(n.html), folder: folderPath(n), tags: n.tags, favorite: !!n.favorite, archived: !!n.archived, createdAt: n.createdAt, updatedAt: n.updatedAt })
-function exportNotes(scope: 'current' | 'all' | 'one', format: 'md' | 'txt' | 'html' | 'json', one?: Note) {
+function exportNotes(scope: 'current' | 'all' | 'one', format: 'md' | 'zip' | 'txt' | 'html' | 'json', one?: Note) {
   flushSave()
   const list = scope === 'all' ? sortNotes(notes.value, 'modified') : [one ?? openNote.value].filter((n): n is Note => !!n)
   if (!list.length) return
@@ -842,6 +852,14 @@ function exportNotes(scope: 'current' | 'all' | 'one', format: 'md' | 'txt' | 'h
   const base = single ? safeFileName(displayTitle(list[0]!)) : dated('notes', format).replace(/\.\w+$/, '')
   if (format === 'json') {
     downloadFile(`${base}.json`, JSON.stringify({ app: 'ousa-app', kind: 'notes', version: 1, exportedAt: new Date().toISOString(), notes: list.map(exportedNote) }, null, 2), 'application/json')
+  } else if (format === 'zip') {
+    // One .md per note, in folders like the notes' own, for Obsidian and other notes apps (utils/zip.ts)
+    const zip = makeZip(notesToMarkdownFiles(list, folderPath))
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(zip)
+    a.download = `${base}.zip`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
   } else if (format === 'md') {
     downloadFile(`${base}.md`, list.map(n => noteToMarkdown(n, folderPath(n))).join('\n\n'), 'text/markdown;charset=utf-8')
   } else if (format === 'txt') {
@@ -874,11 +892,22 @@ async function importFiles(files: File[]) {
       continue
     }
     try {
-      const text = await f.text()
       const name = f.name.toLowerCase()
+      if (name.endsWith('.zip')) {
+        // A folder of notes from another app (or this one's Markdown export): every .md, .txt and .html inside
+        for (const entry of await readZip(f)) {
+          const dir = entry.path.split('/').slice(0, -1).join('/')
+          const file = entry.path.split('/').pop()!
+          if (/\.(md|markdown)$/i.test(file)) incoming.push(...importMarkdownFile(entry.content, file, dir))
+          else if (/\.html?$/i.test(file)) incoming.push({ ...importHtml(entry.content, file), folder: dir.split('/').filter(Boolean).join(' → ') || undefined })
+          else if (/\.txt$/i.test(file)) incoming.push({ ...importText(entry.content, file), folder: dir.split('/').filter(Boolean).join(' → ') || undefined })
+        }
+        continue
+      }
+      const text = await f.text()
       if (name.endsWith('.json')) incoming.push(...importJson(text))
       else if (/\.html?$/.test(name)) incoming.push(importHtml(text, f.name))
-      else if (/\.(md|markdown)$/.test(name)) incoming.push(importMarkdown(text, f.name))
+      else if (/\.(md|markdown)$/.test(name)) incoming.push(...importMarkdownFile(text, f.name))
       else incoming.push(importText(text, f.name))
     } catch {
       failed++
@@ -1058,6 +1087,12 @@ function listMenu() {
                   <AppIcon name="trash-2" />
                   <span>Recycle Bin</span>
                 </NuxtLink>
+                <!-- Markdown in and out, without digging into Settings -->
+                <button type="button" class="view-row" @click="transferOpen = true">
+                  <AppIcon name="arrow-down-up" />
+                  <span>Import &amp; export</span>
+                  <b class="md-badge">.md</b>
+                </button>
               </nav>
               <h3 class="side-head">Folders</h3>
             </template>
@@ -1213,6 +1248,11 @@ function listMenu() {
               <button type="button" class="focus-tool" :class="{ on: focusDim }" :aria-pressed="focusDim" title="Dim everything but the paragraph you’re writing" @click="focusDim = !focusDim; play(focusDim ? 'toggle-on' : 'toggle-off')">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5h14" opacity=".35" /><path d="M5 12h14" /><path d="M5 17.5h9" opacity=".35" /></svg>
                 <span>Dim</span>
+              </button>
+              <!-- Centred column or the full width, the same choice as the header's button -->
+              <button type="button" class="focus-tool" :class="{ on: notePrefs.width === 'full' }" :aria-pressed="notePrefs.width === 'full'" :title="notePrefs.width === 'full' ? 'Centre the note' : 'Full width'" @click="toggleWidth">
+                <AppIcon :name="notePrefs.width === 'full' ? 'fold-horizontal' : 'move-horizontal'" />
+                <span>{{ notePrefs.width === 'full' ? 'Centre' : 'Wide' }}</span>
               </button>
               <button v-if="canFullscreen" type="button" class="focus-tool" title="Full screen" aria-label="Full screen" @click="toggleFullscreen">
                 <AppIcon name="maximize" />
@@ -1943,6 +1983,12 @@ time {
   width: 100%;
   max-width: 42rem;
   padding: 18vh 0 45vh;
+}
+
+/* Full width (the bar's Wide, or the header's toggle): the writing spreads across the screen, with margins */
+.focus-mode > .sheet.full {
+  max-width: none;
+  padding-inline: clamp(1.5rem, 7vw, 7rem);
 }
 
 /* Your text size and spacing from Notes settings, a step bigger and airier */

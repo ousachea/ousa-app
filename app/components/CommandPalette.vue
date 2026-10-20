@@ -323,7 +323,7 @@ onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
   border: 0;
   border-radius: 20px;
   box-shadow: var(--shadow-lg);
-  overflow: hidden;
+  overflow: clip;
 }
 
 .palette[open] {
@@ -340,8 +340,11 @@ onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
   animation: fade var(--dur) ease-out;
 }
 
+/* min-width: 0 so long one-line subtitles ellipsize instead of widening the box past a phone's
+   screen (the dialog then scrolled sideways and cut off both edges) */
 .box {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;

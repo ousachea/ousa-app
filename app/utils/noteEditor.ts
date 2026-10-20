@@ -3,10 +3,11 @@ import StarterKit from '@tiptap/starter-kit'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { Focus, Placeholder } from '@tiptap/extensions'
 import Image from '@tiptap/extension-image'
+import { TableKit } from '@tiptap/extension-table'
 
 // The Notes editor's building blocks (Tiptap). Only the Notes page imports this, so the editor's code
 // stays out of every other page. Markdown-style shortcuts come with the starter kit: "# " heading,
-// "- " bullets, "1. " numbers, "[ ] " checklist, "> " quote, "```" code block, "---" divider,
+// "- " bullets, "1. " numbers, "[ ] " checklist, "> " quote, "```" code block, "---" divider, tables,
 // **bold**, *italic*, `code`, ~~strike~~.
 
 /** A [[link]] to another note: an inline chip that opens it. Stored as <span data-note-link data-id data-title> */
@@ -73,6 +74,8 @@ export function noteExtensions(opts: { placeholder?: string, resolve?: (title: s
     TaskList,
     TaskItem.configure({ nested: true }),
     Image.configure({ allowBase64: true }),
+    // Tables: Tab moves to the next cell (and adds a row at the end); the table button's menu adds and removes rows and columns
+    TableKit.configure({ table: { resizable: false } }),
     Placeholder.configure({ placeholder: opts.placeholder ?? 'Start writing…' }),
     // The top-level block holding the caret gets .has-focus; focus mode dims the others
     Focus.configure({ className: 'has-focus', mode: 'shallowest' }),

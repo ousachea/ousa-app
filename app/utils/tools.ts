@@ -1,7 +1,7 @@
 export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
-  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'speed' | 'claude' | 'budget' | 'cv'
+  | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'speed' | 'claude' | 'budget' | 'cv' | 'game'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -224,6 +224,17 @@ export const TOOLS: Tool[] = [
     seoTitle: 'Gold price in chi and damlung today',
     description: 'Live gold price per chi, damlung and gram for Cambodia, a gold unit converter, and what your gold purchases are worth now.',
     demo: true
+  },
+  {
+    to: '/2048',
+    name: '2048',
+    summary: 'Slide the tiles, join matching numbers, and reach 2048.',
+    color: '#e8590c',
+    gradient: 'linear-gradient(135deg, #ffa94d 0%, #f76707 55%, #d9480f 100%)',
+    icon: 'game',
+    group: 'Life',
+    seoTitle: '2048 game: play free in your browser',
+    description: 'Play 2048: slide the tiles with the arrow keys or a swipe, join matching numbers and reach 2048. Undo a move, keep your best score, works offline.'
   },
   {
     to: '/cv',

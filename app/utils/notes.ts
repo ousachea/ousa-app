@@ -235,7 +235,7 @@ export const fillTemplate = (html: string, now = new Date()) =>
 
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
-/** The note's body as Markdown (headings, lists, checklists, quotes, code, links, [[note links]]) */
+/** The note's body as Markdown (headings, lists, checklists, quotes, code, tables, links, [[note links]]) */
 export function htmlToMarkdown(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   const inline = (node: Node): string => {
@@ -263,6 +263,14 @@ export function htmlToMarkdown(html: string): string {
       case 'H1': case 'H2': case 'H3': case 'H4': return `${'#'.repeat(Number(node.tagName[1]))} ${inline(node)}`
       case 'P': return inline(node)
       case 'HR': return '---'
+      // A table as a GitHub-style Markdown table; the first row is the header
+      case 'TABLE': {
+        const rows = [...node.querySelectorAll('tr')].map(tr => [...tr.children].map(c => inline(c).replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ').trim()))
+        if (!rows.length) return ''
+        const cols = Math.max(...rows.map(r => r.length))
+        const line = (r: string[]) => `| ${Array.from({ length: cols }, (_, i) => r[i] ?? '').join(' | ')} |`
+        return [line(rows[0]!), `| ${Array.from({ length: cols }, () => '---').join(' | ')} |`, ...rows.slice(1).map(line)].join('\n')
+      }
       case 'PRE': return `\`\`\`\n${node.textContent ?? ''}\n\`\`\``
       case 'BLOCKQUOTE': return [...node.children].map(c => block(c)).join('\n\n').split('\n').map(l => `> ${l}`).join('\n')
       case 'UL': case 'OL': {
@@ -394,6 +402,17 @@ export function markdownToHtml(md: string): string {
       i++
       continue
     }
+    // A GitHub-style table: a | row, then a | --- | line under it
+    if (t.startsWith('|') && /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?$/.test(lines[i + 1]?.trim() ?? '')) {
+      const cells = (row: string) => row.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|'))
+      const head = cells(t)
+      i += 2
+      const body: string[][] = []
+      while (i < lines.length && lines[i]!.trim().startsWith('|')) body.push(cells(lines[i++]!))
+      const row = (r: string[], tag: string) => `<tr>${head.map((_, c) => `<${tag}><p>${inlineMd(r[c] ?? '')}</p></${tag}>`).join('')}</tr>`
+      out.push(`<table><tbody>${row(head, 'th')}${body.map(r => row(r, 'td')).join('')}</tbody></table>`)
+      continue
+    }
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) {
       out.push('<hr>')
       i++
@@ -412,7 +431,7 @@ export function markdownToHtml(md: string): string {
       continue
     }
     const para: string[] = []
-    while (i < lines.length && lines[i]!.trim() && !/^(#{1,4}\s|```|>|([-*+]|\d+[.)]) |(-{3,}|\*{3,})$)/.test(lines[i]!.trim())) para.push(inlineMd(lines[i++]!.trim()))
+    while (i < lines.length && lines[i]!.trim() && !/^(#{1,4}\s|```|>|\||([-*+]|\d+[.)]) |(-{3,}|\*{3,})$)/.test(lines[i]!.trim())) para.push(inlineMd(lines[i++]!.trim()))
     out.push(`<p>${para.join('<br>')}</p>`)
   }
   return out.join('')
@@ -436,8 +455,42 @@ function readFrontMatter(md: string): [Record<string, string>, string] {
 
 const isoOrUndefined = (s?: string) => (s && !Number.isNaN(Date.parse(s)) ? new Date(s).toISOString() : undefined)
 
+/**
+ * A Markdown file can hold several notes: "All notes" exported as one .md puts each note's front matter
+ * (--- title: … ---) before its text. This splits such a file back into one Markdown text per note;
+ * a file with one note (or none of our front matter) comes back whole.
+ */
+export function splitMarkdownNotes(md: string): string[] {
+  const text = md.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n')
+  const starts = [...text.matchAll(/^---\ntitle: .*\n(?:[a-z]+: .*\n)*---\n/gm)].map(m => m.index!)
+  if (starts.length < 2) return [text]
+  const head = text.slice(0, starts[0]).trim()
+  return [...(head ? [head] : []), ...starts.map((at, i) => text.slice(at, starts[i + 1] ?? text.length).trim())]
+}
+
+/** Every note in a Markdown file; `folder` is where it sat in a zip (Work/Banking) when its front matter doesn't say */
+export function importMarkdownFile(md: string, fileName = '', folder = ''): ImportedNote[] {
+  return splitMarkdownNotes(md).map((part) => {
+    const note = importMarkdown(part, fileName)
+    return note.folder || !folder ? note : { ...note, folder: folder.split('/').filter(Boolean).join(' → ') }
+  })
+}
+
+/** Notes as Markdown files for a zip: one per note, in folders named like the note's folders */
+export function notesToMarkdownFiles(list: Note[], folderPathOf: (n: Note) => string) {
+  const used = new Set<string>()
+  return list.map((n) => {
+    const dir = folderPathOf(n).split(' → ').map(safeFileName).filter(p => p && p !== 'note').join('/')
+    const base = safeFileName(displayTitle(n))
+    let path = `${dir ? `${dir}/` : ''}${base}.md`
+    for (let i = 2; used.has(path.toLowerCase()); i++) path = `${dir ? `${dir}/` : ''}${base} ${i}.md`
+    used.add(path.toLowerCase())
+    return { path, content: noteToMarkdown(n, folderPathOf(n)), modified: new Date(n.updatedAt) }
+  })
+}
+
 export function importMarkdown(md: string, fileName = ''): ImportedNote {
-  const [fm, body] = readFrontMatter(md)
+  const [fm, body] = readFrontMatter(md.replace(/\r\n?/g, '\n'))
   let html = markdownToHtml(body)
   let title = fm.title ?? ''
   // A single leading # heading is the title when there's no front matter title

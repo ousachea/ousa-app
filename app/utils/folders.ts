@@ -17,6 +17,12 @@ export interface Folder {
   color: string
   /** Position among its siblings */
   order: number
+  /** Bookmarks: on the Pinned shelf with your pinned links */
+  pinned?: boolean
+  /** Place on the Pinned shelf, set by dragging */
+  pinOrder?: number
+  /** Bookmarks: shared as a public page at /shared/<shareId> (utils/share.ts) */
+  shareId?: string
 }
 
 // One icon per idea (#37), from the shared icon library
@@ -85,6 +91,14 @@ export function pathOf(folders: readonly Folder[], id: string): string[] {
     f = f.parentId ? byId.get(f.parentId) : undefined
   }
   return path
+}
+
+/** The folder and the folders it sits in, outermost first: [Work, Banking] for Work → Banking */
+export function ancestorsOf(folders: readonly Folder[], id: string): Folder[] {
+  const byId = new Map(folders.map(f => [f.id, f]))
+  const out: Folder[] = []
+  for (let f = byId.get(id), guard = 0; f && guard < 20; f = f.parentId ? byId.get(f.parentId) : undefined, guard++) out.unshift(f)
+  return out
 }
 
 export const pathText = (folders: readonly Folder[], id: string) => pathOf(folders, id).join(' → ')

@@ -224,6 +224,14 @@ defineProps<{ name: ToolIconName }>()
       <path d="M12 8v8M8 12h8" />
     </template>
 
+    <!-- 2048: a two-by-two of tiles, one of them merged and filled -->
+    <template v-else-if="name === 'game'">
+      <rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2" />
+      <rect x="13" y="3.5" width="7.5" height="7.5" rx="2" fill="currentColor" />
+      <rect x="3.5" y="13" width="7.5" height="7.5" rx="2" />
+      <rect x="13" y="13" width="7.5" height="7.5" rx="2" />
+    </template>
+
     <!-- Search -->
     <template v-else-if="name === 'search'">
       <circle cx="11" cy="11" r="6.5" />

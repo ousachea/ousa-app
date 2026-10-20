@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import type { Bookmark, ImportedBookmark } from '~/utils/bookmarks'
+import type { Bookmark, ImportedBookmark, NewBookmark } from '~/utils/bookmarks'
 import type { Folder } from '~/utils/folders'
 import type { CsvColumn } from '~/utils/transfer'
 import type { MenuEntry } from '~/composables/useContextMenu'
@@ -236,20 +236,11 @@ usePullToRefresh(async () => {
   await Promise.all([sync.retry(), folderStore.sync.retry()])
   toast(sync.signedIn.value ? 'Up to date with your account' : 'Refreshed', { duration: 1800 })
 })
-const linkInput = ref('')
-const linkField = ref<HTMLInputElement>()
-useAddAction(() => focusField(linkField.value))
-const saving = ref(false)
+// The add card at the top (BookmarkAdder) and the add box inside an open folder
+const adder = ref<{ focus: () => void }>()
+const folderAdder = ref<{ focus: () => void }>()
+useAddAction(() => adder.value?.focus())
 const flashId = ref<string>()
-
-function parseLink(raw: string) {
-  try {
-    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`)
-    return url.hostname.includes('.') ? url : undefined
-  } catch {
-    return undefined
-  }
-}
 
 function flash(id: string) {
   // Make sure it's drawn even in a long list
@@ -260,27 +251,18 @@ function flash(id: string) {
   nextTick(() => document.getElementById(`bm-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
 }
 
-// The open folder is where a new link goes (save); this opens a folder and puts you in the address bar
+// The open folder is where a new link goes; this opens a folder and puts you in its add box
 const savingTo = computed(() => (activeFolder.value && activeFolder.value !== UNFILED ? folderById(activeFolder.value) : undefined))
+// The add row heads an open folder's list, except while searching or picking several
+const showFolderAdd = computed(() => !!savingTo.value && ready.value && !sel.selecting && !query.value.trim())
 function addInFolder(id = activeFolder.value) {
   activeFolder.value = id
   query.value = ''
-  linkField.value?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  focusField(linkField.value)
-}
-
-// A link that's already saved asks first (CHECKLIST.md #29)
-const duplicateOf = ref<Bookmark>()
-watch(linkInput, () => (duplicateOf.value = undefined))
-const folderPath = (b: Bookmark) => pathsOf(b).join(', ') || undefined
-function showExisting() {
-  const b = duplicateOf.value
-  duplicateOf.value = undefined
-  if (!b) return
-  linkInput.value = ''
-  activeFolder.value = ALL_BOOKMARKS
-  query.value = ''
-  flash(b.id)
+  nextTick(() => {
+    const box = document.querySelector<HTMLElement>('.folder-add')
+    box?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    folderAdder.value?.focus()
+  })
 }
 
 // A folder suggestion as a name, from where you've filed other links from the site (CHECKLIST.md #30)
@@ -289,123 +271,34 @@ const suggestFor = (url: string, exceptId?: string) => {
   return name ? folderName(name) : undefined
 }
 
-// Review before saving (CHECKLIST.md #43): what the page says about itself, editable, with folders.
-// Enter in the link box reads the page; Enter again (or Save) keeps it.
-const review = ref<{ url: string, title: string, description: string, note: string, pinned: boolean, icon: string, image: string, siteName: string, folders: string[], suggestion?: string, offline: boolean }>()
-const reviewTitle = ref<HTMLInputElement>()
-const reviewImageBroken = ref(false)
-
-async function save(force = false) {
-  const raw = linkInput.value.trim()
-  if (!raw || saving.value) return
-  const url = parseLink(raw)
-  if (!url) {
-    toast.error('That doesn’t look like a link', { description: 'Try something like nuxt.com or https://…' })
-    play('error')
-    return
-  }
-  // Same page even if the address differs by http/www/tracking codes (utils/bookmarkDupes.ts)
-  const existing = force ? undefined : items.value.find(b => pageKey(b.url) === pageKey(url.href))
-  if (existing) {
-    duplicateOf.value = existing
-    play('warning')
-    return
-  }
-  duplicateOf.value = undefined
-  review.value = undefined
-
-  saving.value = true
-  // Read the page's title, description, image and icon; if the site won't say (or there's no internet), use its address
-  const preview = online.value
-    ? await $fetch('/api/link-preview', { query: { url: url.href } }).catch(() => undefined)
-    : undefined
-  saving.value = false
-
-  const finalUrl = preview?.url || url.href
-  const inFolder = activeFolder.value && activeFolder.value !== UNFILED && folderIds.value.has(activeFolder.value)
-  const suggestion = inFolder ? undefined : suggestFor(finalUrl)
-  reviewImageBroken.value = false
-  review.value = {
-    url: finalUrl,
-    title: preview?.title || hostOf(finalUrl),
-    description: preview?.description ?? '',
-    note: '',
-    pinned: false,
-    icon: preview?.icon || new URL('/favicon.ico', finalUrl).href,
-    image: preview?.image ?? '',
-    siteName: preview?.siteName || preview?.domain || hostOf(finalUrl),
-    folders: inFolder ? [activeFolder.value] : [],
-    suggestion,
-    offline: !preview
-  }
-  play('open')
-  nextTick(() => reviewTitle.value?.focus())
-}
-
-function keepReviewed() {
-  const r = review.value
-  if (!r) return
-  const record = add({
-    url: r.url,
-    title: r.title.trim() || hostOf(r.url),
-    description: r.description.trim(),
-    note: r.note.trim(),
-    tags: [],
-    folders: r.folders,
-    icon: r.icon,
-    ...(r.image && !reviewImageBroken.value ? { image: r.image } : {}),
-    pinned: r.pinned,
-    visits: 0,
-    createdAt: new Date().toISOString()
-  })
-  review.value = undefined
-  linkInput.value = ''
+// Saved from the adder: one checked bookmark, or several at once. Pages that couldn't be read yet
+// get their details in the background.
+function onAdded(entries: { record: NewBookmark, read: boolean }[]) {
+  if (!entries.length) return
+  const added = entries.length === 1 ? [add(entries[0]!.record)] : addMany(entries.map(e => e.record))
   play('success')
-  toast.success('Bookmark saved', {
-    description: record.folders?.length ? `${record.title} · ${pathsOf(record).join(', ')}` : record.title,
-    action: { label: 'Undo', onClick: () => remove(record.id, { undoAdd: true }) }
-  })
-  flash(record.id)
-  nextTick(() => linkField.value?.focus())
+  const first = added[0]!
+  if (added.length === 1) {
+    toast.success('Bookmark saved', {
+      description: first.folders?.length ? `${first.title} · ${pathsOf(first).join(', ')}` : first.title,
+      action: { label: 'Undo', onClick: () => remove(first.id, { undoAdd: true }) }
+    })
+  } else {
+    toast.success(`${marksText(added.length)} saved`, {
+      description: first.folders?.length ? `In ${pathsOf(first).join(', ')}` : undefined,
+      action: { label: 'Undo', onClick: () => added.forEach(b => remove(b.id, { undoAdd: true })) }
+    })
+  }
+  flash(first.id)
+  const unread = added.filter((_, i) => !entries[i]!.read)
+  if (unread.length) enrich(unread)
 }
 
-function cancelReview() {
-  review.value = undefined
-  nextTick(() => linkField.value?.focus())
-}
-
-// Pasting a link into an empty box reads the page straight away; no Enter needed
-function onLinkPaste(e: ClipboardEvent) {
-  const text = e.clipboardData?.getData('text').trim()
-  if (!text || linkInput.value.trim() || !parseLink(text)) return
-  e.preventDefault()
-  linkInput.value = text
-  save()
-}
-
-// A Paste button that reads the clipboard itself (the browser may ask once). Only shown where the browser allows it.
-const canReadClipboard = ref(false)
-onMounted(() => (canReadClipboard.value = !!navigator.clipboard?.readText))
-async function pasteFromClipboard() {
-  let text = ''
-  try {
-    text = (await navigator.clipboard.readText()).trim()
-  } catch {
-    toast.error('Couldn’t read the clipboard', { description: 'Allow clipboard access for this site, or paste with ⌘V / Ctrl+V.' })
-    play('error')
-    return focusField(linkField.value)
-  }
-  if (!text) {
-    toast('The clipboard is empty', { description: 'Copy a link first, then press Paste.' })
-    return focusField(linkField.value)
-  }
-  linkInput.value = text
-  if (parseLink(text)) save()
-  else {
-    toast.error('The clipboard doesn’t hold a link', { description: text.length > 60 ? `${text.slice(0, 60)}…` : text })
-    play('error')
-    focusField(linkField.value)
-  }
+// Asked to look at one that's already saved: show it in the list
+function showBookmark(b: Bookmark) {
+  activeFolder.value = ALL_BOOKMARKS
+  query.value = ''
+  nextTick(() => flash(b.id))
 }
 
 // ---------- Browse ----------
@@ -504,6 +397,148 @@ const reorderPinned = useDragReorder<Bookmark>({
   }
 })
 
+// ---------- Pinned folders: on the shelf beside pinned links, one tap opens them ----------
+const pinnedFolders = computed(() => folders.value
+  .filter(f => f.pinned)
+  .sort((a, b) => (a.pinOrder ?? Number.MAX_SAFE_INTEGER) - (b.pinOrder ?? Number.MAX_SAFE_INTEGER) || a.name.localeCompare(b.name)))
+const folderTotal = (id: string) => [id, ...descendantsOf(folders.value, id)].reduce((n, x) => n + (counts.value[x] ?? 0), 0)
+function togglePinFolder(f: Folder) {
+  const pinning = !f.pinned
+  const before = folderStore.update(f.id, pinning ? { pinned: true, pinOrder: pinnedFolders.value.length } : { pinned: false })
+  play(pinning ? 'toggle-on' : 'toggle-off')
+  toast(pinning ? 'Folder pinned to the top' : 'Folder unpinned', { description: pathText(folders.value, f.id), action: before && { label: 'Undo', onClick: () => folderStore.replace(before) } })
+}
+const reorderPinnedFolders = useDragReorder<Folder>({
+  keyOf: f => f.id,
+  axis: 'x',
+  onMove(from, to) {
+    moved(pinnedFolders.value, from, to).forEach((f, i) => {
+      if (f.pinOrder !== i) folderStore.update(f.id, { pinOrder: i }, { quiet: true })
+    })
+  }
+})
+function openFolder(id: string) {
+  activeFolder.value = id
+  query.value = ''
+  nextTick(() => document.querySelector('.library-step')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+// Pin and share in each folder's menu (the sidebar's ⋯ and right-click, and the pinned tiles)
+const folderExtraMenu = (f: Folder): MenuEntry[] => [
+  { label: f.pinned ? 'Unpin folder' : 'Pin to the top', icon: 'pin', run: () => togglePinFolder(f) },
+  { label: f.shareId ? 'Sharing…' : 'Share…', icon: 'share', run: () => openShare(f) }
+]
+const pinnedFolderMenu = (f: Folder): MenuEntry[] => [
+  { label: 'Open', icon: 'open', run: () => openFolder(f.id) },
+  { label: 'Add a bookmark here', icon: 'plus', run: () => addInFolder(f.id) },
+  '-',
+  ...folderExtraMenu(f)
+]
+
+// ---------- Share a folder: a public page anyone with the link can see (utils/share.ts) ----------
+const sharing = ref<Folder>()
+const shareBusy = ref(false)
+const shareCopied = ref(false)
+const sharingFolder = computed(() => (sharing.value ? folderById(sharing.value.id) ?? sharing.value : undefined))
+const sharingUrl = computed(() => (sharingFolder.value?.shareId ? shareLink(sharingFolder.value.shareId) : ''))
+const canShare = computed(() => sync.signedIn.value && !useDemoState('/bookmarks').active.value)
+function openShare(f: Folder) {
+  sharing.value = f
+  shareCopied.value = false
+  play('open')
+}
+
+// What's on the shared page now, for each shared folder; written again whenever it changes
+const sharePayloads = computed(() => {
+  const out = new Map<string, string>()
+  for (const f of folders.value) if (f.shareId) out.set(f.shareId, JSON.stringify(buildShare(f, folders.value, items.value)))
+  return out
+})
+const published = new Map<string, string>()
+
+async function writeShare(shareId: string, json: string) {
+  const fb = firebaseNow() ?? await loadFirebase()
+  const uid = fb.auth.currentUser?.uid
+  if (!uid) throw new Error('Sign in to share folders.')
+  if (json.length > SHARE_MAX_BYTES) throw new Error('This folder is too big to share as one page. Share a sub-folder instead.')
+  await withTimeout(fb.sdk.setDoc(fb.sdk.doc(fb.db, 'shares', shareId), { owner: uid, json, updatedAt: new Date().toISOString() }))
+  published.set(shareId, json)
+}
+
+async function startSharing() {
+  const f = sharingFolder.value
+  if (!f || shareBusy.value) return
+  shareBusy.value = true
+  const shareId = newShareId()
+  try {
+    await writeShare(shareId, JSON.stringify(buildShare(f, folders.value, items.value)))
+    folderStore.update(f.id, { shareId }, { quiet: true })
+    play('success')
+    toast.success(`${f.name} is shared`, { description: 'Anyone with the link can see it, without signing in.' })
+  } catch (e) {
+    play('error')
+    toast.error('Couldn’t share the folder', { description: needsFirestoreSetup(e) ? 'Firestore’s rules need the shares section. Publish the rules in Settings → Account & sync.' : e instanceof Error ? e.message : undefined })
+  } finally {
+    shareBusy.value = false
+  }
+}
+
+async function stopSharing() {
+  const f = sharingFolder.value
+  if (!f?.shareId || shareBusy.value) return
+  shareBusy.value = true
+  const shareId = f.shareId
+  try {
+    const fb = firebaseNow() ?? await loadFirebase()
+    await withTimeout(fb.sdk.deleteDoc(fb.sdk.doc(fb.db, 'shares', shareId)))
+    published.delete(shareId)
+    folderStore.update(f.id, { shareId: '' }, { quiet: true })
+    play('toggle-off')
+    toast(`${f.name} isn’t shared any more`, { description: 'The old link no longer works.' })
+  } catch (e) {
+    play('error')
+    toast.error('Couldn’t stop sharing', { description: e instanceof Error ? e.message : undefined })
+  } finally {
+    shareBusy.value = false
+  }
+}
+
+async function copyShareLink() {
+  try {
+    await navigator.clipboard.writeText(sharingUrl.value)
+    shareCopied.value = true
+    play('copy')
+    setTimeout(() => (shareCopied.value = false), 1800)
+  } catch {
+    toast.error('Couldn’t copy the link')
+  }
+}
+const canNativeShare = ref(false)
+onMounted(() => (canNativeShare.value = !!navigator.share))
+function nativeShare() {
+  const f = sharingFolder.value
+  if (f) navigator.share({ title: `${f.name} · bookmarks`, url: sharingUrl.value }).catch(() => {})
+}
+
+// Keep shared pages up to date: a moment after a shared folder or its bookmarks change, its page is
+// written again. What's there when the lists load counts as already written (the device that made
+// those changes wrote them).
+let shareTimer: ReturnType<typeof setTimeout> | undefined
+watch([ready, folderStore.ready, sharePayloads], ([a, b, payloads], [wasA, wasB]) => {
+  if (!a || !b || !canShare.value) return
+  if (!wasA || !wasB) {
+    for (const [id, json] of payloads) published.set(id, json)
+    return
+  }
+  clearTimeout(shareTimer)
+  shareTimer = setTimeout(() => {
+    for (const [id, json] of sharePayloads.value) {
+      if (published.get(id) === json) continue
+      writeShare(id, json).catch(() => {})
+    }
+  }, 2000)
+})
+onBeforeUnmount(() => clearTimeout(shareTimer))
+
 // A folder shows its own bookmarks and those in its sub-folders
 const inView = computed(() => {
   if (!activeFolder.value) return undefined
@@ -521,13 +556,37 @@ const shown = computed(() => {
     // Older or imported bookmarks may have no note or description
     return [b.title, b.url, b.note, b.description, ...pathsOf(b)].some(f => f?.toLowerCase().includes(q))
   })
-  if (sort.value === 'az') return list.sort((a, b) => a.title.localeCompare(b.title))
-  if (sort.value === 'updated') return list.sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+  if (sort.value === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
+  else if (sort.value === 'updated') list.sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
   // By folder path, then by name; bookmarks without one come last
-  if (sort.value === 'folder') return list.sort((a, b) => (pathsOf(a)[0] ?? '￿').localeCompare(pathsOf(b)[0] ?? '￿') || a.title.localeCompare(b.title))
-  if (sort.value === 'opened') return list.sort((a, b) => b.visits - a.visits || (b.lastOpened ?? '').localeCompare(a.lastOpened ?? ''))
-  return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  else if (sort.value === 'folder') list.sort((a, b) => (pathsOf(a)[0] ?? '￿').localeCompare(pathsOf(b)[0] ?? '￿') || a.title.localeCompare(b.title))
+  else if (sort.value === 'opened') list.sort((a, b) => b.visits - a.visits || (b.lastOpened ?? '').localeCompare(a.lastOpened ?? ''))
+  else list.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  // In a folder, the ones pinned in it come first (in the order they were pinned), whatever the sort
+  const here = savingTo.value?.id
+  if (!here) return list
+  const pinnedHere = list.filter(b => pinnedIn(b, here)).sort((a, b) => (a.folderPins![here] ?? '').localeCompare(b.folderPins![here] ?? ''))
+  return pinnedHere.length ? [...pinnedHere, ...list.filter(b => !pinnedIn(b, here))] : list
 })
+
+// ---------- Pin inside a folder: stays at the top of that folder's list ----------
+// Separate from Pin to the top (the shelf): a bookmark can lead one folder without being on the shelf.
+// Kept per folder, as folder id → when it was pinned.
+const pinnedIn = (b: Bookmark, folderId: string) => !!b.folderPins?.[folderId]
+function toggleFolderPin(b: Bookmark, folderId = savingTo.value?.id) {
+  if (!folderId) return
+  const f = folderById(folderId)
+  const pins = { ...b.folderPins }
+  const pinning = !pins[folderId]
+  if (pinning) pins[folderId] = new Date().toISOString()
+  else delete pins[folderId]
+  const before = update(b.id, { folderPins: pins })
+  play(pinning ? 'toggle-on' : 'toggle-off')
+  toast(pinning ? `Pinned in ${f?.name ?? 'this folder'}` : `Unpinned from ${f?.name ?? 'this folder'}`, {
+    description: b.title,
+    action: before && { label: 'Undo', onClick: () => replace(before) }
+  })
+}
 
 // Long libraries draw 150 rows at a time (#70); more appear as you reach the end
 const PAGE = 150
@@ -547,6 +606,11 @@ watch(moreSentinel, (el) => {
 onBeforeUnmount(() => moreObserver?.disconnect())
 
 const activeFolderRecord = computed(() => folderById(activeFolder.value))
+// Where you are, as a path: in the top bar, and over the list (Work / Banking), each step clickable
+const folderTrail = computed(() => (activeFolder.value === UNFILED ? [] : ancestorsOf(folders.value, activeFolder.value)))
+useBreadcrumbTrail(() => activeFolder.value === UNFILED
+  ? [{ label: 'Not in a folder' }]
+  : folderTrail.value.map(f => ({ label: f.name, go: () => (activeFolder.value = f.id) })), () => (activeFolder.value = ALL_BOOKMARKS))
 const listTitle = computed(() => activeFolder.value === UNFILED ? 'Not in a folder' : activeFolderRecord.value ? pathText(folders.value, activeFolder.value) : 'All bookmarks')
 
 // "/" jumps to search from anywhere on the page, like most sites with a search box
@@ -692,6 +756,7 @@ const bookmarkMenu = (b: Bookmark): MenuEntry[] => sel.has(b.id) && sel.selected
   { label: 'Edit', icon: 'edit', run: () => edit(b) },
   { label: 'Move to folder…', icon: 'folder', run: () => (moving.value = b) },
   { label: b.pinned ? 'Unpin' : 'Pin to the top', icon: 'pin', run: () => togglePin(b) },
+  ...(savingTo.value ? [{ label: pinnedIn(b, savingTo.value.id) ? `Unpin from ${savingTo.value.name}` : `Pin in ${savingTo.value.name}`, icon: 'pin', run: () => toggleFolderPin(b) } as MenuEntry] : []),
   { label: 'Select', icon: 'select', run: () => (sel.selecting ? sel.toggle(b.id) : sel.start(b.id)) },
   { label: 'Copy link', icon: 'copy', run: () => copyLink(b) },
   { label: 'Refresh icon', icon: 'refresh', disabled: refreshing.value.has(b.id), run: () => refreshIcon(b) },
@@ -881,26 +946,46 @@ async function enrich(list: Bookmark[]) {
   const worker = async () => {
     for (let b = queue.shift(); b; b = queue.shift()) {
       const preview = await $fetch('/api/link-preview', { query: { url: b.url } }).catch(() => undefined)
-      if (preview && items.value.some(i => i.id === b!.id)) update(b.id, { icon: preview.icon, description: preview.description, ...(preview.image ? { image: preview.image } : {}) }, { quiet: true })
+      const current = items.value.find(i => i.id === b!.id)
+      if (preview && current) {
+        update(b.id, {
+          icon: preview.icon,
+          description: preview.description,
+          ...(preview.image ? { image: preview.image } : {}),
+          ...(preview.siteName ? { siteName: preview.siteName } : {}),
+          ...(bareTitle(current) && preview.title ? { title: preview.title } : {}),
+          detailsAt: new Date().toISOString()
+        }, { quiet: true })
+      }
     }
   }
   await Promise.all(Array.from({ length: 4 }, worker))
 }
 
 // ---------- Site details for every bookmark (one button) ----------
-// Reads each page's preview image, description, icon and site name again, four at a time, with a
-// running count. Titles you've typed stay; only a title that's still just the address is replaced.
-// One Undo puts every bookmark back as it was.
+// Reads each page's preview image, description, icon and site name, four at a time, with a running
+// count. Only bookmarks that need it: ones already holding every detail (picture, description, site
+// name, a real title) are left alone, and so are ones read in the last month, since a site that had
+// no picture then almost never has one now. Titles you've typed stay; only a title that's still just
+// the address is replaced. One Undo puts every bookmark back as it was.
 const fetchingDetails = ref(false)
 const brokenImages = ref(new Set<string>())
+const RECHECK_AFTER_MS = 30 * 86_400_000
+const bareTitle = (b: Bookmark) => !b.title.trim() || b.title === b.url || b.title === hostOf(b.url)
+const hasFullDetails = (b: Bookmark) => !!(b.image && b.description && b.siteName && b.icon && !bareTitle(b))
+const needsDetails = (b: Bookmark) => !hasFullDetails(b) && !(b.detailsAt && Date.now() - new Date(b.detailsAt).getTime() < RECHECK_AFTER_MS)
+const missingDetails = computed(() => items.value.filter(needsDetails).length)
 async function refreshAllDetails() {
   if (fetchingDetails.value) return
   if (!online.value) {
     toast('Can’t get site details offline', { description: 'Try again when you’re back online.' })
     return
   }
-  const list = [...items.value]
-  if (!list.length) return
+  const list = items.value.filter(needsDetails)
+  if (!list.length) {
+    toast('Every bookmark already has its details', { description: 'Use Refresh icon on one bookmark to read it again.' })
+    return
+  }
   fetchingDetails.value = true
   const loading = toast.loading(`Getting site details… 0 of ${list.length}`)
   const befores: Bookmark[] = []
@@ -918,17 +1003,20 @@ async function refreshAllDetails() {
         failed++
         continue
       }
-      const bareTitle = !current.title.trim() || current.title === current.url || current.title === hostOf(current.url)
       const patch: Partial<Bookmark> = {
         ...(preview.icon ? { icon: preview.icon } : {}),
         ...(preview.description ? { description: preview.description } : {}),
         ...(preview.image ? { image: preview.image } : {}),
         ...(preview.siteName ? { siteName: preview.siteName } : {}),
-        ...(bareTitle && preview.title ? { title: preview.title } : {})
+        ...(bareTitle(current) && preview.title ? { title: preview.title } : {})
       }
       const differs = (Object.keys(patch) as (keyof Bookmark)[]).some(k => patch[k] !== current[k])
-      if (!differs) continue
-      const before = update(current.id, patch, { quiet: true })
+      // Remembered either way, so the next run skips it for a while
+      if (!differs) {
+        update(current.id, { detailsAt: new Date().toISOString() }, { quiet: true })
+        continue
+      }
+      const before = update(current.id, { ...patch, detailsAt: new Date().toISOString() }, { quiet: true })
       if (before) {
         befores.push(before)
         changed++
@@ -939,9 +1027,10 @@ async function refreshAllDetails() {
   fetchingDetails.value = false
   brokenImages.value = new Set()
   play(changed ? 'success' : 'select')
+  const skipped = items.value.length - list.length
   toast.success(changed ? `Updated ${changed} ${changed === 1 ? 'bookmark' : 'bookmarks'}` : 'Everything was already up to date', {
     id: loading,
-    description: failed ? `${failed} ${failed === 1 ? 'site' : 'sites'} couldn’t be reached; they kept their details.` : undefined,
+    description: [failed && `${failed} ${failed === 1 ? 'site' : 'sites'} couldn’t be reached; they kept their details.`, skipped && `${skipped} already complete, skipped.`].filter(Boolean).join(' ') || undefined,
     action: befores.length ? { label: 'Undo', onClick: () => befores.forEach(b => replace(b)) } : undefined
   })
 }
@@ -975,120 +1064,46 @@ async function refreshAllDetails() {
     />
     <template #actions><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
 
-    <!-- 1: the address bar. Paste a link, check what the page says, add a note or folder, save -->
-    <Step :n="1" title="Save a link" hint="Paste a link and the page’s title, picture and description fill in. Add a note, a folder or pin it, then save." class="save-step">
-    <form v-validate data-validate-target class="omnibox" aria-label="Save a link" @submit.prevent="save()">
-      <span class="omni-icon" aria-hidden="true"><ToolIcon name="bookmarks" /></span>
-      <input
-        ref="linkField"
-        v-model="linkInput"
-        type="text"
-        inputmode="url"
-        autocomplete="off"
-        spellcheck="false"
-        placeholder="Paste a link to save it"
-        aria-label="Link to save"
-        required
-        data-error="Paste a link first"
-        v-check="linkInput.trim() && !parseLink(linkInput.trim()) ? 'That doesn’t look like a link. Try something like nuxt.com' : ''"
-        :disabled="saving"
-        @paste="onLinkPaste"
-      >
+    <!-- 1: add a bookmark, or several. Paste links, check what the pages say, pick a folder, save -->
+    <Step :n="1" title="Add bookmarks" hint="Paste a link and its title, picture and description fill in for you to check. Paste several, one per line, to add them all at once." class="save-step">
       <ClientOnly>
-        <button v-if="savingTo" type="button" class="omni-folder" :style="{ '--tag': folderColor(savingTo) }" :title="`New links go into ${pathText(folders, savingTo.id)}. Click to save to All bookmarks instead.`" @click="activeFolder = ALL_BOOKMARKS">
-          <FolderIcon :icon="savingTo.icon" :color="savingTo.color" />
-          <span class="omni-folder-name">{{ savingTo.name }}</span>
-          <AppIcon class="omni-folder-x" name="x" />
-          <span class="sr-only">: saving into this folder. Save to All bookmarks instead</span>
-        </button>
+        <BookmarkAdder
+          ref="adder"
+          :folders="folders"
+          :bookmarks="items"
+          :folder-id="savingTo?.id ?? ''"
+          :online="online"
+          :create-folder="name => ensureFolder(name)"
+          :suggest-for="url => suggestFor(url)"
+          @save="onAdded"
+          @show="showBookmark"
+        />
+        <template #fallback><div class="adder-placeholder skeleton" /></template>
       </ClientOnly>
-      <button v-if="canReadClipboard && !linkInput.trim() && !saving" type="button" class="omni-paste" title="Paste a link from the clipboard" @click="pasteFromClipboard">
-        <AppIcon name="clipboard" />
-        Paste
-      </button>
-      <button type="submit" class="btn" :disabled="saving">
-        <span v-if="saving" class="omni-spinner" aria-hidden="true" />
-        {{ saving ? 'Reading page…' : 'Add' }}
-      </button>
-    </form>
-    <DuplicateCard
-      v-if="duplicateOf"
-      class="dup-card"
-      :title="duplicateOf.title"
-      :where="folderPath(duplicateOf)"
-      :detail="duplicateOf.url"
-      @open="showExisting"
-      @keep="save(true)"
-      @cancel="duplicateOf = undefined"
-    />
-
-    <!-- While the page is read: the shape of the card that's coming -->
-    <Transition name="slide-down">
-      <div v-if="saving" class="review panel review-loading" role="status" aria-label="Reading the page">
-        <div class="review-media"><span class="skeleton review-icon" /></div>
-        <div class="review-fields">
-          <span class="skeleton sk-line" style="width: 40%" />
-          <span class="skeleton sk-line sk-title" />
-          <span class="skeleton sk-line sk-desc" />
-          <span class="skeleton sk-line" style="width: 60%" />
-        </div>
-      </div>
-    </Transition>
-
-    <!-- Review before saving (#43): what the page says about itself, editable, plus a note, folders and pin -->
-    <Transition name="slide-down">
-      <form v-if="review" class="review panel" aria-label="Review the bookmark before saving" @submit.prevent="keepReviewed" @keydown.esc.stop="cancelReview">
-        <div class="review-media">
-          <img v-if="review.image && !reviewImageBroken" :src="review.image" alt="" referrerpolicy="no-referrer" @error="reviewImageBroken = true">
-          <span v-else class="review-icon">
-            <img v-if="!brokenIcons.has(review.icon)" :src="review.icon" alt="" referrerpolicy="no-referrer" @error="brokenIcons.add(review.icon)">
-            <span v-else>{{ (review.title[0] ?? '?').toUpperCase() }}</span>
-          </span>
-        </div>
-        <div class="review-fields">
-          <p class="review-kicker">New bookmark</p>
-          <p class="review-site">{{ review.siteName }} · <span class="review-url">{{ review.url }}</span></p>
-          <p v-if="review.offline" class="review-note">Website details aren’t available offline. Your bookmark can still be saved; edit the title now or later.</p>
-          <label class="field">
-            <span class="sr-only">Title</span>
-            <input ref="reviewTitle" v-model="review.title" class="input review-title" aria-label="Title">
-          </label>
-          <label class="field">
-            <span class="sr-only">Description</span>
-            <textarea v-model="review.description" class="input" rows="2" placeholder="Add a description" aria-label="Description" />
-          </label>
-          <label class="field">
-            <span class="field-head">Note <span class="optional">Optional</span></span>
-            <textarea v-model="review.note" class="input" rows="2" placeholder="Why you saved it, or what to look at" @keydown.enter.meta.prevent="keepReviewed" @keydown.enter.ctrl.prevent="keepReviewed" />
-          </label>
-          <div class="field">
-            <span class="field-head">Folders <span class="optional">Optional</span></span>
-            <FolderPicker v-model="review.folders" :folders="folders" :create-folder="name => ensureFolder(name)" />
-          </div>
-          <SuggestionChip
-            v-if="review.suggestion && !review.folders.length"
-            label="Suggested folder"
-            :value="review.suggestion"
-            @use="review!.folders = [ensureFolder(review!.suggestion!)]"
-            @ignore="review!.suggestion = undefined"
-          />
-          <label class="pin-check">
-            <input v-model="review.pinned" type="checkbox">
-            Pin to the top
-          </label>
-          <div class="review-actions">
-            <button type="submit" class="btn">Save bookmark</button>
-            <button type="button" class="btn btn-quiet" @click="cancelReview">Cancel</button>
-            <span class="review-hint"><kbd>Enter</kbd> to save</span>
-          </div>
-        </div>
-      </form>
-    </Transition>
     </Step>
 
     <ClientOnly>
       <!-- 2: pinned, the sites you open every day, as big tiles -->
-      <Step v-if="pinned.length" :n="2" title="Pinned" hint="The links you open every day. Drag to reorder; right-click or long-press one to unpin it." class="pinned-step">
+      <Step v-if="pinned.length || pinnedFolders.length" :n="2" title="Pinned" hint="The links and folders you open every day. Drag to reorder; right-click or long-press one to unpin it." class="pinned-step">
+      <!-- Pinned folders: tap one to open it in the list below -->
+      <section v-if="pinnedFolders.length" class="shelf folder-shelf drop-x" :class="{ resting: sel.selecting }" aria-label="Pinned folders. Drag to reorder, or Alt and the arrow keys.">
+        <button
+          v-for="(f, i) in pinnedFolders"
+          :key="f.id"
+          type="button"
+          class="tile folder-tile"
+          :class="{ on: activeFolder === f.id }"
+          :style="{ '--tag': folderColor(f) }"
+          :title="`Open ${pathText(folders, f.id)}`"
+          v-bind="{ ...menuFor(() => pinnedFolderMenu(f), f.name), ...reorderPinnedFolders.bind(f, i) }"
+          @click="openFolder(f.id)"
+        >
+          <span class="drag-grip corner" aria-hidden="true"><AppIcon name="grip-vertical" /></span>
+          <span class="tile-icon folder-tile-icon"><FolderIcon :icon="f.icon" :color="f.color" /></span>
+          <span class="tile-name">{{ f.name }}</span>
+          <span class="tile-host">{{ folderTotal(f.id) }} {{ folderTotal(f.id) === 1 ? 'bookmark' : 'bookmarks' }}<template v-if="f.shareId"> · shared</template></span>
+        </button>
+      </section>
       <section v-if="pinned.length" class="shelf drop-x" :class="{ resting: sel.selecting }" :inert="sel.selecting || undefined" aria-label="Pinned. Drag to reorder, or Alt and the arrow keys.">
         <a
           v-for="(b, i) in pinned"
@@ -1133,13 +1148,14 @@ async function refreshAllDetails() {
             :item-dragging="draggingMarks"
             @drop-bookmark="(ids, folderId) => { draggingMarks = false; dropMarks(ids.split('\n'), folderId) }"
             add-item-label="Add a bookmark here"
+            :extra-menu="folderExtraMenu"
             @add-item="addInFolder"
           />
 
           <div class="side-tools">
-            <button v-if="items.length" type="button" class="btn btn-quiet btn-sm details-btn" :disabled="fetchingDetails" title="Read every site’s preview image, description, icon and name again" @click="refreshAllDetails">
+            <button v-if="items.length" type="button" class="btn btn-quiet btn-sm details-btn" :disabled="fetchingDetails" title="Read the preview image, description, icon and name for bookmarks still missing some (complete ones are skipped)" @click="refreshAllDetails">
               <AppIcon name="rotate-cw" />
-              {{ fetchingDetails ? 'Getting site details…' : 'Get site details' }}
+              {{ fetchingDetails ? 'Getting site details…' : 'Get site details' }}<template v-if="!fetchingDetails && missingDetails"> <span class="count-pill info">{{ missingDetails }}</span></template>
             </button>
             <button type="button" class="link" @click="dupesOpen = true">Find duplicates<template v-if="duplicateCount"> <span class="count-pill">{{ duplicateCount }}</span></template></button>
             <NuxtLink to="/trash?app=/bookmarks" class="link">Recycle Bin</NuxtLink>
@@ -1148,13 +1164,26 @@ async function refreshAllDetails() {
 
         <section class="main" :aria-label="listTitle">
           <div v-sticky-bar class="toolbar">
-            <h2 class="list-title">
-              <FolderIcon v-if="activeFolderRecord" :icon="activeFolderRecord.icon" :color="activeFolderRecord.color" />
-              {{ listTitle }}
+            <!-- In a folder, its path: All / Development / Documentation, each step goes back up -->
+            <h2 v-if="folderTrail.length" class="list-title has-path">
+              <nav class="path" aria-label="Folder path">
+                <button type="button" class="path-step" @click="activeFolder = ALL_BOOKMARKS">All</button>
+                <template v-for="(f, i) in folderTrail" :key="f.id">
+                  <AppIcon class="path-sep" name="chevron-right" />
+                  <button v-if="i < folderTrail.length - 1" type="button" class="path-step" @click="activeFolder = f.id">{{ f.name }}</button>
+                  <span v-else class="path-here" aria-current="location"><FolderIcon :icon="f.icon" :color="f.color" />{{ f.name }}</span>
+                </template>
+              </nav>
             </h2>
-            <button v-if="savingTo" type="button" class="view-btn add-here" :aria-label="`Add a bookmark to ${savingTo.name}`" :title="`Add a bookmark to ${savingTo.name}`" @click="addInFolder()">
-              <ToolIcon name="plus" />
-            </button>
+            <h2 v-else class="list-title">{{ listTitle }}</h2>
+            <template v-if="activeFolderRecord">
+              <button type="button" class="view-btn folder-act" :class="{ on: activeFolderRecord.pinned }" :aria-pressed="!!activeFolderRecord.pinned" :title="activeFolderRecord.pinned ? 'Unpin this folder' : 'Pin this folder to the top'" @click="togglePinFolder(activeFolderRecord)">
+                <AppIcon name="pin" /><span class="sr-only">{{ activeFolderRecord.pinned ? 'Unpin' : 'Pin' }} {{ activeFolderRecord.name }}</span>
+              </button>
+              <button type="button" class="view-btn folder-act" :class="{ on: !!activeFolderRecord.shareId }" :title="activeFolderRecord.shareId ? 'Shared: anyone with the link can view it' : 'Share this folder'" @click="openShare(activeFolderRecord)">
+                <AppIcon name="share-2" /><span class="sr-only">Share {{ activeFolderRecord.name }}</span>
+              </button>
+            </template>
             <label class="search">
               <AppIcon name="search" />
               <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
@@ -1184,8 +1213,23 @@ async function refreshAllDetails() {
             </div>
           </div>
 
-          <template v-if="shown.length">
+          <template v-if="shown.length || showFolderAdd">
             <TransitionGroup tag="ul" name="list" class="marks" :class="[view === 'compact' ? ['list', 'compact'] : view, { 'selecting': sel.selecting, 'no-images': !showImages }]">
+              <!-- In a folder: the first row (or card) adds a bookmark to it, in the same shape as the rest -->
+              <li v-if="showFolderAdd" key="add-here" class="mark add-mark">
+                <BookmarkAdder
+                  ref="folderAdder"
+                  class="folder-add"
+                  variant="inline"
+                  :folders="folders"
+                  :bookmarks="items"
+                  :folder-id="savingTo!.id"
+                  :online="online"
+                  :create-folder="name => ensureFolder(name)"
+                  @save="onAdded"
+                  @show="showBookmark"
+                />
+              </li>
               <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ 'flash': flashId === b.id, 'picked': sel.has(b.id), 'is-pinned': b.pinned, 'is-dupe': duplicateIds.has(b.id) }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @dragend="draggingMarks = false" @click.capture="sel.onRowClick($event, b.id)">
                 <!-- Drag to a folder: the whole row with a mouse, this grip with a finger -->
                 <button v-if="folders.length" type="button" class="grip" tabindex="-1" :aria-label="`Drag ${b.title} to a folder`" title="Drag to a folder" @pointerdown="touchDrag.start($event, dragIdsFor(b), dragLabel(dragIdsFor(b)))" @touchstart.stop @click.stop.prevent>
@@ -1209,6 +1253,7 @@ async function refreshAllDetails() {
                 <div class="mark-body">
                   <a :href="b.url" target="_blank" rel="noopener" class="mark-title" @click="opened(b)">{{ b.title }}<span v-if="b.pinned" class="sr-only"> (pinned)</span><AppIcon class="ext" name="external-link" /><span class="sr-only"> (opens in a new tab)</span></a>
                   <span class="mark-meta">
+                    <span v-if="savingTo && pinnedIn(b, savingTo.id)" class="here-pin"><AppIcon name="arrow-up-to-line" />Pinned here</span>
                     <template v-if="b.siteName && b.siteName.toLowerCase() !== b.title.toLowerCase()">{{ b.siteName }} · </template>{{ hostOf(b.url) }} · added {{ ago(b.createdAt) }}<template v-if="b.visits"> · opened {{ b.visits }}×</template>
                     <button v-if="duplicateIds.has(b.id)" type="button" class="dupe-badge" title="Saved more than once. Open Find duplicates to merge them." @click="dupesOpen = true">Duplicate</button>
                   </span>
@@ -1229,6 +1274,10 @@ async function refreshAllDetails() {
                   </span>
                 </div>
                 <div class="mark-actions menu-dup">
+                  <!-- In a folder: keep this one at the top of the folder -->
+                  <button v-if="savingTo" type="button" class="icon-btn folder-pin" :class="{ on: pinnedIn(b, savingTo.id) }" :aria-pressed="pinnedIn(b, savingTo.id)" :aria-label="pinnedIn(b, savingTo.id) ? `Unpin ${b.title} from ${savingTo.name}` : `Pin ${b.title} in ${savingTo.name}`" :title="pinnedIn(b, savingTo.id) ? `Unpin from ${savingTo.name}` : `Pin at the top of ${savingTo.name}`" @click="toggleFolderPin(b)">
+                    <AppIcon name="arrow-up-to-line" />
+                  </button>
                   <button type="button" class="icon-btn" :class="{ on: b.pinned }" :aria-pressed="b.pinned" :aria-label="b.pinned ? `Unpin ${b.title}` : `Pin ${b.title}`" :title="b.pinned ? 'Unpin' : 'Pin to the top'" @click="togglePin(b)">
                     <AppIcon name="pin" />
                   </button>
@@ -1243,12 +1292,9 @@ async function refreshAllDetails() {
             <div v-if="shown.length > limit" ref="moreSentinel" class="more-sentinel">
               <button type="button" class="btn btn-quiet btn-sm" @click="limit += PAGE">Show more ({{ shown.length - limit }} left)</button>
             </div>
+            <p v-if="!shown.length" class="empty-note">{{ savingTo?.name }} is empty. Paste a link above, or drag bookmarks onto the folder.</p>
           </template>
 
-          <div v-else-if="ready && items.length && savingTo && !query" class="empty">
-            <p>{{ savingTo.name }} is empty.</p>
-            <button type="button" class="btn btn-sm" @click="addInFolder()">Add a bookmark here</button>
-          </div>
 
           <div v-else-if="ready && items.length" class="empty">
             <p>Nothing matches{{ query ? ` “${query}”` : '' }}.</p>
@@ -1256,7 +1302,7 @@ async function refreshAllDetails() {
           </div>
 
           <div v-else-if="ready" class="empty-panel">
-            <EmptyState title="No bookmarks yet" icon="bookmarks" action="Save your first link" @action="focusField(linkField)">
+            <EmptyState title="No bookmarks yet" icon="bookmarks" action="Save your first link" @action="adder?.focus()">
               Paste a link and its title and icon are filled in for you. Pin the ones you open every day.
               <template #extra>
                 <p class="import-hint">Already have bookmarks in your browser? Import them in Settings, under Import &amp; export.</p>
@@ -1329,6 +1375,34 @@ async function refreshAllDetails() {
       </div>
     </Modal>
     <FolderDropTray :drag="touchDrag.drag" :folders="folders" unfiled />
+
+    <!-- Share a folder as a page anyone with the link can see -->
+    <Modal :open="!!sharing" :title="sharingFolder ? `Share ${sharingFolder.name}` : 'Share'" @close="sharing = undefined">
+      <div v-if="sharingFolder" class="share">
+        <template v-if="!canShare">
+          <p>Sign in to share this folder. Anyone you send the link to can then see its bookmarks, without signing in.</p>
+          <VaultAuth purpose="account" />
+        </template>
+        <template v-else-if="sharingFolder.shareId">
+          <p class="share-status"><span class="share-dot" aria-hidden="true" />Anyone with the link can see <strong>{{ sharingFolder.name }}</strong> and its sub-folders. No sign-in needed.</p>
+          <div class="share-link">
+            <input class="input" :value="sharingUrl" readonly aria-label="Link to the shared folder" @focus="($event.target as HTMLInputElement).select()">
+            <button type="button" class="btn" @click="copyShareLink">{{ shareCopied ? 'Copied' : 'Copy link' }}</button>
+          </div>
+          <div class="share-actions">
+            <a class="btn btn-quiet btn-sm" :href="sharingUrl" target="_blank" rel="noopener">Open the page</a>
+            <button v-if="canNativeShare" type="button" class="btn btn-quiet btn-sm" @click="nativeShare">Send…</button>
+            <button type="button" class="link danger stop-share" :disabled="shareBusy" @click="stopSharing">{{ shareBusy ? 'Stopping…' : 'Stop sharing' }}</button>
+          </div>
+          <p class="share-note">It updates by itself when you add, change or remove bookmarks here. Your notes on bookmarks are never shared.</p>
+        </template>
+        <template v-else>
+          <p>Make a link to a page showing the bookmarks in <strong>{{ pathText(folders, sharingFolder.id) }}</strong> and its sub-folders. Anyone with the link can see them, without signing in.</p>
+          <p class="share-note">Titles, descriptions, icons and pictures are shared. Your notes on bookmarks stay private. You can stop sharing any time.</p>
+          <button type="button" class="btn" :disabled="shareBusy" @click="startSharing">{{ shareBusy ? 'Making the link…' : 'Create link' }}</button>
+        </template>
+      </div>
+    </Modal>
   </ToolPage>
 </template>
 
@@ -1365,134 +1439,6 @@ async function refreshAllDetails() {
   color: var(--warn-ink);
   background: color-mix(in srgb, var(--orange) 16%, var(--surface));
   border-radius: 999px;
-}
-
-.dup-card {
-  width: min(100%, 760px);
-  margin: 0.75rem auto 0;
-}
-
-/* ---------- Review before saving ---------- */
-.review {
-  width: min(100%, 760px);
-  margin: 0.75rem auto 0;
-  padding: 1rem;
-  display: grid;
-  grid-template-columns: 9rem minmax(0, 1fr);
-  gap: 1rem;
-  text-align: left;
-}
-
-.review-media img {
-  width: 100%;
-  aspect-ratio: 1.91;
-  object-fit: cover;
-  border-radius: 12px;
-  background: var(--surface-2);
-}
-
-.review-icon {
-  width: 100%;
-  aspect-ratio: 1.91;
-  display: grid;
-  place-items: center;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  border-radius: 12px;
-}
-
-.review-icon img {
-  width: 2.75rem;
-  height: 2.75rem;
-  aspect-ratio: auto;
-  object-fit: contain;
-  background: none;
-}
-
-.review-fields {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.review-kicker {
-  margin: 0;
-  font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.review-loading .sk-line {
-  display: block;
-  height: 0.85rem;
-  border-radius: 6px;
-}
-
-.review-loading .sk-title {
-  height: 2.6rem;
-  border-radius: 10px;
-}
-
-.review-loading .sk-desc {
-  height: 3.6rem;
-  border-radius: 10px;
-}
-
-.review-site {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--ink-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.review-url {
-  color: var(--ink-3);
-}
-
-.review-note {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--warn-ink);
-}
-
-.review-title {
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-
-.review-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.review-hint {
-  margin-left: auto;
-  font-size: var(--text-sm);
-  color: var(--ink-3);
-}
-
-@media (max-width: 560px) {
-  .review {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .review-media img,
-  .review-icon {
-    aspect-ratio: 2.6;
-  }
-
-  .review-hint {
-    display: none;
-  }
 }
 
 .list-title {
@@ -1556,76 +1502,6 @@ async function refreshAllDetails() {
   font-size: var(--text-sm);
 }
 
-.omnibox {
-  width: min(100%, 760px);
-  margin: 0;
-  padding: 0.4rem 0.4rem 0.4rem 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: var(--surface);
-  border-radius: 999px;
-  box-shadow: 0 0 0 1px var(--line), 0 14px 30px -16px rgb(var(--shadow) / 0.35);
-  transition: box-shadow 0.15s;
-}
-
-.omnibox:focus-within {
-  box-shadow: 0 0 0 2px var(--accent), 0 14px 30px -16px rgb(var(--shadow) / 0.35);
-}
-
-.omnibox.is-invalid {
-  box-shadow: 0 0 0 2px var(--bad-ink), 0 14px 30px -16px rgb(var(--shadow) / 0.35);
-}
-
-/* The validation message sits centred under the address bar */
-.omnibox + :global(.field-error) {
-  justify-content: center;
-  margin-top: 0.6rem;
-}
-
-/* The folder a new link goes into, when one is open; clicking it saves to All bookmarks instead */
-.omni-folder {
-  flex: none;
-  max-width: 11rem;
-  min-height: 2rem;
-  padding: 0 0.55rem 0 0.6rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink);
-  background: color-mix(in srgb, var(--tag, var(--accent)) 14%, var(--surface-2));
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.omni-folder:hover {
-  background: color-mix(in srgb, var(--tag, var(--accent)) 24%, var(--surface-2));
-}
-
-.omni-folder-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.omni-folder-x {
-  flex: none;
-  width: 0.8rem;
-  height: 0.8rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  opacity: 0.55;
-}
-
-.omni-folder:hover .omni-folder-x { opacity: 1; }
-
 /* Same shape as the view switches beside it */
 .view-btn.add-here {
   flex: none;
@@ -1642,91 +1518,261 @@ async function refreshAllDetails() {
   height: 1.15rem;
 }
 
-.omni-icon {
-  flex: none;
-  font-size: 1.35rem;
-  color: var(--accent);
-  display: grid;
+/* ---------- Add ---------- */
+.adder-placeholder {
+  width: min(100%, 760px);
+  height: 6.5rem;
+  border-radius: 20px;
 }
 
-.omni-icon :deep(svg) {
-  width: 1.35rem;
-  height: 1.35rem;
+/* The add row is shaped like the bookmarks around it; opened, it takes the list's (or grid's) full width */
+.add-mark {
+  cursor: default;
 }
 
-.omnibox input {
-  flex: 1;
-  min-width: 0;
-  padding: 0.6rem 0;
-  font: inherit;
-  font-size: 1.1rem;
-  color: var(--ink);
+.add-mark:has(.add-form),
+.marks .add-mark:has(.add-form):hover {
+  grid-column: 1 / -1;
+  --hl: 0;
+  translate: none;
+  background: var(--surface);
+}
+
+.add-mark:has(.add-form)::before {
+  display: none;
+}
+
+/* The row or card is the frame; the form inside doesn't draw a second one */
+.add-mark :deep(.add-form) {
+  padding: 0;
   background: none;
-  border: 0;
-  outline: none;
+  box-shadow: none;
 }
 
-.omnibox input::placeholder {
+/* Closed, it keeps a bookmark's shape but reads as a slot to fill, not a bookmark: a dashed outline
+   in the app's colour on a light tint, no card shadow, the + in the middle */
+.add-mark:has(.add-here-row) {
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  outline: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: -6px;
+  border-radius: 18px;
+  transition: background-color 0.15s, outline-color 0.15s;
+}
+
+.add-mark:has(.add-here-row)::before {
+  display: none;
+}
+
+.marks .add-mark:has(.add-here-row):hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  outline-color: var(--accent);
+}
+
+/* The rows under it keep their divider; the dashed slot doesn't need one */
+.add-mark + .mark {
+  border-top-color: transparent;
+}
+
+.marks.grid .add-mark:has(.add-here-row) {
+  --add-dir: column;
+  --add-align: center;
+  --add-gap: 0.6rem;
+  --add-icon: 3rem;
+  justify-content: center;
+  text-align: center;
+  outline-offset: -1.5px;
+  box-shadow: none;
+}
+
+.marks.grid .add-mark:has(.add-here-row):hover {
+  translate: none;
+  box-shadow: none;
+}
+
+.marks.grid .add-mark :deep(.add-here-row) {
+  height: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.marks.grid .add-mark :deep(.add-here-text) {
+  align-items: center;
+}
+
+.marks.compact .add-mark {
+  --add-icon: 1.75rem;
+  --add-gap: 0.7rem;
+}
+
+.marks.compact .add-mark :deep(.sub) {
+  display: none;
+}
+
+.folder-add {
+  width: 100%;
+}
+
+/* Pinned inside the open folder: a small label in the app's colour (the shelf pin stays blue) */
+.here-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-right: 0.4rem;
+  padding: 0.02rem 0.45rem 0.02rem 0.35rem;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-radius: 999px;
+}
+
+.here-pin svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.mark-actions .icon-btn.folder-pin.on {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.empty-note {
+  margin: 1rem 0 0;
+  text-align: center;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
-.omnibox .btn {
-  flex: none;
-  border-radius: 999px;
-  padding-inline: 1.3rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.omni-paste {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.8rem;
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
+.count-pill.info {
   color: var(--ink-2);
   background: var(--surface-2);
+}
+
+/* ---------- Folder path over the list ---------- */
+.path {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.path-step {
+  padding: 0.15rem 0.35rem;
+  font: inherit;
+  color: var(--ink-3);
+  background: none;
   border: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: color var(--dur-fast), background-color var(--dur-fast);
 }
 
-.omni-paste:hover {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+.path-step:hover {
+  color: var(--ink);
+  background: var(--surface-2);
 }
 
-.omni-paste:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.omni-paste svg {
+.path-sep {
   width: 1rem;
   height: 1rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  color: var(--ink-3);
 }
 
-.omni-spinner {
-  width: 0.9rem;
-  height: 0.9rem;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
+.path-here {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.35rem;
+}
+
+.view-btn.folder-act {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.view-btn.folder-act.on {
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* ---------- Share ---------- */
+.share {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.share p {
+  margin: 0;
+}
+
+.share-status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.share-dot {
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  background: var(--green);
   border-radius: 50%;
-  animation: omni-spin 0.7s linear infinite;
 }
 
-@keyframes omni-spin {
-  to { transform: rotate(1turn); }
+.share-link {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.share-link .input {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stop-share {
+  margin-left: auto;
+}
+
+.share-note {
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+/* ---------- Pinned folders ---------- */
+.folder-shelf {
+  margin-bottom: 0.75rem;
+}
+
+.folder-tile {
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  border: 0;
+}
+
+.folder-tile.on {
+  box-shadow: 0 0 0 2px var(--tag, var(--accent));
+}
+
+.folder-tile-icon {
+  font-size: 1.6rem;
+  color: var(--tag, var(--accent));
+  background: color-mix(in srgb, var(--tag, var(--accent)) 14%, var(--surface));
 }
 
 /* ---------- Pinned tiles ---------- */
@@ -2044,6 +2090,11 @@ async function refreshAllDetails() {
   min-width: 8rem;
   font-size: 1.3rem;
   letter-spacing: -0.015em;
+}
+
+/* In a folder the path gets a line of its own, with the folder's pin and share beside it */
+.toolbar h2.has-path {
+  flex: 1 1 calc(100% - 6rem);
 }
 
 .search {

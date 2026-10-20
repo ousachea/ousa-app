@@ -72,6 +72,12 @@ export default defineNuxtConfig({
           // Lite effects for old or slow computers, decided before first paint (see composables/useEffects.ts)
           innerHTML: "(function(){try{var p=localStorage.getItem('ousa-app:effects')||'auto';var n=navigator;var slow=localStorage.getItem('ousa-app:effects-detected')==='slow'||(n.hardwareConcurrency||8)<=2||(n.deviceMemory||8)<=2||!!(n.connection&&n.connection.saveData);var low='lowspec' in document.documentElement.dataset;document.documentElement.dataset.effects=low||p==='lite'||(p==='auto'&&slow)?'lite':'full'}catch(e){}})()",
           tagPosition: 'head'
+        },
+        {
+          // The launch splash (components/LaunchSplash.vue) shows once per visit: a reload in the same tab, or
+          // Low-spec PC mode, skips it before it's ever drawn
+          innerHTML: "(function(){try{if(sessionStorage.getItem('ousa-app:launched')||'lowspec' in document.documentElement.dataset)document.documentElement.dataset.launched=''}catch(e){}})()",
+          tagPosition: 'head'
         }
       ],
       link: [

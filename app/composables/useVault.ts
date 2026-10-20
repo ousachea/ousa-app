@@ -35,8 +35,27 @@ const state = reactive({
   email: '',
   items: [] as VaultItem[],
   // Rows that didn't decrypt with this key (e.g. saved under an old master password); counted, never shown
-  unreadable: 0
+  unreadable: 0,
+  // A quick sign-in password is set for this account (Settings → Account & sync)
+  quickPassword: false
 })
+
+// The account a quick sign-in password was set for on this device, so signing in asks only for the password
+const QUICK_EMAIL_KEY = 'ousa-app:quick-email'
+export function rememberedQuickEmail() {
+  try {
+    return localStorage.getItem(QUICK_EMAIL_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+function rememberQuickEmail(email: string | null) {
+  try {
+    if (email) localStorage.setItem(QUICK_EMAIL_KEY, email)
+    else localStorage.removeItem(QUICK_EMAIL_KEY)
+  } catch {}
+}
+const hasPasswordSignIn = (user: User) => user.providerData.some(p => p.providerId === 'password')
 
 // The AES key lives only in memory; reloading the page locks the vault
 let key: CryptoKey | undefined
@@ -60,6 +79,10 @@ function authMessage(e: unknown) {
   if (code === 'auth/unauthorized-domain') return 'This address isn’t allowed to sign in yet. Add it under Authorized domains in Firebase.'
   if (code === 'auth/operation-not-allowed') return 'Google sign-in isn’t turned on for this Firebase project yet.'
   if (code === 'auth/network-request-failed') return 'Couldn’t reach Google. Check your connection.'
+  if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials') return 'That email and password don’t match. Check them, or continue with Google.'
+  if (code === 'auth/too-many-requests') return 'Too many tries. Wait a few minutes, or continue with Google.'
+  if (code === 'auth/weak-password') return 'Use at least 6 characters.'
+  if (code === 'auth/invalid-email') return 'That doesn’t look like an email address.'
   return e instanceof Error ? e.message : 'Something went wrong. Try again.'
 }
 
@@ -147,6 +170,8 @@ function loadItems(): Promise<void> {
 
 async function signedInAs(user: User) {
   state.email = user.email ?? ''
+  state.quickPassword = hasPasswordSignIn(user)
+  if (state.quickPassword) rememberQuickEmail(user.email)
   try {
     await checkSetup()
   } catch {
@@ -173,6 +198,7 @@ async function start() {
       stopVaultListener()
       state.items = []
       state.email = ''
+      state.quickPassword = false
       state.status = 'signed-out'
     } else if (state.status === 'signed-out') {
       // Signed in on another tab
@@ -209,6 +235,61 @@ export function useVault() {
       throw new Error(authMessage(e))
     }
     return true
+  }
+
+  // ---------- Quick sign-in password ----------
+  // A password for this same account, so signing in again on a device takes the password instead of the
+  // Google window. Firebase keeps it (Email/Password sign-in, linked to the Google account), so it leads
+  // to the very same data. It's separate from the vault's master password, which never leaves the device.
+  async function signInWithPassword(email: string, password: string) {
+    const fb = firebaseNow() ?? await loadFirebase()
+    try {
+      const { user } = await fb.sdk.signInWithEmailAndPassword(fb.auth, email.trim(), password)
+      await signedInAs(user)
+    } catch (e) {
+      const code = (e as { code?: string }).code
+      if (code === 'auth/operation-not-allowed') throw new Error('Quick sign-in isn’t turned on for this site yet. Continue with Google.')
+      throw new Error(authMessage(e))
+    }
+  }
+
+  /** Sets (or changes) the quick sign-in password. Google may ask you to confirm it's you first. */
+  async function setQuickPassword(password: string) {
+    const fb = useFirebase()
+    const user = currentUser()
+    if (!user.email) throw new Error('This account has no email address to sign in with.')
+    const apply = () => (hasPasswordSignIn(user)
+      ? fb.sdk.updatePassword(user, password)
+      : fb.sdk.linkWithCredential(user, fb.sdk.EmailAuthProvider.credential(user.email!, password)))
+    try {
+      try {
+        await apply()
+      } catch (e) {
+        // Changing how you sign in needs a recent sign-in: confirm with Google, then try once more
+        if ((e as { code?: string }).code !== 'auth/requires-recent-login') throw e
+        await fb.sdk.reauthenticateWithPopup(user, new fb.sdk.GoogleAuthProvider())
+        await apply()
+      }
+    } catch (e) {
+      const code = (e as { code?: string }).code
+      if (code === 'auth/operation-not-allowed') throw new Error('Turn on Email/Password in the Firebase console first: Authentication → Sign-in method → Email/Password.')
+      if (code === 'auth/popup-closed-by-user') throw new Error('Google needs you to confirm it’s you before setting a password. Try again.')
+      throw new Error(authMessage(e))
+    }
+    await user.reload()
+    state.quickPassword = true
+    rememberQuickEmail(user.email)
+  }
+
+  async function removeQuickPassword() {
+    const user = currentUser()
+    try {
+      await useFirebase().sdk.unlink(user, 'password')
+    } catch (e) {
+      throw new Error(authMessage(e))
+    }
+    state.quickPassword = false
+    rememberQuickEmail(null)
   }
 
   async function unlocked(newKey: CryptoKey) {
@@ -264,6 +345,9 @@ export function useVault() {
   return {
     vault: readonly(state),
     signIn,
+    signInWithPassword,
+    setQuickPassword,
+    removeQuickPassword,
     unlock,
     setMasterPassword,
     lock,

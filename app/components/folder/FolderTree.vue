@@ -30,6 +30,8 @@ const props = defineProps<{
   itemDragging?: boolean
   /** A folder's menu offers to add an item straight into it, worded like this ("Add a bookmark here") */
   addItemLabel?: string
+  /** More of the page's own actions in each folder's menu (Bookmarks: pin, share) */
+  extraMenu?: (folder: Folder) => MenuEntry[]
 }>()
 const emit = defineEmits<{
   'select': [id: string]
@@ -67,6 +69,7 @@ const folderMenu = (f: Folder): MenuEntry[] => [
   ...(props.addItemLabel ? [{ label: props.addItemLabel, icon: 'plus' as const, run: () => emit('add-item', f.id) }, '-' as const] : []),
   { label: 'Edit folder', icon: 'edit', run: () => emit('edit', f) },
   { label: 'Add a sub-folder', icon: 'folder', run: () => emit('add', f.id) },
+  ...(props.extraMenu?.(f) ?? []),
   '-',
   { label: 'Delete folder', icon: 'delete', danger: true, run: () => emit('delete', f) }
 ]
@@ -224,6 +227,8 @@ watch(() => props.active, () => (openOnPhone.value = false))
             @drop="onDrop($event, r.folder)"
           >
             <span class="name"><FolderIcon :icon="r.folder.icon" :color="r.folder.color" />{{ r.folder.name }}</span>
+            <AppIcon v-if="r.folder.shareId" class="mark" name="users" aria-label="Shared" />
+            <AppIcon v-if="r.folder.pinned" class="mark" name="pin" aria-label="Pinned" />
             <b>{{ r.total }}</b>
           </button>
           <button type="button" class="more" :aria-label="`Actions for ${r.folder.name}`" title="Folder actions" @click="onMore($event, r.folder)">
@@ -256,6 +261,14 @@ watch(() => props.active, () => (openOnPhone.value = false))
 </template>
 
 <style scoped>
+/* Pinned and shared folders say so beside their count */
+.mark {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--ink-3);
+}
+
 .folder-tree {
   display: flex;
   flex-direction: column;
@@ -307,6 +320,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
 }
 
 .name {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.55rem;

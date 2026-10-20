@@ -47,6 +47,7 @@ export const APP_FEATURES: Record<string, FeatureKey[]> = {
   '/salary': [],
   '/speed': ['sync', 'download'],
   '/claude': [],
+  '/2048': [],
   '/gold': ['sync', 'demo', 'select', 'trash', 'quickAdd', 'drafts', 'formats', 'download']
 }
 

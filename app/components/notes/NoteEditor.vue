@@ -4,6 +4,8 @@ import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
 import { Selection, TextSelection, type EditorState } from '@tiptap/pm/state'
 import type { Editor } from '@tiptap/core'
+import { CellSelection } from '@tiptap/pm/tables'
+import type { MenuEntry } from '~/composables/useContextMenu'
 
 // The Notes editor (Tiptap): formatting toolbar, Markdown shortcuts, clickable checklists, links,
 // images pasted or dropped in (made smaller first), and [[ to link another note.
@@ -112,9 +114,107 @@ const TOOLS: (Cmd | '|')[] = [
   { key: 'bullets', label: 'Bullet list', title: 'Bullet list (- )', icon: 'lucide:list', run: () => chain().toggleBulletList().run(), active: () => is('bulletList') },
   { key: 'numbers', label: 'Numbered list', title: 'Numbered list (1. )', icon: 'lucide:list-ordered', run: () => chain().toggleOrderedList().run(), active: () => is('orderedList') },
   { key: 'tasks', label: 'Checklist', title: 'Checklist ([ ] )', icon: 'lucide:list-checks', run: () => chain().toggleTaskList().run(), active: () => is('taskList') },
+  { key: 'table', label: 'Table', title: 'Table: add one, or rows and columns when you’re in one', icon: 'lucide:table', run: () => tableTool(), active: () => is('table') },
   { key: 'hr', label: 'Divider', title: 'Divider (---)', icon: 'lucide:minus', run: () => chain().setHorizontalRule().run() },
   { key: 'image', label: 'Image', title: 'Add an image (or paste / drop one)', icon: 'lucide:image', run: () => imageInput.value?.click() }
 ]
+
+// ---------- Tables ----------
+// Outside a table the button adds one (3 × 3, with a header row); inside one it opens a menu to add
+// or remove rows and columns. Tab moves to the next cell, and adds a row at the end.
+function tableTool() {
+  if (!is('table')) {
+    chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    return
+  }
+  const r = (document.activeElement as HTMLElement | null)?.closest('button')?.getBoundingClientRect()
+  openMenu(matchMedia('(pointer: coarse)').matches || !r ? null : { clientX: r.left, clientY: r.bottom + 4 }, tableMenu(), 'Table')
+}
+
+// Right-click in a table: the same menu, plus Clear cells for the highlighted ones (drag across cells
+// to highlight several). Right-clicking outside the highlight moves the caret to that cell first.
+function onTableContextMenu(ev: MouseEvent) {
+  const e = editor.value
+  const cell = (ev.target as Element | null)?.closest?.('.note-body td, .note-body th')
+  if (!e || !cell || !e.isEditable) return
+  ev.preventDefault()
+  ev.stopPropagation()
+  if (!cell.classList.contains('selectedCell')) e.chain().focus().setTextSelection(e.view.posAtDOM(cell, 0) + 1).run()
+  openMenu({ clientX: ev.clientX, clientY: ev.clientY }, tableMenu(), 'Table')
+}
+
+function tableMenu(): MenuEntry[] {
+  const e = editor.value!
+  const many = e.state.selection instanceof CellSelection
+  return [
+    { label: many ? 'Clear cells' : 'Clear cell', icon: 'delete', hint: 'Delete', run: () => chain().deleteSelection().run() },
+    '-',
+    { label: 'Add row above', run: () => chain().addRowBefore().run() },
+    { label: 'Add row below', run: () => chain().addRowAfter().run() },
+    { label: 'Add column left', run: () => chain().addColumnBefore().run() },
+    { label: 'Add column right', run: () => chain().addColumnAfter().run() },
+    '-',
+    { label: 'Header row on or off', run: () => chain().toggleHeaderRow().run() },
+    { label: many ? 'Merge cells' : 'Split cell', disabled: !e.can().mergeOrSplit(), run: () => chain().mergeOrSplit().run() },
+    '-',
+    { label: many ? 'Delete rows' : 'Delete row', danger: true, run: () => chain().deleteRow().run() },
+    { label: many ? 'Delete columns' : 'Delete column', danger: true, run: () => chain().deleteColumn().run() },
+    { label: 'Delete table', icon: 'delete', danger: true, run: () => chain().deleteTable().run() }
+  ]
+}
+
+// The + bars on a hovered table's right and bottom edges (with a mouse; phones use the table button).
+// They show while the pointer is over the table or just outside it, so you can reach them.
+const contentWrap = ref<HTMLElement>()
+const tableHandles = ref<{ table: HTMLTableElement, left: number, top: number, right: number, bottom: number, width: number, height: number } | null>(null)
+const NEAR = 24 // px around the table that still counts as hovering it
+function onTableHover(e: MouseEvent) {
+  const wrap = contentWrap.value
+  if (!wrap || !editor.value?.isEditable || !matchMedia('(pointer: fine)').matches) return
+  if ((e.target as Element | null)?.closest?.('.table-add')) return
+  const box = wrap.getBoundingClientRect()
+  const table = [...wrap.querySelectorAll<HTMLTableElement>('.note-body table')].find((t) => {
+    const r = t.getBoundingClientRect()
+    return e.clientX >= r.left - NEAR && e.clientX <= r.right + NEAR && e.clientY >= r.top - NEAR && e.clientY <= r.bottom + NEAR
+  })
+  if (!table) {
+    tableHandles.value = null
+    return
+  }
+  // The table can be wider than the note and scroll sideways; the column bar stays on the visible edge
+  const r = table.getBoundingClientRect()
+  const scroller = table.closest('.tableWrapper')?.getBoundingClientRect() ?? r
+  const right = Math.min(r.right, scroller.right)
+  tableHandles.value = {
+    table,
+    left: r.left - box.left,
+    top: r.top - box.top,
+    right: right - box.left,
+    bottom: r.bottom - box.top,
+    width: right - r.left,
+    height: r.height
+  }
+}
+
+// Puts the caret in the last cell of the first row (or the first cell of the last row) and adds there
+function addTableEdge(kind: 'row' | 'col') {
+  const e = editor.value
+  const table = tableHandles.value?.table
+  if (!e || !table) return
+  const rows = table.rows
+  const cell = kind === 'col' ? rows[0]?.cells[rows[0].cells.length - 1] : rows[rows.length - 1]?.cells[0]
+  if (!cell) return
+  const pos = e.view.posAtDOM(cell, 0)
+  const c = e.chain().focus().setTextSelection(pos + 1)
+  if (kind === 'col') c.addColumnAfter().run()
+  else c.addRowAfter().run()
+  // Measure again once the table has grown
+  tableHandles.value = null
+  requestAnimationFrame(() => {
+    const r = table.getBoundingClientRect()
+    onTableHover(new MouseEvent('mousemove', { clientX: kind === 'col' ? r.right - 2 : r.left + 10, clientY: kind === 'row' ? r.bottom - 2 : r.top + 10 }))
+  })
+}
 
 // ---------- On selected text ----------
 // With a mouse only: phones have their own bar above the keyboard, and their own menu on a selection
@@ -359,7 +459,34 @@ defineExpose({
       </template>
     </BubbleMenu>
 
-    <EditorContent :editor="editor" class="content" />
+    <div ref="contentWrap" class="content-wrap" @mousemove="onTableHover" @mouseleave="tableHandles = null" @contextmenu="onTableContextMenu">
+      <EditorContent :editor="editor" class="content" />
+      <!-- Hovering a table: + on its right edge adds a column, + on its bottom edge adds a row -->
+      <template v-if="tableHandles">
+        <button
+          type="button"
+          class="table-add col"
+          :style="{ left: `${tableHandles.right}px`, top: `${tableHandles.top}px`, height: `${tableHandles.height}px` }"
+          aria-label="Add a column"
+          title="Add a column"
+          @mousedown.prevent
+          @click="addTableEdge('col')"
+        >
+          <AppIcon name="plus" />
+        </button>
+        <button
+          type="button"
+          class="table-add row"
+          :style="{ left: `${tableHandles.left}px`, top: `${tableHandles.bottom}px`, width: `${tableHandles.width}px` }"
+          aria-label="Add a row"
+          title="Add a row"
+          @mousedown.prevent
+          @click="addTableEdge('row')"
+        >
+          <AppIcon name="plus" />
+        </button>
+      </template>
+    </div>
 
     <p class="counts" aria-live="off">
       {{ words.toLocaleString() }} {{ words === 1 ? 'word' : 'words' }} · {{ chars.toLocaleString() }} characters<template v-if="words >= 400"> · ~{{ readingMinutes(words) }} min read</template>
@@ -635,18 +762,32 @@ defineExpose({
   gap: 0.55em;
 }
 
+/* The box sits in a slot exactly one line of text tall, centred, so it lines up with the item's first
+   line at any text size and line spacing (Notes settings) */
 .content :deep(ul[data-type='taskList'] > li > label) {
   flex: none;
-  margin-top: 0.25em;
+  height: calc(1em * var(--note-leading, 1.65));
+  display: flex;
+  align-items: center;
   user-select: none;
+}
+
+.content :deep(ul[data-type='taskList'] > li > label > span:empty) {
+  display: none;
 }
 
 .content :deep(ul[data-type='taskList'] > li > label input) {
   width: 1.05em;
   height: 1.05em;
   margin: 0;
+  vertical-align: middle;
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+/* The item's own paragraph spacing would push its text off the box's line */
+.content :deep(ul[data-type='taskList'] > li > div > p) {
+  margin: 0;
 }
 
 .content :deep(ul[data-type='taskList'] > li > div) {
@@ -657,6 +798,109 @@ defineExpose({
 .content :deep(ul[data-type='taskList'] > li[data-checked='true'] > div) {
   color: var(--ink-3);
   text-decoration: line-through;
+}
+
+/* The editor and the table's + bars, which are placed over it */
+.content-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A slim bar centred on the table's edge, with a + in the middle; it fills in on hover */
+.table-add {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--line));
+  cursor: pointer;
+  animation: table-add-in 0.15s ease-out;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.table-add.col {
+  width: 1.1rem;
+  translate: -50% 0;
+}
+
+.table-add.row {
+  height: 1.1rem;
+  translate: 0 -50%;
+}
+
+.table-add:hover {
+  color: var(--on-accent, #fff);
+  background: var(--accent-btn, var(--accent));
+}
+
+.table-add:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.table-add svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  stroke-width: 2.6;
+}
+
+@keyframes table-add-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-add {
+    animation: none;
+  }
+}
+
+/* Tables: plain lines, a tinted header row, and a highlight on the cells you've selected */
+.content :deep(.note-body .tableWrapper) {
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+
+.content :deep(.note-body table) {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.95em;
+}
+
+.content :deep(.note-body th),
+.content :deep(.note-body td) {
+  position: relative;
+  min-width: 4em;
+  padding: 0.4em 0.6em;
+  vertical-align: top;
+  text-align: left;
+  border: 1px solid var(--line);
+}
+
+.content :deep(.note-body th) {
+  font-weight: 700;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.content :deep(.note-body th > p),
+.content :deep(.note-body td > p) {
+  margin: 0;
+}
+
+.content :deep(.note-body .selectedCell::after) {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  pointer-events: none;
 }
 
 /* [[Note links]] */

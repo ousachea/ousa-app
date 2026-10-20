@@ -30,6 +30,18 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.6.0',
+    date: '2026-10-20',
+    changes: [
+      'New app: 2048. Slide the tiles with the arrow keys or a swipe, undo a move, and keep your best score.',
+      'A breadcrumb in the top bar shows where you are: Ousa’s Apps › the app › its folder or section. Click a step to go back to it.',
+      'Opening the site on a phone starts with a splash screen.',
+      'Quick sign-in: set a password in Settings → Account & sync to sign back in without the Google window.',
+      'The Apps menu lists only the other apps while you’re in one, and leaves the list out on the home page, which already shows every app. Search is the button beside it.',
+      'Search everything no longer gets cut off at the sides on a phone.'
+    ]
+  },
+  {
     version: '2.5.0',
     date: '2026-10-19',
     changes: [
@@ -167,6 +179,9 @@ export const CHANGELOG: Record<string, Release[]> = {
       'Income, savings goals, reports, CSV import and export, and a dashboard for the month.'
     ] }
   ],
+  '/2048': [
+    { version: '1.0.0', date: '2026-10-20', changes: ['Slide the tiles with the arrow keys, or swipe on a phone; matching numbers join into one.', 'Undo your last move (Z), keep going after 2048, and your best score is kept.', 'A game in progress is still there when you come back.'] }
+  ],
   '/cv': [
     { version: '1.0.0', date: '2026-10-16', changes: ['My CV as an app: experience, selected work, skills, education and how to get in touch.', 'Save it as a PDF from the Save as PDF button.'] }
   ],
@@ -239,12 +254,22 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['See what your subscriptions cost each month and year, and what renews soon.'] }
   ],
   '/notes': [
+    { version: '1.4.0', date: '2026-10-20', changes: ['Tables: add one from the toolbar, Tab between cells, and add or remove rows and columns from the same button. They export to Markdown and import back.', 'Hover a table for a + on its right edge (add a column) and bottom edge (add a row).', 'Right-click in a table to clear the highlighted cells, merge them, or add and delete rows and columns.','Focus mode has the Centre / Wide switch too, so you can write across the whole screen.','Checklist boxes line up with their text at any text size or line spacing.', 'The ⋯ menu on a note opens again.','Export every note as Markdown in a .zip: one .md file per note, in folders like yours, ready for Obsidian and most notes apps.', 'Import Markdown files, or a .zip of them from Obsidian, Bear or this app, with their folders.', 'A file holding several notes (All notes as one .md) imports back as separate notes.', 'Import & export is in the sidebar and the New note menu.', 'The top bar shows where you are: Notes › folder › the open note.'] },
     { version: '1.3.0', date: '2026-10-19', changes: ['Notes settings are laid out like every other app’s, in three groups: Writing, Notes list and New notes.', 'A live preview shows a note in your font, text size and line spacing as you change them.'] },
     { version: '1.2.0', date: '2026-10-19', changes: ['Focus mode is calmer: bigger text in a narrower column, room to write in the middle of the screen, and soft edges at the top and bottom.', 'A small bar shows the save status and word count, with Dim, Full screen and Done; it hides while you type and the mouse brings it back.', 'Dim fades everything but the paragraph you’re writing. Switch it off from the bar; it’s remembered.', 'Notes settings open wider, and New notes go in uses the app’s own dropdown.'] },
     { version: '1.1.0', date: '2026-10-19', changes: ['Select some text, or double-click a word, and a small formatting bar appears above it: bold, italic, underline, strikethrough, code, link, bullet list, numbered list and checklist.', 'Headings, quote and code block are one dropdown named after the current style, such as Normal text or Heading 2, with each one’s Markdown shortcut beside it.', 'Focus mode shows only the title and your words, full screen. Turn it on from the note’s header, the ⋯ menu or ⌘⇧F; Esc leaves it.'] },
     { version: '1.0.0', date: '2026-10-09', changes: ['Write notes with headings, lists, checklists you can tick, quotes, code, links and images.', 'Markdown shortcuts: # for a heading, - for a list, [ ] for a checklist, > for a quote.', 'Notes save by themselves as you type, work offline and sync to your other devices.', 'Folders (the same kind as Bookmarks), #tags, favourites at the top, Recent and Archived.', 'Link notes with [[ and see which notes link back.', 'Version history: go back to how a note was earlier.', 'Templates for meetings, projects and daily notes, or save your own.', 'Quick note (Q) saves a thought without opening the editor.', 'Search titles, text, folders and tags, with filters like tag:idea or is:favorite.', 'Import and export as Markdown, text, HTML or JSON; notes are in full backups too.', 'Select several to favourite, move, archive or delete them together.', SYNC, EXAMPLE, BIN, UNDO, MENU, SWIPE] }
   ],
   '/bookmarks': [
+    { version: '3.0.0', date: '2026-10-20', changes: [
+      'Adding looks like adding now: a card with a link field, a + Add button and Save to, the folder it goes in, instead of a bar that looked like search.',
+      'Paste several links at once (one per line, or any text with links in it) and add them together, into the same folder. Ones you already have are left unticked.',
+      'An open folder starts with an Add a bookmark row, the same shape as your bookmarks in the list or grid, that saves straight into it.',
+      'Pin a folder: it sits on the Pinned shelf beside your pinned links, and one tap opens it.',
+      'Share a folder: anyone with the link sees its bookmarks and sub-folders, without signing in. It updates by itself, your notes stay private, and you can stop sharing any time.',
+      'A folder’s path shows over the list and in the top bar (All › Work › Banking); click a step to go back up.',
+      'Get site details only reads bookmarks that are missing something, and says how many that is.'
+    ] },
     { version: '2.2.0', date: '2026-10-19', changes: ['With a folder open, the address bar shows that new links go into it; click the folder there to save to All bookmarks instead.', 'Add a bookmark straight into a folder with the + beside its name, or Add a bookmark here in the folder’s right-click menu.', 'An empty folder offers to add a bookmark.'] },
     { version: '2.1.0', date: '2026-10-08', changes: ['Find duplicates: bookmarks saved more than once, even under slightly different addresses (http/https, www, mobile site, trailing slash, #section, tracking codes).', 'Similar links too: the same site and title, or a page and the page just below it.', 'Pick which copy to keep and merge: folders, notes, pin and visits move onto it, and the rest go to the Recycle Bin. Or mark them as not duplicates.', 'Saving a link catches those same near-duplicates.'] },
     { version: '2.0.0', date: '2026-10-08', changes: ['Folders instead of tags, with folders inside folders. Your tags became folders automatically.', 'Give each folder an icon and a colour, and add folders from the top or bottom of the list.', 'A bookmark can be in several folders, shown as chips you can add and remove.', 'Drag a bookmark onto a folder to move it, or drag folders to reorder and nest them. Move to folder… in the right-click menu does the same.', 'Saving a link shows its title, description and preview image first, so you can edit them and choose folders.', 'The Recycle Bin link opens just your deleted bookmarks.'] },

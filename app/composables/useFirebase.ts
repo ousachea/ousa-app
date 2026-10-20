@@ -120,12 +120,20 @@ export function withTimeout<T>(promise: Promise<T>, ms = 10_000) {
   ])
 }
 
-// Rules to publish once in the Firebase console: each signed-in user reads and writes only their own data
+// Rules to publish once in the Firebase console: each signed-in user reads and writes only their own data,
+// and shared bookmark folders (shares/<id>) can be read by anyone with the link
 export const FIRESTORE_RULES = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /shares/{shareId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.owner == request.auth.uid;
+      allow update: if request.auth != null && resource.data.owner == request.auth.uid
+        && request.resource.data.owner == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
     }
   }
 }`
