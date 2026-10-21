@@ -363,7 +363,21 @@ function leaveNote() {
 // ---------- Reading a note on a computer ----------
 // With a note open, folders and the list stay in view (narrower) so you keep your place; they step
 // back while you write and come forward when you reach for them
-const reading = computed(() => !isPhone.value && !!openNote.value && !sel.selecting && !focusMode.value)
+const reading = computed(() => !isPhone.value && !!openNote.value && !sel.selecting && !focusMode.value && !parked.value)
+
+// Clicking the Choose a folder or Pick a note heading slides folders and the list back to where they
+// sit with no note open; the Write heading, or opening another note, centres the note again
+const parked = ref(false)
+
+function park(on: boolean, e?: MouseEvent) {
+  if (e && !(e.target as Element).closest('.step-head')) return
+  if (isPhone.value || !openNote.value || parked.value === on) return
+  viewTransition(() => (parked.value = on))
+}
+
+watch(openId, () => {
+  if (parked.value) viewTransition(() => (parked.value = false))
+})
 
 function closeNote() {
   // Opened as a history step: going back closes it (the route watcher below does the rest)
@@ -1059,9 +1073,9 @@ function listMenu() {
     </template>
 
     <ClientOnly>
-      <div class="notes-app" :data-pane="pane" :class="{ 'has-open': !!openNote, reading }">
+      <div class="notes-app" :data-pane="pane" :class="{ 'has-open': !!openNote, reading, parked: parked && !!openNote && !isPhone }">
         <!-- ---------- 1: views, folders, tags ---------- -->
-        <Step :n="1" title="Choose a folder" hint="Or a view: favourites, recent, archived." class="side-step">
+        <Step :n="1" title="Choose a folder" hint="Or a view: favourites, recent, archived." class="side-step" @click="park(true, $event)">
         <aside class="side">
           <h2 class="phone-title">Folders</h2>
           <div class="new-row">
@@ -1139,7 +1153,7 @@ function listMenu() {
         </Step>
 
         <!-- ---------- 2: the list ---------- -->
-        <Step :n="2" title="Pick a note" hint="Search, sort, or start a new one." class="list-step">
+        <Step :n="2" title="Pick a note" hint="Search, sort, or start a new one." class="list-step" @click="park(true, $event)">
         <section class="list-pane" :aria-label="listTitle">
           <!-- Sticks at the top of the list as it scrolls (the list scrolls on its own on a computer) -->
           <div class="list-bar">
@@ -1267,7 +1281,7 @@ function listMenu() {
         </Step>
 
         <!-- ---------- 3: the editor ---------- -->
-        <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step">
+        <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step" @click="park(false, $event)">
         <section ref="editorPane" class="editor-pane" :class="{ 'focus-mode': focusMode, 'is-typing': focusMode && focusTyping, 'dim': focusMode && focusDim }" aria-label="Note" @pointermove="focusMode && onFocusPointer()" @keydown="focusMode && onFocusKey($event)" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
           <!-- Selecting (beside the list, on a computer): what's picked and what to do with it -->
           <div v-if="sel.selecting && !isPhone" class="pick-summary">
@@ -1492,13 +1506,13 @@ function listMenu() {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  border-radius: 12px 0 0 12px;
+  border-radius: var(--radius) 0 0 var(--radius);
 }
 
 .new-more {
   padding-inline: 0.55rem;
   border-left: 1px solid color-mix(in srgb, var(--on-accent, #fff) 30%, transparent);
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 var(--radius) var(--radius) 0;
 }
 
 .new-btn svg,
@@ -1526,14 +1540,14 @@ function listMenu() {
   min-height: 2.25rem;
   padding: 0.35rem 0.7rem;
   font: inherit;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink-2);
   text-align: left;
   text-decoration: none;
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
 }
@@ -1570,7 +1584,7 @@ function listMenu() {
 }
 
 .view-row b {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
@@ -1578,7 +1592,7 @@ function listMenu() {
 
 .side-head {
   margin: 0.5rem 0.7rem 0.3rem;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -1594,12 +1608,12 @@ function listMenu() {
 .tag {
   padding: 0.2rem 0.55rem;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: color-mix(in srgb, var(--ink) 6%, var(--surface));
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
@@ -1615,7 +1629,7 @@ function listMenu() {
 }
 
 .tag.small {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
 }
 
 .side-tools {
@@ -1623,13 +1637,13 @@ function listMenu() {
   flex-wrap: wrap;
   gap: 0.4rem 1rem;
   padding: 0.5rem 0.7rem 1rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 /* ---------- List ---------- */
 .list-pane {
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line);
   container: list-pane / inline-size;
 }
@@ -1646,7 +1660,7 @@ function listMenu() {
   .list-head .sort :deep(button) {
     min-height: 2.25rem;
     padding-inline: 0.6rem 0.4rem;
-    font-size: 0.82rem;
+    font-size: var(--text-sm);
   }
 
   .list-tools .count {
@@ -1663,7 +1677,7 @@ function listMenu() {
 
   .list-head h2 {
     flex: 1 1 auto;
-    font-size: 1.05rem;
+    font-size: var(--text-title);
   }
 
   .list-tools .select-btn {
@@ -1685,7 +1699,7 @@ function listMenu() {
   padding: 0.85rem 0.4rem 0.6rem;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-  border-radius: 18px 18px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .list-head {
@@ -1698,7 +1712,7 @@ function listMenu() {
 
 .list-head h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   letter-spacing: -0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1716,7 +1730,7 @@ function listMenu() {
   padding: 0 0.7rem;
   background: color-mix(in srgb, var(--ink) 4%, var(--surface));
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .search:focus-within {
@@ -1747,10 +1761,10 @@ function listMenu() {
 
 .search kbd {
   padding: 0 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 
 .list-tools {
@@ -1761,7 +1775,7 @@ function listMenu() {
 }
 
 .count {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
@@ -1779,7 +1793,7 @@ function listMenu() {
   color: var(--ink-3);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -1800,7 +1814,7 @@ function listMenu() {
 .ops {
   margin: 0;
   padding-inline: 0.75rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1812,7 +1826,7 @@ function listMenu() {
 
 .group-head {
   padding: 0.75rem 0.7rem 0.3rem;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1820,7 +1834,7 @@ function listMenu() {
 }
 
 .note-row {
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .note-row + .note-row {
@@ -1837,9 +1851,9 @@ function listMenu() {
   color: var(--ink);
   background: none;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.12s ease-out;
+  transition: background-color var(--dur-fast) ease-out;
 }
 
 .note-open:hover {
@@ -1872,7 +1886,7 @@ function listMenu() {
 .note-preview {
   display: -webkit-box;
   overflow: hidden;
-  font-size: 0.86rem;
+  font-size: var(--text-sm);
   line-height: 1.45;
   color: var(--ink-2);
   -webkit-line-clamp: 2;
@@ -1890,7 +1904,7 @@ mark {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.2rem 0.6rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
 }
 
@@ -1910,7 +1924,7 @@ mark {
   font-weight: 700;
   color: var(--ink-2);
   background: color-mix(in srgb, var(--ink) 8%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 time {
@@ -1982,7 +1996,7 @@ time {
   min-width: 0;
   min-height: 70vh;
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line);
 }
 
@@ -2021,7 +2035,7 @@ time {
   align-items: center;
   gap: 0.4rem;
   min-width: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   white-space: nowrap;
 }
@@ -2098,7 +2112,7 @@ time {
 }
 
 .focus-mode .title-input {
-  font-size: 2.4rem;
+  font-size: var(--text-3xl);
   line-height: 1.25;
   letter-spacing: -0.025em;
   padding-bottom: 0.6rem;
@@ -2128,7 +2142,7 @@ time {
 
 /* Dim: every block but the one with the caret fades back */
 .focus-mode.dim :deep(.note-body > *) {
-  transition: opacity 0.35s ease;
+  transition: opacity var(--dur-slow) ease;
 }
 
 .focus-mode.dim :deep(.note-body:has(> .has-focus) > :not(.has-focus)) {
@@ -2151,12 +2165,12 @@ time {
   gap: 0.35rem;
   max-width: calc(100vw - 2rem);
   padding: 0.3rem 0.3rem 0.3rem 0.9rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   white-space: nowrap;
   background: color-mix(in srgb, var(--surface) 85%, transparent);
   backdrop-filter: blur(12px);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 0 0 1px var(--line), 0 10px 30px -12px rgb(var(--shadow) / 0.3);
   translate: -50% 0;
   transition: opacity 0.4s ease, translate 0.4s cubic-bezier(0.2, 0, 0, 1);
@@ -2208,9 +2222,9 @@ time {
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .focus-tool:hover {
@@ -2244,10 +2258,10 @@ time {
 .focus-tool kbd {
   padding: 0.05rem 0.35rem;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   color: var(--ink-3);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -2281,7 +2295,7 @@ time {
   }
 
   .focus-mode .title-input {
-    font-size: 1.9rem;
+    font-size: var(--text-2xl);
   }
 }
 
@@ -2299,7 +2313,7 @@ time {
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -2326,10 +2340,10 @@ time {
 .archived-bar {
   margin: 0 1rem 0.5rem;
   padding: 0.5rem 0.75rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   background: color-mix(in srgb, var(--ink) 5%, var(--surface));
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .sheet {
@@ -2367,7 +2381,7 @@ time {
   overflow: hidden;
   font: inherit;
   font-family: var(--note-font, inherit);
-  font-size: 1.75rem;
+  font-size: var(--text-2xl);
   font-weight: 750;
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -2397,12 +2411,12 @@ time {
   gap: 0.35rem;
   padding: 0.25rem 0.6rem 0.25rem 0.45rem;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: color-mix(in srgb, var(--ink) 5%, var(--surface));
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
@@ -2422,9 +2436,9 @@ time {
   gap: 0.4rem 0.5rem;
   margin: 0 1.25rem 0.6rem;
   padding: 0.55rem 0.7rem;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   background: color-mix(in srgb, var(--accent) 7%, var(--surface));
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .suggest strong {
@@ -2438,7 +2452,7 @@ time {
   color: var(--accent);
   background: var(--surface);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
   cursor: pointer;
 }
@@ -2458,7 +2472,7 @@ time {
 
 .links h3 {
   margin: 0 0 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -2483,7 +2497,7 @@ time {
   /* Pinned to the bottom of the panel, with room under it */
   margin: auto 1.25rem 0;
   padding: 0.9rem 0 1.75rem;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   border-top: 1px solid var(--line);
 }
@@ -2514,7 +2528,7 @@ time {
 .notes-app.reading .side-step,
 .notes-app.reading .list-step {
   opacity: 0.72;
-  transition: opacity 0.2s ease-out;
+  transition: opacity var(--dur) ease-out;
 }
 
 .notes-app.reading .side-step:hover,
@@ -2523,6 +2537,18 @@ time {
 .notes-app.reading .list-step:focus-within {
   opacity: 1;
 }
+
+/* The headings that move the panels: Choose a folder and Pick a note while reading, Write once
+   they've moved back */
+.notes-app.reading :is(.side-step, .list-step) :deep(.step-head),
+.notes-app.parked .editor-step :deep(.step-head) {
+  cursor: pointer;
+}
+
+/* Named so the move between the two layouts slides each panel rather than cross-fading the page */
+.side-step { view-transition-name: notes-side; }
+.list-step { view-transition-name: notes-list; }
+.editor-step { view-transition-name: notes-editor; }
 
 /* Mid-size screens put folders above; the list and note share the row */
 @media (max-width: 1100px) {
@@ -2551,14 +2577,14 @@ time {
   gap: 0.3rem;
   padding: 0.3rem 0.55rem;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.12s, color 0.12s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .select-btn:hover {
@@ -2576,14 +2602,14 @@ time {
   margin: 0 0.2rem;
   padding: 0.2rem 0.35rem 0.2rem 0.55rem;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .pick-all {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--ink);
   cursor: pointer;
@@ -2592,12 +2618,12 @@ time {
 .pick-done {
   padding: 0.3rem 0.7rem;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--on-accent, #fff);
   background: var(--accent-btn, var(--accent));
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -2621,7 +2647,7 @@ time {
   place-items: center;
   overflow: hidden;
   opacity: 0;
-  transition: width 0.2s var(--ease-out, ease-out), margin 0.2s var(--ease-out, ease-out), opacity 0.15s ease-out;
+  transition: width var(--dur) var(--ease-out, ease-out), margin var(--dur) var(--ease-out, ease-out), opacity var(--dur-fast) ease-out;
 }
 
 .note-list.selecting .check-col {
@@ -2631,7 +2657,7 @@ time {
 }
 
 .note-check {
-  font-size: 1.05rem;
+  font-size: var(--text-title);
 }
 
 .note-list.selecting .note-open {
@@ -2702,17 +2728,17 @@ time {
   padding: 0.9rem;
   display: block;
   overflow: hidden;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   line-height: 1.3;
   text-align: left;
   color: var(--ink);
   background: var(--surface);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 0 0 1px var(--line), 0 10px 24px -14px rgb(var(--shadow) / 0.45);
   rotate: calc(var(--i, 0) * -5deg);
   translate: calc(var(--i, 0) * -6px) calc(var(--i, 0) * 4px);
-  transition: rotate 0.2s, translate 0.2s;
+  transition: rotate var(--dur), translate var(--dur);
 }
 
 .pick-sheet::after {
@@ -2745,7 +2771,7 @@ time {
 
 .pick-count {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   letter-spacing: -0.015em;
 }
 
@@ -2773,10 +2799,10 @@ time {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   background: var(--surface-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .pick-titles li.more {
@@ -2799,14 +2825,14 @@ time {
   gap: 0.35rem;
   padding: 0.8rem 0.5rem;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
   background: var(--surface-2);
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.12s, color 0.12s, scale 0.12s;
+  transition: background-color var(--dur-fast), color var(--dur-fast), scale var(--dur-fast);
 }
 
 .pick-action svg {
@@ -2872,7 +2898,7 @@ kbd {
   font: inherit;
   font-size: 0.85em;
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 
 .move-list {
@@ -2890,7 +2916,7 @@ kbd {
   color: var(--ink);
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -2969,7 +2995,7 @@ kbd {
     display: block;
     margin: 0 0 0.25rem;
     padding-inline: 0.25rem;
-    font-size: 2rem;
+    font-size: var(--text-2xl);
     letter-spacing: -0.02em;
   }
 
@@ -2983,13 +3009,13 @@ kbd {
   .views-nav {
     padding: 0.3rem;
     background: var(--surface);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     box-shadow: 0 0 0 1px var(--line);
   }
 
   .view-row {
     min-height: 2.9rem;
-    font-size: 1rem;
+    font-size: var(--text-md);
   }
 
   .view-row.on {
@@ -3020,7 +3046,7 @@ kbd {
     color: var(--accent);
     background: none;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--radius);
     cursor: pointer;
   }
 
@@ -3040,7 +3066,7 @@ kbd {
   }
 
   .bar-count {
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     font-variant-numeric: tabular-nums;
     color: var(--ink-3);
   }
@@ -3076,14 +3102,14 @@ kbd {
   }
 
   .list-head h2 {
-    font-size: 2rem;
+    font-size: var(--text-2xl);
     letter-spacing: -0.02em;
   }
 
   /* Rows in rounded groups with hairlines between them; group names above (Favourites, Today…) */
   .note-list:not(.grid) .group-head {
     padding: 1rem 0.25rem 0.4rem;
-    font-size: 1.1rem;
+    font-size: var(--text-title);
     letter-spacing: -0.01em;
     text-transform: none;
     color: var(--ink);
@@ -3121,7 +3147,7 @@ kbd {
   }
 
   .note-list:not(.grid) .note-title {
-    font-size: 1rem;
+    font-size: var(--text-md);
   }
 
   .note-list.list .note-preview {
@@ -3217,7 +3243,7 @@ kbd {
 
   .title-input {
     padding-inline: 1rem;
-    font-size: 1.6rem;
+    font-size: var(--text-xl);
   }
 
   .note-place,

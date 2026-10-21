@@ -338,7 +338,7 @@ usePullToRefresh(async () => {
 
 .budget-app .b-head h2 {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
 }
 
 .budget-app .b-panel {
@@ -352,7 +352,7 @@ usePullToRefresh(async () => {
 
 .budget-app .b-panel h3 {
   margin: 0 0 0.75rem;
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .budget-app .b-muted {

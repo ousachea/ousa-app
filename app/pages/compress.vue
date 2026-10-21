@@ -391,7 +391,7 @@ onBeforeUnmount(clearAll)
     <Step :n="1" title="Add images or PDFs" class="fill">
     <div class="drop-wrap">
     <label
-      class="drop"
+      v-ants class="drop"
       :class="{ dragging }"
       @dragover.prevent="dragging = true"
       @dragleave="dragging = false"
@@ -464,7 +464,7 @@ onBeforeUnmount(clearAll)
     </div>
 
     <Step :n="3" title="Download" class="results">
-    <p v-if="!items.length" class="waiting">Your compressed files show up here, ready to download.</p>
+    <p v-if="!items.length" v-ants class="waiting">Your compressed files show up here, ready to download.</p>
     <template v-else>
       <!-- Drag the handle to compare the original (left) with the compressed image (right) -->
       <figure v-if="compareItem" class="compare">
@@ -615,7 +615,7 @@ onBeforeUnmount(clearAll)
   text-align: center;
   color: var(--ink-3);
   border: 2px dashed var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
 }
 
 .drop {
@@ -630,9 +630,9 @@ onBeforeUnmount(clearAll)
   text-align: center;
   background: var(--surface);
   border: 2px dashed var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition: border-color var(--dur-fast), background-color var(--dur-fast);
 }
 
 .drop:hover,
@@ -667,11 +667,11 @@ onBeforeUnmount(clearAll)
   margin-bottom: 0.75rem;
   display: grid;
   place-items: center;
-  font-size: 1.4rem;
+  font-size: var(--text-xl);
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   border-radius: 50%;
-  transition: transform 0.2s;
+  transition: transform var(--dur);
 }
 
 .drop.dragging .drop-icon {
@@ -679,11 +679,11 @@ onBeforeUnmount(clearAll)
 }
 
 .drop strong {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
 }
 
 .drop > span:last-child {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -697,7 +697,7 @@ onBeforeUnmount(clearAll)
 
 .hint {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -710,7 +710,7 @@ onBeforeUnmount(clearAll)
 }
 
 .pdf-settings h3 {
-  font-size: 0.95rem;
+  font-size: var(--text-base);
 }
 
 .pdf-settings .segmented label {
@@ -771,7 +771,7 @@ onBeforeUnmount(clearAll)
   padding: 0.75rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
 }
 
 /* Before/after: the original sits on top, clipped to the left of the handle */
@@ -784,7 +784,7 @@ onBeforeUnmount(clearAll)
   max-height: 70vh;
   margin: 0 auto;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 16px 16px;
   box-shadow: 0 10px 30px -12px rgb(var(--shadow) / 0.35);
   user-select: none;
@@ -848,11 +848,11 @@ onBeforeUnmount(clearAll)
   position: absolute;
   top: 0.75rem;
   padding: 0.25rem 0.6rem;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: #fff;
   background: rgb(0 0 0 / 0.55);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   backdrop-filter: blur(6px);
   pointer-events: none;
   font-variant-numeric: tabular-nums;
@@ -884,7 +884,7 @@ onBeforeUnmount(clearAll)
 
 .compare figcaption {
   margin-top: 0.6rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   text-align: center;
 }
@@ -910,12 +910,12 @@ onBeforeUnmount(clearAll)
   left: 0.4rem;
   bottom: 0.4rem;
   padding: 0.1rem 0.4rem;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 800;
   letter-spacing: 0.04em;
   color: #fff;
   background: #c4271f;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 
 .thumb.comparing {
@@ -924,17 +924,17 @@ onBeforeUnmount(clearAll)
 
 .thumb {
   position: relative;
-  border-radius: 11px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
 .thumb img {
   display: block;
   width: 100%;
-  transition: filter 0.3s, opacity 0.3s;
+  transition: filter var(--dur-slow), opacity var(--dur-slow);
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 11px;
+  border-radius: var(--radius);
   outline: 1px solid rgb(var(--shadow) / 0.1);
   outline-offset: -1px;
   background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 12px 12px;
@@ -955,12 +955,12 @@ onBeforeUnmount(clearAll)
   gap: 0.4rem;
   padding: 0.6rem 0.7rem;
   background: rgb(var(--shadow) / 0.55);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   backdrop-filter: blur(6px);
 }
 
 .stage-label {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: #fff;
 }
@@ -969,7 +969,7 @@ onBeforeUnmount(clearAll)
   height: 0.35rem;
   overflow: hidden;
   background: rgb(255 255 255 / 0.25);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .bar span {
@@ -981,7 +981,7 @@ onBeforeUnmount(clearAll)
 }
 
 .fade-leave-active {
-  transition: opacity 0.25s;
+  transition: opacity var(--dur);
 }
 
 .fade-leave-to {
@@ -1010,7 +1010,7 @@ onBeforeUnmount(clearAll)
 }
 
 .meta {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -1039,7 +1039,7 @@ onBeforeUnmount(clearAll)
   padding: 0;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 760px) {
   .top { grid-template-columns: minmax(0, 1fr); }
   .drop { min-height: 0; }
 }

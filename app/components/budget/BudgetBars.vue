@@ -155,7 +155,7 @@ svg {
 svg:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 4px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .grid line {
@@ -233,7 +233,7 @@ svg:focus-visible {
   pointer-events: none;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 6px 18px rgb(var(--shadow) / 0.15);
 }
 

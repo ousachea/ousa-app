@@ -304,7 +304,7 @@ const status = computed(() => (game.over ? `No moves left. Final score ${game.sc
 }
 
 .score .value {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -317,7 +317,7 @@ const status = computed(() => (game.over ? `No moves left. Final score ${game.sc
   white-space: nowrap;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .score {
     min-width: 4.25rem;
     padding: 0.35rem 0.65rem;
@@ -344,7 +344,7 @@ const status = computed(() => (game.over ? `No moves left. Final score ${game.sc
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--gap);
   background: #bbada0;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   touch-action: none;
   user-select: none;
   container-type: inline-size;
@@ -352,7 +352,7 @@ const status = computed(() => (game.over ? `No moves left. Final score ${game.sc
 
 .cell {
   background: rgb(238 228 218 / 0.35);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .tile {
@@ -367,9 +367,9 @@ const status = computed(() => (game.over ? `No moves left. Final score ${game.sc
   font-weight: 800;
   color: var(--fg);
   background: var(--bg);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   translate: calc(var(--c) * (100% + var(--gap))) calc(var(--r) * (100% + var(--gap)));
-  transition: translate 0.11s ease-in-out;
+  transition: translate var(--dur-fast) ease-in-out;
   z-index: 1;
 }
 
@@ -422,7 +422,7 @@ const status = computed(() => (game.over ? `No moves left. Final score ${game.sc
   text-align: center;
   color: #776e65;
   background: rgb(238 228 218 / 0.78);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   backdrop-filter: blur(2px);
 }
 
@@ -432,7 +432,7 @@ const status = computed(() => (game.over ? `No moves left. Final score ${game.sc
 }
 
 .overlay strong {
-  font-size: 2.6rem;
+  font-size: var(--text-3xl);
   font-weight: 800;
   line-height: 1;
 }

@@ -16,7 +16,7 @@ onMounted(() => {
     sessionStorage.setItem('ousa-app:launched', '1')
   } catch {}
   // Not showing (a computer, a reload, Low-spec mode): just take it out
-  if ('launched' in root.dataset || !matchMedia('(max-width: 719.98px)').matches) {
+  if ('launched' in root.dataset || !matchMedia('(max-width: 759.98px)').matches) {
     gone.value = true
     return
   }
@@ -60,7 +60,7 @@ onMounted(() => {
 }
 
 /* Phones only, and only the first time this visit */
-@media (max-width: 719.98px) {
+@media (max-width: 759.98px) {
   :root:not([data-launched]) .launch-splash {
     display: flex;
   }
@@ -79,7 +79,7 @@ onMounted(() => {
 }
 
 strong {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   font-weight: 800;
   letter-spacing: -0.02em;
   animation: launch-name 0.45s ease-out 0.15s both;

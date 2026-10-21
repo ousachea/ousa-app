@@ -317,10 +317,10 @@ input[type='checkbox'] {
   height: 2.25rem;
   display: grid;
   place-items: center;
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   color: var(--on-c);
   background: var(--c);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 2px var(--plastic), 0 0 0 3px var(--plastic-edge);
 }
 
@@ -367,7 +367,7 @@ input[type='checkbox'] {
 }
 
 /* Phones: the meta line wraps, and the actions tuck under the name */
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .row {
     flex-wrap: wrap;
   }

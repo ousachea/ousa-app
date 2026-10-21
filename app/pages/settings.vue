@@ -342,7 +342,7 @@ const volume = computed({
                   <output class="size-value">{{ prefs.textSize }} px</output>
                 </div>
               </div>
-              <div class="type-preview" aria-label="Preview">
+              <div v-ants class="type-preview" aria-label="Preview">
                 <span class="preview-label">Preview</span>
                 <strong class="preview-title">Gold tracker</strong>
                 <p>Live gold price in chi and damlung, and what your gold is worth now.</p>
@@ -528,7 +528,7 @@ const volume = computed({
   height: 2.6rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .find:focus-within {
@@ -576,9 +576,9 @@ const volume = computed({
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.12s, color 0.12s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .snav-item:hover {
@@ -643,7 +643,7 @@ const volume = computed({
 }
 
 .shead h2 {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   letter-spacing: -0.02em;
 }
 
@@ -660,7 +660,7 @@ const volume = computed({
 
 .sub {
   margin: 0.75rem 0 -0.25rem;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -771,7 +771,7 @@ const volume = computed({
   translate: -50% 0;
   padding: 0.1rem 0.35rem;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   white-space: nowrap;
   color: var(--ink-3);
@@ -810,13 +810,13 @@ const volume = computed({
   height: 2rem;
   display: grid;
   place-items: center;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--ink-3);
 }
 
 .size-a.big {
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
 }
 
 .size-value {
@@ -882,7 +882,7 @@ const volume = computed({
 }
 
 .font-aa {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   font-weight: 700;
   line-height: 1.15;
 }
@@ -892,7 +892,7 @@ const volume = computed({
 }
 
 .font-hint {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
 }
 
@@ -914,7 +914,7 @@ const volume = computed({
 }
 
 .preview-label {
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -922,7 +922,7 @@ const volume = computed({
 }
 
 .preview-title {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   letter-spacing: -0.02em;
 }
 
@@ -935,7 +935,7 @@ const volume = computed({
 }
 
 .preview-num {
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
@@ -1001,7 +1001,7 @@ const volume = computed({
 /* ---------- Low-spec PC mode ---------- */
 .lowspec {
   padding: 0.4rem 1.1rem 1.1rem;
-  transition: border-color 0.2s;
+  transition: border-color var(--dur);
 }
 
 .lowspec.on {
@@ -1023,8 +1023,8 @@ const volume = computed({
   place-items: center;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 12px;
-  transition: color 0.2s, background-color 0.2s;
+  border-radius: var(--radius);
+  transition: color var(--dur), background-color var(--dur);
 }
 
 .lowspec.on .lowspec-icon {
@@ -1059,7 +1059,7 @@ const volume = computed({
   font-size: var(--text-sm);
   font-weight: 600;
   background: color-mix(in srgb, var(--yellow) 18%, var(--surface));
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 /* ---------- Account ---------- */
@@ -1076,7 +1076,7 @@ const volume = computed({
 }
 
 .sync .small {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1097,9 +1097,9 @@ const volume = computed({
   padding: 0.75rem;
   overflow: auto;
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   background: var(--surface-2);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .row-actions {
@@ -1111,7 +1111,7 @@ const volume = computed({
 .sync .link {
   padding: 0;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   background: none;
   border: 0;
@@ -1143,11 +1143,11 @@ const volume = computed({
   place-items: center;
   width: 2.75rem;
   height: 2.75rem;
-  font-size: 1.3rem;
+  font-size: var(--text-lg);
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 12px;
-  transition: color 0.2s, background-color 0.2s;
+  border-radius: var(--radius);
+  transition: color var(--dur), background-color var(--dur);
 }
 
 .master-icon.on {
@@ -1156,12 +1156,12 @@ const volume = computed({
 }
 
 .master h3 {
-  font-size: 1.15rem;
+  font-size: var(--text-title);
 }
 
 .master p {
   margin: 0.25rem 0 0;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -1179,9 +1179,9 @@ const volume = computed({
   padding: 0;
   background: var(--line);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--dur);
 }
 
 .switch[aria-checked='true'] {
@@ -1197,7 +1197,7 @@ const volume = computed({
   background: #fff;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgb(var(--shadow) / 0.25);
-  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.6, 1);
+  transition: transform var(--dur) cubic-bezier(0.3, 1.4, 0.6, 1);
 }
 
 .switch[aria-checked='true'] .knob {
@@ -1206,7 +1206,7 @@ const volume = computed({
 
 .muted {
   opacity: 0.45;
-  transition: opacity 0.2s;
+  transition: opacity var(--dur);
 }
 
 .volume {
@@ -1234,9 +1234,9 @@ const volume = computed({
   padding: 0.9rem 1rem 1rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .pack:hover {
@@ -1265,12 +1265,12 @@ const volume = computed({
   width: 2rem;
   height: 2rem;
   margin-bottom: 0.4rem;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   color: #fff;
   background: var(--pack);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 2px var(--plastic), inset 0 -3px 0 rgb(0 0 0 / 0.12);
-  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.6, 1);
+  transition: transform var(--dur) cubic-bezier(0.3, 1.6, 0.6, 1);
 }
 
 .pack.active .swatch {
@@ -1278,11 +1278,11 @@ const volume = computed({
 }
 
 .pack strong {
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .desc {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   line-height: 1.35;
   color: var(--ink-2);
 }
@@ -1315,7 +1315,7 @@ const volume = computed({
     gap: 0.4rem;
     padding: 0.45rem 0.75rem;
     background: var(--surface);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     box-shadow: 0 0 0 1px var(--line);
   }
 

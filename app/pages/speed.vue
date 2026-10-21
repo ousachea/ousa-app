@@ -694,7 +694,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 /* Wide screens: the dial on the left, held in view, and the numbers beside it */
-@media (min-width: 1000px) {
+@media (min-width: 1100px) {
   .speed {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: auto auto 1fr;
@@ -733,7 +733,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 /* Wide screens: the dial grows to fill its half of the page */
-@media (min-width: 1000px) {
+@media (min-width: 1100px) {
   .dial-wrap {
     width: min(100%, 30rem);
   }
@@ -760,11 +760,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   stroke-width: 3;
   stroke-linecap: round;
   opacity: 0.35;
-  transition: stroke-dasharray 0.12s linear, opacity 0.3s;
+  transition: stroke-dasharray var(--dur-fast) linear, opacity var(--dur-slow);
 }
 
 .labels :deep(text) {
-  transition: fill 0.3s;
+  transition: fill var(--dur-slow);
 }
 
 .needle {
@@ -812,7 +812,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 40%, transparent), inset 0 -4px 0 rgb(0 0 0 / 0.15);
   font: inherit;
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform var(--dur) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .go:hover {
@@ -877,7 +877,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--meter-a);
-  transition: color 0.3s;
+  transition: color var(--dur-slow);
 }
 
 .phase-tag svg,
@@ -909,7 +909,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .swap-enter-active,
 .swap-leave-active {
-  transition: opacity 0.25s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity var(--dur), transform var(--dur-slow) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .swap-enter-from,
@@ -943,8 +943,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   min-width: 0;
   padding: 0 0.15rem 0.45rem;
   text-align: center;
-  border-radius: 10px;
-  transition: background-color 0.3s, opacity 0.3s;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-slow), opacity var(--dur-slow);
 }
 
 /* The band's colour along the top; together the five read as the dial's arc laid flat */
@@ -953,9 +953,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   height: 6px;
   margin-bottom: 0.35rem;
   background: var(--band);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   opacity: 0.55;
-  transition: height 0.3s, opacity 0.3s, box-shadow 0.3s;
+  transition: height var(--dur-slow), opacity var(--dur-slow), box-shadow var(--dur-slow);
 }
 
 .scale-icon {
@@ -967,7 +967,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .scale-name {
   max-width: 100%;
   overflow: hidden;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   line-height: 1.2;
   color: var(--ink-2);
@@ -976,7 +976,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .scale-range {
-  font-size: 0.68rem;
+  font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
@@ -1090,7 +1090,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: border-color var(--dur-slow), box-shadow var(--dur-slow), transform var(--dur-slow) cubic-bezier(0.2, 0.8, 0.2, 1);
   overflow: hidden;
 }
 
@@ -1126,11 +1126,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   display: inline-flex;
   align-items: baseline;
   gap: 0.3rem;
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ink-3);
-  transition: color 0.3s;
+  transition: color var(--dur-slow);
 }
 
 .stat.has .stat-value,
@@ -1139,7 +1139,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .stat-value small {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0;
   color: var(--ink-2);
@@ -1178,7 +1178,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .result h2,
 .history h2 {
   margin: 0 0 0.75rem;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
 }
 
 .verdicts {
@@ -1215,7 +1215,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   height: 1.75rem;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
 }
 
@@ -1322,7 +1322,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -1346,7 +1346,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .conn small {
   flex-basis: 100%;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 500;
   color: var(--ink-3);
 }
@@ -1359,7 +1359,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   grid-column: span 2;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .conn-network {
     grid-column: auto;
   }
@@ -1374,12 +1374,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .net-pick button {
   padding: 0.3rem 0.65rem;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: inset 0 0 0 1px var(--line);
   cursor: pointer;
 }
@@ -1392,7 +1392,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .where {
   display: block;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   color: var(--ink-3);
 }
 
@@ -1438,7 +1438,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   padding: 0.3rem 0.65rem 0.3rem 0.85rem;
   font-size: var(--text-sm);
   font-weight: 600;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .history-sort :deep(.chevron) {
@@ -1465,7 +1465,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .day {
   background: var(--surface-2);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -1500,11 +1500,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .day-count {
   padding: 0.1rem 0.5rem;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -1524,7 +1524,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .best-label {
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1549,7 +1549,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   width: 1.1rem;
   height: 1.1rem;
   color: var(--ink-3);
-  transition: rotate 0.25s cubic-bezier(0.2, 0, 0, 1);
+  transition: rotate var(--dur) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .day.open .chev {
@@ -1560,7 +1560,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .day-body {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s cubic-bezier(0.2, 0, 0, 1);
+  transition: grid-template-rows var(--dur-slow) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .day.open .day-body {
@@ -1583,7 +1583,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   padding: 0;
   list-style: none;
   background: var(--surface);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -1620,7 +1620,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .where {
   overflow: hidden;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1664,7 +1664,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 /* Phones: the numbers on one line, where it ran and what it was good for underneath */
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .history-list li {
     grid-template-columns: 3rem minmax(0, 1fr) minmax(0, 1fr) 3.25rem;
     grid-template-areas:
@@ -1707,7 +1707,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   background: transparent;
   color: var(--ink);
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .plan-input .unit {
@@ -1757,11 +1757,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   }
 
   .stat-value {
-    font-size: 1.25rem;
+    font-size: var(--text-lg);
   }
 
   .stat-value small {
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
   }
 
   .result,

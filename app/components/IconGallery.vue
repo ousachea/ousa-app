@@ -340,7 +340,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   color: var(--ink-3);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .search:focus-within {
@@ -389,7 +389,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   align-items: center;
   gap: 0.45rem;
   margin: 0.5rem 0 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -406,7 +406,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   background: var(--surface-2);
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
 }
 
 .state {
@@ -423,7 +423,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   margin: 0;
   padding: 0;
   list-style: none;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast);
 }
 
 .grid[aria-busy='true'] {
@@ -442,9 +442,9 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s, scale 0.12s;
+  transition: background-color var(--dur-fast), border-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .tile:hover {
@@ -467,7 +467,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   width: 2.6rem;
   height: 2.6rem;
   margin-bottom: 0.2rem;
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
 }
 
 .art :deep(.tool-icon) {
@@ -477,9 +477,9 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
 
 /* Logos keep their brand colours, so they sit on white in both themes */
 .art.plate {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   background: #fff;
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -499,7 +499,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
 .name {
   max-width: 100%;
   overflow: hidden;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -508,7 +508,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
 .where {
   max-width: 100%;
   overflow: hidden;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   color: var(--ink-3);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -536,10 +536,10 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
 .art.big {
   width: 4.5rem;
   height: 4.5rem;
-  font-size: 2.6rem;
+  font-size: var(--text-3xl);
   margin: 0;
   background: var(--surface-2);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
 }
 
 .art.big.plate {
@@ -564,15 +564,15 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   min-width: 0;
   padding: 0.5rem 0.7rem;
   overflow-x: auto;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   white-space: nowrap;
   background: var(--surface-2);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
 }
 
 h4 {
   margin: 0.6rem 0 0;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -590,13 +590,13 @@ h4 {
 .chip {
   display: inline-block;
   padding: 0.3rem 0.7rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
   text-decoration: none;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
 }
 
 a.chip:hover {
@@ -621,16 +621,16 @@ a.chip:hover {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.2rem 0.6rem;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
 }
 
 .spots code {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 .muted {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 

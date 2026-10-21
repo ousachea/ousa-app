@@ -251,11 +251,13 @@ function openSignIn() {
       <SignInWall v-if="walled" :name="tool.name" :checking="gate.state.value === 'checking'" />
       <template v-else>
       <p v-if="example" class="demo-banner" role="status">
-        <span><strong>This is example data.</strong> Sign in to use {{ tool.name }} with your own. Until then, changes here aren’t saved.</span>
+        <span class="demo-long"><strong>This is example data.</strong> Sign in to use {{ tool.name }} with your own. Until then, changes here aren’t saved.</span>
+        <span class="demo-short" aria-hidden="true"><strong>Example data.</strong> Sign in to save your own.</span>
         <button type="button" class="btn btn-sm" @click="openSignIn">Sign in</button>
       </p>
       <p v-else-if="demo.active.value" class="demo-banner" role="status">
-        <span><strong>This is example data.</strong> Explore freely: changes here aren’t saved, and your own data is untouched.</span>
+        <span class="demo-long"><strong>This is example data.</strong> Explore freely: changes here aren’t saved, and your own data is untouched.</span>
+        <span class="demo-short" aria-hidden="true"><strong>Example data.</strong> Nothing here is saved.</span>
         <button type="button" class="btn btn-sm" @click="toggleDemo">Back to my data</button>
       </p>
       <slot />
@@ -288,10 +290,10 @@ function openSignIn() {
   height: 3.5rem;
   display: grid;
   place-items: center;
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   color: var(--on-accent);
   background: var(--sticker, var(--accent));
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   /* Glossy sticker on black plastic, like the cube */
   box-shadow:
     0 0 0 4px var(--plastic),
@@ -313,7 +315,7 @@ function openSignIn() {
   border: 0;
   font-family: inherit;
   cursor: pointer;
-  transition: scale 0.15s, translate 0.15s;
+  transition: scale var(--dur-fast), translate var(--dur-fast);
 }
 
 .demo-toggle:hover {
@@ -340,9 +342,9 @@ function openSignIn() {
   place-items: center;
   color: var(--ink);
   background: var(--surface);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 0 0 1px var(--line), 0 2px 6px rgb(var(--shadow) / 0.15);
-  transition: scale 0.15s;
+  transition: scale var(--dur-fast);
 }
 
 .demo-tag svg {
@@ -375,22 +377,32 @@ function openSignIn() {
 .demo-banner {
   width: 100%;
   margin: 0 0 1.5rem;
-  padding: 0.75rem 0.75rem 0.75rem 1.1rem;
+  padding: 0.6rem 0.6rem 0.6rem 1rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem 1rem;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   color: var(--ink);
-  background: color-mix(in srgb, var(--purple) 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--purple) 35%, transparent);
-  border-radius: 16px;
+  /* Quieter than the app: a light tint, with the colour only on its leading edge */
+  background: color-mix(in srgb, var(--purple) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--purple) 18%, transparent);
+  border-left: 3px solid var(--purple);
+  border-radius: var(--radius);
+}
+
+.demo-short {
+  display: none;
 }
 
 .demo-banner .btn {
+  /* Purple in every app, whatever colour the app's own buttons are */
   --accent: var(--purple);
+  --accent-btn: var(--purple);
   --on-accent: #fff;
+  flex: none;
+  white-space: nowrap;
 }
 
 h1 {
@@ -403,7 +415,7 @@ h1 {
 
 .head p {
   margin: 0.75rem 0 0;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   color: var(--ink-2);
 }
 
@@ -438,12 +450,12 @@ h1 {
   height: 1.6rem;
   padding: 0 0.6rem 0 0.45rem;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink-3);
   background: none;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   transition: color var(--dur-fast), border-color var(--dur-fast), background-color var(--dur-fast);
 }
@@ -479,7 +491,7 @@ h1 {
   margin-top: 1rem;
   padding: 0.25rem;
   background: color-mix(in srgb, var(--ink) 7%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .app-tab {
@@ -487,11 +499,11 @@ h1 {
   align-items: center;
   min-height: 2.25rem;
   padding: 0 1.1rem;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   font-weight: 700;
   color: var(--ink-2);
   text-decoration: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: background-color var(--dur-fast, 0.15s), color var(--dur-fast, 0.15s);
 }
 
@@ -545,7 +557,7 @@ h1 {
 .app-settings :deep(.settings-head) {
   margin: 1rem 0 0;
   padding-top: 1rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -617,7 +629,7 @@ h1 {
 
 .app-data-head {
   margin: 0 0 0.75rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -657,8 +669,8 @@ h1 {
   flex: none;
   width: 3rem;
   height: 3rem;
-  font-size: 1.6rem;
-  border-radius: 12px;
+  font-size: var(--text-xl);
+  border-radius: var(--radius);
 }
 
 .header-bar h1 {
@@ -668,7 +680,7 @@ h1 {
 
 .header-bar .head p {
   margin-top: 0.2rem;
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .head-actions {
@@ -728,7 +740,7 @@ h1 {
   flex: none;
   width: 4.25rem;
   height: 4.25rem;
-  font-size: 2.4rem;
+  font-size: var(--text-3xl);
   color: var(--accent);
   background: var(--surface);
 }
@@ -776,15 +788,15 @@ h1 {
   height: 1.6rem;
   padding: 0 0.6rem;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
   background: color-mix(in srgb, currentColor 6%, transparent);
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
 }
 
 .version:hover {
@@ -807,7 +819,7 @@ h1 {
   overflow: hidden;
   white-space: nowrap;
   opacity: 0;
-  transition: max-width 0.25s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s;
+  transition: max-width var(--dur) cubic-bezier(0.2, 0, 0, 1), opacity var(--dur);
 }
 
 .version:hover .version-more,
@@ -819,11 +831,11 @@ h1 {
 
 .version-new {
   padding: 0 0.4rem;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   color: #fff;
   background: var(--good-ink-solid, #127a43);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 /* On the coloured band it takes the band's text colour */
@@ -886,21 +898,21 @@ h1 {
 }
 
 .release-head strong {
-  font-size: 0.95rem;
+  font-size: var(--text-base);
 }
 
 .release-tag {
   padding: 0.05rem 0.45rem;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   color: var(--on-accent);
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .release-head time {
   margin-left: auto;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
@@ -911,7 +923,7 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -934,7 +946,7 @@ h1 {
 
   .head {
     width: 100%;
-    margin: 1rem 0 1.75rem;
+    margin: 0.75rem 0 1.25rem;
   }
 
   .header-band .head {
@@ -965,8 +977,8 @@ h1 {
   .header-band .sticker {
     width: 2.75rem;
     height: 2.75rem;
-    font-size: 1.5rem;
-    border-radius: 11px;
+    font-size: var(--text-xl);
+    border-radius: var(--radius);
   }
 
   h1,
@@ -975,7 +987,7 @@ h1 {
     grid-column: 2;
     grid-row: 1;
     margin: 0;
-    font-size: clamp(1.75rem, 8vw, 2.25rem);
+    font-size: clamp(1.6rem, 7.5vw, 2rem);
     line-height: 1.1;
   }
 
@@ -983,8 +995,39 @@ h1 {
   .header-bar .head p,
   .header-band .head p {
     grid-column: 1 / -1;
-    margin-top: 0.75rem;
-    font-size: 1rem;
+    margin-top: 0.6rem;
+    font-size: var(--text-base);
+    /* Two lines at most, so the app itself starts on the first screen */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .head-meta {
+    margin-top: 0.6rem;
+  }
+
+  /* One line: the short wording, with its button beside it */
+  .demo-banner {
+    flex-wrap: nowrap;
+    margin-bottom: 1.25rem;
+    padding: 0.45rem 0.45rem 0.45rem 0.85rem;
+    font-size: var(--text-sm);
+  }
+
+  .demo-long {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .demo-short {
+    display: inline;
   }
 
   .head-meta,
@@ -1001,7 +1044,7 @@ h1 {
   }
 
   .head-actions {
-    margin: 1rem 0 0;
+    margin: 0.75rem 0 0;
   }
 }
 </style>

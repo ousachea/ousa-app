@@ -317,7 +317,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 22px 48px -14px rgb(var(--shadow) / 0.38), 0 2px 6px rgb(var(--shadow) / 0.08);
 }
 
@@ -342,7 +342,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
   color: var(--ink);
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -403,7 +403,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
 
 .weekday {
   padding: 0.3rem 0;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   text-align: center;
   color: var(--ink-3);
@@ -417,20 +417,20 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
   background: none;
   border: 0;
   cursor: pointer;
-  transition: background-color 0.12s, color 0.12s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .day {
   aspect-ratio: 1;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   border-radius: 50%;
 }
 
 .cell {
   padding: 0.7rem 0;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .day:hover:not(:disabled),
@@ -485,12 +485,12 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
 .link {
   padding: 0.3rem 0.5rem;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 

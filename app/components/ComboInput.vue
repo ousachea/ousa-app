@@ -131,7 +131,7 @@ function onBlur() {
   padding: 0.3rem;
   list-style: none;
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
 }
 
@@ -161,9 +161,9 @@ li {
   gap: 0.55rem;
   min-height: 2.4rem;
   padding: 0.3rem 0.65rem;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   color: var(--ink);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 

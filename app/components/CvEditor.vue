@@ -201,7 +201,7 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
                 </span>
               </li>
             </TransitionGroup>
-            <button type="button" class="add-row" @click="addRow(f)"><CvIcon name="plus" />Add {{ f.item ?? 'item' }}</button>
+            <button type="button" v-ants class="add-row" @click="addRow(f)"><CvIcon name="plus" />Add {{ f.item ?? 'item' }}</button>
           </fieldset>
 
           <!-- Pairs: two inputs a row, or a skill with its level -->
@@ -237,7 +237,7 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
                 </span>
               </li>
             </TransitionGroup>
-            <button type="button" class="add-row" @click="addRow(f)"><CvIcon name="plus" />Add {{ f.item ?? 'item' }}</button>
+            <button type="button" v-ants class="add-row" @click="addRow(f)"><CvIcon name="plus" />Add {{ f.item ?? 'item' }}</button>
           </fieldset>
 
           <!-- Single values -->
@@ -303,11 +303,11 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
   gap: 0.75rem;
   margin: -0.25rem 0 0;
   padding: 0.65rem 0.8rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   background: color-mix(in srgb, #7c3aed 7%, var(--surface));
   border: 1px solid color-mix(in srgb, #7c3aed 18%, var(--line));
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .intro-icon {
@@ -316,10 +316,10 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
   flex: none;
   display: grid;
   place-items: center;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   color: #fff;
   background: var(--gradient);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow:
     0 0 0 1.5px var(--plastic),
     inset 0 -2px 0 rgb(0 0 0 / 0.18),
@@ -352,7 +352,7 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
   align-items: center;
   gap: 0.4rem;
   padding: 0;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--ink);
 }
@@ -364,17 +364,17 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
 .count {
   min-width: 1.35rem;
   padding: 0.05rem 0.4rem;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   text-align: center;
   color: var(--violet);
   background: color-mix(in srgb, #7c3aed 12%, var(--surface));
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .hint {
   margin: -0.15rem 0 0.1rem;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 400;
   color: var(--ink-3);
 }
@@ -415,7 +415,7 @@ textarea.input {
 }
 
 .row-num {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -431,7 +431,7 @@ textarea.input {
   display: flex;
   gap: 0.1rem;
   opacity: 0.35;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast);
 }
 
 .row:hover .row-tools,
@@ -445,11 +445,11 @@ textarea.input {
   display: grid;
   place-items: center;
   padding: 0;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -488,7 +488,7 @@ textarea.input {
   height: 6px;
   appearance: none;
   background: linear-gradient(90deg, #8f5cf7, #6d28d9) 0 / var(--v) 100% no-repeat, var(--surface-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
@@ -512,7 +512,7 @@ textarea.input {
 
 .level-input output {
   min-width: 2.6rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -526,14 +526,14 @@ textarea.input {
   margin-left: 2rem;
   padding: 0.55rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--violet);
   background: color-mix(in srgb, #7c3aed 5%, transparent);
   border: 1.5px dashed color-mix(in srgb, #7c3aed 40%, transparent);
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: background-color var(--dur-fast), border-color var(--dur-fast);
 }
 
 .add-row:hover {
@@ -548,7 +548,7 @@ textarea.input {
 
 .row-enter-active,
 .row-leave-active {
-  transition: opacity 0.2s, transform 0.2s;
+  transition: opacity var(--dur), transform var(--dur);
 }
 
 .row-enter-from,
@@ -568,13 +568,13 @@ textarea.input {
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, transform 0.2s cubic-bezier(0.3, 1.5, 0.6, 1);
+  transition: background-color var(--dur-fast), color var(--dur-fast), transform var(--dur) cubic-bezier(0.3, 1.5, 0.6, 1);
 }
 
 .icon-choice:hover {
@@ -600,7 +600,7 @@ textarea.input {
 
 .error {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--bad-ink);
 }
@@ -617,7 +617,7 @@ textarea.input {
   padding: 0.9rem 1.4rem 1.4rem;
   background: var(--surface);
   border-top: 1px solid var(--line);
-  border-radius: 0 0 22px 22px;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
 .spacer {
@@ -633,12 +633,12 @@ textarea.input {
 .kbd-hint kbd {
   padding: 0.1rem 0.35rem;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   color: var(--ink-3);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 .btn-x {
@@ -648,12 +648,12 @@ textarea.input {
   min-height: 2.6rem;
   padding: 0 1.1rem;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: transform 0.12s, filter 0.15s, background-color 0.15s;
+  transition: transform var(--dur-fast), filter var(--dur-fast), background-color var(--dur-fast);
 }
 
 .btn-x:active:not(:disabled) {
@@ -691,7 +691,7 @@ textarea.input {
   background: var(--red);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }

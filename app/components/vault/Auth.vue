@@ -242,7 +242,7 @@ async function submit() {
 }
 
 h2 {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
 }
 
 .lead {
@@ -266,7 +266,7 @@ h2 {
 .hint,
 .error {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
 }
 
 .hint { color: var(--ink-2); }
@@ -275,11 +275,11 @@ h2 {
 .warning {
   margin: 1.25rem 0 0;
   padding: 0.8rem 0.95rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   background: var(--surface-2);
   border-left: 4px solid var(--orange);
-  border-radius: 4px 10px 10px 4px;
+  border-radius: 4px var(--radius-sm) var(--radius-sm) 4px;
 }
 
 .google {
@@ -312,7 +312,7 @@ h2 {
   gap: 0.85rem;
   padding: 1rem;
   background: var(--surface-2);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -371,7 +371,7 @@ h2 {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -394,7 +394,7 @@ h2 {
   margin-right: 1rem;
   padding: 0;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
   background: none;
   border: 0;

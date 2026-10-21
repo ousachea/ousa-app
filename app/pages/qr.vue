@@ -569,7 +569,7 @@ async function copyImage() {
   height: 2rem;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: none;
   cursor: pointer;
 }
@@ -582,7 +582,7 @@ async function copyImage() {
 .swatch input::-webkit-color-swatch-wrapper { padding: 0; }
 .swatch input::-webkit-color-swatch {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .segmented.locked label {
@@ -610,9 +610,9 @@ async function copyImage() {
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .logo-opt:hover {
@@ -634,7 +634,7 @@ async function copyImage() {
 }
 
 .logo-opt .none {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -687,7 +687,7 @@ async function copyImage() {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -709,7 +709,7 @@ async function copyImage() {
   width: 100%;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .frame.checker {
@@ -735,10 +735,10 @@ async function copyImage() {
   width: min(100%, 420px);
   margin: 1rem 0 0;
   padding: 0.7rem 0.9rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--warn-ink);
   background: color-mix(in srgb, var(--orange) 10%, var(--surface));
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .export-size {

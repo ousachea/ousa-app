@@ -181,7 +181,7 @@ h1 {
   color: var(--ink-3);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -220,7 +220,7 @@ h1 {
   text-align: left;
   background: var(--surface);
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 0 0 1px var(--line);
   cursor: pointer;
   transition: box-shadow var(--dur-fast);
@@ -250,7 +250,7 @@ h1 {
   min-height: 2.75rem;
   padding: 0 0.85rem;
   background: var(--surface);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 0 0 1px var(--line);
 }
 
@@ -266,7 +266,7 @@ h1 {
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--ink);
   background: none;
   border: 0;
@@ -278,7 +278,7 @@ h1 {
   padding: 0;
   list-style: none;
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line);
   overflow: hidden;
 }
@@ -308,7 +308,7 @@ h1 {
   font-weight: 700;
   color: var(--accent);
   background: var(--surface-2);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
@@ -376,7 +376,7 @@ h1 {
   width: 6.5rem;
   aspect-ratio: 1.91;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
 }
 
@@ -397,7 +397,7 @@ h1 {
   color: var(--ink-2);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .thumb {
     display: none;
   }

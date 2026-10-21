@@ -65,7 +65,7 @@ async function onBlur(e: FocusEvent) {
   <component
     :is="tag"
     :key="rev"
-    class="cv-text"
+    v-ants class="cv-text"
     :class="{ editable: editing, empty: editing && shown === '' }"
     :contenteditable="editing ? 'plaintext-only' : undefined"
     :spellcheck="editing ? 'true' : undefined"
@@ -81,18 +81,20 @@ async function onBlur(e: FocusEvent) {
 
 <style scoped>
 .cv-text.editable {
-  border-radius: 6px;
-  outline: 1.5px dashed transparent;
-  outline-offset: 3px;
+  border-radius: var(--radius-xs);
+  /* A dashed outline whose dashes walk (v-ants) */
+  --ants-width: 1.5px;
+  --ants-offset: 3px;
   cursor: text;
-  transition: outline-color 0.15s, background-color 0.15s;
+  transition: --ants-color var(--dur-fast), background-color var(--dur-fast);
 }
 
 .cv-text.editable:hover {
-  outline-color: color-mix(in srgb, #9b5cf5 55%, transparent);
+  --ants-color: color-mix(in srgb, #9b5cf5 55%, transparent);
 }
 
 .cv-text.editable:focus {
+  --ants-color: transparent;
   outline: 2px solid #9b5cf5;
   background: color-mix(in srgb, #9b5cf5 10%, transparent);
 }

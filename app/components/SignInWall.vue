@@ -26,7 +26,7 @@ defineProps<{ name: string, checking?: boolean }>()
   text-align: center;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
 }
 
 .checking {
@@ -44,7 +44,7 @@ defineProps<{ name: string, checking?: boolean }>()
   /* Darkened a little, so light app colours (yellow, gold) still show on their own tint */
   color: color-mix(in srgb, var(--accent) 75%, var(--ink));
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .lock svg {
@@ -58,14 +58,14 @@ defineProps<{ name: string, checking?: boolean }>()
 }
 
 h2 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   text-wrap: balance;
 }
 
 p {
   margin: 0.4rem 0 0;
   color: var(--ink-2);
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   text-wrap: pretty;
 }
 

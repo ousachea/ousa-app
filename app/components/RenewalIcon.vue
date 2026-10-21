@@ -43,11 +43,11 @@ const letter = computed(() => (props.name.trim()[0] ?? '?').toUpperCase())
   height: 2.5rem;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   font-weight: 800;
   color: #fff;
   background: var(--c);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.12);
 }
 

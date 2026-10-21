@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
   gap: 1.1rem;
   color: var(--on-accent);
   background: var(--sticker, var(--accent));
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity var(--dur-slow) ease, transform var(--dur-slow) ease;
 }
 
 .app-splash.leaving {
@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
   place-items: center;
   width: 6.5rem;
   height: 6.5rem;
-  border-radius: 28px;
+  border-radius: var(--radius-2xl);
   font-size: 3.4rem;
   background: rgb(255 255 255 / 0.16);
   box-shadow:

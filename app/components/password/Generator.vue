@@ -252,9 +252,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast), background-color var(--dur-fast);
 }
 
 .set:hover:not(:disabled) {
@@ -271,7 +271,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 .set-text span {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -282,9 +282,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   height: 1.4rem;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   box-shadow: inset 0 0 0 1.5px var(--line);
-  transition: background-color 0.15s, box-shadow 0.15s;
+  transition: background-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .check svg {
@@ -296,7 +296,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast);
 }
 
 .set[aria-checked='true'] {
@@ -339,7 +339,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 .lookalike > span > span {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -363,7 +363,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   overflow-wrap: anywhere;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .password.placeholder {
@@ -397,7 +397,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 .meter p span {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -408,7 +408,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--surface-2);
   border-left: 5px solid var(--line);
 }
@@ -419,13 +419,13 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 .crack[data-level='4'] { border-left-color: var(--green); }
 
 .crack-label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
 }
 
 .crack strong {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   letter-spacing: -0.015em;
   line-height: 1.25;
 }
@@ -440,7 +440,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 .bands {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: linear-gradient(to right,
     color-mix(in srgb, var(--red) 70%, transparent) 0 var(--weak),
     color-mix(in srgb, var(--orange) 70%, transparent) var(--weak) var(--fair),
@@ -456,7 +456,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   border-radius: 50%;
   background: var(--surface);
   box-shadow: 0 0 0 3px var(--ink), 0 2px 6px rgb(var(--shadow) / 0.3);
-  transition: left 0.35s cubic-bezier(0.2, 0, 0, 1);
+  transition: left var(--dur-slow) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .tick {
@@ -472,7 +472,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   top: 0.35rem;
   left: 0;
   transform: translateX(-50%);
-  font-size: 0.65rem;
+  font-size: var(--text-2xs);
   color: var(--ink-3);
   white-space: nowrap;
 }
@@ -480,7 +480,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 .end {
   position: absolute;
   bottom: calc(100% + 0.3rem);
-  font-size: 0.65rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   color: var(--ink-3);
 }
@@ -489,7 +489,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 .end.finish { right: 0; }
 
 /* Narrow screens: every other label would run into the next one; the ticks stay */
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .tick.minor span { display: none; }
 }
 
@@ -499,7 +499,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
 .crack-note {
   margin-top: 0.25rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -527,7 +527,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 1rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 

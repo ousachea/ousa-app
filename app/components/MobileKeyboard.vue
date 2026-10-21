@@ -758,7 +758,7 @@ watch(() => route.path, () => field.value && close())
   background: var(--surface);
   box-shadow: 0 1px 0 rgb(var(--shadow) / 0.12);
   font: inherit;
-  font-size: 1.45rem;
+  font-size: var(--text-xl);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   transition: transform 80ms ease, background-color 80ms ease;
@@ -819,13 +819,13 @@ watch(() => route.path, () => field.value && close())
   min-width: 0;
   height: 2.9rem;
   padding: 0;
-  border-radius: 9px;
-  font-size: 1.35rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xl);
   font-weight: 450;
 }
 
 .text-grid .key.small {
-  font-size: 0.95rem;
+  font-size: var(--text-base);
 }
 
 .text-grid .key.shift {
@@ -846,13 +846,13 @@ watch(() => route.path, () => field.value && close())
 
 .text-grid .key.space {
   flex: 5 1 0;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
 .text-grid .key.ret {
   flex: 2.2 1 0;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
 }
 
 .text-grid .key.ret svg {
@@ -887,11 +887,11 @@ watch(() => route.path, () => field.value && close())
   display: grid;
   place-items: center;
   transform: translateX(-50%);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface);
   box-shadow: 0 6px 18px rgb(var(--shadow) / 0.22), 0 0 0 1px var(--line);
   color: var(--ink);
-  font-size: 1.75rem;
+  font-size: var(--text-2xl);
   font-weight: 500;
   pointer-events: none;
   z-index: 1;

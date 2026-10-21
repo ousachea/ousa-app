@@ -307,7 +307,7 @@ function del() {
             </div>
           </div>
           <div class="chips">
-            <button v-if="!addingSub" type="button" class="chip add" @click="addingSub = true">+ New subcategory</button>
+            <button v-if="!addingSub" type="button" v-ants class="chip add" @click="addingSub = true">+ New subcategory</button>
             <span v-else class="new-sub">
               <input v-model="newSub" class="input" placeholder="Name" aria-label="New subcategory name" data-keys="text" @keydown.enter.prevent="addSub">
               <button type="button" class="btn btn-sm" @click="addSub">Add</button>
@@ -386,7 +386,7 @@ function del() {
 .amount .input {
   flex: 1;
   min-width: 0;
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }

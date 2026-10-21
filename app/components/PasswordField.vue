@@ -51,7 +51,7 @@ const id = useId()
   color: var(--ink-3);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--dur-fast), background-color var(--dur-fast);
 }

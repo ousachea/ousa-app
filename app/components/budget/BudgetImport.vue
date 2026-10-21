@@ -220,7 +220,7 @@ const name = (id: string) => (id.startsWith('new:') ? `${id.split(':').slice(2).
 
 h3 {
   margin: 0 0 0.6rem;
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .map {

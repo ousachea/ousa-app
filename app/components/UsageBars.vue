@@ -101,7 +101,7 @@ const short = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('e
   white-space: nowrap;
   color: var(--ink-2);
   background: var(--surface);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 6px 18px rgb(var(--shadow) / 0.18), 0 0 0 1px var(--line);
   pointer-events: none;
 }
@@ -113,7 +113,7 @@ const short = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('e
 }
 
 .tip b {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }

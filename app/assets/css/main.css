@@ -65,10 +65,12 @@
 
   /* ---------- Design system (see CHECKLIST.md #05) ----------
      Every app builds from these; a page only adds its own sticker colour (--accent). */
+  --radius-xs: 6px; /* tags, swatches, small marks */
   --radius-sm: 9px; /* small buttons, chips inside inputs */
   --radius: 12px; /* buttons, inputs */
   --radius-lg: 16px; /* cards inside panels, toolbars */
   --radius-xl: 20px; /* panels */
+  --radius-2xl: 24px; /* hero cards, big result panels */
   --radius-pill: 999px;
 
   /* Where sticky bars and columns pin: the back link and menu button scroll away with the page */
@@ -80,10 +82,22 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.85rem;
-  --text-md: 1rem;
-  --text-lg: 1.25rem;
+  /* Type scale: every font size in the apps is one of these, apart from display numbers */
+  --text-2xs: 0.7rem; /* tiny labels: units, badges, axis ticks */
+  --text-xs: 0.75rem; /* captions, eyebrows */
+  --text-sm: 0.85rem; /* secondary text, chips, small buttons */
+  --text-base: 0.925rem; /* dense body text: list rows, form hints */
+  --text-md: 1rem; /* body */
+  --text-title: 1.1rem; /* card and section titles */
+  --text-lg: 1.25rem; /* panel headings, medium figures */
+  --text-xl: 1.5rem; /* stat figures */
+  --text-2xl: 2rem; /* big figures */
+  --text-3xl: 2.5rem; /* the one result on a page */
+  /* The headline result: scales with the window, from a phone up */
+  --text-hero: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
+
+  /* Breakpoints, by convention (media queries can't read variables). Every page uses these:
+     480px small phones · 640px phones · 900px tablets · 1100px small laptops */
 
   --shadow-sm: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
   --shadow-md: 0 10px 24px -14px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
@@ -191,8 +205,8 @@ body {
 
 body {
   font-family: var(--font);
-  transition: background-color 0.2s, color 0.2s;
-  font-size: 1rem;
+  transition: background-color var(--dur), color var(--dur);
+  font-size: var(--text-md);
   line-height: 1.5;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
@@ -232,15 +246,15 @@ a {
   min-height: 2.75rem;
   padding: 0 1.15rem;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--on-accent, #fff);
   background: var(--accent-btn, var(--accent));
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
   text-decoration: none;
-  transition: background-color 0.15s, transform 0.1s;
+  transition: background-color var(--dur-fast), transform 0.1s;
 }
 
 .btn:hover:not(:disabled) {
@@ -269,15 +283,15 @@ a {
 .btn-sm {
   min-height: 2.1rem;
   padding: 0 0.8rem;
-  font-size: 0.85rem;
-  border-radius: 9px;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-sm);
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -301,12 +315,12 @@ select.input {
   min-height: 2.75rem;
   padding: 0.65rem 0.85rem;
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  border-radius: var(--radius);
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .input:hover {
@@ -391,8 +405,8 @@ textarea.input {
   z-index: 30;
   margin-inline: -0.5rem;
   padding: 0.5rem;
-  border-radius: 16px;
-  transition: background-color 0.2s, box-shadow 0.2s;
+  border-radius: var(--radius-lg);
+  transition: background-color var(--dur), box-shadow var(--dur);
 }
 
 .sticky-bar.is-stuck {
@@ -429,7 +443,7 @@ textarea.input {
   border-radius: 0.32em;
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 30%, transparent);
   cursor: pointer;
-  transition: background-color 0.15s ease-out, box-shadow 0.15s ease-out, scale 0.12s ease-out;
+  transition: background-color var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out, scale var(--dur-fast) ease-out;
 }
 
 :where(input[type='checkbox']:not(.bulk-check > input, .pick-box)):hover {
@@ -490,7 +504,7 @@ input[type='range']:disabled {
   padding: 3px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .segmented label {
@@ -499,9 +513,9 @@ input[type='range']:disabled {
   text-align: center;
   font-weight: 600;
   color: var(--ink-2);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .segmented label.active {
@@ -520,10 +534,25 @@ input[type='range']:disabled {
   pointer-events: none;
 }
 
+/* Figures line up: digits all the same width wherever numbers are shown or typed, so totals in a
+   column align and a changing number doesn't jiggle (pages already add it to their own figures) */
+output,
+dd,
+td,
+th,
+time,
+kbd,
+.badge,
+input[inputmode='decimal'],
+input[inputmode='numeric'],
+input[type='number'] {
+  font-variant-numeric: tabular-nums;
+}
+
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -541,9 +570,9 @@ input[type='range']:disabled {
 .slide-back-enter-active,
 .slide-back-leave-active {
   transition:
-    opacity 0.22s ease,
-    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
-    filter 0.22s ease;
+    opacity var(--dur) ease,
+    transform var(--dur-slow) cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter var(--dur) ease;
 }
 
 .slide-forward-leave-active,
@@ -596,7 +625,7 @@ input[type='range']:disabled {
 :root[data-effects='lite'] .slide-forward-leave-active,
 :root[data-effects='lite'] .slide-back-enter-active,
 :root[data-effects='lite'] .slide-back-leave-active {
-  transition: opacity 0.12s linear;
+  transition: opacity var(--dur-fast) linear;
 }
 
 :root[data-effects='lite'] .slide-forward-enter-from,
@@ -728,7 +757,7 @@ kbd {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-bottom-width: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 /* Small status label. Always pair the colour with words or an icon (CHECKLIST.md #34). */
@@ -834,7 +863,7 @@ kbd {
 
 .empty-state h2,
 .empty-state h3 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   color: var(--ink);
 }
 
@@ -1054,7 +1083,7 @@ kbd {
   border: 0;
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--dur);
 }
 
 .switch[aria-checked='true'] {
@@ -1070,7 +1099,7 @@ kbd {
   background: #fff;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgb(var(--shadow) / 0.25);
-  transition: transform 0.25s var(--ease-spring);
+  transition: transform var(--dur) var(--ease-spring);
 }
 
 .switch[aria-checked='true'] .knob {
@@ -1296,11 +1325,11 @@ html.keypad-open dialog[open] {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: #fff;
   background: var(--ink);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 /* ---------- Drag grip: shows what can be dragged (reorder, or onto a folder) ----------
@@ -1329,7 +1358,7 @@ html.keypad-open dialog[open] {
   width: 1.1rem;
   height: 1.1rem;
   background: color-mix(in srgb, var(--surface) 85%, transparent);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 
 .drag-grip.end {
@@ -1348,4 +1377,58 @@ html.keypad-open dialog[open] {
   [draggable='true']:focus-visible > .drag-grip {
     opacity: 1;
   }
+}
+
+/* ---------- Marching ants: dashed borders whose dashes walk round (plugins/ants.ts) ---------- */
+/* For dashed outlines: --ants-color is a real colour so it can fade on hover, and inherits so the
+   SVG inside can use it; --ants-width is what turns it on, so it stays on the element that set it */
+@property --ants-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --ants-width {
+  syntax: '*';
+  inherits: false;
+}
+
+@property --ants-offset {
+  syntax: '*';
+  inherits: false;
+}
+
+/* The SVG draws the border, so the browser's own is hidden; border-image paints over it without
+   changing its colour or style, which the plugin keeps reading */
+.ants-on {
+  border-image: linear-gradient(transparent, transparent) 1;
+}
+
+svg.ants {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+svg.ants rect {
+  fill: none;
+  stroke-linecap: round;
+  /* Duration is set per border by the plugin, so every border walks at the same speed */
+  animation: ants-march 1s linear infinite;
+  transition: stroke var(--dur-fast) ease-out;
+}
+
+@keyframes ants-march {
+  to { stroke-dashoffset: var(--ants-step); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg.ants rect {
+    animation: none;
+  }
+}
+
+:root[data-motion='reduced'] svg.ants rect,
+:root[data-effects='lite'] svg.ants rect {
+  animation: none;
 }

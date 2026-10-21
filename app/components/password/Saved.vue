@@ -314,7 +314,7 @@ pre {
   max-height: 22rem;
   overflow: auto;
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   line-height: 1.55;
   background: var(--surface-2);
   border-bottom: 1px solid var(--line);
@@ -345,7 +345,7 @@ pre {
 
 .account {
   margin: 0.75rem 0 1rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -353,7 +353,7 @@ pre {
   margin-left: 0.6rem;
   padding: 0;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
   background: none;
   border: 0;
@@ -368,7 +368,7 @@ pre {
 
 .unreadable {
   margin: 0 0 1rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--warn-ink);
 }
 
@@ -378,7 +378,7 @@ pre {
 }
 
 .empty h2 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
 }
 
 .empty p {
@@ -404,7 +404,7 @@ pre {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .item.selected {
@@ -438,7 +438,7 @@ pre {
   font-weight: 800;
   color: #fff;
   background: var(--settings);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 2px var(--plastic), 0 0 0 3px var(--plastic-edge);
 }
 
@@ -456,7 +456,7 @@ pre {
 }
 
 .item-title a {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -474,7 +474,7 @@ pre {
 }
 
 dt {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -487,7 +487,7 @@ dd {
 
 dd.secret {
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
 }
 
 .pair {
@@ -497,7 +497,7 @@ dd.secret {
 
 .notes {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   white-space: pre-wrap;
 }
@@ -519,7 +519,7 @@ dd.secret {
 }
 
 .how h2 {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
 }
 
 .how ul {
@@ -529,7 +529,7 @@ dd.secret {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -539,7 +539,7 @@ dd.secret {
 }
 
 .how li .app-icon {
-  font-size: 1rem;
+  font-size: var(--text-md);
   /* Sit on the first line of text */
   margin-top: 0.15em;
   color: var(--ink-3);
@@ -564,12 +564,12 @@ dd.secret {
 .reveal .slash {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  transition: stroke-dashoffset 0.25s cubic-bezier(0.2, 0, 0, 1);
+  transition: stroke-dashoffset var(--dur) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .reveal .pupil {
   transform-origin: 12px 12px;
-  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+  transition: transform var(--dur) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .reveal .off .slash {
@@ -587,7 +587,7 @@ dd.secret {
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 900px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
   }

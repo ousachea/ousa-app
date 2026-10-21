@@ -16,7 +16,7 @@ let observer: ResizeObserver | undefined
 onMounted(() => {
   const measure = () => {
     trackWidth.value = track.value?.clientWidth || 800
-    phone.value = window.innerWidth <= 560
+    phone.value = window.innerWidth <= 640
   }
   measure()
   observer = new ResizeObserver(measure)
@@ -105,7 +105,7 @@ const whenOf = (day: number) => (day === 0 ? 'today' : day === 1 ? 'tomorrow' : 
 }
 
 .timeline-head h3 {
-  font-size: 0.95rem;
+  font-size: var(--text-base);
 }
 
 .legend {
@@ -152,7 +152,7 @@ const whenOf = (day: number) => (day === 0 ? 'today' : day === 1 ? 'tomorrow' : 
   position: absolute;
   top: 1rem;
   left: 0;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   color: var(--ink-3);
   white-space: nowrap;
   transform: translateX(-10%);
@@ -185,10 +185,10 @@ const whenOf = (day: number) => (day === 0 ? 'today' : day === 1 ? 'tomorrow' : 
   left: 0;
   bottom: calc(1.4rem + var(--lane) * 2.6rem);
   padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
   background: color-mix(in srgb, var(--kind) 9%, var(--surface-2));
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -209,13 +209,13 @@ const whenOf = (day: number) => (day === 0 ? 'today' : day === 1 ? 'tomorrow' : 
 
 .quiet {
   margin: 1.5rem 0 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
 /* Phones: names only, kept short, so neighbouring labels don't run into each other.
    Prices are in the list right below. */
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .mark-detail {
     display: none;
   }

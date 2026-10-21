@@ -548,7 +548,7 @@ defineExpose({
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition-property: background-color, color, scale;
   transition-duration: 0.12s;
@@ -589,14 +589,14 @@ defineExpose({
   height: 2.25rem;
   padding: 0 0.4rem 0 0.65rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.12s;
+  transition: background-color var(--dur-fast);
 }
 
 .style-btn:hover {
@@ -620,7 +620,7 @@ defineExpose({
 }
 
 .tool-text {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 
@@ -644,7 +644,7 @@ defineExpose({
   gap: 0.1rem;
   padding: 0.25rem;
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: 0 0 0 1px var(--line), 0 12px 28px -8px rgb(var(--shadow) / 0.35);
 }
 
@@ -667,7 +667,7 @@ defineExpose({
 .counts {
   margin: 0;
   padding: 0.5rem 1.25rem 0.75rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
@@ -710,14 +710,14 @@ defineExpose({
   font-size: 0.9em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   background: color-mix(in srgb, var(--ink) 7%, transparent);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 
 .content :deep(.note-body pre) {
   padding: 0.85em 1em;
   overflow-x: auto;
   background: color-mix(in srgb, var(--ink) 6%, var(--surface));
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .content :deep(.note-body pre code) {
@@ -741,7 +741,7 @@ defineExpose({
   display: block;
   max-width: 100%;
   height: auto;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   outline: 1px solid oklch(0 0 0 / 0.1);
   outline-offset: -1px;
 }
@@ -819,11 +819,11 @@ defineExpose({
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--line));
   cursor: pointer;
   animation: table-add-in 0.15s ease-out;
-  transition: background-color 0.12s, color 0.12s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .table-add.col {
@@ -909,7 +909,7 @@ defineExpose({
   font-weight: 600;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
 }
 
@@ -988,14 +988,14 @@ defineExpose({
   overflow-y: auto;
   list-style: none;
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: 0 0 0 1px rgb(var(--shadow) / 0.1), 0 12px 28px rgb(var(--shadow) / 0.2);
 }
 
 .note-suggest li {
   padding: 0.5rem 0.65rem;
-  font-size: 0.9rem;
-  border-radius: 8px;
+  font-size: var(--text-base);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -325,7 +325,7 @@ input[type='checkbox'] {
   margin-top: 0.6rem;
   padding: 0.5rem 0.6rem;
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .bulk strong {
@@ -349,7 +349,7 @@ input[type='checkbox'] {
   align-items: center;
   gap: 0.7rem;
   padding: 0.55rem 0.4rem;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -367,7 +367,7 @@ input[type='checkbox'] {
   height: 2.25rem;
   display: grid;
   place-items: center;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink);
   background: color-mix(in srgb, var(--op) 14%, var(--surface));
@@ -413,7 +413,7 @@ input[type='checkbox'] {
   font-weight: 700;
   background: color-mix(in srgb, var(--op) 14%, var(--surface));
   border-left: 3px solid var(--op);
-  border-radius: 4px 999px 999px 4px;
+  border-radius: 4px var(--radius-pill) var(--radius-pill) 4px;
 }
 
 .net-tag.bad {
@@ -452,7 +452,7 @@ input[type='checkbox'] {
   gap: 0.5rem;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .row {
     flex-wrap: wrap;
   }

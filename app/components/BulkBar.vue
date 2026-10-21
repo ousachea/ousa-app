@@ -90,7 +90,7 @@ body.bulk-open main.tool {
   max-width: calc(100vw - 2rem);
   padding: 0.4rem;
   /* Concentric with the 12px buttons inside: 12 + 0.4rem padding */
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: var(--surface);
   box-shadow:
     0 0 0 1px rgb(var(--shadow) / 0.08),
@@ -119,7 +119,7 @@ body.bulk-open main.tool {
 .bulk-act {
   font: inherit;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: transparent;
   cursor: pointer;
   transition-property: background-color, color, scale, opacity;
@@ -149,7 +149,7 @@ body.bulk-open main.tool {
 .bulk-count {
   min-width: 6.5rem;
   padding: 0 0.25rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -163,7 +163,7 @@ body.bulk-open main.tool {
 .bulk-all {
   height: 2.5rem;
   padding: 0 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--accent);
@@ -185,7 +185,7 @@ body.bulk-open main.tool {
   gap: 0.4rem;
   height: 2.5rem;
   padding: 0 0.8rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
@@ -222,11 +222,11 @@ body.bulk-open main.tool {
 
 /* Enter slides up a little; leaving is quicker and softer */
 .bulk-enter-active {
-  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  transition: opacity var(--dur) ease-out, transform var(--dur) ease-out;
 }
 
 .bulk-leave-active {
-  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+  transition: opacity var(--dur-fast) ease-out, transform var(--dur-fast) ease-out;
 }
 
 .bulk-enter-from {
@@ -274,14 +274,14 @@ body.bulk-open main.tool {
     height: auto;
     min-height: 3.25rem;
     padding: 0.35rem 0.25rem;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .bulk-enter-active,
   .bulk-leave-active {
-    transition: opacity 0.15s ease-out;
+    transition: opacity var(--dur-fast) ease-out;
   }
 
   .bulk-enter-from,

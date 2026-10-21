@@ -107,7 +107,7 @@ function go(s: { run: () => void }) {
 
 .guide-head h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
 }
 
 .guide-head p {
@@ -159,12 +159,12 @@ function go(s: { run: () => void }) {
   height: 1.75rem;
   display: grid;
   place-items: center;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   box-shadow: 0 0 0 1px var(--line);
 }
 
@@ -212,7 +212,7 @@ function go(s: { run: () => void }) {
   align-self: center;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .step {
     flex-wrap: wrap;
   }

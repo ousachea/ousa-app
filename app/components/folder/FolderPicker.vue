@@ -174,7 +174,7 @@ function onBlur(e: FocusEvent) {
   min-width: 8rem;
   padding: 0.25rem 0.3rem;
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--ink);
   background: none;
   border: 0;
@@ -187,12 +187,12 @@ function onBlur(e: FocusEvent) {
   gap: 0.35rem;
   max-width: 100%;
   padding: 0.15rem 0.2rem 0.15rem 0.55rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
   background: color-mix(in srgb, var(--tag) 12%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--tag) 35%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .chip-name {
@@ -209,7 +209,7 @@ function onBlur(e: FocusEvent) {
   place-items: center;
   padding: 0;
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--text-md);
   line-height: 1;
   color: var(--ink-2);
   background: none;
@@ -241,7 +241,7 @@ function onBlur(e: FocusEvent) {
   padding: 0.3rem;
   list-style: none;
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
 }
 
@@ -271,8 +271,8 @@ function onBlur(e: FocusEvent) {
   gap: 0.5rem;
   min-height: 2.4rem;
   padding: 0.3rem 0.7rem;
-  font-size: 0.95rem;
-  border-radius: 8px;
+  font-size: var(--text-base);
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -294,7 +294,7 @@ function onBlur(e: FocusEvent) {
 .plus {
   width: 1.1em;
   text-align: center;
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   color: var(--accent);
 }
 </style>

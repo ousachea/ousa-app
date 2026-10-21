@@ -73,7 +73,7 @@ function saveToVault(password: string) {
   padding: 4px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .tab {
@@ -83,9 +83,9 @@ function saveToVault(password: string) {
   color: var(--ink-2);
   background: transparent;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .tab:hover {

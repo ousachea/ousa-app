@@ -808,7 +808,7 @@ function del(t: Thing) {
             </div>
             <p v-if="hiddenTypes.length" class="hidden-types">
               <span>Hidden from the list:</span>
-              <button v-for="c in hiddenTypes" :key="c" type="button" class="hidden-chip" :aria-label="`Show ${typeLabel(c)} again`" @click="toggleHidden(c)">
+              <button v-for="c in hiddenTypes" :key="c" type="button" v-ants class="hidden-chip" :aria-label="`Show ${typeLabel(c)} again`" @click="toggleHidden(c)">
                 {{ typeLabel(c) }} <span aria-hidden="true">×</span>
               </button>
             </p>
@@ -950,8 +950,8 @@ function del(t: Thing) {
 .details-icon {
   width: 3.25rem;
   height: 3.25rem;
-  font-size: 1.6rem;
-  border-radius: 14px;
+  font-size: var(--text-xl);
+  border-radius: var(--radius-lg);
 }
 
 .details-compare {
@@ -990,7 +990,7 @@ function del(t: Thing) {
 
 .details-notes h3 {
   margin: 0 0 0.3rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -1035,7 +1035,7 @@ function del(t: Thing) {
 .step-empty {
   margin: 0;
   padding: 1.1rem 1.25rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -1055,15 +1055,15 @@ function del(t: Thing) {
   align-items: center;
   gap: 0.35rem;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.15s, color 0.15s, transform 0.15s;
+  transition: border-color var(--dur-fast), color var(--dur-fast), transform var(--dur-fast);
 }
 
 .quick-type .cat-option-icon {
@@ -1132,7 +1132,7 @@ function del(t: Thing) {
 }
 
 .label {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1142,9 +1142,9 @@ function del(t: Thing) {
 .worth {
   display: block;
   margin-top: 0.2rem;
-  font-size: clamp(2.2rem, 4.5vw, 3rem);
+  font-size: var(--text-hero);
   letter-spacing: -0.035em;
-  line-height: 1.05;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1157,20 +1157,20 @@ function del(t: Thing) {
 }
 
 .stats dt {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
 .stats dd {
   margin: 0.1rem 0 0;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .stats dd small {
   margin-left: 0.2rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 .stats .down { color: var(--bad-ink); }
@@ -1178,7 +1178,7 @@ function del(t: Thing) {
 
 .note {
   margin: 1rem 0 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -1188,7 +1188,7 @@ function del(t: Thing) {
   display: flex;
   gap: 2px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .stack span {
@@ -1224,12 +1224,12 @@ function del(t: Thing) {
   align-items: center;
   gap: 0.6rem;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   text-align: left;
   color: inherit;
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--dur-fast), opacity var(--dur-fast);
 }
@@ -1277,7 +1277,7 @@ function del(t: Thing) {
   color: var(--ink-3);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--dur-fast), background-color var(--dur-fast);
 }
@@ -1328,7 +1328,7 @@ function del(t: Thing) {
   color: var(--ink);
   background: var(--surface);
   border: 1px dashed var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
@@ -1344,13 +1344,13 @@ function del(t: Thing) {
 .not-counted {
   margin-left: 0.5rem;
   padding: 0.1rem 0.45rem;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   vertical-align: middle;
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .cat-dot {
@@ -1358,10 +1358,10 @@ function del(t: Thing) {
   height: 1.5rem;
   display: grid;
   place-items: center;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--cat-ink);
   background: var(--cat);
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
 }
 
 .cat-name {
@@ -1372,13 +1372,13 @@ function del(t: Thing) {
 }
 
 .cat-name small {
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 500;
   color: var(--ink-3);
 }
 
 .cat-share {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
@@ -1428,10 +1428,10 @@ function del(t: Thing) {
   gap: 0.85rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   /* A thin band of the category colour along the top */
   box-shadow: inset 0 4px 0 var(--cat);
-  transition: translate 0.15s, box-shadow 0.15s;
+  transition: translate var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .thing:hover {
@@ -1456,10 +1456,10 @@ function del(t: Thing) {
   height: 2.4rem;
   display: grid;
   place-items: center;
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
   color: var(--cat-ink);
   background: var(--cat);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.12);
 }
 
@@ -1470,13 +1470,13 @@ function del(t: Thing) {
 }
 
 .thing-title strong {
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .thing-title span {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1488,7 +1488,7 @@ function del(t: Thing) {
   gap: 0.5rem;
   padding: 0.7rem 0.85rem;
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .col {
@@ -1507,7 +1507,7 @@ function del(t: Thing) {
   display: flex;
   align-items: center;
   white-space: nowrap;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1515,12 +1515,12 @@ function del(t: Thing) {
 }
 
 .col b {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   font-variant-numeric: tabular-nums;
 }
 
 .col small {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -1550,7 +1550,7 @@ function del(t: Thing) {
   flex: 1;
   height: 6px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
 }
 
@@ -1562,7 +1562,7 @@ function del(t: Thing) {
 }
 
 .kept-text {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
@@ -1570,7 +1570,7 @@ function del(t: Thing) {
 
 .thing-notes {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1698,12 +1698,12 @@ function del(t: Thing) {
   align-items: center;
   gap: 0.35rem;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   transition: border-color var(--dur-fast), background-color var(--dur-fast), color var(--dur-fast), translate var(--dur-fast);
 }
@@ -1723,7 +1723,7 @@ function del(t: Thing) {
 .type-option .cat-option-icon {
   width: 2.4rem;
   height: 2.4rem;
-  font-size: 1.3rem;
+  font-size: var(--text-lg);
 }
 
 .type-line {
@@ -1740,7 +1740,7 @@ function del(t: Thing) {
   font-weight: 700;
   color: var(--cat-ink);
   background: var(--cat);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .device-row,
@@ -1759,7 +1759,7 @@ function del(t: Thing) {
   font-size: var(--text-sm);
   color: var(--ink-2);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .spec-suggest strong {
@@ -1780,7 +1780,7 @@ function del(t: Thing) {
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
@@ -1811,7 +1811,7 @@ function del(t: Thing) {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 /* ---------- Filters and view ---------- */
@@ -1886,7 +1886,7 @@ function del(t: Thing) {
 .things.grid .thing {
   padding: 0.85rem 0.85rem 0.7rem;
   gap: 0.55rem;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .things.grid .thing-head {
@@ -1902,7 +1902,7 @@ function del(t: Thing) {
 }
 
 .things.grid .thing-title strong {
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1940,7 +1940,7 @@ function del(t: Thing) {
 }
 
 .things.grid .col b {
-  font-size: 1.05rem;
+  font-size: var(--text-title);
 }
 
 .things.grid .kept {
@@ -1948,11 +1948,11 @@ function del(t: Thing) {
 }
 
 .things.grid .kept-text {
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
 }
 
 .things.grid .links {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 /* ---------- List view: one row per thing ---------- */
@@ -2013,14 +2013,14 @@ function del(t: Thing) {
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+  transition: border-color var(--dur-fast), background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .cat-option:hover {
@@ -2050,10 +2050,10 @@ function del(t: Thing) {
   height: 2rem;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   color: var(--cat);
   border-radius: 50%;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .cat-option.active .cat-option-icon {
@@ -2082,7 +2082,7 @@ function del(t: Thing) {
 }
 
 .empty h2 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   color: var(--ink);
 }
 

@@ -492,7 +492,7 @@ async function copy(e: Example) {
 
 .group-head h3 {
   margin: 0.5rem 0 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -544,9 +544,9 @@ async function copy(e: Example) {
   color: inherit;
   background: none;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.15s, scale 0.12s;
+  transition: background-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .demo:hover {
@@ -564,7 +564,7 @@ async function copy(e: Example) {
 
 .readout {
   margin: 0 0 0.3rem;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -590,7 +590,7 @@ async function copy(e: Example) {
 
 .card h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .use {
@@ -610,10 +610,10 @@ async function copy(e: Example) {
   margin: 0.4rem 0 0;
   padding: 0.75rem 0.85rem;
   overflow-x: auto;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   line-height: 1.5;
   background: var(--surface-2);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -633,7 +633,7 @@ code {
 
 .parts h3 {
   margin: 0 0 0.3rem;
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .table-wrap {
@@ -657,7 +657,7 @@ td {
 
 thead th {
   border-top: 0;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-3);

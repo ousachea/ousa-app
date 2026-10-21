@@ -134,7 +134,7 @@ function onKey(e: KeyboardEvent) {
   gap: 0.35rem;
   padding: 0;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: inherit;
   background: none;
   border: 0;
@@ -162,7 +162,7 @@ function onKey(e: KeyboardEvent) {
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 2px 6px rgb(var(--shadow) / 0.08);
 }
 
@@ -178,14 +178,14 @@ function onKey(e: KeyboardEvent) {
   align-items: center;
   gap: 0.65rem;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
   text-align: left;
   color: var(--ink);
   text-decoration: none;
   background: none;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -199,7 +199,7 @@ function onKey(e: KeyboardEvent) {
 
 .menu small {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 500;
   color: var(--ink-3);
 }
@@ -213,7 +213,7 @@ function onKey(e: KeyboardEvent) {
   font-weight: 800;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
 }
 
 .icon.google {

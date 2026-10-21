@@ -34,7 +34,7 @@ withDefaults(defineProps<{ variant?: 'rows' | 'cards' | 'tiles', count?: number,
 <style scoped>
 .rows {
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line);
 }
 
@@ -53,7 +53,7 @@ withDefaults(defineProps<{ variant?: 'rows' | 'cards' | 'tiles', count?: number,
   flex: none;
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .lines {
@@ -75,7 +75,7 @@ withDefaults(defineProps<{ variant?: 'rows' | 'cards' | 'tiles', count?: number,
   flex: none;
   width: 4.5rem;
   height: 1.6rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .cards {
@@ -90,13 +90,13 @@ withDefaults(defineProps<{ variant?: 'rows' | 'cards' | 'tiles', count?: number,
   gap: 0.7rem;
   padding: 1.1rem;
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line);
 }
 
 .block {
   height: 4.5rem;
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .tiles {
@@ -107,6 +107,6 @@ withDefaults(defineProps<{ variant?: 'rows' | 'cards' | 'tiles', count?: number,
 
 .tile {
   aspect-ratio: 1;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 </style>

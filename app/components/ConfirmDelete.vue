@@ -83,7 +83,7 @@ const tip = computed(() => {
   text-decoration: none;
   white-space: nowrap;
   background: var(--red) !important;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   animation: arm 0.32s var(--ease-spring);
 }
 

@@ -268,7 +268,7 @@ const wordCount = (s: string) => (s.match(/[\p{L}\p{N}]+/gu) ?? []).length
   min-height: 11rem;
   height: 100%;
   resize: vertical;
-  font-size: 1rem;
+  font-size: var(--text-md);
   line-height: 1.55;
 }
 
@@ -348,12 +348,12 @@ const wordCount = (s: string) => (s.match(/[\p{L}\p{N}]+/gu) ?? []).length
   max-height: 32rem;
   overflow-y: auto;
   padding: 0.85rem 1rem;
-  font-size: 1rem;
+  font-size: var(--text-md);
   line-height: 1.7;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 ins,
@@ -419,7 +419,7 @@ del.chg {
 .slider-box {
   position: relative;
   display: grid;
-  border-radius: 12px;
+  border-radius: var(--radius);
   overflow: hidden;
   box-shadow: 0 0 0 1px var(--line);
   /* Vertical scrolling keeps working on touch screens; the handle takes sideways drags */
@@ -506,7 +506,7 @@ del.chg {
   background: var(--accent-btn, var(--ink));
   border-radius: 50%;
   box-shadow: 0 2px 8px rgb(var(--shadow) / 0.3);
-  transition: scale 0.15s ease-out;
+  transition: scale var(--dur-fast) ease-out;
 }
 
 .split-handle:active .grip {

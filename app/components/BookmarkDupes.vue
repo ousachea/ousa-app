@@ -186,7 +186,7 @@ function resetIgnored() {
   padding: 0.5rem 0.7rem;
   font-size: var(--text-sm);
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .group {
@@ -211,7 +211,7 @@ function resetIgnored() {
   gap: 0.6rem;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
   transition: border-color var(--dur-fast), background-color var(--dur-fast);
 }
@@ -252,7 +252,7 @@ function resetIgnored() {
   font-weight: 700;
   color: var(--on-accent);
   background: var(--accent-btn, var(--accent));
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .group-actions {

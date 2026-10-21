@@ -364,7 +364,7 @@ async function copyResults() {
         {{ result.reason }}
       </p>
 
-      <p v-else class="waiting">The network and every format of the number show up here.</p>
+      <p v-else v-ants class="waiting">The network and every format of the number show up here.</p>
     </div>
     </Step>
     </div>
@@ -507,7 +507,7 @@ async function copyResults() {
 
 /* Narrow screens: no sticking at all; the left column's parts flow in the page order
    checker → contacts → prefix list */
-@media (max-width: 1099px) {
+@media (max-width: 1100px) {
   .left {
     display: contents;
   }
@@ -563,7 +563,7 @@ async function copyResults() {
   align-items: center;
   padding: 0;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 /* Red is this tool's colour, but a red ring around an input reads as an error, so focus stays neutral */
@@ -614,7 +614,7 @@ async function copyResults() {
   text-align: center;
   color: var(--ink-3);
   border: 2px dashed var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
 }
 
 .result {
@@ -635,7 +635,7 @@ async function copyResults() {
   background:
     radial-gradient(circle at 85% 0%, rgb(255 255 255 / 0.28), transparent 55%),
     linear-gradient(135deg, var(--op), color-mix(in srgb, var(--op) 70%, #000));
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   clip-path: polygon(0 0, calc(100% - 2.2rem) 0, 100% 2.2rem, 100% 100%, 0 100%);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15);
 }
@@ -655,7 +655,7 @@ async function copyResults() {
   gap: 2px;
   padding: 4px;
   background: linear-gradient(135deg, #f5d97b, #c9a43e);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
 }
 
@@ -665,21 +665,21 @@ async function copyResults() {
 
 .sim-kind {
   margin-right: 1.4rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   opacity: 0.85;
 }
 
 .sim-name {
   margin-top: auto;
-  font-size: 1.7rem;
+  font-size: var(--text-2xl);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
 .sim-number {
   margin-top: 0.2rem;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   font-weight: 600;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
@@ -688,7 +688,7 @@ async function copyResults() {
 
 .sim-note {
   margin-top: 0.15rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   opacity: 0.8;
 }
 
@@ -706,10 +706,10 @@ async function copyResults() {
 .slot {
   width: 1.1rem;
   height: 1.6rem;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   background: var(--surface-2);
   box-shadow: inset 0 0 0 1.5px var(--line);
-  transition: background-color 0.15s, box-shadow 0.15s;
+  transition: background-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .slot.filled {
@@ -724,7 +724,7 @@ async function copyResults() {
   margin-right: 0.35rem;
   display: grid;
   place-items: center;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--bg);
@@ -734,7 +734,7 @@ async function copyResults() {
 
 .progress {
   margin: 0.75rem 0 0;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -751,7 +751,7 @@ p.verdict {
   color: var(--bad-ink);
   background: color-mix(in srgb, var(--red) 9%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   font-weight: 500;
 }
 
@@ -772,17 +772,17 @@ p.verdict {
   flex-direction: column;
   border-left: 5px solid var(--op);
   background: color-mix(in srgb, var(--op) 9%, var(--surface));
-  border-radius: 4px 12px 12px 4px;
+  border-radius: 4px var(--radius) var(--radius) 4px;
 }
 
 .owner strong {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
 .owner span {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -800,13 +800,13 @@ p.verdict {
 }
 
 dt {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
 dd {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -840,10 +840,10 @@ dd {
 /* A plus that turns into a minus when open */
 .reference summary::after {
   content: '+';
-  font-size: 1.3rem;
+  font-size: var(--text-lg);
   font-weight: 400;
   color: var(--ink-3);
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transition: transform var(--dur) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .reference[open] summary::after {
@@ -865,7 +865,7 @@ dd {
 }
 
 h2 {
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
   letter-spacing: -0.015em;
 }
 
@@ -887,7 +887,7 @@ h2 {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-left: 5px solid var(--op);
-  border-radius: 4px 12px 12px 4px;
+  border-radius: 4px var(--radius) var(--radius) 4px;
 }
 
 .prefixes {
@@ -900,7 +900,7 @@ h2 {
 
 .note {
   margin: 1rem 0 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -938,7 +938,7 @@ h2 {
 
 .how {
   margin: 0.9rem 0 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -950,7 +950,7 @@ h2 {
 .private {
   margin: 0.9rem 0 0;
   padding-top: 0.75rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   border-top: 1px solid var(--line);
 }
@@ -961,7 +961,7 @@ h2 {
 
 .book-source {
   margin: 0 0 0.75rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -978,14 +978,14 @@ h2 {
   min-height: 2rem;
   padding: 0.25rem 0.7rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s, scale 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .net:active {
@@ -1050,9 +1050,9 @@ h2 {
   text-align: left;
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color var(--dur-fast);
 }
 
 .person:hover {
@@ -1065,7 +1065,7 @@ h2 {
   height: 2.25rem;
   display: grid;
   place-items: center;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--ink);
   background: color-mix(in srgb, var(--op) 18%, var(--surface));
@@ -1088,7 +1088,7 @@ h2 {
 }
 
 .who-number {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -1096,12 +1096,12 @@ h2 {
 .net-tag {
   flex: none;
   padding: 0.15rem 0.55rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink);
   background: color-mix(in srgb, var(--op) 14%, var(--surface));
   border-left: 3px solid var(--op);
-  border-radius: 3px 999px 999px 3px;
+  border-radius: 3px var(--radius-pill) var(--radius-pill) 3px;
 }
 
 .net-tag.bad {

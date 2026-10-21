@@ -177,7 +177,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 .tabs {
   width: fit-content;
   margin-bottom: 1.25rem;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
 }
 
 .tabs label {
@@ -235,7 +235,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   min-height: 22rem;
   padding: 1.25rem 1.4rem;
   font: inherit;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   line-height: 1.6;
   color: var(--ink);
   background: transparent;
@@ -273,7 +273,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 .stats dt {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -300,20 +300,20 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   text-align: left;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-fast), background-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 /* Small label, then the user's text set large in that case, like a type specimen */
 .mode-name {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink-3);
 }
 
 .specimen {
-  font-size: 1.3rem;
+  font-size: var(--text-lg);
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.2;
@@ -354,7 +354,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   max-height: 28rem;
   overflow: auto;
   padding: 1.4rem 1.5rem;
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1.5;

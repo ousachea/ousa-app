@@ -70,7 +70,7 @@ const when = (iso: string) => {
   color: var(--ink);
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -83,13 +83,13 @@ const when = (iso: string) => {
 }
 
 .list strong {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
 }
 
 .list span {
   overflow: hidden;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -113,7 +113,7 @@ pre {
   line-height: 1.55;
   white-space: pre-wrap;
   background: color-mix(in srgb, var(--ink) 4%, var(--surface));
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .empty {

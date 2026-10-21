@@ -38,7 +38,7 @@ const chars = computed(() => String(props.value).split(''))
 
 .roll-enter-active,
 .roll-leave-active {
-  transition: translate 0.35s var(--ease-out), opacity 0.35s var(--ease-out);
+  transition: translate var(--dur-slow) var(--ease-out), opacity var(--dur-slow) var(--ease-out);
 }
 
 .roll-leave-active {

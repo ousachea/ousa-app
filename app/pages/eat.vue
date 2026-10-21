@@ -793,7 +793,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           <label :class="{ active: form.kind === 'place' }"><input v-model="form.kind" type="radio" value="place">A place</label>
         </div>
         <div class="form-row">
-          <label class="photo-pick" :class="{ filled: photo || (photoLink(form.imageUrl) && !addLinkBroken) }">
+          <label v-ants class="photo-pick" :class="{ filled: photo || (photoLink(form.imageUrl) && !addLinkBroken) }">
             <input type="file" accept="image/*" aria-label="Add a photo" @change="onPhotoPick">
             <img v-if="photo" :src="photo.preview" alt="Photo preview">
             <img v-else-if="photoLink(form.imageUrl) && !addLinkBroken" :src="photoLink(form.imageUrl)" alt="Photo from the link" referrerpolicy="no-referrer" @error="addLinkBroken = true">
@@ -840,7 +840,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           <label :class="{ active: editForm.kind === 'place' }"><input v-model="editForm.kind" type="radio" value="place">A place</label>
         </div>
         <div class="form-row">
-          <label class="photo-pick" :class="{ filled: editPhoto || editPreview }">
+          <label v-ants class="photo-pick" :class="{ filled: editPhoto || editPreview }">
             <input type="file" accept="image/*" aria-label="Choose a new photo" @change="onEditPhotoPick">
             <img v-if="editPhoto" :src="editPhoto.preview" alt="New photo preview">
             <img v-else-if="editPreview" :src="editPreview" alt="Photo" referrerpolicy="no-referrer" @error="editLinkBroken = true">
@@ -905,7 +905,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 .how {
   margin: 0.6rem 0 1.5rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -921,7 +921,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   align-items: start;
 }
 
-@media (min-width: 1000px) {
+@media (min-width: 1100px) {
   .decide {
     grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
     gap: 2.5rem;
@@ -957,7 +957,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   color: var(--ink-3);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   transition: color var(--dur-fast, 0.15s), border-color var(--dur-fast, 0.15s), background-color var(--dur-fast, 0.15s);
 }
@@ -972,7 +972,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
   cursor: pointer;
 }
@@ -1015,7 +1015,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   justify-content: flex-end;
   text-align: center;
   color: #fff;
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
   background:
     linear-gradient(to top, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0.1) 60%, transparent),
     var(--photo, none) center / cover,
@@ -1032,7 +1032,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .result-label {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1053,7 +1053,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 .result-meta {
   margin-top: 0.5rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   opacity: 0.85;
 }
@@ -1166,7 +1166,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .step-empty {
   margin: 0;
   padding: 1rem 1.25rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -1180,7 +1180,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .form h3 {
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .form-row {
@@ -1204,15 +1204,14 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  overflow: hidden;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
   border: 2px dashed var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color var(--dur-fast);
 }
 
 @media (hover: hover) {
@@ -1222,6 +1221,8 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .photo-pick.filled {
+  /* Clips the photo to the corners; empty, the walking dashes sit on the border, outside the clip */
+  overflow: hidden;
   border-style: solid;
 }
 
@@ -1252,7 +1253,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 .hint {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
 }
 
@@ -1284,11 +1285,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   font-weight: 800;
   color: #fff;
   background: var(--photo, none) center / cover, var(--pink);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
 }
 
@@ -1315,14 +1316,14 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   position: absolute;
   inset: auto 0 0;
   padding: 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   text-align: center;
   color: #fff;
   background: rgb(0 0 0 / 0.55);
   opacity: 0;
   transform: translateY(4px);
-  transition: opacity 0.15s, transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+  transition: opacity var(--dur-fast), transform var(--dur-fast) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .thumb-img:hover .thumb-hint,
@@ -1363,7 +1364,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .thumb-name {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1390,7 +1391,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   position: relative;
   width: min(400px, 100%);
   aspect-ratio: 1; /* square cards */
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
 }
 
 /* ---------- Focus mode ---------- */
@@ -1447,7 +1448,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .focus-count {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
@@ -1478,7 +1479,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   background:
     radial-gradient(circle at 80% 15%, rgb(255 255 255 / 0.22), transparent 45%),
     var(--accent);
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
   box-shadow: 0 0 0 4px var(--plastic), 0 18px 40px -16px rgb(var(--shadow) / 0.5);
   cursor: grab;
   touch-action: pan-y; /* let the page scroll vertically; we handle horizontal drags */
@@ -1527,11 +1528,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .badge {
   align-self: flex-start;
   padding: 0.2rem 0.6rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: #fff;
   background: rgb(255 255 255 / 0.2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 /* On a photo the see-through tag disappears into bright food, so it gets a dark frosted chip */
@@ -1558,9 +1559,9 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   top: 1.5rem;
   padding: 0.3rem 0.8rem;
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   border: 3px solid currentColor;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: rgb(255 255 255 / 0.95);
   pointer-events: none;
 }
@@ -1582,8 +1583,8 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   min-height: 3rem;
   margin-top: 0.4rem;
   gap: 0.5rem;
-  font-size: 1.05rem;
-  border-radius: 14px;
+  font-size: var(--text-title);
+  border-radius: var(--radius-lg);
 }
 
 .narrow-btn svg {
@@ -1596,7 +1597,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .shortlist-label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--ink-2);
 }
@@ -1616,11 +1617,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   align-items: center;
   gap: 0.4rem;
   padding: 0.2rem 0.2rem 0.2rem 0.25rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .chip.picked {
@@ -1645,7 +1646,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   display: grid;
   place-items: center;
   padding: 0;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   line-height: 1;
   color: var(--ink-3);
   background: none;
@@ -1663,11 +1664,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 /* A new chip pops in; removed ones fade */
 .chip-enter-active {
-  transition: opacity 0.2s, transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+  transition: opacity var(--dur), transform var(--dur) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .chip-leave-active {
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast);
 }
 
 .chip-enter-from {
@@ -1701,7 +1702,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   align-items: center;
   justify-content: center;
   text-align: center;
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
 }
 
 .chosen {
@@ -1713,7 +1714,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   height: 7rem;
   margin-bottom: 0.75rem;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   outline: 1px solid rgb(0 0 0 / 0.1);
   outline-offset: -1px;
 }
@@ -1760,11 +1761,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .duel-head strong {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
 }
 
 .duel-head span {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
@@ -1792,10 +1793,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
     radial-gradient(circle at 80% 15%, rgb(255 255 255 / 0.22), transparent 45%),
     var(--accent);
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 3px var(--plastic), 0 14px 30px -16px rgb(var(--shadow) / 0.5);
   cursor: pointer;
-  transition: translate 0.15s, box-shadow 0.15s, scale 0.12s;
+  transition: translate var(--dur-fast), box-shadow var(--dur-fast), scale var(--dur-fast);
 }
 
 .duel-card[data-kind='place'] {
@@ -1836,7 +1837,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .duel-note {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   opacity: 0.9;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1854,7 +1855,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   height: 2.4rem;
   display: grid;
   place-items: center;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 800;
   color: var(--ink);
   background: var(--surface);
@@ -1866,7 +1867,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .duel-progress {
   height: 4px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
 }
 
@@ -1875,7 +1876,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   height: 100%;
   background: var(--green);
   border-radius: inherit;
-  transition: width 0.3s cubic-bezier(0.2, 0, 0, 1);
+  transition: width var(--dur-slow) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .duel-foot {
@@ -1904,12 +1905,12 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   width: 3.75rem;
   height: 3.75rem;
   padding: 0;
-  font-size: 1.4rem;
+  font-size: var(--text-xl);
   border-radius: 50%;
 }
 
 /* Phones: three smaller thumbnails across instead of two big ones */
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .thumbs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem 0.6rem;
@@ -1917,13 +1918,13 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
   .thumb-links {
     gap: 0.5rem;
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
   }
 }
 
 /* A picked tile: the outline follows the photo's rounded corners, with a little room */
 .thumb.bulk-picked {
   outline-offset: 4px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 </style>

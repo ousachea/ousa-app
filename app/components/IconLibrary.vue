@@ -91,10 +91,10 @@ const label = (id: string) => id.split(':')[1]!.replace(/-/g, ' ')
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1.5px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.15s, color 0.15s, transform 0.15s;
+  transition: border-color var(--dur-fast), color var(--dur-fast), transform var(--dur-fast);
 }
 
 .glyph:hover {
@@ -122,7 +122,7 @@ const label = (id: string) => id.split(':')[1]!.replace(/-/g, ' ')
 .note,
 .credit {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 

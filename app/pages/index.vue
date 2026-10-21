@@ -207,7 +207,7 @@ h1 {
 .hero p {
   margin: 1rem 0 0;
   max-width: 28rem;
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   color: var(--ink-2);
 }
 
@@ -235,7 +235,7 @@ h1 {
 }
 
 .group h2 {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   color: var(--ink-2);
   letter-spacing: -0.01em;
 }
@@ -265,8 +265,8 @@ h1 {
   text-decoration: none;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 20px;
-  transition: border-color 0.15s;
+  border-radius: var(--radius-xl);
+  transition: border-color var(--dur-fast);
 }
 
 .tile:hover {
@@ -279,10 +279,10 @@ h1 {
   margin-bottom: 0.6rem;
   display: grid;
   place-items: center;
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   color: var(--on-accent);
   background: var(--sticker, var(--accent));
-  border-radius: 11px;
+  border-radius: var(--radius);
   box-shadow:
     0 0 0 3px var(--plastic),
     0 0 0 4px var(--plastic-edge),
@@ -290,12 +290,12 @@ h1 {
     inset 0 5px 8px rgb(255 255 255 / 0.25),
     0 0 0 transparent;
   transition:
-    transform 0.2s cubic-bezier(0.3, 1.5, 0.6, 1),
-    box-shadow 0.2s ease;
+    transform var(--dur) cubic-bezier(0.3, 1.5, 0.6, 1),
+    box-shadow var(--dur) ease;
 }
 
 .sticker svg {
-  transition: transform 0.2s cubic-bezier(0.3, 1.5, 0.6, 1);
+  transition: transform var(--dur) cubic-bezier(0.3, 1.5, 0.6, 1);
 }
 
 /* Keycap feel: the sticker lifts and glows in its own colour on hover, then presses down on click */
@@ -353,12 +353,12 @@ h1 {
   align-items: center;
   gap: 0.2rem;
   padding: 0.12rem 0.5rem 0.12rem 0.35rem;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   line-height: 1.3;
   color: var(--purple);
   background: color-mix(in srgb, var(--purple) 12%, var(--surface));
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 :root[data-theme='dark'] .demo-badge {
@@ -372,12 +372,12 @@ h1 {
 }
 
 .tile strong {
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   letter-spacing: -0.01em;
 }
 
 .summary {
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -392,7 +392,7 @@ h1 {
 }
 
 /* Phones get a home-screen grid: four big icons a row with a short name under each */
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   /* Still names each section for screen readers through aria-labelledby */
   .group h2 {
     display: none;
@@ -472,12 +472,12 @@ h1 {
     margin-top: 1.75rem;
     padding: 0.55rem 0.8rem 0.55rem 1.1rem;
     font: inherit;
-    font-size: 0.9rem;
+    font-size: var(--text-base);
     font-weight: 600;
     color: var(--ink-2);
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     cursor: pointer;
   }
 
@@ -510,7 +510,7 @@ h1 {
     border-radius: 50%;
     background: var(--ink-2);
     opacity: 0.3;
-    transition: opacity 0.2s;
+    transition: opacity var(--dur);
   }
 
   .page-dots button.active::before {
@@ -540,13 +540,13 @@ h1 {
     width: 3.75rem;
     height: 3.75rem;
     margin: 4px 0 0;
-    font-size: 2rem;
-    border-radius: 16px;
+    font-size: var(--text-2xl);
+    border-radius: var(--radius-lg);
   }
 
   .tile strong {
     width: 100%;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     letter-spacing: 0;
     line-height: 1.25;

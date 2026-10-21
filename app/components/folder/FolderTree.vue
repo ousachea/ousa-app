@@ -177,7 +177,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
       <button
         v-if="!$slots.views"
         type="button"
-        class="row"
+        v-ants class="row"
         :class="{ on: active === ALL, 'drop-into': drop?.id === ALL }"
         :aria-current="active === ALL ? 'true' : undefined"
         @click="emit('select', ALL)"
@@ -207,7 +207,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
           </button>
           <button
             type="button"
-            class="row"
+            v-ants class="row"
             :class="{
               'on': active === r.folder.id,
               'drop-into': drop?.id === r.folder.id && drop.zone === 'into',
@@ -240,7 +240,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
       <button
         v-if="unfiled && folders.length"
         type="button"
-        class="row muted"
+        v-ants class="row muted"
         :class="{ 'on': active === UNFILED, 'drop-into': drop?.id === UNFILED }"
         :aria-current="active === UNFILED ? 'true' : undefined"
         @click="emit('select', UNFILED)"
@@ -251,7 +251,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
         <span class="name">Not in a folder</span><b>{{ unfiled }}</b>
       </button>
 
-      <button type="button" class="add-folder bottom" @click="emit('add', '')">
+      <button type="button" v-ants class="add-folder bottom" @click="emit('add', '')">
         <span aria-hidden="true">+</span> Add folder
       </button>
       <p v-if="itemDragging" class="hint drop-hint" role="status">Drop on a folder to move it there.</p>
@@ -304,13 +304,13 @@ watch(() => props.active, () => (openOnPhone.value = false))
   min-height: 2.25rem;
   padding: 0.35rem 0.7rem;
   font: inherit;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink-2);
   text-align: left;
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
 }
@@ -336,7 +336,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
 }
 
 .row b {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
@@ -366,8 +366,10 @@ watch(() => props.active, () => (openOnPhone.value = false))
 
 /* While a bookmark is dragged, every folder that can take it gets a dashed outline */
 .drop-targets .row:not(.on, .drop-into) {
-  outline: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent);
-  outline-offset: -1.5px;
+  /* Drawn by v-ants, so the dashes walk */
+  --ants-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  --ants-width: 1.5px;
+  --ants-offset: -1.5px;
 }
 
 .drop-hint {
@@ -395,7 +397,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
   color: var(--ink-3);
   background: none;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
 }
 
@@ -431,7 +433,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
   color: var(--ink-3);
   background: var(--surface);
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   opacity: 0;
   transition: opacity var(--dur-fast);
@@ -461,19 +463,19 @@ watch(() => props.active, () => (openOnPhone.value = false))
   min-height: 2.1rem;
   padding: 0.3rem 0.7rem;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   text-align: left;
   background: none;
   border: 1px dashed var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--dur-fast), border-color var(--dur-fast);
 }
 
 .add-folder span {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   line-height: 1;
 }
 
@@ -509,7 +511,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
     color: var(--ink);
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius);
     cursor: pointer;
   }
 
@@ -542,7 +544,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
     margin-top: 0.5rem;
     padding: 0.5rem;
     background: var(--surface-2);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
   }
 
   .phone-open .tree-body {

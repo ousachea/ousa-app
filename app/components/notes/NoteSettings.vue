@@ -64,7 +64,7 @@ function resetAll() {
   margin: 0.4rem 0 0.6rem;
   padding: 1rem 1.15rem;
   background: var(--surface-2);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 

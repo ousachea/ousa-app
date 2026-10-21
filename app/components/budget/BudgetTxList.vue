@@ -123,8 +123,8 @@ ul {
   height: 2.25rem;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
-  border-radius: 10px;
+  font-size: var(--text-title);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--slot) 16%, var(--surface));
 }
 

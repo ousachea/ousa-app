@@ -26,7 +26,7 @@ const emit = defineEmits<{ edit: [], earlier: [], later: [], remove: [] }>()
   padding: 0.2rem;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 8px 20px -10px rgb(var(--shadow) / 0.45);
   backdrop-filter: blur(10px);
   animation: tools-in 0.25s cubic-bezier(0.3, 1.5, 0.6, 1) both;
@@ -45,13 +45,13 @@ button {
   display: grid;
   place-items: center;
   padding: 0;
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--ink-2);
   background: none;
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 button:hover:not(:disabled) {

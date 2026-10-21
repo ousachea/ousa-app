@@ -57,7 +57,7 @@ function pick(v: T) {
 
 .segmented {
   flex: none;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .segmented label {

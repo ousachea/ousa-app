@@ -350,7 +350,7 @@ async function reloadRate() {
   border: 1px solid var(--line);
   border-radius: var(--radius, 12px);
   cursor: pointer;
-  transition: border-color var(--dur-fast, 0.15s), rotate 0.3s cubic-bezier(0.2, 0, 0, 1);
+  transition: border-color var(--dur-fast, 0.15s), rotate var(--dur-slow) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .swap:hover {
@@ -386,7 +386,7 @@ async function reloadRate() {
   padding: 4px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .tab {
@@ -396,9 +396,9 @@ async function reloadRate() {
   color: var(--ink-2);
   background: transparent;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .tab:hover { color: var(--ink); }
@@ -419,7 +419,7 @@ async function reloadRate() {
   margin: 0 auto;
 }
 
-@media (min-width: 1000px) {
+@media (min-width: 1100px) {
   .workspace {
     max-width: none;
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
@@ -454,7 +454,7 @@ async function reloadRate() {
   min-width: 0;
   padding: 0.75rem 0;
   font: inherit;
-  font-size: 1.4rem;
+  font-size: var(--text-xl);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
@@ -483,7 +483,7 @@ async function reloadRate() {
 
 .preview-line {
   margin: -0.25rem 0 0;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -493,7 +493,7 @@ async function reloadRate() {
 }
 
 .unit {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--ink-3);
 }
@@ -525,19 +525,19 @@ async function reloadRate() {
 }
 
 .label {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
 }
 
 .market-head strong {
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   font-variant-numeric: tabular-nums;
 }
 
 .note {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -547,7 +547,7 @@ async function reloadRate() {
   display: flex;
   align-items: flex-start;
   gap: 0.55rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   cursor: pointer;
 }
 
@@ -569,7 +569,7 @@ async function reloadRate() {
   position: relative;
   padding: 1.5rem 1.75rem 2.25rem;
   background: var(--paper);
-  border-radius: 14px 14px 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   filter: drop-shadow(0 1px 1px rgb(var(--shadow) / 0.12)) drop-shadow(0 10px 18px rgb(var(--shadow) / 0.12));
   -webkit-mask: radial-gradient(circle 9px at 50% 100%, transparent 98%, #000) 50% 100% / 18px 100% repeat-x;
   mask: radial-gradient(circle 9px at 50% 100%, transparent 98%, #000) 50% 100% / 18px 100% repeat-x;
@@ -579,7 +579,7 @@ async function reloadRate() {
   display: flex;
   justify-content: space-between;
   padding-bottom: 0.6rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-3);
   border-bottom: 1px dashed var(--ink-3);
@@ -638,7 +638,7 @@ async function reloadRate() {
 .lines .total {
   margin-top: 0.25rem;
   border-top: 3px double var(--ink-3);
-  font-size: 1.1rem;
+  font-size: var(--text-title);
 }
 
 dt { color: var(--ink-2); }

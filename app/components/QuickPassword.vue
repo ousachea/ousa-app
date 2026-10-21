@@ -123,8 +123,8 @@ async function remove() {
   place-items: center;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 12px;
-  transition: color 0.2s, background-color 0.2s;
+  border-radius: var(--radius);
+  transition: color var(--dur), background-color var(--dur);
 }
 
 .quick-icon.on {
@@ -147,7 +147,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .quick-text p {
@@ -162,7 +162,7 @@ h3 {
   font-weight: 700;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .state.on {

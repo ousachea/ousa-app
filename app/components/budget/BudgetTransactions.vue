@@ -408,7 +408,7 @@ const describe = computed(() => {
   clip: rect(0 0 0 0);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .dates > :first-child,
   .dates > :nth-child(3) {
     width: calc(50% - 1rem);

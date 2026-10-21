@@ -564,7 +564,7 @@ ol {
   align-items: center;
   justify-content: center;
   gap: 0.5rem 0.9rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   transition: opacity 0.6s;
 }
@@ -581,7 +581,7 @@ ol {
   color: inherit;
   background: color-mix(in srgb, var(--ink) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 

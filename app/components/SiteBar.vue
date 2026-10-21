@@ -135,12 +135,12 @@ function goBack(e: MouseEvent) {
   min-width: 0;
   margin-left: -0.5rem;
   padding: 0 0.75rem 0 0.5rem;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ink);
   text-decoration: none;
-  border-radius: 12px;
+  border-radius: var(--radius);
   transition: background-color var(--dur-fast, 0.15s);
 }
 
@@ -163,7 +163,7 @@ function goBack(e: MouseEvent) {
   stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: translate 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transition: translate var(--dur) cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* The arrow nudges left on hover, pointing the way you'll go */
@@ -173,7 +173,7 @@ function goBack(e: MouseEvent) {
 
 .logo {
   flex: none;
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
 }
 
 .brand-name {
@@ -190,7 +190,7 @@ function goBack(e: MouseEvent) {
   list-style: none;
   display: flex;
   align-items: center;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   font-weight: 600;
 }
 
@@ -221,7 +221,7 @@ function goBack(e: MouseEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
 }
 
 .crumb-link {
@@ -265,15 +265,15 @@ function goBack(e: MouseEvent) {
   height: 2.5rem;
   padding: 0 0.85rem;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
   background: var(--surface);
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: 0 0 0 1px var(--line);
   cursor: pointer;
-  transition: background-color var(--dur-fast, 0.15s), box-shadow var(--dur-fast, 0.15s), scale 0.12s;
+  transition: background-color var(--dur-fast, 0.15s), box-shadow var(--dur-fast, 0.15s), scale var(--dur-fast);
 }
 
 .bar-btn:hover {
@@ -311,12 +311,12 @@ function goBack(e: MouseEvent) {
   margin-left: auto;
   padding: 0.05rem 0.35rem;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   color: var(--ink-3);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 .apps svg {
@@ -376,17 +376,17 @@ function goBack(e: MouseEvent) {
     height: 1.25rem;
   }
 
-  /* With a trail, the logo stands for Ousa’s Apps, and only the app and where you are show */
-  .deep .brand-name {
+  /* In an app, the logo stands for Ousa’s Apps, so the app's name and where you are get the room */
+  .crumbs:has(.trail) .brand-name {
     display: none;
   }
 
-  .deep .brand {
+  .crumbs:has(.trail) .brand {
     padding-right: 0.25rem;
   }
 
   .trail {
-    font-size: 0.9rem;
+    font-size: var(--text-base);
   }
 
   .crumb.mid {

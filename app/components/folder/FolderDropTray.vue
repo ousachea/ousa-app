@@ -23,14 +23,14 @@ const rows = computed(() => flatTree(props.folders))
           <li
             v-for="r in rows"
             :key="r.folder.id"
-            class="tray-folder"
+            v-ants class="tray-folder"
             :class="{ over: drag.over === r.folder.id }"
             :style="{ '--depth': r.depth, '--tag': folderColor(r.folder) }"
             :data-drop-folder="r.folder.id"
           >
             <FolderIcon :icon="r.folder.icon" :color="r.folder.color" />{{ r.folder.name }}
           </li>
-          <li v-if="unfiled" class="tray-folder muted" :class="{ over: drag.over === UNFILED }" :data-drop-folder="UNFILED">
+          <li v-if="unfiled" v-ants class="tray-folder muted" :class="{ over: drag.over === UNFILED }" :data-drop-folder="UNFILED">
             Not in a folder
           </li>
         </ul>
@@ -54,13 +54,13 @@ const rows = computed(() => flatTree(props.folders))
   flex-direction: column;
   padding: 0.9rem 1rem calc(1rem + env(safe-area-inset-bottom));
   background: var(--surface);
-  border-radius: 20px 20px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: 0 -10px 40px rgb(var(--shadow) / 0.22), 0 0 0 1px var(--line);
 }
 
 .tray-head {
   margin: 0 0 0.6rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   text-align: center;
@@ -84,8 +84,8 @@ const rows = computed(() => flatTree(props.folders))
   padding: 0 0.9rem 0 calc(0.9rem + var(--depth, 0) * 1.1rem);
   font-weight: 600;
   border: 2px dashed var(--line);
-  border-radius: 12px;
-  transition: background-color 0.12s, border-color 0.12s, scale 0.12s;
+  border-radius: var(--radius);
+  transition: background-color var(--dur-fast), border-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .tray-folder.muted {
@@ -111,18 +111,18 @@ const rows = computed(() => flatTree(props.folders))
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--on-accent, #fff);
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 6px 18px rgb(var(--shadow) / 0.3);
   pointer-events: none;
 }
 
 .tray-enter-active,
 .tray-leave-active {
-  transition: translate 0.22s cubic-bezier(0.2, 0, 0, 1), opacity 0.22s;
+  transition: translate var(--dur) cubic-bezier(0.2, 0, 0, 1), opacity var(--dur);
 }
 
 .tray-enter-from,

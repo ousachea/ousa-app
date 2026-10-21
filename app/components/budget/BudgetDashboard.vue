@@ -207,7 +207,7 @@ const showTxs = (r: DateRange, extra: Record<string, string> = {}) => go('transa
 }
 
 /* Phones: two totals a row, so the month fits on one screen */
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
@@ -257,7 +257,7 @@ const showTxs = (r: DateRange, extra: Record<string, string> = {}) => go('transa
 }
 
 .card strong.none {
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   color: var(--ink-3);
 }
 

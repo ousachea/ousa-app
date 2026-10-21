@@ -1216,7 +1216,7 @@ async function refreshAllDetails() {
           <template v-if="shown.length || showFolderAdd">
             <TransitionGroup tag="ul" name="list" class="marks" :class="[view === 'compact' ? ['list', 'compact'] : view, { 'selecting': sel.selecting, 'no-images': !showImages }]">
               <!-- In a folder: the first row (or card) adds a bookmark to it, in the same shape as the rest -->
-              <li v-if="showFolderAdd" key="add-here" class="mark add-mark">
+              <li v-if="showFolderAdd" key="add-here" v-ants class="mark add-mark">
                 <BookmarkAdder
                   ref="folderAdder"
                   class="folder-add"
@@ -1296,7 +1296,7 @@ async function refreshAllDetails() {
           </template>
 
 
-          <div v-else-if="ready && items.length" class="empty">
+          <div v-else-if="ready && items.length" v-ants class="empty">
             <p>Nothing matches{{ query ? ` “${query}”` : '' }}.</p>
             <button type="button" class="btn btn-quiet btn-sm" @click="query = ''; activeFolder = ALL_BOOKMARKS">Show everything</button>
           </div>
@@ -1438,7 +1438,7 @@ async function refreshAllDetails() {
   text-align: center;
   color: var(--warn-ink);
   background: color-mix(in srgb, var(--orange) 16%, var(--surface));
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .list-title {
@@ -1474,7 +1474,7 @@ async function refreshAllDetails() {
   color: var(--ink);
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -1493,7 +1493,7 @@ async function refreshAllDetails() {
 .empty-panel {
   margin-top: 1rem;
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line);
 }
 
@@ -1509,7 +1509,7 @@ async function refreshAllDetails() {
   height: 2.4rem;
   color: var(--accent);
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -1522,7 +1522,7 @@ async function refreshAllDetails() {
 .adder-placeholder {
   width: min(100%, 760px);
   height: 6.5rem;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
 }
 
 /* The add row is shaped like the bookmarks around it; opened, it takes the list's (or grid's) full width */
@@ -1553,10 +1553,12 @@ async function refreshAllDetails() {
    in the app's colour on a light tint, no card shadow, the + in the middle */
 .add-mark:has(.add-here-row) {
   background: color-mix(in srgb, var(--accent) 5%, var(--surface));
-  outline: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent);
-  outline-offset: -6px;
-  border-radius: 18px;
-  transition: background-color 0.15s, outline-color 0.15s;
+  /* Drawn by v-ants, so the dashes walk */
+  --ants-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  --ants-width: 1.5px;
+  --ants-offset: -6px;
+  border-radius: var(--radius-xl);
+  transition: background-color var(--dur-fast), --ants-color var(--dur-fast);
 }
 
 .add-mark:has(.add-here-row)::before {
@@ -1565,7 +1567,7 @@ async function refreshAllDetails() {
 
 .marks .add-mark:has(.add-here-row):hover {
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  outline-color: var(--accent);
+  --ants-color: var(--accent);
 }
 
 /* The rows under it keep their divider; the dashed slot doesn't need one */
@@ -1623,7 +1625,7 @@ async function refreshAllDetails() {
   font-weight: 700;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .here-pin svg {
@@ -1663,7 +1665,7 @@ async function refreshAllDetails() {
   color: var(--ink-3);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--dur-fast), background-color var(--dur-fast);
 }
@@ -1692,7 +1694,7 @@ async function refreshAllDetails() {
   height: 2.4rem;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -1770,7 +1772,7 @@ async function refreshAllDetails() {
 }
 
 .folder-tile-icon {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   color: var(--tag, var(--accent));
   background: color-mix(in srgb, var(--tag, var(--accent)) 14%, var(--surface));
 }
@@ -1794,9 +1796,9 @@ async function refreshAllDetails() {
   color: var(--ink);
   text-decoration: none;
   background: var(--surface);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 0 0 1px var(--line), 0 6px 14px -8px rgb(var(--shadow) / 0.3);
-  transition: translate 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.15s, scale 0.15s;
+  transition: translate var(--dur-fast) cubic-bezier(0.2, 0, 0, 1), box-shadow var(--dur-fast), scale var(--dur-fast);
 }
 
 .tile:hover {
@@ -1832,8 +1834,8 @@ async function refreshAllDetails() {
 .tile-icon {
   width: 3rem;
   height: 3rem;
-  font-size: 1.3rem;
-  border-radius: 14px;
+  font-size: var(--text-lg);
+  border-radius: var(--radius-lg);
 }
 
 .tile-icon img,
@@ -1849,7 +1851,7 @@ async function refreshAllDetails() {
 .tile-name {
   width: 100%;
   margin-top: 0.6rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   line-height: 1.25;
   overflow: hidden;
@@ -1859,7 +1861,7 @@ async function refreshAllDetails() {
 
 .tile-host {
   width: 100%;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1895,15 +1897,15 @@ async function refreshAllDetails() {
   min-height: 2.25rem;
   padding: 0.35rem 0.7rem;
   font: inherit;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink-2);
   text-align: left;
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .tag-row span {
@@ -1917,7 +1919,7 @@ async function refreshAllDetails() {
 }
 
 .tag-row b {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
@@ -1993,7 +1995,7 @@ async function refreshAllDetails() {
   border-radius: inherit;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease-out;
+  transition: opacity var(--dur-fast) ease-out;
 }
 
 .marks.selecting .mark-pick,
@@ -2074,7 +2076,7 @@ async function refreshAllDetails() {
 /* The pinned shelf rests while picking from the list */
 .shelf.resting {
   opacity: 0.45;
-  transition: opacity 0.15s ease-out;
+  transition: opacity var(--dur-fast) ease-out;
 }
 
 .marks.selecting .mark-actions {
@@ -2088,7 +2090,7 @@ async function refreshAllDetails() {
 .toolbar h2 {
   flex: 1;
   min-width: 8rem;
-  font-size: 1.3rem;
+  font-size: var(--text-lg);
   letter-spacing: -0.015em;
 }
 
@@ -2105,8 +2107,8 @@ async function refreshAllDetails() {
   padding: 0 0.6rem 0 0.75rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  transition: border-color 0.15s;
+  border-radius: var(--radius-sm);
+  transition: border-color var(--dur-fast);
 }
 
 .search:focus-within {
@@ -2137,10 +2139,10 @@ async function refreshAllDetails() {
 kbd {
   padding: 0 0.4rem;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 
 .sort {
@@ -2154,7 +2156,7 @@ kbd {
   margin: 1rem 0 0;
   padding: 0;
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line);
 }
 
@@ -2204,7 +2206,7 @@ kbd {
   cursor: grab;
   opacity: 0;
   touch-action: none;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast);
 }
 
 .grip svg {
@@ -2223,7 +2225,7 @@ kbd {
   translate: none;
   height: 1.6rem;
   background: color-mix(in srgb, var(--surface) 85%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 @media (hover: none) {
@@ -2265,7 +2267,7 @@ kbd {
   border-radius: 0 3px 3px 0;
   background: var(--accent);
   opacity: var(--hl);
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast);
 }
 
 /* Pinned: a ribbon with a pin hangs from the top edge, beside the icon in the list and at the
@@ -2321,12 +2323,12 @@ kbd {
   margin-left: 0.4rem;
   padding: 0.05rem 0.45rem;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   color: var(--warn-ink);
   background: color-mix(in srgb, var(--dupe-color) 14%, var(--surface));
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
@@ -2342,7 +2344,7 @@ kbd {
   width: 7.5rem;
   aspect-ratio: 1.91;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   box-shadow: 0 0 0 1px var(--line);
 }
@@ -2352,7 +2354,7 @@ kbd {
   order: -1;
   width: calc(100% + 2rem);
   margin: -1rem -1rem 0;
-  border-radius: 18px 18px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: none;
 }
 
@@ -2372,7 +2374,7 @@ kbd {
    ease into their new size. A card's cover height comes from its width (cqi), which lets it animate. */
 .mark-image,
 .marks.grid .mark-image + .mark-icon {
-  transition: width 0.3s ease, height 0.3s ease, margin 0.3s ease, opacity 0.2s ease, box-shadow 0.3s ease;
+  transition: width var(--dur-slow) ease, height var(--dur-slow) ease, margin var(--dur-slow) ease, opacity var(--dur) ease, box-shadow var(--dur-slow) ease;
 }
 
 .marks.grid .mark {
@@ -2432,7 +2434,7 @@ kbd {
   stroke-linejoin: round;
   opacity: var(--hl);
   translate: calc((1 - var(--hl)) * -3px) calc((1 - var(--hl)) * 3px);
-  transition: opacity 0.15s, translate 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transition: opacity var(--dur-fast), translate var(--dur) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .mark:has(.mark-title:focus-visible) {
@@ -2454,16 +2456,16 @@ kbd {
   transition: none;
 }
 
-.mark:first-child { border-radius: 18px 18px 0 0; }
-.mark:last-child { border-radius: 0 0 18px 18px; }
-.mark:only-child { border-radius: 18px; }
+.mark:first-child { border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+.mark:last-child { border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
+.mark:only-child { border-radius: var(--radius-xl); }
 
 .mark-icon {
   flex: none;
   width: 2.5rem;
   height: 2.5rem;
   margin-top: 0.1rem;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .mark-body {
@@ -2491,14 +2493,14 @@ kbd {
 }
 
 .mark-meta {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 
 .mark-desc {
   margin: 0.3rem 0 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -2510,11 +2512,11 @@ kbd {
 .mark-note {
   margin: 0.4rem 0 0;
   padding: 0.35rem 0.6rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink);
   background: color-mix(in srgb, var(--yellow) 18%, var(--surface));
   border-left: 3px solid var(--yellow);
-  border-radius: 2px 8px 8px 2px;
+  border-radius: 2px var(--radius-sm) var(--radius-sm) 2px;
   white-space: pre-line;
 }
 
@@ -2528,14 +2530,14 @@ kbd {
 .chip {
   padding: 0.1rem 0.5rem;
   font: inherit;
-  font-size: 0.775rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink);
   background: color-mix(in srgb, var(--tag) 13%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--tag) 35%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color var(--dur-fast);
 }
 
 .chip:hover {
@@ -2555,7 +2557,7 @@ kbd {
   padding: 3px;
   gap: 2px;
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -2568,9 +2570,9 @@ kbd {
   color: var(--ink-3);
   background: none;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .view-btn:hover {
@@ -2619,8 +2621,8 @@ kbd {
 .marks.compact .mark-icon {
   width: 1.5rem;
   height: 1.5rem;
-  font-size: 0.75rem;
-  border-radius: 6px;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-xs);
 }
 
 .marks.compact .mark-body {
@@ -2670,9 +2672,9 @@ kbd {
   padding: 1rem;
   background: var(--surface);
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line);
-  transition: background-color 0.6s, translate 0.15s, box-shadow 0.15s;
+  transition: background-color 0.6s, translate var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .marks.grid .mark:hover:not(:has(.mark-actions:hover, .mark-tags:hover)),
@@ -2689,8 +2691,8 @@ kbd {
   width: 3rem;
   height: 3rem;
   margin: 0;
-  font-size: 1.3rem;
-  border-radius: 14px;
+  font-size: var(--text-lg);
+  border-radius: var(--radius-lg);
 }
 
 .marks.grid .mark-body {
@@ -2699,7 +2701,7 @@ kbd {
 }
 
 .marks.grid .mark-title {
-  font-size: 1.02rem;
+  font-size: var(--text-md);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2744,9 +2746,9 @@ kbd {
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, scale 0.15s, opacity 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast), scale var(--dur-fast), opacity var(--dur-fast);
 }
 
 .icon-btn:hover {
@@ -2791,7 +2793,7 @@ kbd {
   text-align: center;
   color: var(--ink-2);
   border: 2px dashed var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
 }
 
 .empty p {
@@ -2800,7 +2802,7 @@ kbd {
 }
 
 .empty h3 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   color: var(--ink);
 }
 
@@ -2886,7 +2888,7 @@ kbd {
 }
 
 /* Narrow phones: the buttons move under the text so titles get the full width */
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .marks.list:not(.compact) .mark {
     flex-wrap: wrap;
     column-gap: 0.75rem;

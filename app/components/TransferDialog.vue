@@ -138,7 +138,7 @@ async function importFile(e: Event) {
 }
 
 h3 {
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .note {

@@ -901,7 +901,7 @@ function switchCurrency(next) {
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   font-variant-numeric: tabular-nums;
   color: inherit;
   background: none;
@@ -915,7 +915,7 @@ function switchCurrency(next) {
 }
 
 .money.slim input {
-  font-size: 1rem; /* 16px or more, so phones don't zoom in when it's tapped */
+  font-size: var(--text-md); /* 16px or more, so phones don't zoom in when it's tapped */
 }
 
 .money.rate {
@@ -942,7 +942,7 @@ function switchCurrency(next) {
 .note {
   max-width: 75ch;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -955,7 +955,7 @@ function switchCurrency(next) {
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem 1rem;
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .worked div {
@@ -964,7 +964,7 @@ function switchCurrency(next) {
 }
 
 .worked dt {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -983,9 +983,9 @@ function switchCurrency(next) {
   padding: 0;
   background: var(--line);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--dur);
 }
 
 .switch[aria-checked='true'] {
@@ -1001,7 +1001,7 @@ function switchCurrency(next) {
   background: #fff;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgb(var(--shadow) / 0.25);
-  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.6, 1);
+  transition: transform var(--dur) cubic-bezier(0.3, 1.4, 0.6, 1);
 }
 
 .switch[aria-checked='true'] .knob {
@@ -1024,7 +1024,7 @@ function switchCurrency(next) {
 
 .bands th {
   padding-bottom: 0.4rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   text-align: left;
   color: var(--ink-2);
@@ -1106,7 +1106,7 @@ function switchCurrency(next) {
   justify-content: center;
   padding: 0.5rem;
   text-align: center;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   line-height: 1.25;
   background: var(--accent);
@@ -1114,7 +1114,7 @@ function switchCurrency(next) {
 }
 
 .ring strong {
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   line-height: 1;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
@@ -1135,7 +1135,7 @@ function switchCurrency(next) {
 }
 
 .lift dt {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   opacity: 0.85;
 }
 
@@ -1151,11 +1151,11 @@ function switchCurrency(next) {
 }
 
 .lift .total dd {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
 }
 
 .lift small {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 500;
   opacity: 0.92;
 }
@@ -1175,11 +1175,11 @@ function switchCurrency(next) {
 }
 
 .slip-head h2 {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
 }
 
 .slip-head span {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1192,11 +1192,11 @@ function switchCurrency(next) {
 .slip th,
 .slip td {
   padding: 0.4rem 0;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
 }
 
 .slip thead th {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink-2);
   text-align: right;
@@ -1228,7 +1228,7 @@ function switchCurrency(next) {
 .slip tfoot th,
 .slip tfoot td {
   padding-top: 0.6rem;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   font-weight: 800;
   text-align: right;
   border-top: 2px solid var(--ink);
@@ -1248,7 +1248,7 @@ function switchCurrency(next) {
   align-items: center;
   gap: 0.6rem;
   margin-bottom: 0.4rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1258,7 +1258,7 @@ function switchCurrency(next) {
   gap: 2px;
   height: 0.6rem;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
 }
 
@@ -1276,7 +1276,7 @@ function switchCurrency(next) {
   flex-wrap: wrap;
   gap: 0.9rem;
   margin-top: 0.5rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1303,7 +1303,7 @@ function switchCurrency(next) {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.25rem 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
 }
 
 .slip-foot dt {
@@ -1340,7 +1340,7 @@ function switchCurrency(next) {
 
 .proj th {
   padding: 0 0.75rem 0.5rem 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   text-align: left;
   color: var(--ink-2);
@@ -1357,10 +1357,10 @@ function switchCurrency(next) {
 }
 
 /* Phones: drop the yearly total and the growth bar so the table fits without scrolling sideways */
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .proj {
     min-width: 0;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   .proj th:nth-child(5),
@@ -1383,7 +1383,7 @@ function switchCurrency(next) {
 .track {
   display: block;
   height: 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
   overflow: hidden;
 }
@@ -1404,12 +1404,12 @@ function switchCurrency(next) {
   margin-top: 1rem;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
   .results { position: static; }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .grid2 { grid-template-columns: minmax(0, 1fr); }
   .inputs .segmented label { white-space: normal; line-height: 1.25; }
   .keep { grid-template-columns: minmax(0, 1fr); justify-items: center; }

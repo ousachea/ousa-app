@@ -97,7 +97,7 @@ const to = computed({ get: () => range.value.to, set: v => (range.value = { from
   stroke-linejoin: round;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .modes {
     width: 100%;
   }

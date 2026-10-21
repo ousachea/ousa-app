@@ -497,7 +497,7 @@ function del(e: CountdownEvent) {
 .step-empty {
   margin: 0;
   padding: 1rem 1.25rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -520,7 +520,7 @@ function del(e: CountdownEvent) {
   gap: 0.75rem;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .row { grid-template-columns: 1fr 1fr; }
   .row > :last-child { grid-column: 1 / -1; }
 }
@@ -551,7 +551,7 @@ function del(e: CountdownEvent) {
 }
 
 .togo .word {
-  font-size: 1.15rem;
+  font-size: var(--text-title);
 }
 
 .optional {
@@ -634,7 +634,7 @@ function del(e: CountdownEvent) {
 }
 
 .bar-text {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   opacity: 0.85;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -667,12 +667,12 @@ function del(e: CountdownEvent) {
 
 .later-head {
   margin: 1.75rem 0 0;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
 .featured .label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   opacity: 0.85;
 }
@@ -703,7 +703,7 @@ function del(e: CountdownEvent) {
   flex-direction: column;
   align-items: center;
   background: linear-gradient(rgb(0 0 0 / 0.16) 0 50%, rgb(0 0 0 / 0.28) 50% 100%);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15);
 }
 
@@ -724,7 +724,7 @@ function del(e: CountdownEvent) {
 }
 
 .unit > span {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   text-transform: capitalize;
   opacity: 0.85;
 }
@@ -761,7 +761,7 @@ function del(e: CountdownEvent) {
   align-items: center;
   text-align: center;
   background: var(--surface);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 1px var(--line), 0 2px 4px rgb(var(--shadow) / 0.08);
 }
 
@@ -778,7 +778,7 @@ function del(e: CountdownEvent) {
 
 .day {
   padding: 0.1rem 0 0.2rem;
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   line-height: 1.15;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
@@ -811,7 +811,7 @@ function del(e: CountdownEvent) {
 }
 
 .togo b {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   letter-spacing: -0.02em;
   color: var(--ink);
 }
@@ -827,7 +827,7 @@ function del(e: CountdownEvent) {
   height: 4px;
   margin-top: 0.35rem;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
 }
 
@@ -842,7 +842,7 @@ function del(e: CountdownEvent) {
   gap: 0.25rem;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .page {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
@@ -872,7 +872,7 @@ function del(e: CountdownEvent) {
 }
 
 .past h3 {
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--ink-2);
 }
 
@@ -901,7 +901,7 @@ function del(e: CountdownEvent) {
 }
 
 .empty h2 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   color: var(--ink);
 }
 
@@ -940,7 +940,7 @@ function del(e: CountdownEvent) {
   align-items: flex-end;
   text-align: right;
   background: rgb(0 0 0 / 0.16);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15);
 }
 
@@ -952,7 +952,7 @@ function del(e: CountdownEvent) {
 }
 
 .now-place {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   opacity: 0.85;
 }
@@ -977,7 +977,7 @@ function del(e: CountdownEvent) {
 }
 
 .now-date {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   opacity: 0.9;
 }
 
@@ -987,7 +987,7 @@ function del(e: CountdownEvent) {
 }
 
 /* ---------- Public holidays: a side column on wide screens ---------- */
-@media (min-width: 1000px) {
+@media (min-width: 1100px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr) 380px;
     align-items: start;
@@ -1059,7 +1059,7 @@ function del(e: CountdownEvent) {
 }
 
 .next-off .label {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -1070,7 +1070,7 @@ function del(e: CountdownEvent) {
 
 .next-off h3 {
   margin-top: 0.15rem;
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
@@ -1082,7 +1082,7 @@ function del(e: CountdownEvent) {
 
 .next-when {
   margin: 0.35rem 0 0;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
 }
 
@@ -1099,17 +1099,17 @@ function del(e: CountdownEvent) {
   flex-direction: column;
   align-items: center;
   background: var(--surface-2);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .mini-clock strong {
-  font-size: 1.4rem;
+  font-size: var(--text-xl);
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 
 .mini-clock div > span {
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   text-transform: capitalize;
   color: var(--ink-2);
 }
@@ -1141,18 +1141,18 @@ function del(e: CountdownEvent) {
   flex-direction: column;
   align-items: center;
   background: var(--surface);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 1px var(--line), 0 2px 0 var(--line);
 }
 
 .h-date strong {
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 
 .h-date span {
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -1170,7 +1170,7 @@ function del(e: CountdownEvent) {
 }
 
 .h-km {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   /* Long Khmer names stay on one line; the full name is in the English title above */
   overflow: hidden;
@@ -1179,7 +1179,7 @@ function del(e: CountdownEvent) {
 }
 
 .h-meta {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -1192,14 +1192,14 @@ function del(e: CountdownEvent) {
 }
 
 .h-when {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
 .h-added {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -1209,7 +1209,7 @@ function del(e: CountdownEvent) {
 
 .source-note {
   margin: 0.9rem 0 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   text-wrap: pretty;
 }

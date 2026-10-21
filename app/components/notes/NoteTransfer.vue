@@ -81,21 +81,21 @@ function onFiles(e: Event) {
 
 h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .seg {
   display: inline-flex;
   padding: 0.2rem;
   background: color-mix(in srgb, var(--ink) 5%, var(--surface));
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .seg label {
   padding: 0.45rem 0.8rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -122,14 +122,14 @@ h3 {
   display: grid;
   gap: 0.1rem;
   padding: 0.6rem 0.7rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 
 .fmt span {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
 }
 
@@ -146,11 +146,11 @@ h3 {
 
 .hint {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .formats {
     grid-template-columns: repeat(2, 1fr);
   }

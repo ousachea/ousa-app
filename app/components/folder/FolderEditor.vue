@@ -106,7 +106,7 @@ function submit() {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
 }
 
 .name-row input {
@@ -114,7 +114,7 @@ function submit() {
   min-width: 0;
   padding: 0;
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--ink);
   background: none;
   border: 0;
@@ -131,8 +131,8 @@ function submit() {
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  font-size: 1.25rem;
-  border-radius: 10px;
+  font-size: var(--text-lg);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--dur-fast);
 }
@@ -185,7 +185,7 @@ function submit() {
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 800;
   color: #fff;
 }

@@ -959,7 +959,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .segmented.small label {
   padding: 0.3rem 0.7rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .segmented label {
@@ -987,7 +987,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .muted {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1051,7 +1051,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .shine.lit {
-  transition: transform 0.12s ease-out, box-shadow 0.4s;
+  transition: transform var(--dur-fast) ease-out, box-shadow 0.4s;
 }
 
 .shine.lit::before,
@@ -1076,7 +1076,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
@@ -1085,10 +1085,10 @@ const PURITIES: { value: Purity, label: string }[] = [
   align-items: center;
   gap: 0.4rem;
   padding: 0.2rem 0.6rem;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   background: rgb(255 255 255 / 0.45);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .status i {
@@ -1104,7 +1104,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .big {
   margin: 0.6rem 0 0;
-  font-size: clamp(2.6rem, 6vw, 3.75rem);
+  font-size: var(--text-hero);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.035em;
@@ -1117,7 +1117,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .per {
   margin: 0.3rem 0 0;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
   opacity: 0.75;
 }
@@ -1134,24 +1134,24 @@ const PURITIES: { value: Purity, label: string }[] = [
   display: flex;
   flex-direction: column;
   background: rgb(255 255 255 / 0.4);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .local span {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   opacity: 0.8;
 }
 
 .local strong {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .observed {
   margin: 0.8rem 0 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   opacity: 0.75;
 }
@@ -1185,14 +1185,14 @@ const PURITIES: { value: Purity, label: string }[] = [
   min-height: 2.4rem;
   padding: 0 0.9rem;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   color: #fff;
   background: #1b1f2a;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s, scale 0.15s;
+  transition: background-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .refresh:hover:not(:disabled) { background: #2d3344; }
@@ -1231,7 +1231,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   font-variant-numeric: tabular-nums;
   color: inherit;
   background: none;
@@ -1300,11 +1300,11 @@ const PURITIES: { value: Purity, label: string }[] = [
   flex-direction: column;
   align-items: center;
   white-space: nowrap;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 6px 16px rgb(var(--shadow) / 0.15);
   pointer-events: none;
 }
@@ -1320,7 +1320,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   align-items: flex-end;
   gap: 1rem;
   margin-top: 0.6rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -1356,7 +1356,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   gap: 0.15rem 0.5rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .units li.lead {
@@ -1369,13 +1369,13 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .u-grams {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
 }
 
 .units strong {
   width: 100%;
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
@@ -1436,14 +1436,14 @@ const PURITIES: { value: Purity, label: string }[] = [
   gap: 3px;
   height: 0.5rem;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--line);
 }
 
 .pl-bar i {
   flex-basis: 0;
   min-width: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: flex-grow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -1455,7 +1455,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 0.4rem 1rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1511,13 +1511,13 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .summary span {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
 }
 
 .summary strong {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -1527,7 +1527,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 .summary .down strong { color: var(--bad-ink); }
 
 .summary small {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -1575,7 +1575,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   background: var(--surface);
   border: 1px solid var(--line);
   border-left: 4px solid var(--tone);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .purchase.is-up { --tone: var(--green); --tone-ink: var(--good-ink); }
@@ -1621,14 +1621,14 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .p-weight strong {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   font-weight: 800;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 
 .p-date {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
@@ -1641,7 +1641,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   gap: 0.6rem;
   padding: 0.75rem 0.85rem;
   background: var(--surface-2);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .p-col {
@@ -1656,7 +1656,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .p-label {
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1664,12 +1664,12 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .p-col strong {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   font-variant-numeric: tabular-nums;
 }
 
 .p-col small {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -1706,10 +1706,10 @@ const PURITIES: { value: Purity, label: string }[] = [
   align-items: center;
   gap: 0.2rem;
   padding: 0.15rem 0.5rem 0.15rem 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   background: color-mix(in srgb, var(--tone) 14%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .p-badge svg {
@@ -1723,11 +1723,11 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .p-result strong {
-  font-size: 1.05rem;
+  font-size: var(--text-title);
 }
 
 .p-pct {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -1749,13 +1749,13 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .sign-in h3 {
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .sign-in p {
   margin: 0.2rem 0 0;
   max-width: 34rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -1788,7 +1788,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .empty h3 {
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   color: var(--ink);
 }
 
@@ -1816,7 +1816,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .form-note {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -1865,12 +1865,12 @@ const PURITIES: { value: Purity, label: string }[] = [
 .fade-enter-from,
 .fade-leave-to { opacity: 0; }
 
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Side by side, the shorter column stays in view while the other scrolls (v-sticky-fit handles tall ones) */
-@media (min-width: 1001px) {
+@media (min-width: 1101px) {
   .market,
   .side {
     position: sticky;
@@ -1878,7 +1878,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .units { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .summary { grid-template-columns: 1fr 1fr; }
   .form-row { grid-template-columns: minmax(0, 1fr); }
@@ -1960,7 +1960,7 @@ const PURITIES: { value: Purity, label: string }[] = [
     overflow: hidden;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
   }
 
   .units li,
@@ -1988,7 +1988,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 
   .units strong {
     width: auto;
-    font-size: 1.05rem;
+    font-size: var(--text-title);
   }
 
   /* Converter: the results read as a list, one unit a row */
@@ -2014,7 +2014,7 @@ const PURITIES: { value: Purity, label: string }[] = [
     padding: 0.35rem;
     background: color-mix(in srgb, var(--surface) 82%, transparent);
     border: 1px solid var(--line);
-    border-radius: 24px;
+    border-radius: var(--radius-2xl);
     box-shadow: 0 12px 32px -14px rgb(0 0 0 / 0.4);
     backdrop-filter: blur(18px) saturate(1.6);
     -webkit-backdrop-filter: blur(18px) saturate(1.6);
@@ -2028,15 +2028,15 @@ const PURITIES: { value: Purity, label: string }[] = [
     gap: 0.15rem;
     padding: 0.45rem 0 0.4rem;
     font: inherit;
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
     font-weight: 600;
     color: var(--ink-3);
     background: none;
     border: 0;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: color 0.2s, background-color 0.2s, transform 0.15s;
+    transition: color var(--dur), background-color var(--dur), transform var(--dur-fast);
   }
 
   .tab-bar button:active {
@@ -2067,13 +2067,13 @@ const PURITIES: { value: Purity, label: string }[] = [
     padding: 0 0.3rem;
     display: grid;
     place-items: center;
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     font-style: normal;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     color: #1b1f2a;
     background: var(--gold);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     box-shadow: 0 0 0 2px var(--surface);
   }
 }

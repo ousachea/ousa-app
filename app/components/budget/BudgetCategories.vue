@@ -345,7 +345,7 @@ ul {
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -368,7 +368,7 @@ ul {
 }
 
 .icon {
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
 }
 
 .name {
@@ -393,7 +393,7 @@ ul {
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -445,10 +445,10 @@ ul {
 .icon-pick {
   width: 2.4rem;
   height: 2.4rem;
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   background: var(--surface-2);
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 

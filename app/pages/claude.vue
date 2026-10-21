@@ -339,7 +339,7 @@ function refresh() {
   padding: 4px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .tab {
@@ -350,7 +350,7 @@ function refresh() {
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -372,7 +372,7 @@ function refresh() {
 
 .setup h2 {
   margin: 0 0 0.5rem;
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
 }
 
 .setup p,
@@ -433,7 +433,7 @@ function refresh() {
 }
 
 .stat .k {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -441,7 +441,7 @@ function refresh() {
 }
 
 .stat b {
-  font-size: 1.8rem;
+  font-size: var(--text-2xl);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
@@ -462,7 +462,7 @@ h3 {
   align-items: baseline;
   gap: 0.25rem 0.6rem;
   margin: 0 0 0.9rem;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
 }
 
 .unit {
@@ -480,7 +480,7 @@ h3 {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
 }
 
 th,
@@ -516,7 +516,7 @@ tbody th {
   height: 4px;
   margin-top: 0.35rem;
   background: var(--surface-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
 }
 

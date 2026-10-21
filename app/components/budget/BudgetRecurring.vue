@@ -318,7 +318,7 @@ ul {
   height: 2.25rem;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--slot) 16%, var(--surface));
 }
 

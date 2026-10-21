@@ -92,7 +92,7 @@ dl div {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
 }
 
 dt {
@@ -133,12 +133,12 @@ dd {
   grid-template-columns: 3.5rem 1fr auto;
   align-items: center;
   gap: 0.6rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 .bar {
   height: 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--line);
   overflow: hidden;
 }
@@ -160,13 +160,13 @@ dd {
 
 .small {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
 .err {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--red);
 }
 </style>

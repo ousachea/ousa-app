@@ -64,7 +64,7 @@ function onClick(e: MouseEvent) {
   color: var(--ink);
   background: var(--surface);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 30px 80px -20px rgb(var(--shadow) / 0.45), 0 0 0 1px var(--line);
 }
 
@@ -91,11 +91,11 @@ function onClick(e: MouseEvent) {
 .modal,
 .modal::backdrop {
   transition:
-    opacity 0.14s var(--ease-in),
-    translate 0.14s var(--ease-in),
-    scale 0.14s var(--ease-in),
-    overlay 0.14s allow-discrete,
-    display 0.14s allow-discrete;
+    opacity var(--dur-fast) var(--ease-in),
+    translate var(--dur-fast) var(--ease-in),
+    scale var(--dur-fast) var(--ease-in),
+    overlay var(--dur-fast) allow-discrete,
+    display var(--dur-fast) allow-discrete;
 }
 
 .modal:not([open]) {
@@ -121,7 +121,7 @@ function onClick(e: MouseEvent) {
 }
 
 .modal-head h2 {
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
   letter-spacing: -0.015em;
 }
 
@@ -135,9 +135,9 @@ function onClick(e: MouseEvent) {
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 
 .close:hover {

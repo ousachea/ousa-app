@@ -222,7 +222,7 @@ function onListKey(e: KeyboardEvent) {
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: rotate 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transition: rotate var(--dur) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .open .chevron {
@@ -241,7 +241,7 @@ function onListKey(e: KeyboardEvent) {
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 2px 6px rgb(var(--shadow) / 0.08);
   outline: none;
 }
@@ -263,11 +263,11 @@ function onListKey(e: KeyboardEvent) {
   margin-bottom: 0.3rem;
   padding: 0 0.7rem;
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   outline: none;
 }
 
@@ -308,8 +308,8 @@ li {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.55rem 0.7rem;
-  font-size: 0.95rem;
-  border-radius: 9px;
+  font-size: var(--text-base);
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   cursor: pointer;
 }

@@ -321,7 +321,7 @@ onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
   color: var(--ink);
   background: var(--surface);
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   overflow: clip;
 }
@@ -361,7 +361,7 @@ onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
 
 .lead {
   display: grid;
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   color: var(--ink-3);
 }
 
@@ -387,7 +387,7 @@ input {
   min-height: 2.75rem;
   padding: 0;
   font: inherit;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   color: var(--ink);
   background: none;
   border: 0;
@@ -436,10 +436,10 @@ h3 {
   height: 2rem;
   display: grid;
   place-items: center;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   color: var(--on-c);
   background: var(--c);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 2px var(--plastic), 0 0 0 3px var(--plastic-edge);
 }
 

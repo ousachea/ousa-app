@@ -104,7 +104,7 @@ const SHORTCUTS = computed(() => [
 }
 
 h3 {
-  font-size: 1.05rem;
+  font-size: var(--text-title);
 }
 
 .note {
@@ -119,7 +119,7 @@ h3 {
 }
 
 .logo {
-  font-size: 2.4rem;
+  font-size: var(--text-3xl);
 }
 
 .app-text {
@@ -151,10 +151,10 @@ h3 {
   height: 2rem;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--on-c);
   background: var(--c);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
 }
 
 .rel-text {
@@ -187,7 +187,7 @@ time {
 .rel-text ul {
   margin: 0.3rem 0 0;
   padding-left: 1.1rem;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 

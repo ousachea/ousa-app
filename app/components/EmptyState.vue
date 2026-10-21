@@ -25,9 +25,9 @@ const emit = defineEmits<{ action: [] }>()
   display: grid;
   place-items: center;
   margin-bottom: 0.25rem;
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 </style>

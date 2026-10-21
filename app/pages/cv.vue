@@ -637,8 +637,8 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
         <span class="hero-spot" aria-hidden="true" />
         <span class="hero-rays" aria-hidden="true" />
         <div v-if="editing" class="edit-row on-dark hero-edit">
-          <button type="button" class="edit-chip" @click="editProfile"><CvIcon name="edit" />Edit profile</button>
-          <button type="button" class="edit-chip" @click="editStats"><CvIcon name="edit" />Edit numbers</button>
+          <button v-ants type="button" class="edit-chip" @click="editProfile"><CvIcon name="edit" />Edit profile</button>
+          <button v-ants type="button" class="edit-chip" @click="editStats"><CvIcon name="edit" />Edit numbers</button>
         </div>
         <p class="pill on-dark rise" style="--d: 0">
           <span class="live" aria-hidden="true" /><CvText path="profile.availability" placeholder="Availability" /> · next opening {{ nextOpening }}
@@ -716,7 +716,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
       <!-- ========== Trusted by ========== -->
       <section class="section trusted" aria-labelledby="cv-clients">
         <h2 id="cv-clients" class="title small" data-reveal>Trusted by more than <em>{{ stat(2) }}</em> clients</h2>
-        <div v-if="editing" class="edit-row"><button type="button" class="edit-chip" @click="editClients"><CvIcon name="edit" />Edit clients</button></div>
+        <div v-if="editing" class="edit-row"><button v-ants type="button" class="edit-chip" @click="editClients"><CvIcon name="edit" />Edit clients</button></div>
         <!-- Two copies end to end scroll past forever; the second is only there for the loop -->
         <div class="marquee" data-reveal>
           <ul class="logos">
@@ -732,7 +732,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
       <section id="about" class="section lined" aria-labelledby="cv-about">
         <p class="pill" data-reveal><span class="pill-icon" aria-hidden="true"><CvIcon name="wave" /></span>About me</p>
         <h2 id="cv-about" class="title" data-reveal>Hello again. I lead products from <em>discovery</em> to delivery</h2>
-        <div v-if="editing" class="edit-row"><button type="button" class="edit-chip" @click="editAbout"><CvIcon name="edit" />Edit about</button></div>
+        <div v-if="editing" class="edit-row"><button v-ants type="button" class="edit-chip" @click="editAbout"><CvIcon name="edit" />Edit about</button></div>
         <div class="about">
           <div class="about-text" data-reveal>
             <CvText v-for="(p, k) in cv.about" :key="k" tag="p" :path="`about.${k}`" placeholder="Paragraph" />
@@ -755,7 +755,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
         <p class="lede" data-reveal>Need a digital project steered from idea to launch? I keep teams aligned, scope tight and stakeholders informed. Let’s chat.</p>
 
         <div v-if="editing" class="edit-row">
-          <button type="button" class="edit-chip" @click="addItem('services')"><CvIcon name="plus" />Add service</button>
+          <button v-ants type="button" class="edit-chip" @click="addItem('services')"><CvIcon name="plus" />Add service</button>
         </div>
         <div class="tabs" role="tablist" aria-label="Services" data-reveal>
           <button
@@ -826,7 +826,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
             <span class="work-bar"><CvIcon name="check" />Delivered end to end</span>
           </li>
           <li v-if="editing" class="add-tile">
-            <button type="button" @click="addItem('work')"><CvIcon name="plus" />Add project</button>
+            <button v-ants type="button" @click="addItem('work')"><CvIcon name="plus" />Add project</button>
           </li>
         </ul>
       </section>
@@ -852,7 +852,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
             </div>
           </li>
           <li v-if="editing" class="add-tile">
-            <button type="button" @click="addItem('jobs')"><CvIcon name="plus" />Add job</button>
+            <button v-ants type="button" @click="addItem('jobs')"><CvIcon name="plus" />Add job</button>
           </li>
         </ol>
       </section>
@@ -863,7 +863,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
           <p class="pill" data-reveal><span class="pill-icon" aria-hidden="true"><CvIcon name="palette" /></span>Skills</p>
           <h2 id="cv-skills" class="title left" data-reveal>Areas of <em>expertise</em></h2>
           <p class="lede left" data-reveal>Project management first, backed by design and technical know-how, with the tools teams already use.</p>
-          <div v-if="editing" class="edit-row left"><button type="button" class="edit-chip" @click="editToolbox"><CvIcon name="edit" />Edit tools &amp; languages</button></div>
+          <div v-if="editing" class="edit-row left"><button v-ants type="button" class="edit-chip" @click="editToolbox"><CvIcon name="edit" />Edit tools &amp; languages</button></div>
           <ul class="feature-chips" data-reveal aria-label="Tools and platforms">
             <li v-for="(t, k) in cv.toolbox" :key="k"><span class="chip-dot" aria-hidden="true" /><CvText :path="`toolbox.${k}`" placeholder="Tool" /></li>
           </ul>
@@ -877,10 +877,10 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
         <div class="split-cards" data-reveal>
           <div class="glass skills-card glow">
             <div v-if="editing" class="edit-row left skills-edit">
-              <button v-if="cv.skills[skillGroup]" type="button" class="edit-chip" @click="editItem('skills', skillGroup)"><CvIcon name="edit" />Edit group</button>
-              <button type="button" class="edit-chip" @click="addItem('skills')"><CvIcon name="plus" />Add group</button>
-              <button v-if="cv.skills[skillGroup]" type="button" class="edit-chip" :disabled="skillGroup === 0" @click="moveItem('skills', skillGroup, -1)"><CvIcon name="arrow-left" />Move</button>
-              <button v-if="cv.skills[skillGroup]" type="button" class="edit-chip" :disabled="skillGroup === cv.skills.length - 1" @click="moveItem('skills', skillGroup, 1)">Move<CvIcon name="arrow-right" /></button>
+              <button v-if="cv.skills[skillGroup]" v-ants type="button" class="edit-chip" @click="editItem('skills', skillGroup)"><CvIcon name="edit" />Edit group</button>
+              <button v-ants type="button" class="edit-chip" @click="addItem('skills')"><CvIcon name="plus" />Add group</button>
+              <button v-if="cv.skills[skillGroup]" v-ants type="button" class="edit-chip" :disabled="skillGroup === 0" @click="moveItem('skills', skillGroup, -1)"><CvIcon name="arrow-left" />Move</button>
+              <button v-if="cv.skills[skillGroup]" v-ants type="button" class="edit-chip" :disabled="skillGroup === cv.skills.length - 1" @click="moveItem('skills', skillGroup, 1)">Move<CvIcon name="arrow-right" /></button>
             </div>
             <div class="tabs small" role="tablist" aria-label="Skill groups">
               <button
@@ -923,10 +923,10 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
             <CvText tag="p" class="muted" :path="`education.${i}.org`" placeholder="Where" />
           </li>
           <li v-if="editing" class="add-tile">
-            <button type="button" @click="addItem('education')"><CvIcon name="plus" />Add qualification</button>
+            <button v-ants type="button" @click="addItem('education')"><CvIcon name="plus" />Add qualification</button>
           </li>
         </ul>
-        <div v-if="editing" class="edit-row"><button type="button" class="edit-chip" @click="editCertified"><CvIcon name="edit" />Edit certifications</button></div>
+        <div v-if="editing" class="edit-row"><button v-ants type="button" class="edit-chip" @click="editCertified"><CvIcon name="edit" />Edit certifications</button></div>
         <ul class="certified" data-reveal aria-label="Certified with">
           <li v-for="(c, k) in cv.certified" :key="k" class="logo-pill"><span class="logo-dot" aria-hidden="true"><CvIcon name="check" /></span><CvText :path="`certified.${k}`" placeholder="Certification" /></li>
         </ul>
@@ -946,7 +946,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
             </p>
           </li>
           <li v-if="editing" class="add-tile">
-            <button type="button" @click="addItem('testimonials')"><CvIcon name="plus" />Add testimonial</button>
+            <button v-ants type="button" @click="addItem('testimonials')"><CvIcon name="plus" />Add testimonial</button>
           </li>
         </ul>
       </section>
@@ -965,7 +965,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
             <a v-if="a.url" :href="a.url" target="_blank" rel="noopener" class="read-link">Read article<CvIcon name="arrow-up-right" /><span class="sr-only"> (opens in a new tab)</span></a>
           </li>
           <li v-if="editing" class="add-tile">
-            <button type="button" @click="addItem('articles')"><CvIcon name="plus" />Add article</button>
+            <button v-ants type="button" @click="addItem('articles')"><CvIcon name="plus" />Add article</button>
           </li>
         </ul>
       </section>
@@ -1029,8 +1029,9 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
 .cv {
   --gap: clamp(4rem, 9vw, 7rem);
   --violet: #7c3aed;
-  --violet-soft: color-mix(in srgb, #7c3aed 12%, var(--surface));
-  --hero: linear-gradient(180deg, #8f5cf7 0%, #7c3aed 45%, #5b21b6 100%);
+  --violet-2: #9b5cf5; /* lighter, for rings and glows */
+  --violet-soft: color-mix(in srgb, var(--violet) 12%, var(--surface));
+  --hero: linear-gradient(180deg, #8f5cf7 0%, var(--violet) 45%, #5b21b6 100%);
   --glass: color-mix(in srgb, var(--surface) 82%, transparent);
   --glass-line: color-mix(in srgb, var(--line) 70%, #fff);
   --float: 0 24px 48px -24px rgb(var(--shadow) / 0.35), 0 2px 6px rgb(var(--shadow) / 0.06);
@@ -1080,7 +1081,7 @@ p {
 
 h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   letter-spacing: -0.01em;
 }
 
@@ -1095,12 +1096,12 @@ h3 {
   gap: 0.45rem;
   margin: 0 auto 1rem;
   padding: 0.3rem 0.85rem 0.3rem 0.35rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: var(--glass);
   border: 1px solid var(--glass-line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 2px 8px rgb(var(--shadow) / 0.06);
 }
 
@@ -1109,7 +1110,7 @@ h3 {
   height: 1.4rem;
   display: grid;
   place-items: center;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   background: var(--violet-soft);
   border-radius: 50%;
 }
@@ -1140,14 +1141,14 @@ h3 {
 
 .title em {
   font-style: normal;
-  background: linear-gradient(90deg, #9b5cf5, #6d28d9);
+  background: linear-gradient(90deg, var(--violet-2), #6d28d9);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 :root[data-theme='dark'] .title em {
-  background-image: linear-gradient(90deg, #c4a6ff, #9b5cf5);
+  background-image: linear-gradient(90deg, #c4a6ff, var(--violet-2));
 }
 
 .title.left,
@@ -1193,14 +1194,14 @@ h3 {
   position: relative;
   background: var(--glass);
   border: 1px solid var(--glass-line);
-  border-radius: 22px;
+  border-radius: var(--radius-xl);
   box-shadow: var(--float);
   backdrop-filter: blur(12px);
 }
 
 .fc-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 500;
   color: var(--ink-3);
 }
@@ -1209,11 +1210,11 @@ h3 {
   flex: none;
   width: fit-content;
   padding: 0.15rem 0.55rem;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   color: var(--violet);
   background: var(--violet-soft);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .fc-tag.good {
@@ -1231,7 +1232,7 @@ h3 {
   flex: none;
   display: grid;
   place-items: center;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: #fff;
   background: var(--hero);
   border-radius: 50%;
@@ -1251,22 +1252,22 @@ h3 {
 }
 
 .pill-icon {
-  font-size: 0.8rem;
-  border-radius: 7px;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-xs);
 }
 
 .fc-icon {
-  font-size: 1rem;
-  border-radius: 10px;
+  font-size: var(--text-md);
+  border-radius: var(--radius-sm);
 }
 
 .logo-dot .cv-icon {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .service-icon {
-  font-size: 1.35rem;
-  border-radius: 14px;
+  font-size: var(--text-xl);
+  border-radius: var(--radius-lg);
   box-shadow:
     0 0 0 2.5px var(--plastic),
     inset 0 -4px 0 rgb(0 0 0 / 0.18),
@@ -1286,17 +1287,17 @@ h3 {
 }
 
 .fc-meta .cv-icon {
-  font-size: 0.95rem;
-  color: #9b5cf5;
+  font-size: var(--text-base);
+  color: var(--violet-2);
 }
 
 .work-bar .cv-icon {
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .nav-sheet a .cv-icon,
 .nav-sheet-pdf .cv-icon {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   color: var(--ink-3);
 }
 
@@ -1315,7 +1316,7 @@ h3 {
   color: #fff;
   background: var(--hero);
   border-radius: 32px;
-  box-shadow: 0 30px 60px -30px color-mix(in srgb, #7c3aed 70%, transparent);
+  box-shadow: 0 30px 60px -30px color-mix(in srgb, var(--violet) 70%, transparent);
 }
 
 /* A drafting grid and soft light from the top */
@@ -1387,7 +1388,7 @@ h3 {
 .hero-sub {
   max-width: 36rem;
   margin-top: 1rem;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
   color: rgb(255 255 255 / 0.82);
 }
 
@@ -1401,7 +1402,7 @@ h3 {
   padding: 0.35rem 0.35rem 0.35rem 1.25rem;
   background: rgb(255 255 255 / 0.16);
   border: 1px solid rgb(255 255 255 / 0.3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   backdrop-filter: blur(10px);
 }
 
@@ -1412,7 +1413,7 @@ h3 {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: left;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   color: rgb(255 255 255 / 0.9);
   text-decoration: none;
 }
@@ -1423,14 +1424,14 @@ h3 {
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 1.1rem 0.35rem 0.35rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: #fff;
   text-decoration: none;
   background: #14121c;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 6px 16px rgb(0 0 0 / 0.25);
-  transition: transform 0.15s, background-color 0.15s;
+  transition: transform var(--dur-fast), background-color var(--dur-fast);
 }
 
 .hero-btn:hover {
@@ -1451,8 +1452,8 @@ h3 {
 }
 
 .hero-btn-dot svg {
-  font-size: 1rem;
-  transition: transform 0.2s;
+  font-size: var(--text-md);
+  transition: transform var(--dur);
 }
 
 .hero-btn:hover .hero-btn-dot svg {
@@ -1463,7 +1464,7 @@ h3 {
   display: flex;
   gap: 0.6rem;
   margin-top: 1rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: rgb(255 255 255 / 0.75);
 }
 
@@ -1502,7 +1503,7 @@ h3 {
   padding: 1rem 1rem 3.25rem;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   border: 1px solid rgb(255 255 255 / 0.6);
-  border-radius: 22px 22px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: 0 -10px 40px -10px rgb(30 0 80 / 0.35);
   backdrop-filter: blur(14px);
 }
@@ -1517,12 +1518,12 @@ h3 {
   gap: 0.6rem;
   padding: 0.5rem;
   background: var(--surface-2);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .fc-strong {
   flex: 1;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
 }
 
@@ -1546,18 +1547,18 @@ h3 {
   padding: 0.85rem;
   background: linear-gradient(180deg, var(--violet-soft), var(--surface));
   border: 1px solid var(--glass-line);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .fc-big {
-  font-size: 1.9rem;
+  font-size: var(--text-2xl);
   font-weight: 800;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 
 .fc-big small {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-3);
 }
@@ -1568,7 +1569,7 @@ h3 {
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
 }
 
@@ -1579,19 +1580,19 @@ h3 {
 }
 
 .fc-head strong {
-  font-size: 1.1rem;
+  font-size: var(--text-title);
 }
 
 .fc-avatar {
   width: 4.5rem;
   height: 4.5rem;
   object-fit: cover;
-  border-radius: 20px;
-  box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px #9b5cf5;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--violet-2);
 }
 
 .fc-role {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -1603,10 +1604,10 @@ h3 {
 
 .fc-focus li {
   padding: 0.25rem 0.6rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   background: var(--surface-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 /* ---------- Trusted by: logo pills sliding past ---------- */
@@ -1654,7 +1655,7 @@ h3 {
   white-space: nowrap;
   background: var(--glass);
   border: 1px solid var(--glass-line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 4px 14px rgb(var(--shadow) / 0.06);
 }
 
@@ -1663,10 +1664,10 @@ h3 {
   height: 1.6rem;
   display: grid;
   place-items: center;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: #fff;
   background: var(--hero);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 /* ---------- About ---------- */
@@ -1683,7 +1684,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   line-height: 1.65;
   color: var(--ink-2);
 }
@@ -1699,7 +1700,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   font-weight: 700;
 }
 
@@ -1711,8 +1712,8 @@ h3 {
   color: var(--ink);
   text-decoration: none;
   background: var(--surface-2);
-  border-radius: 12px;
-  transition: background-color 0.15s;
+  border-radius: var(--radius);
+  transition: background-color var(--dur-fast);
 }
 
 .link-row:hover {
@@ -1729,7 +1730,7 @@ h3 {
   padding: 0.3rem;
   background: var(--glass);
   border: 1px solid var(--glass-line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 2px 10px rgb(var(--shadow) / 0.06);
 }
 
@@ -1739,14 +1740,14 @@ h3 {
   gap: 0.4rem;
   padding: 0.45rem 0.9rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color var(--dur);
 }
 
 .tabs button.active {
@@ -1792,7 +1793,7 @@ h3 {
   padding: 1.5rem;
   background: var(--glass);
   border: 1px solid var(--glass-line);
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
   box-shadow: var(--float);
   opacity: 0.55;
   transform: scale(0.92);
@@ -1807,7 +1808,7 @@ h3 {
   opacity: 1;
   transform: none;
   cursor: default;
-  box-shadow: 0 30px 50px -24px color-mix(in srgb, #7c3aed 80%, transparent);
+  box-shadow: 0 30px 50px -24px color-mix(in srgb, var(--violet) 80%, transparent);
 }
 
 .service-icon {
@@ -1819,11 +1820,11 @@ h3 {
 }
 
 .service h3 {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
 }
 
 .service p {
-  font-size: 0.92rem;
+  font-size: var(--text-base);
   line-height: 1.55;
   color: var(--ink-2);
 }
@@ -1838,10 +1839,10 @@ h3 {
   justify-content: space-between;
   margin-top: 0.75rem;
   padding: 0.5rem 0.5rem 0.5rem 0.85rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   background: var(--surface-2);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .service.active .service-foot {
@@ -1854,7 +1855,7 @@ h3 {
   color: #fff;
   text-decoration: none;
   background: var(--violet);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 /* ---------- Selected work ---------- */
@@ -1895,7 +1896,7 @@ h3 {
   flex: none;
   display: grid;
   place-items: center;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 800;
   color: #fff;
   background: var(--hero);
@@ -1903,7 +1904,7 @@ h3 {
 }
 
 .work-text {
-  font-size: 0.92rem;
+  font-size: var(--text-base);
   line-height: 1.55;
   color: var(--ink-2);
 }
@@ -1920,7 +1921,7 @@ h3 {
   padding: 0.6rem 0.7rem;
   background: var(--surface-2);
   border: 1px solid var(--glass-line);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .work-facts dd {
@@ -1929,7 +1930,7 @@ h3 {
 }
 
 .work-facts dt {
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   color: var(--ink-3);
 }
 
@@ -1938,11 +1939,11 @@ h3 {
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 0.85rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: #fff;
   background: var(--hero);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 /* ---------- Experience ---------- */
@@ -1967,11 +1968,11 @@ h3 {
   flex: none;
   display: grid;
   place-items: center;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 800;
   color: var(--violet);
   background: var(--violet-soft);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 :root[data-theme='dark'] .job-logo {
@@ -1995,7 +1996,7 @@ h3 {
   flex-direction: column;
   gap: 0.3rem;
   margin-top: 0.6rem;
-  font-size: 0.92rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -2012,7 +2013,7 @@ h3 {
   width: 0.35rem;
   height: 0.35rem;
   border-radius: 50%;
-  background: #9b5cf5;
+  background: var(--violet-2);
 }
 
 /* ---------- Skills: copy and chips on the left, cards on the right ---------- */
@@ -2045,18 +2046,18 @@ h3 {
   align-items: center;
   gap: 0.45rem;
   padding: 0.4rem 0.75rem 0.4rem 0.45rem;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   background: var(--glass);
   border: 1px solid var(--glass-line);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .chip-dot {
   width: 1.15rem;
   height: 1.15rem;
   background: var(--hero);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 .languages {
@@ -2071,7 +2072,7 @@ h3 {
   padding: 0.6rem 1rem;
   background: var(--glass);
   border: 1px solid var(--glass-line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .languages dt {
@@ -2080,7 +2081,7 @@ h3 {
 
 .languages dd {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -2103,13 +2104,13 @@ h3 {
   align-self: flex-start;
   margin: -2rem 0 0 -1.5rem;
   padding: 0.75rem 1.1rem 0.75rem 0.75rem;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .toast-card > span:last-child {
   display: flex;
   flex-direction: column;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
 }
 
 .bars {
@@ -2121,7 +2122,7 @@ h3 {
 .bar-label {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
 }
 
@@ -2136,7 +2137,7 @@ h3 {
   margin-top: 0.35rem;
   overflow: hidden;
   background: var(--surface-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 /* Each bar fills from empty when its group shows */
@@ -2158,7 +2159,7 @@ h3 {
 
 .fade-swap-enter-active,
 .fade-swap-leave-active {
-  transition: opacity 0.2s, transform 0.2s;
+  transition: opacity var(--dur), transform var(--dur);
 }
 
 .fade-swap-enter-from,
@@ -2231,7 +2232,7 @@ h3 {
   height: 2.4rem;
   display: grid;
   place-items: center;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: #fff;
   background: var(--hero);
@@ -2264,14 +2265,14 @@ h3 {
   flex-direction: column;
   justify-content: space-between;
   gap: 1.5rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
 }
 
 .foot-brand {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -2281,14 +2282,14 @@ h3 {
   height: 2.75rem;
   object-fit: cover;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px #9b5cf5;
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--violet-2);
 }
 
 .foot-col {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
 }
 
 .foot-head {
@@ -2319,11 +2320,11 @@ h3 {
   display: flex;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   background: var(--glass);
   border: 1px solid var(--glass-line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 /* ---------- Motion ---------- */
@@ -2413,9 +2414,9 @@ h3 {
   transition:
     opacity 0.7s var(--ease-out),
     transform 0.7s var(--ease-out),
-    border-color 0.25s,
-    box-shadow 0.25s,
-    translate 0.25s var(--ease-out);
+    border-color var(--dur),
+    box-shadow var(--dur),
+    translate var(--dur) var(--ease-out);
   /* The reveal keeps its stagger; hover reacts at once */
   transition-delay: calc(var(--i, 0) * 90ms), calc(var(--i, 0) * 90ms), 0s, 0s, 0s;
 }
@@ -2426,17 +2427,17 @@ h3 {
   z-index: -1;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, #9b5cf5 16%, transparent), transparent 70%);
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--violet-2) 16%, transparent), transparent 70%);
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--dur-slow);
   pointer-events: none;
 }
 
 @media (hover: hover) {
   .glow:hover {
     translate: 0 -4px;
-    border-color: color-mix(in srgb, #9b5cf5 45%, var(--glass-line));
-    box-shadow: 0 30px 50px -26px color-mix(in srgb, #7c3aed 60%, transparent);
+    border-color: color-mix(in srgb, var(--violet-2) 45%, var(--glass-line));
+    box-shadow: 0 30px 50px -26px color-mix(in srgb, var(--violet) 60%, transparent);
   }
 
   .glow:hover::before {
@@ -2461,10 +2462,10 @@ h3 {
   padding: 0.45rem 0.45rem 0.45rem 0.55rem;
   background: color-mix(in srgb, var(--surface) 72%, transparent);
   border: 1px solid var(--glass-line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 2px 10px rgb(var(--shadow) / 0.05);
   backdrop-filter: blur(16px) saturate(1.4);
-  transition: box-shadow 0.3s, background-color 0.3s, border-color 0.3s;
+  transition: box-shadow var(--dur-slow), background-color var(--dur-slow), border-color var(--dur-slow);
   animation: cv-rise 0.6s var(--ease-out) both;
 }
 
@@ -2490,7 +2491,7 @@ h3 {
   height: 2.25rem;
   object-fit: cover;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px #9b5cf5;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--violet-2);
   transition: transform 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
@@ -2510,12 +2511,12 @@ h3 {
   z-index: 1;
   display: block;
   padding: 0.5rem 0.85rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink-2);
   text-decoration: none;
-  border-radius: 999px;
-  transition: color 0.2s;
+  border-radius: var(--radius-pill);
+  transition: color var(--dur);
 }
 
 .nav-links a:hover {
@@ -2538,10 +2539,10 @@ h3 {
   width: var(--w);
   height: 100%;
   background: var(--violet-soft);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   opacity: 0;
   translate: var(--x) 0;
-  transition: translate 0.45s var(--ease-out), width 0.45s var(--ease-out), opacity 0.3s;
+  transition: translate 0.45s var(--ease-out), width 0.45s var(--ease-out), opacity var(--dur-slow);
 }
 
 .nav-marker.on {
@@ -2559,12 +2560,12 @@ h3 {
   align-items: center;
   gap: 0.45rem;
   padding: 0.5rem 0.8rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink-2);
   text-decoration: none;
-  border-radius: 999px;
-  transition: background-color 0.2s, color 0.2s;
+  border-radius: var(--radius-pill);
+  transition: background-color var(--dur), color var(--dur);
 }
 
 .nav-apps:hover {
@@ -2584,19 +2585,19 @@ h3 {
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1.1rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   color: #fff;
   text-decoration: none;
   background: var(--hero);
-  border-radius: 999px;
-  box-shadow: 0 8px 20px -8px color-mix(in srgb, #7c3aed 80%, transparent);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--violet) 80%, transparent);
   translate: var(--gx, 0px) var(--gy, 0px);
-  transition: translate 0.35s var(--ease-out), transform 0.15s, box-shadow 0.2s;
+  transition: translate var(--dur-slow) var(--ease-out), transform var(--dur-fast), box-shadow var(--dur);
 }
 
 .nav-hire:hover {
-  box-shadow: 0 12px 26px -8px color-mix(in srgb, #7c3aed 90%, transparent);
+  box-shadow: 0 12px 26px -8px color-mix(in srgb, var(--violet) 90%, transparent);
 }
 
 .nav-hire:active {
@@ -2625,7 +2626,7 @@ h3 {
   margin-left: -0.5rem;
   background: var(--ink);
   border-radius: 2px;
-  transition: transform 0.3s var(--ease-out);
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 .nav-toggle span:first-child {
@@ -2654,7 +2655,7 @@ h3 {
   padding: 0.5rem;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   border: 1px solid var(--glass-line);
-  border-radius: 22px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 24px 48px -20px rgb(var(--shadow) / 0.45);
   backdrop-filter: blur(16px);
 }
@@ -2671,7 +2672,7 @@ h3 {
   text-align: left;
   background: none;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
 }
 
@@ -2684,12 +2685,12 @@ h3 {
   margin-top: 0.25rem;
   color: var(--ink-2);
   border-top: 1px solid var(--line);
-  border-radius: 0 0 14px 14px;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
 .nav-drop-enter-active,
 .nav-drop-leave-active {
-  transition: opacity 0.2s, transform 0.25s var(--ease-out);
+  transition: opacity var(--dur), transform var(--dur) var(--ease-out);
 }
 
 .nav-drop-enter-from,
@@ -2705,14 +2706,14 @@ h3 {
   gap: 0.4rem;
   padding: 0.55rem 0.9rem;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--glass-line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color var(--dur), color var(--dur);
 }
 
 .nav-edit.on {
@@ -2740,19 +2741,19 @@ h3 {
   gap: 0.35rem;
   padding: 0.4rem 0.8rem;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--violet);
   background: var(--violet-soft);
-  border: 1px dashed color-mix(in srgb, #7c3aed 45%, transparent);
-  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--violet) 45%, transparent);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background-color 0.15s, transform 0.15s;
+  transition: background-color var(--dur-fast), transform var(--dur-fast);
   animation: cv-pop-icon 0.3s cubic-bezier(0.3, 1.5, 0.6, 1);
 }
 
 .edit-chip:hover:not(:disabled) {
-  background: color-mix(in srgb, #7c3aed 20%, var(--surface));
+  background: color-mix(in srgb, var(--violet) 20%, var(--surface));
 }
 
 .edit-chip:active:not(:disabled) {
@@ -2803,15 +2804,15 @@ h3 {
   font-weight: 700;
   color: var(--violet);
   background: color-mix(in srgb, var(--violet-soft) 60%, transparent);
-  border: 2px dashed color-mix(in srgb, #7c3aed 40%, transparent);
-  border-radius: 22px;
+  border: 2px dashed color-mix(in srgb, var(--violet) 40%, transparent);
+  border-radius: var(--radius-xl);
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: background-color var(--dur), border-color var(--dur);
 }
 
 .add-tile button:hover {
   background: var(--violet-soft);
-  border-color: #7c3aed;
+  border-color: var(--violet);
 }
 
 :root[data-theme='dark'] .add-tile button {
@@ -2879,7 +2880,7 @@ h3 {
   padding: 0.5rem 0.5rem 0.5rem 1rem;
   color: #fff;
   background: #14121c;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 20px 40px -12px rgb(0 0 0 / 0.5);
   translate: -50% 0;
 }
@@ -2906,12 +2907,12 @@ h3 {
 .edit-bar-text {
   display: flex;
   flex-direction: column;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   line-height: 1.25;
 }
 
 .edit-bar-text span {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: rgb(255 255 255 / 0.65);
 }
 
@@ -2921,12 +2922,12 @@ h3 {
   gap: 0.4rem;
   padding: 0.55rem 0.95rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: #14121c;
   background: #fff;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
@@ -2941,7 +2942,7 @@ h3 {
 
 .edit-bar-enter-active,
 .edit-bar-leave-active {
-  transition: opacity 0.25s, translate 0.35s var(--ease-out);
+  transition: opacity var(--dur), translate var(--dur-slow) var(--ease-out);
 }
 
 .edit-bar-enter-from,
@@ -2955,7 +2956,7 @@ h3 {
   align-items: center;
   gap: 0.35rem;
   margin-top: 0.5rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -2977,7 +2978,7 @@ h3 {
   align-items: center;
   gap: 0.3rem;
   margin-top: auto;
-  font-size: 0.88rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--violet);
   text-decoration: none;
@@ -2988,7 +2989,7 @@ h3 {
   color: #d4bfff;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .edit-bar-text span {
     display: none;
   }
@@ -3017,7 +3018,7 @@ h3 {
     inset: 0 0 auto;
     display: block;
     height: 3px;
-    background: linear-gradient(90deg, #b06cf7, #7c3aed, #5b21b6);
+    background: linear-gradient(90deg, #b06cf7, var(--violet), #5b21b6);
     transform-origin: left;
     animation: cv-progress linear both;
     animation-timeline: scroll(root);
@@ -3043,16 +3044,16 @@ h3 {
   width: 34px;
   height: 34px;
   margin: -17px 0 0 -17px;
-  border: 1.5px solid color-mix(in srgb, #9b5cf5 75%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--violet-2) 75%, transparent);
   border-radius: 50%;
   opacity: 0;
   pointer-events: none;
   transition:
-    opacity 0.25s,
-    width 0.3s var(--ease-out),
-    height 0.3s var(--ease-out),
-    margin 0.3s var(--ease-out),
-    background-color 0.3s;
+    opacity var(--dur),
+    width var(--dur-slow) var(--ease-out),
+    height var(--dur-slow) var(--ease-out),
+    margin var(--dur-slow) var(--ease-out),
+    background-color var(--dur-slow);
 }
 
 .ring.on {
@@ -3063,8 +3064,8 @@ h3 {
   width: 58px;
   height: 58px;
   margin: -29px 0 0 -29px;
-  background: color-mix(in srgb, #9b5cf5 10%, transparent);
-  border-color: color-mix(in srgb, #9b5cf5 45%, transparent);
+  background: color-mix(in srgb, var(--violet-2) 10%, transparent);
+  border-color: color-mix(in srgb, var(--violet-2) 45%, transparent);
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -3128,10 +3129,10 @@ h3 {
 @media (hover: hover) {
   .glow.settled {
     transition:
-      transform 0.25s var(--ease-out),
-      translate 0.25s var(--ease-out),
-      border-color 0.25s,
-      box-shadow 0.25s,
+      transform var(--dur) var(--ease-out),
+      translate var(--dur) var(--ease-out),
+      border-color var(--dur),
+      box-shadow var(--dur),
       opacity 0.4s;
     transition-delay: 0s;
   }
@@ -3146,9 +3147,9 @@ h3 {
 .service-btn.magnetic {
   translate: var(--gx, 0px) var(--gy, 0px);
   transition:
-    translate 0.35s var(--ease-out),
-    transform 0.15s,
-    background-color 0.15s;
+    translate var(--dur-slow) var(--ease-out),
+    transform var(--dur-fast),
+    background-color var(--dur-fast);
 }
 
 /* The dark button: a sheen crosses it on hover */
@@ -3201,7 +3202,7 @@ h3 {
   place-items: center;
   border-radius: 50%;
   background: rgb(255 255 255 / 0.12);
-  transition: background-color 0.2s, transform 0.2s;
+  transition: background-color var(--dur), transform var(--dur);
 }
 
 .copy-icon svg {
@@ -3233,13 +3234,13 @@ h3 {
 
 /* The purple words in headings shimmer slowly */
 .title em {
-  background-image: linear-gradient(90deg, #9b5cf5, #6d28d9, #b06cf7, #9b5cf5);
+  background-image: linear-gradient(90deg, var(--violet-2), #6d28d9, #b06cf7, var(--violet-2));
   background-size: 300% 100%;
   animation: cv-em 8s ease-in-out infinite alternate;
 }
 
 :root[data-theme='dark'] .title em {
-  background-image: linear-gradient(90deg, #c4a6ff, #9b5cf5, #e0ccff, #c4a6ff);
+  background-image: linear-gradient(90deg, #c4a6ff, var(--violet-2), #e0ccff, #c4a6ff);
 }
 
 @keyframes cv-em {
@@ -3259,7 +3260,7 @@ h3 {
 
 /* Tabs: the chosen tab's icon pops */
 .tabs button > .cv-icon {
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 .tabs button.active > .cv-icon {
@@ -3273,7 +3274,7 @@ h3 {
 
 /* Client pills rise a touch, and their badge turns */
 .logo-pill {
-  transition: translate 0.25s var(--ease-out), border-color 0.25s;
+  transition: translate var(--dur) var(--ease-out), border-color var(--dur);
 }
 
 .logo-dot {
@@ -3282,7 +3283,7 @@ h3 {
 
 .logo-pill:hover {
   translate: 0 -3px;
-  border-color: color-mix(in srgb, #9b5cf5 45%, var(--glass-line));
+  border-color: color-mix(in srgb, var(--violet-2) 45%, var(--glass-line));
 }
 
 .logo-pill:hover .logo-dot {
@@ -3300,7 +3301,7 @@ h3 {
 }
 
 .work-facts div {
-  transition: translate 0.2s var(--ease-out), background-color 0.2s;
+  transition: translate var(--dur) var(--ease-out), background-color var(--dur);
 }
 
 .work-facts div:hover {
@@ -3309,7 +3310,7 @@ h3 {
 }
 
 .link-arrow {
-  transition: transform 0.2s var(--ease-out);
+  transition: transform var(--dur) var(--ease-out);
 }
 
 .link-row:hover .link-arrow {
@@ -3331,7 +3332,7 @@ h3 {
   background-size: 0% 1px;
   background-position: 0 100%;
   background-repeat: no-repeat;
-  transition: background-size 0.3s var(--ease-out), color 0.2s;
+  transition: background-size var(--dur-slow) var(--ease-out), color var(--dur);
 }
 
 .foot-col a:hover,
@@ -3340,7 +3341,7 @@ h3 {
 }
 
 /* ---------- Narrower screens ---------- */
-@media (max-width: 960px) {
+@media (max-width: 900px) {
   .nav-links,
   .nav-apps span {
     display: none;
@@ -3379,10 +3380,10 @@ h3 {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .hero,
   .cta {
-    border-radius: 24px;
+    border-radius: var(--radius-2xl);
   }
 
   .nav-brand span {
@@ -3550,7 +3551,7 @@ h3 {
   }
 
   .float-card {
-    border-radius: 22px;
+    border-radius: var(--radius-xl);
   }
 
   .glass,

@@ -42,7 +42,7 @@ import 'vue-sonner/style.css'
   --normal-bg: var(--goey-bg);
   --normal-border: var(--goey-bg);
   --normal-text: var(--goey-text);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 12px 18px;
   font-family: var(--font);
   box-shadow: 0 10px 30px rgb(var(--shadow) / 0.3);

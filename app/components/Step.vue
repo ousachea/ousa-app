@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-  <section class="step" :aria-label="n ? `Step ${n}: ${title}` : title">
+  <section class="step" :aria-label="n ? `Step ${n}: ${title}` : title" :style="n ? { '--step': Math.min(n, 5) - 1 } : undefined">
     <header class="step-head">
       <!-- The number and title always stay together; only the aside drops below when it's tight -->
       <div class="step-main">
@@ -26,8 +26,31 @@ defineProps<{
 </template>
 
 <style scoped>
+/* Steps rise in one after another as the page opens. Only the start is held (backwards), so once it
+   has played nothing is left on the step: a lingering transform would break sticky columns and
+   anything fixed inside it */
 .step {
   min-width: 0;
+  animation: step-in var(--dur-slow) var(--ease-out) backwards;
+  animation-delay: calc(var(--step, 0) * 60ms);
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step {
+    animation: none;
+  }
+}
+
+:root[data-motion='reduced'] .step,
+:root[data-effects='lite'] .step {
+  animation: none;
 }
 
 .step-head {
@@ -45,19 +68,19 @@ defineProps<{
   height: 1.75rem;
   display: grid;
   place-items: center;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--on-accent, #fff);
   background: var(--accent);
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   box-shadow:
     0 0 0 2px var(--plastic),
     inset 0 -3px 0 rgb(0 0 0 / 0.12);
 }
 
 h2 {
-  font-size: 1.15rem;
+  font-size: var(--text-title);
   line-height: 1.75rem;
   letter-spacing: -0.015em;
 }
@@ -84,7 +107,7 @@ h2 {
 
 .step-head p {
   margin: 0.1rem 0 0;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 </style>

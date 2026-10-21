@@ -99,7 +99,7 @@ function save() {
 }
 
 .k {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -107,12 +107,12 @@ function save() {
 }
 
 b {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   font-variant-numeric: tabular-nums;
 }
 
 .of {
-  font-size: 1rem;
+  font-size: var(--text-md);
   font-weight: 500;
   color: var(--ink-2);
 }

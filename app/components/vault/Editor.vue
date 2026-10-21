@@ -98,7 +98,7 @@ async function submit() {
 }
 
 h2 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   overflow-wrap: anywhere;
 }
 

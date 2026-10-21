@@ -419,7 +419,7 @@ function del(r: Renewal) {
             <span :title="name">{{ name }}</span>
           </button>
           <button type="button" class="quick-service other" @click="openAdd">
-            <span class="plus" aria-hidden="true">+</span>
+            <span v-ants class="plus" aria-hidden="true">+</span>
             <span>Something else</span>
           </button>
         </div>
@@ -553,7 +553,7 @@ function del(r: Renewal) {
 .step-empty {
   margin: 0;
   padding: 1rem 1.25rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -575,16 +575,16 @@ function del(r: Renewal) {
   gap: 0.6rem;
   min-width: 0;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   text-align: left;
   color: var(--ink-2);
   background: var(--surface-2);
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.15s, color 0.15s, transform 0.15s;
+  transition: border-color var(--dur-fast), color var(--dur-fast), transform var(--dur-fast);
 }
 
 .quick-service > span:last-child {
@@ -597,7 +597,7 @@ function del(r: Renewal) {
 .quick-service .plus {
   width: 2.1rem;
   height: 2.1rem;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .quick-service :deep(.renewal-icon img) {
@@ -618,7 +618,7 @@ function del(r: Renewal) {
   flex: none;
   display: grid;
   place-items: center;
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--accent);
   border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, var(--line));
@@ -702,7 +702,7 @@ function del(r: Renewal) {
 }
 
 /* Phones: all six periods on two rows, rather than Year hidden off the edge */
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .periods {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -755,7 +755,7 @@ function del(r: Renewal) {
 .library-toggle {
   align-self: flex-start;
   margin-top: 0.15rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .icon-row > :last-child {
@@ -807,7 +807,7 @@ function del(r: Renewal) {
 }
 
 .label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -838,7 +838,7 @@ function del(r: Renewal) {
 }
 
 .list-head h3 {
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: var(--ink-2);
 }
 
@@ -875,18 +875,18 @@ function del(r: Renewal) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   line-height: 1.1;
 }
 
 .when strong {
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   font-variant-numeric: tabular-nums;
 }
 
 .when strong.word {
-  font-size: 1rem;
+  font-size: var(--text-md);
 }
 
 /* Expired: everything steps back */
@@ -911,7 +911,7 @@ function del(r: Renewal) {
 }
 
 .when span {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
 }
 
@@ -933,7 +933,7 @@ function del(r: Renewal) {
 }
 
 .meta {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -954,7 +954,7 @@ function del(r: Renewal) {
 }
 
 .empty h2 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   color: var(--ink);
 }
 
@@ -964,7 +964,7 @@ function del(r: Renewal) {
 
 
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .summary { grid-template-columns: 1fr 1fr; }
   .renewal { flex-wrap: wrap; }
   .links { width: 100%; justify-content: flex-end; }

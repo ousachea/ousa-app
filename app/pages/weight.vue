@@ -479,7 +479,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 .step-empty {
   margin: 0;
   padding: 1rem 1.25rem;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -521,22 +521,36 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 
 .hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
 .stats {
   padding: 1.25rem 1.4rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  align-items: start;
+  gap: 1rem 1.5rem;
 }
 
-/* The goal takes the whole width under the two numbers */
+/* On a wide screen the goal sits third in the row, set off by a rule */
 .stats .goal {
-  grid-column: 1 / -1;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--line);
+}
+
+/* Narrower, it takes the whole width under the two numbers */
+@media (max-width: 760px) {
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stats .goal {
+    grid-column: 1 / -1;
+    padding: 1rem 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
 }
 
 .goal-form,
@@ -581,20 +595,27 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 }
 
 .label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
 }
 
 .stats strong {
-  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-size: var(--text-2xl);
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
 }
 
+/* The latest weight is the answer; the change and goal back it up */
+.stats div:first-child strong {
+  font-size: var(--text-hero);
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
 .sub {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -627,7 +648,7 @@ svg {
 svg:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 4px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 /* Recessive grid and axis labels in text tokens */
@@ -686,18 +707,18 @@ svg:focus-visible {
   padding: 0.45rem 0.65rem;
   display: flex;
   flex-direction: column;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 6px 18px rgb(var(--shadow) / 0.15);
   pointer-events: none;
   white-space: nowrap;
 }
 
 .tooltip strong {
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -722,7 +743,7 @@ table {
   width: 100%;
   margin-top: 0.75rem;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
 }
 
 th,
@@ -733,7 +754,7 @@ td {
 }
 
 th {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -778,7 +799,7 @@ tfoot td {
 }
 
 tfoot th {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink);
 }
 
@@ -804,7 +825,7 @@ tfoot th {
 }
 
 .empty h2 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   color: var(--ink);
 }
 

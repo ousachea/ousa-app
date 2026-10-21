@@ -139,7 +139,7 @@ onBeforeUnmount(() => {
   padding: 0.3rem;
   color: var(--ink);
   background: var(--surface);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.4), 0 0 0 1px var(--line);
   transform-origin: top left;
 }
@@ -152,12 +152,12 @@ onBeforeUnmount(() => {
   min-height: 2.25rem;
   padding: 0.3rem 0.6rem;
   font: inherit;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   text-align: left;
   color: inherit;
   background: none;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
   height: 1.1rem;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
   color: var(--ink-2);
 }
 
@@ -238,7 +238,7 @@ hr {
   max-width: 34rem;
   margin: 0 auto;
   padding: 0.5rem;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   transform-origin: bottom center;
 }
 
@@ -254,7 +254,7 @@ hr {
 
 .sheet .item {
   min-height: 3rem;
-  font-size: 1rem;
+  font-size: var(--text-md);
   padding-inline: 0.85rem;
 }
 

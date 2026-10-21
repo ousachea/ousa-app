@@ -59,7 +59,7 @@ textarea {
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 </style>

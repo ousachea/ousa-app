@@ -31,7 +31,7 @@ const FEATURE_ICON: Record<FeatureKey, string> = {
 type View = 'cards' | 'table'
 const savedView = useRemembered<View | ''>('features-view', '', v => v === '' || v === 'cards' || v === 'table')
 const narrow = ref(false)
-onMounted(() => (narrow.value = matchMedia('(max-width: 700px)').matches))
+onMounted(() => (narrow.value = matchMedia('(max-width: 760px)').matches))
 const view = computed<View>(() => savedView.value || (narrow.value ? 'cards' : 'table'))
 function setView(v: View) {
   savedView.value = v
@@ -210,7 +210,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
 
 .toolbar-head h3 {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -221,7 +221,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   padding: 3px;
   gap: 2px;
   background: var(--surface-2);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -236,7 +236,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   color: var(--ink-2);
   background: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -268,10 +268,10 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   color: var(--ink-2);
   background: var(--surface);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: inset 0 0 0 1px var(--line);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .chip .app-icon {
@@ -351,7 +351,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   flex-direction: column;
   gap: 0.7rem;
   padding: 0.95rem 1rem 1rem;
-  transition: box-shadow 0.15s;
+  transition: box-shadow var(--dur-fast);
 }
 
 .card.picked {
@@ -374,7 +374,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
 }
 
 .card-name small {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
@@ -385,15 +385,15 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   height: 2.1rem;
   display: grid;
   place-items: center;
-  font-size: 1.05rem;
-  border-radius: 9px;
+  font-size: var(--text-title);
+  border-radius: var(--radius-sm);
 }
 
 .tile.small {
   width: 1.6rem;
   height: 1.6rem;
-  font-size: 0.85rem;
-  border-radius: 7px;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-xs);
 }
 
 .bar,
@@ -401,7 +401,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   display: block;
   overflow: hidden;
   background: color-mix(in srgb, var(--ink) 8%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .bar {
@@ -429,11 +429,11 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   align-items: center;
   gap: 0.3rem;
   padding: 0.2rem 0.55rem 0.2rem 0.45rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 500;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .pills .app-icon {
@@ -454,7 +454,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
 
 .none {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
 }
 
@@ -511,7 +511,7 @@ thead th {
 
 .col-label {
   max-width: 4rem;
-  font-size: 0.68rem;
+  font-size: var(--text-2xs);
   line-height: 1.2;
   text-align: center;
   overflow-wrap: normal;
@@ -521,7 +521,7 @@ thead .app-col {
   text-align: left;
   vertical-align: bottom;
   padding-left: 1rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -562,7 +562,7 @@ tbody .app-col {
   flex-direction: column;
   align-items: flex-end;
   gap: 0.2rem;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
@@ -662,7 +662,7 @@ td.diff {
   border-bottom: 2px solid var(--ink-3);
   rotate: 45deg;
   translate: 0 -2px;
-  transition: rotate 0.2s;
+  transition: rotate var(--dur);
 }
 
 .key[open] summary::after {
@@ -694,7 +694,7 @@ td.diff {
 
 .key dd {
   margin: 0.2rem 0 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 

@@ -129,10 +129,10 @@ time {
   height: 1.75rem;
   display: grid;
   place-items: center;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   color: var(--on-c);
   background: var(--c);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .text {

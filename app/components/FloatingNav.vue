@@ -454,14 +454,14 @@ onBeforeUnmount(() => {
   gap: 0.75rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
   box-shadow: 0 24px 60px -18px rgb(var(--shadow) / 0.45), 0 4px 12px rgb(var(--shadow) / 0.08);
   transform-origin: top right;
   opacity: 0;
   scale: 0.96;
   translate: 0 -6px;
   visibility: hidden;
-  transition: opacity 0.16s ease-out, scale 0.2s cubic-bezier(0.2, 0, 0, 1), translate 0.2s cubic-bezier(0.2, 0, 0, 1), visibility 0s 0.2s;
+  transition: opacity var(--dur-fast) ease-out, scale var(--dur) cubic-bezier(0.2, 0, 0, 1), translate var(--dur) cubic-bezier(0.2, 0, 0, 1), visibility 0s 0.2s;
 }
 
 .open .sheet {
@@ -480,7 +480,7 @@ onBeforeUnmount(() => {
   gap: 0.7rem;
   padding: 0.6rem 0.6rem 0.6rem 0.85rem;
   background: var(--surface-2);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .account-text {
@@ -492,11 +492,11 @@ onBeforeUnmount(() => {
 }
 
 .account-text strong {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
 }
 
 .email {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -523,15 +523,15 @@ onBeforeUnmount(() => {
   min-height: 2.25rem;
   padding: 0 0.85rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
   background: var(--surface);
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--line);
   cursor: pointer;
-  transition: background-color 0.15s, scale 0.15s;
+  transition: background-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .chip:hover { background: var(--line); }
@@ -574,7 +574,7 @@ onBeforeUnmount(() => {
 
 .sync-detail {
   margin-top: 0.15rem;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
 }
 
@@ -592,11 +592,11 @@ a.chip {
 /* What's new since you last looked (Settings → About) */
 .new-dot {
   padding: 0.05rem 0.4rem;
-  font-size: 0.68rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   color: #fff;
   background: var(--green);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 /* ---------- Search everything / Add ---------- */
@@ -612,12 +612,12 @@ a.chip {
   min-height: 2.75rem;
   padding: 0 0.6rem 0 0.75rem;
   font: inherit;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   transition: background-color var(--dur-fast), border-color var(--dur-fast);
 }
@@ -638,7 +638,7 @@ a.chip {
 
 .quick-icon {
   display: grid;
-  font-size: 1.1rem;
+  font-size: var(--text-title);
 }
 
 .quick-kbd {
@@ -665,8 +665,8 @@ a.chip {
   padding: 0 0.85rem;
   min-height: 2.75rem;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  transition: border-color 0.15s;
+  border-radius: var(--radius-lg);
+  transition: border-color var(--dur-fast);
 }
 
 .search:focus-within {
@@ -687,7 +687,7 @@ a.chip {
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 1rem; /* 16px or more, so phones don't zoom in when it's tapped */
+  font-size: var(--text-md); /* 16px or more, so phones don't zoom in when it's tapped */
   color: var(--ink);
   background: none;
   border: 0;
@@ -703,7 +703,7 @@ a.chip {
 
 .group h2 {
   margin: 0 0 0.35rem 0.35rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--ink-2);
 }
@@ -725,8 +725,8 @@ a.chip {
   padding: 0.35rem 0.5rem 0.35rem 0.35rem;
   color: var(--ink);
   text-decoration: none;
-  border-radius: 12px;
-  transition: background-color 0.12s;
+  border-radius: var(--radius);
+  transition: background-color var(--dur-fast);
 }
 
 .tile:hover {
@@ -744,17 +744,17 @@ a.chip {
   height: 2.1rem;
   display: grid;
   place-items: center;
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   color: var(--on-c);
   background: var(--c);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.12), inset 0 3px 5px rgb(255 255 255 / 0.25);
 }
 
 .name {
   flex: 1;
   min-width: 0;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
   line-height: 1.2;
 }
@@ -762,7 +762,7 @@ a.chip {
 .none {
   margin: 0.5rem 0;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
 }
 
@@ -782,12 +782,12 @@ a.chip {
   gap: 0.45rem;
   min-height: 2.4rem;
   padding: 0 0.7rem 0 0.4rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
   text-decoration: none;
-  border-radius: 11px;
-  transition: background-color 0.12s;
+  border-radius: var(--radius);
+  transition: background-color var(--dur-fast);
 }
 
 .foot-link:hover,
@@ -797,7 +797,7 @@ a.chip {
 
 button.foot-link {
   font: inherit;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   background: none;
   border: 0;
@@ -832,7 +832,7 @@ button.foot-link:hover {
 }
 
 .foot-logo {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
 }
 
 .foot-icon {
@@ -840,15 +840,15 @@ button.foot-link:hover {
   height: 1.6rem;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: var(--text-md);
   color: #fff;
   background: var(--settings);
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
 }
 
 .hint {
   margin: 0 0 0 auto;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   white-space: nowrap;
 }
@@ -860,11 +860,11 @@ kbd {
   display: inline-grid;
   place-items: center;
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--line);
 }
 
@@ -890,7 +890,7 @@ kbd {
 
 .intro {
   margin: -0.4rem 0 1rem;
-  font-size: 0.925rem;
+  font-size: var(--text-base);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -916,7 +916,7 @@ kbd {
 
   .name {
     flex: none;
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
   }
 
   .tile kbd {

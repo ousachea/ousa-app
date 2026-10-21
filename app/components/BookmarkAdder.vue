@@ -455,13 +455,13 @@ const busy = computed(() => !!(reading.value || review.value || batch.value || d
   gap: 0.55rem;
   padding: 0.6rem;
   background: var(--surface);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 0 0 1px var(--line), 0 14px 30px -18px rgb(var(--shadow) / 0.35);
 }
 
 .inline .add-form {
   box-shadow: 0 0 0 1px var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .add-row {
@@ -470,7 +470,7 @@ const busy = computed(() => !!(reading.value || review.value || batch.value || d
   gap: 0.5rem;
   padding: 0.25rem 0.25rem 0.25rem 0.7rem;
   background: var(--surface-2);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: inset 0 0 0 1px var(--line);
   transition: box-shadow var(--dur-fast);
 }
@@ -500,7 +500,7 @@ textarea:not(.input) {
   field-sizing: content;
   resize: none;
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--text-md);
   line-height: 1.4;
   color: var(--ink);
   background: none;
@@ -529,7 +529,7 @@ textarea:not(.input)::placeholder {
   color: var(--ink-2);
   background: var(--surface);
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--line);
   cursor: pointer;
   transition: color var(--dur-fast), box-shadow var(--dur-fast);
@@ -553,7 +553,7 @@ textarea:not(.input)::placeholder {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border-radius: 11px;
+  border-radius: var(--radius);
 }
 
 .add-meta {
@@ -645,7 +645,7 @@ textarea:not(.input)::placeholder {
   place-items: center;
   color: var(--on-accent, #fff);
   background: var(--accent-btn, var(--accent));
-  border-radius: 12px;
+  border-radius: var(--radius);
   transition: scale var(--dur-fast);
 }
 
@@ -675,7 +675,7 @@ textarea:not(.input)::placeholder {
   width: 100%;
   aspect-ratio: 1.91;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface-2);
 }
 
@@ -684,11 +684,11 @@ textarea:not(.input)::placeholder {
   aspect-ratio: 1.91;
   display: grid;
   place-items: center;
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   font-weight: 700;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .review-icon img {
@@ -718,17 +718,17 @@ textarea:not(.input)::placeholder {
 .loading .sk-line {
   display: block;
   height: 0.85rem;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 .loading .sk-title {
   height: 2.6rem;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .loading .sk-desc {
   height: 3.6rem;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .site {
@@ -752,7 +752,7 @@ textarea:not(.input)::placeholder {
 
 .title-input {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: var(--text-title);
 }
 
 .pin-check {
@@ -805,7 +805,7 @@ textarea:not(.input)::placeholder {
   list-style: none;
   max-height: 22rem;
   overflow-y: auto;
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -846,7 +846,7 @@ textarea:not(.input)::placeholder {
 .row-skel {
   width: 1.4rem;
   height: 1.4rem;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 .row-text {
@@ -865,7 +865,7 @@ textarea:not(.input)::placeholder {
   color: var(--ink);
   background: none;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   outline: none;
 }
 
@@ -892,7 +892,7 @@ textarea:not(.input)::placeholder {
   padding: 0.05rem 0.4rem;
   color: var(--warn-ink);
   background: color-mix(in srgb, var(--orange) 14%, var(--surface));
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .spinner {
@@ -908,7 +908,7 @@ textarea:not(.input)::placeholder {
   to { transform: rotate(1turn); }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .review {
     grid-template-columns: minmax(0, 1fr);
   }
