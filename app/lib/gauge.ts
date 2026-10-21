@@ -1,10 +1,10 @@
 // Gauge primitives' shared code: geometry, the value spring, and the context a <Gauge> hands its parts.
-// A Vue port of Gauge UI by Thordur (https://gauge-ui.dev, registry item "gauge"), which is React. Ported:
-// the root, track, arc, zones, ticks, marks, tick labels, needle, hub, value and text, with spring or tween
-// animation. Not ported (nothing here uses them yet): stacks, tick fills, insets, dots, tooltips, drag
-// control, ranges, wrapped domains and rotation.
+// A Vue port of Gauge UI by Thordur (https://gauge-ui.dev, registry item "gauge"), which is React: the root,
+// track, arc, zones, stacks, ticks, tick fills, marks, tick labels, needle (line, pointer, compass, arrow),
+// hub, dot, tooltip, value, text, insets and drag control, with spring or tween animation, ranges, wrapped
+// domains and a turning scale. Written here from Gauge UI's documented behaviour, not copied from its code.
 // Kept out of utils/ on purpose: Nuxt auto-imports utils, and names like clamp and polar are taken there.
-import { inject, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type InjectionKey } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type InjectionKey } from 'vue'
 
 /* ---------- Geometry ----------
    Angles are "gauge degrees": 0 points straight down (six o'clock) and values increase clockwise, so a
@@ -55,6 +55,14 @@ export function arcBox(radius: number, from: number, to: number, padding = 0) {
   const y = round(Math.min(...ys) - padding)
   return { x, y, width: round(Math.max(...xs) + padding - x), height: round(Math.max(...ys) + padding - y) }
 }
+
+/** The gauge angle of a point (SVG units from the centre): the inverse of polar */
+export function angleOfPoint(x: number, y: number) {
+  return (Math.atan2(y, x) * 180) / Math.PI - 90
+}
+
+/** `value` brought into [lo, lo + span), for domains that wrap round (a compass, a 24-hour clock) */
+export const wrapInto = (value: number, lo: number, span: number) => (span > 0 ? lo + ((((value - lo) % span) + span) % span) : lo)
 
 /** Evenly spaced values across the domain, both ends included */
 export function stepValues(min: number, max: number, intervals: number) {
@@ -228,17 +236,88 @@ export function useAnimatedValue(target: () => number, transition: () => GaugeTr
 /* ---------- Context ---------- */
 
 export interface GaugeContext {
-  /** Value drawn this frame, clamped to the domain unless a spring overshoots */
+  /** Value drawn this frame, clamped to the domain unless a spring overshoots (for a range, its high end) */
   value: number
   /** Where the value is heading */
   target: number
+  /** A range's low end this frame; undefined for a single value */
+  from?: number
   min: number
   max: number
+  /** The arc's ends, turned by the rotation */
   startAngle: number
   endAngle: number
   /** Radius of the reference circle in SVG units; every part places itself against it */
   radius: number
+  /** Degrees the whole scale is turned by */
+  rotation: number
+  /** The domain wraps round: max is the same place as min */
+  wrap: boolean
   angleOf: (value: number) => number
+}
+
+/** What a <Gauge> (or a <GaugeInset> inside one) takes to set up its scale and value */
+export interface GaugeRootProps {
+  /** A value, or [from, to] for a range */
+  value: number | [number, number]
+  min: number
+  max: number
+  startAngle: number
+  endAngle: number
+  radius: number
+  transition?: GaugeTransition | boolean
+  initialValue?: number
+  /** A domain that wraps round (compass, 24-hour clock): changes take the short way, through max to min */
+  wrap?: boolean
+  /** Turn the whole scale by these degrees, or 'value' to turn it so the value sits at rotateTo (a compass card) */
+  rotate?: number | 'value'
+  /** With rotate="value", the angle the value is turned to. Default 180, the top */
+  rotateTo?: number
+}
+
+/** The shared root: animates the value (both ends of a range), wraps and turns the scale, and gives the context */
+export function useGaugeRoot(props: GaugeRootProps) {
+  const lo = computed(() => Math.min(props.min, props.max))
+  const hi = computed(() => Math.max(props.min, props.max))
+  const span = computed(() => hi.value - lo.value)
+  const ends = computed(() => (Array.isArray(props.value) ? [Math.min(...props.value), Math.max(...props.value)] as const : [undefined, props.value] as const))
+  const fit = (v: number) => (props.wrap ? wrapInto(v, lo.value, span.value) : clamp(v, lo.value, hi.value))
+  const target = computed(() => fit(ends.value[1]))
+
+  // A wrapped value is followed unwrapped, so a change from 350° to 10° turns 20° forward, not 340° back
+  const unwrapped = ref(target.value)
+  watch(target, (t) => {
+    if (!props.wrap) return void (unwrapped.value = t)
+    let d = t - wrapInto(unwrapped.value, lo.value, span.value)
+    if (d > span.value / 2) d -= span.value
+    if (d < -span.value / 2) d += span.value
+    unwrapped.value += d
+  })
+  const goal = computed(() => (props.wrap ? unwrapped.value : target.value))
+  const initial = props.initialValue === undefined ? undefined : fit(props.initialValue)
+  const shown = useAnimatedValue(() => goal.value, () => props.transition, () => span.value, initial)
+  const low = computed(() => (ends.value[0] === undefined ? undefined : clamp(ends.value[0], lo.value, hi.value)))
+  const shownLow = useAnimatedValue(() => low.value ?? lo.value, () => props.transition, () => span.value, initial)
+
+  return computed<GaugeContext>(() => {
+    const raw = props.transition ? shown.value : goal.value
+    const value = props.wrap ? wrapInto(raw, lo.value, span.value) : raw
+    const base = (v: number) => valueToAngle(props.wrap ? wrapInto(v, lo.value, span.value) : v, props.min, props.max, props.startAngle, props.endAngle)
+    const rotation = props.rotate === 'value' ? (props.rotateTo ?? 180) - base(value) : (props.rotate ?? 0)
+    return {
+      value,
+      target: target.value,
+      from: low.value === undefined ? undefined : props.transition ? shownLow.value : low.value,
+      min: props.min,
+      max: props.max,
+      startAngle: props.startAngle + rotation,
+      endAngle: props.endAngle + rotation,
+      radius: props.radius,
+      rotation,
+      wrap: !!props.wrap,
+      angleOf: (v: number) => base(v) + rotation
+    }
+  })
 }
 
 export const GAUGE: InjectionKey<ComputedRef<GaugeContext>> = Symbol('gauge')

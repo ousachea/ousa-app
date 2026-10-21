@@ -365,8 +365,9 @@ function leaveNote() {
 // back while you write and come forward when you reach for them
 const reading = computed(() => !isPhone.value && !!openNote.value && !sel.selecting && !focusMode.value && !parked.value)
 
-// Clicking the Choose a folder or Pick a note heading slides folders and the list back to where they
-// sit with no note open; the Write heading, or opening another note, centres the note again
+// Clicking the Choose a folder or Pick a note heading (or the 1 and 2 at the window's edge) slides folders
+// and the list back to where they sit with no note open; clicking or tabbing into the note, or opening
+// another, centres it again
 const parked = ref(false)
 
 function park(on: boolean, e?: MouseEvent) {
@@ -1074,6 +1075,16 @@ function listMenu() {
 
     <ClientOnly>
       <div class="notes-app" :data-pane="pane" :class="{ 'has-open': !!openNote, reading, parked: parked && !!openNote && !isPhone }">
+        <!-- With a note centred, folders and the list reach out past the window's left edge on most
+             screens, headings and all; these stay at the edge to bring them back -->
+        <nav v-if="reading" class="shift-rail" aria-label="Bring back folders and notes">
+          <button type="button" class="rail-btn" title="Choose a folder" @click="park(true)">
+            <span class="rail-num" aria-hidden="true">1</span><span class="rail-label">Folders</span>
+          </button>
+          <button type="button" class="rail-btn" title="Pick a note" @click="park(true)">
+            <span class="rail-num" aria-hidden="true">2</span><span class="rail-label">Notes</span>
+          </button>
+        </nav>
         <!-- ---------- 1: views, folders, tags ---------- -->
         <Step :n="1" title="Choose a folder" hint="Or a view: favourites, recent, archived." class="side-step" @click="park(true, $event)">
         <aside class="side">
@@ -1281,7 +1292,7 @@ function listMenu() {
         </Step>
 
         <!-- ---------- 3: the editor ---------- -->
-        <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step" @click="park(false, $event)">
+        <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step" @click="park(false)" @focusin="park(false)">
         <section ref="editorPane" class="editor-pane" :class="{ 'focus-mode': focusMode, 'is-typing': focusMode && focusTyping, 'dim': focusMode && focusDim }" aria-label="Note" @pointermove="focusMode && onFocusPointer()" @keydown="focusMode && onFocusKey($event)" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
           <!-- Selecting (beside the list, on a computer): what's picked and what to do with it -->
           <div v-if="sel.selecting && !isPhone" class="pick-summary">
@@ -2538,8 +2549,80 @@ time {
   opacity: 1;
 }
 
+/* Numbered buttons at the window's edge while the note is centred, the same stickers as the steps.
+   Only where the panels are cut off: the folders start past the left edge below about 1,800px wide */
+.shift-rail {
+  display: none;
+}
+
+@media (min-width: 1101px) and (max-width: 1839px) {
+  .notes-app.reading .shift-rail {
+    position: fixed;
+    z-index: 5;
+    left: 0.5rem;
+    top: 50%;
+    translate: 0 -50%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.35rem;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.4rem 0.3rem 0.3rem;
+  font: inherit;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+
+.rail-btn:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.rail-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.rail-num {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  font-size: var(--text-base);
+  font-weight: 800;
+  color: var(--on-accent, #fff);
+  background: var(--accent);
+  border-radius: var(--radius-xs);
+  box-shadow:
+    0 0 0 2px var(--plastic),
+    inset 0 -3px 0 rgb(0 0 0 / 0.12);
+  transition: translate var(--dur-fast) var(--ease-spring);
+}
+
+.rail-btn:hover .rail-num {
+  translate: 0 -1px;
+}
+
 /* The headings that move the panels: Choose a folder and Pick a note while reading, Write once
-   they've moved back */
+   they've moved back (the note itself does too) */
 .notes-app.reading :is(.side-step, .list-step) :deep(.step-head),
 .notes-app.parked .editor-step :deep(.step-head) {
   cursor: pointer;

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { arcBox, clamp, GAUGE, useAnimatedValue, valueToAngle, type GaugeTransition } from '~/lib/gauge'
+import { arcBox, GAUGE, useGaugeRoot, type GaugeTransition } from '~/lib/gauge'
 
 // A composable dial (lib/gauge.ts, ported from Gauge UI). The root draws an SVG centred on the origin and
-// hands the value, domain and geometry to the parts inside: GaugeTrack, GaugeArc, GaugeZones, GaugeTicks,
-// GaugeMarks, GaugeTickLabels, GaugeNeedle, GaugeHub, GaugeValue and GaugeText.
+// hands the value, domain and geometry to the parts inside: GaugeTrack, GaugeArc, GaugeZones, GaugeStack,
+// GaugeTicks, GaugeTickFill, GaugeMarks, GaugeTickLabels, GaugeNeedle, GaugeHub, GaugeDot, GaugeTooltip,
+// GaugeValue, GaugeText, GaugeInset and GaugeControl.
 const props = withDefaults(defineProps<{
-  value: number
+  /** A value, or [from, to] for a range (the arc runs between them; a needle points at `to`) */
+  value: number | [number, number]
   min?: number
   max?: number
   /** Gauge degrees, clockwise from six o'clock */
@@ -17,33 +19,28 @@ const props = withDefaults(defineProps<{
   transition?: GaugeTransition | boolean
   /** Where the value starts on mount, for a sweep in */
   initialValue?: number
+  /** A domain that wraps round, max meeting min (a compass, a 24-hour clock): changes take the short way */
+  wrap?: boolean
+  /** Turn the scale by these degrees, or 'value' to keep the value at rotateTo while the scale turns */
+  rotate?: number | 'value'
+  rotateTo?: number
   /** Room around the circle for thick strokes, ticks and labels */
   padding?: number
   /** square boxes the whole circle; content fits the box to the arc's sweep, so a half dial isn't half empty */
   fit?: 'square' | 'content'
   /** An exact SVG box instead ("x y width height"), for a dial that has to line up with things laid over it */
   viewBox?: string
-}>(), { min: 0, max: 100, startAngle: 40, endAngle: 320, radius: 200, transition: undefined, initialValue: undefined, padding: 48, fit: 'square', viewBox: undefined })
+}>(), { min: 0, max: 100, startAngle: 40, endAngle: 320, radius: 200, transition: undefined, initialValue: undefined, wrap: false, rotate: 0, rotateTo: 180, padding: 48, fit: 'square', viewBox: undefined })
 
-const lo = computed(() => Math.min(props.min, props.max))
-const hi = computed(() => Math.max(props.min, props.max))
-const target = computed(() => clamp(props.value, lo.value, hi.value))
-const shown = useAnimatedValue(() => target.value, () => props.transition, () => hi.value - lo.value, props.initialValue === undefined ? undefined : clamp(props.initialValue, lo.value, hi.value))
-
-const gauge = computed(() => ({
-  value: props.transition ? shown.value : target.value,
-  target: target.value,
-  min: props.min,
-  max: props.max,
-  startAngle: props.startAngle,
-  endAngle: props.endAngle,
-  radius: props.radius,
-  angleOf: (v: number) => valueToAngle(v, props.min, props.max, props.startAngle, props.endAngle)
-}))
+const gauge = useGaugeRoot(props)
 provide(GAUGE, gauge)
 
 const box = computed(() => {
-  if (props.fit === 'content') return arcBox(props.radius, props.startAngle, props.endAngle, props.padding)
+  // A scale that turns with the value would change shape every frame, so it keeps the square box
+  if (props.fit === 'content' && props.rotate !== 'value') {
+    const r = gauge.value.rotation
+    return arcBox(props.radius, props.startAngle + r, props.endAngle + r, props.padding)
+  }
   const half = props.radius + props.padding
   return { x: -half, y: -half, width: 2 * half, height: 2 * half }
 })
