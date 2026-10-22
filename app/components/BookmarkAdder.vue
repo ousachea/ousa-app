@@ -4,10 +4,11 @@ import type { Bookmark, NewBookmark } from '~/utils/bookmarks'
 import type { Folder } from '~/utils/folders'
 
 // Adding bookmarks, as a form that says so: a link field with a + Add button and where the bookmark
-// will go ("Save to"), not a search-like address bar. Paste one link and the page's title, picture and
-// description fill in for you to check before saving (CHECKLIST.md #43). Paste several (one per line,
-// or a block of text with links in it) and they're listed together, each read in the background, to
-// add in one go into the same folder.
+// will go ("Save to"), not a search-like address bar. One link is saved the moment you press Add (or
+// Enter, or paste it): the page's title, picture and description fill in by themselves as it's read
+// (CHECKLIST.md #43), and a Just added card shows it with its title, folders, note and pin to change,
+// or Undo. Paste several (one per line, or a block of text with links in it) and they're listed
+// together, each read in the background, to pick from and add in one go into the same folder.
 // `main`: the card at the top of Bookmarks. `inline`: the add box inside an open folder, which folds
 // down to one "+ Add a bookmark to <folder>" row until clicked.
 const props = withDefaults(defineProps<{
@@ -27,12 +28,15 @@ const emit = defineEmits<{
   save: [entries: { record: NewBookmark, read: boolean }[]]
   /** Show a bookmark that's already saved */
   show: [bookmark: Bookmark]
+  /** A change made on the Just added card, to the bookmark just saved */
+  edit: [id: string, patch: Partial<Bookmark>]
+  /** Undo on the Just added card: take the bookmark back out */
+  undo: [id: string]
 }>()
 
 const { play } = useSound()
 const field = ref<HTMLTextAreaElement>()
 const text = ref('')
-const reading = ref(false)
 const expanded = ref(props.variant === 'main')
 
 // Where new bookmarks go: follows the folder that's open, and can be changed here
@@ -58,15 +62,47 @@ const fetchPreview = (url: string) => (props.online
   ? $fetch('/api/link-preview', { query: { url } }).catch(() => undefined)
   : Promise.resolve(undefined))
 
-// ---------- One link: check it, then save ----------
+// ---------- One link: saved straight away, then shown to change ----------
 const duplicateOf = ref<Bookmark>()
-const review = ref<{ url: string, title: string, description: string, note: string, pinned: boolean, icon: string, image: string, siteName: string, folders: string[], suggestion?: string, offline: boolean }>()
-const reviewTitle = ref<HTMLInputElement>()
+watch(text, () => {
+  duplicateOf.value = undefined
+  empty.value = false
+})
+
+// The bookmark just saved, found again by its link and the moment it was made (so "add it anyway"
+// beside an older copy still finds the new one). The card reads it live, so details arrive as the
+// page is read in the background.
+const justAdded = ref<{ url: string, createdAt: string, suggestion?: string }>()
+const added = computed(() => {
+  const j = justAdded.value
+  return j ? props.bookmarks.find(b => b.url === j.url && b.createdAt === j.createdAt) : undefined
+})
+// Still waiting for the page's details (they come back with detailsAt)
+const filling = computed(() => !!added.value && !added.value.detailsAt && props.online)
 const imageBroken = ref(false)
 const iconBroken = ref(false)
-watch(text, () => (duplicateOf.value = undefined))
+watch(() => added.value?.image, () => (imageBroken.value = false))
+watch(() => added.value?.icon, () => (iconBroken.value = false))
+const folderNames = computed(() => (added.value?.folders ?? []).map(id => props.folders.find(f => f.id === id)?.name).filter(Boolean).join(', '))
 
-async function readOne(url: URL, force = false) {
+// The title is edited as a draft, so a title arriving from the page doesn't overwrite what you're typing
+const titleDraft = ref('')
+const editingTitle = ref(false)
+watch(() => added.value?.title, (t) => {
+  if (!editingTitle.value && t !== undefined) titleDraft.value = t
+}, { immediate: true })
+function saveTitle() {
+  editingTitle.value = false
+  const b = added.value
+  const t = titleDraft.value.trim()
+  if (!b) return
+  if (!t) titleDraft.value = b.title
+  else if (t !== b.title) emit('edit', b.id, { title: t })
+}
+
+const edit = (patch: Partial<Bookmark>) => added.value && emit('edit', added.value.id, patch)
+
+function addOne(url: URL, force = false) {
   const existing = force ? undefined : existingFor(url.href)
   if (existing) {
     duplicateOf.value = existing
@@ -74,54 +110,39 @@ async function readOne(url: URL, force = false) {
     return
   }
   duplicateOf.value = undefined
-  review.value = undefined
   batch.value = undefined
-  reading.value = true
-  const preview = await fetchPreview(url.href)
-  reading.value = false
-  const finalUrl = preview?.url || url.href
-  imageBroken.value = false
-  iconBroken.value = false
-  review.value = {
-    url: finalUrl,
-    title: preview?.title || hostOf(finalUrl),
-    description: preview?.description ?? '',
-    note: '',
-    pinned: false,
-    icon: preview?.icon || new URL('/favicon.ico', finalUrl).href,
-    image: preview?.image ?? '',
-    siteName: preview?.siteName || preview?.domain || hostOf(finalUrl),
-    folders: target.value ? [target.value] : [],
-    suggestion: target.value ? undefined : props.suggestFor?.(finalUrl),
-    offline: !preview
-  }
-  play('open')
-  nextTick(() => reviewTitle.value?.focus())
-}
-
-function saveReviewed() {
-  const r = review.value
-  if (!r) return
+  const createdAt = new Date().toISOString()
   emit('save', [{
     record: {
-      url: r.url,
-      title: r.title.trim() || hostOf(r.url),
-      description: r.description.trim(),
-      note: r.note.trim(),
+      url: url.href,
+      // The address stands in for the title until the page says what it's called
+      title: hostOf(url.href),
+      description: '',
+      note: '',
       tags: [],
-      folders: r.folders,
-      icon: r.icon,
-      ...(r.image && !imageBroken.value ? { image: r.image } : {}),
-      ...(r.siteName && r.siteName !== hostOf(r.url) ? { siteName: r.siteName } : {}),
-      ...(r.offline ? {} : { detailsAt: new Date().toISOString() }),
-      pinned: r.pinned,
+      folders: target.value ? [target.value] : [],
+      icon: new URL('/favicon.ico', url).href,
+      pinned: false,
       visits: 0,
-      createdAt: new Date().toISOString()
+      createdAt
     },
-    read: !r.offline
+    read: false
   }])
-  review.value = undefined
+  justAdded.value = { url: url.href, createdAt, suggestion: target.value ? undefined : props.suggestFor?.(url.href) }
   text.value = ''
+  nextTick(() => field.value?.focus())
+}
+
+function done() {
+  justAdded.value = undefined
+  nextTick(() => field.value?.focus())
+}
+
+function undo() {
+  const b = added.value
+  justAdded.value = undefined
+  if (b) emit('undo', b.id)
+  play('toggle-off')
   nextTick(() => field.value?.focus())
 }
 
@@ -150,7 +171,7 @@ const stillReading = computed(() => batch.value?.rows.filter(r => r.state === 'r
 let batchRun = 0
 
 async function readMany(urls: URL[]) {
-  review.value = undefined
+  justAdded.value = undefined
   duplicateOf.value = undefined
   const run = ++batchRun
   const rows = reactive(urls.map<Row>((u) => {
@@ -211,7 +232,6 @@ function saveBatch() {
 
 function cancel() {
   batchRun++
-  review.value = undefined
   batch.value = undefined
   duplicateOf.value = undefined
   text.value = ''
@@ -219,19 +239,29 @@ function cancel() {
 }
 
 // ---------- The field ----------
+// Add with nothing typed says so under the field, rather than doing nothing
+const empty = ref(false)
+const shaking = ref(false)
+function nudge() {
+  empty.value = true
+  shaking.value = false
+  play('error')
+  requestAnimationFrame(() => (shaking.value = true))
+  focusField(field.value)
+}
+
 function submit(force = false) {
-  if (reading.value) return
   const found = links.value
   if (!found.length) {
     if (text.value.trim()) {
       play('error')
       toast.error('That doesn’t look like a link', { description: 'Try something like nuxt.com or https://…' })
-    }
-    focusField(field.value)
+      focusField(field.value)
+    } else nudge()
     return
   }
   if (found.length > 1) readMany(found)
-  else readOne(found[0]!, force)
+  else addOne(found[0]!, force)
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -273,7 +303,7 @@ async function pasteFromClipboard() {
   submit()
 }
 
-const busy = computed(() => !!(reading.value || review.value || batch.value || duplicateOf.value))
+const busy = computed(() => !!(justAdded.value || batch.value || duplicateOf.value))
 </script>
 
 <template>
@@ -290,7 +320,7 @@ const busy = computed(() => !!(reading.value || review.value || batch.value || d
     </button>
 
     <form v-else class="add-form" :aria-label="variant === 'inline' ? `Add bookmarks to ${targetFolder?.name ?? 'this folder'}` : 'Add bookmarks'" @submit.prevent="submit()">
-      <div class="add-row">
+      <div class="add-row" :class="{ shake: shaking }" @animationend="shaking = false">
         <span class="lead" aria-hidden="true"><AppIcon name="link" /></span>
         <label class="sr-only" :for="`add-${variant}`">Link to add</label>
         <textarea
@@ -303,19 +333,20 @@ const busy = computed(() => !!(reading.value || review.value || batch.value || d
           spellcheck="false"
           enterkeyhint="done"
           :placeholder="variant === 'inline' ? 'Paste links to add here' : 'Paste a link, or several'"
-          :disabled="reading"
+          :aria-invalid="empty || undefined"
+          :aria-describedby="empty ? `add-${variant}-empty` : undefined"
           @keydown="onKeydown"
           @paste="onPaste"
         />
-        <button v-if="canReadClipboard && !text.trim() && !reading" type="button" class="paste" title="Paste from the clipboard" @click="pasteFromClipboard">
+        <button v-if="canReadClipboard && !text.trim()" type="button" class="paste" title="Paste from the clipboard" @click="pasteFromClipboard">
           <AppIcon name="clipboard" /><span class="paste-label">Paste</span>
         </button>
-        <button type="submit" class="btn add-btn" :disabled="reading">
-          <span v-if="reading" class="spinner" aria-hidden="true" />
-          <AppIcon v-else name="plus" />
-          {{ reading ? 'Reading…' : many ? `Add ${links.length}` : 'Add' }}
+        <button type="submit" class="btn add-btn">
+          <AppIcon name="plus" />
+          {{ many ? `Add ${links.length}` : 'Add' }}
         </button>
       </div>
+      <p v-if="empty" :id="`add-${variant}-empty`" class="field-error empty-note" role="alert">Paste or type a link first, then press Add.</p>
 
       <div class="add-meta">
         <label class="save-to">
@@ -340,66 +371,53 @@ const busy = computed(() => !!(reading.value || review.value || batch.value || d
       @cancel="duplicateOf = undefined"
     />
 
-    <!-- While the page is read: the shape of the card that's coming -->
+    <!-- One link, saved: what it looks like, with anything you'd like to change, or Undo -->
     <Transition name="slide-down">
-      <div v-if="reading" class="review panel below loading" role="status" aria-label="Reading the page">
-        <div class="review-media"><span class="skeleton review-icon" /></div>
-        <div class="review-fields">
-          <span class="skeleton sk-line" style="width: 40%" />
-          <span class="skeleton sk-line sk-title" />
-          <span class="skeleton sk-line sk-desc" />
-        </div>
-      </div>
-    </Transition>
-
-    <!-- One link: what the page says about itself, editable, plus a note, folders and pin -->
-    <Transition name="slide-down">
-      <form v-if="review" class="review panel below" aria-label="Check the bookmark before saving" @submit.prevent="saveReviewed" @keydown.esc.stop="cancel">
+      <section v-if="added" class="review panel below" aria-label="Just added" @keydown.esc.stop="done">
         <div class="review-media">
-          <img v-if="review.image && !imageBroken" :src="review.image" alt="" referrerpolicy="no-referrer" @error="imageBroken = true">
-          <span v-else class="review-icon">
-            <img v-if="!iconBroken" :src="review.icon" alt="" referrerpolicy="no-referrer" @error="iconBroken = true">
-            <span v-else>{{ (review.title[0] ?? '?').toUpperCase() }}</span>
+          <img v-if="added.image && !imageBroken" :src="added.image" alt="" referrerpolicy="no-referrer" @error="imageBroken = true">
+          <span v-else class="review-icon" :class="{ skeleton: filling && !added.icon }">
+            <img v-if="added.icon && !iconBroken" :src="added.icon" alt="" referrerpolicy="no-referrer" @error="iconBroken = true">
+            <span v-else>{{ (added.title[0] ?? '?').toUpperCase() }}</span>
           </span>
         </div>
         <div class="review-fields">
-          <p class="kicker">New bookmark</p>
-          <p class="site">{{ review.siteName }} · <span class="url">{{ review.url }}</span></p>
-          <p v-if="review.offline" class="warn">Website details aren’t available right now. You can still save it, and edit the title now or later.</p>
+          <p class="kicker saved-kicker" role="status">
+            <AppIcon name="check" />Saved{{ folderNames ? ` to ${folderNames}` : '' }}
+            <span v-if="filling" class="filling"><span class="spinner" aria-hidden="true" />Reading the page…</span>
+          </p>
+          <p class="site">{{ added.siteName || hostOf(added.url) }} · <span class="url">{{ added.url }}</span></p>
           <label class="field">
             <span class="sr-only">Title</span>
-            <input ref="reviewTitle" v-model="review.title" class="input title-input" aria-label="Title">
+            <input v-model="titleDraft" class="input title-input" aria-label="Title" @focus="editingTitle = true" @blur="saveTitle" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()">
           </label>
-          <label class="field">
-            <span class="sr-only">Description</span>
-            <textarea v-model="review.description" class="input" rows="2" placeholder="Add a description" aria-label="Description" />
-          </label>
+          <p v-if="added.description" class="desc">{{ added.description }}</p>
           <label class="field">
             <span class="field-head">Note <span class="optional">Optional</span></span>
-            <textarea v-model="review.note" class="input" rows="2" placeholder="Why you saved it, or what to look at" @keydown.enter.meta.prevent="saveReviewed" @keydown.enter.ctrl.prevent="saveReviewed" />
+            <textarea :value="added.note" class="input" rows="2" placeholder="Why you saved it, or what to look at" @change="edit({ note: ($event.target as HTMLTextAreaElement).value.trim() })" />
           </label>
           <div class="field">
             <span class="field-head">Folders <span class="optional">Optional</span></span>
-            <FolderPicker v-model="review.folders" :folders="folders" :create-folder="createFolder" />
+            <FolderPicker :model-value="added.folders ?? []" :folders="folders" :create-folder="createFolder" @update:model-value="f => edit({ folders: f })" />
           </div>
           <SuggestionChip
-            v-if="review.suggestion && !review.folders.length"
+            v-if="justAdded?.suggestion && !added.folders?.length"
             label="Suggested folder"
-            :value="review.suggestion"
-            @use="review!.folders = [createFolder(review!.suggestion!)]"
-            @ignore="review!.suggestion = undefined"
+            :value="justAdded.suggestion"
+            @use="edit({ folders: [createFolder(justAdded!.suggestion!)] })"
+            @ignore="justAdded!.suggestion = undefined"
           />
           <label class="pin-check">
-            <input v-model="review.pinned" type="checkbox">
+            <input type="checkbox" :checked="added.pinned" @change="edit({ pinned: ($event.target as HTMLInputElement).checked })">
             Pin to the top
           </label>
           <div class="actions">
-            <button type="submit" class="btn">Save bookmark</button>
-            <button type="button" class="btn btn-quiet" @click="cancel">Cancel</button>
-            <span class="hint"><kbd>Enter</kbd> to save</span>
+            <button type="button" class="btn" @click="done">Done</button>
+            <button type="button" class="btn btn-quiet" @click="undo">Undo</button>
+            <span class="hint">Changes save as you make them</span>
           </div>
         </div>
-      </form>
+      </section>
     </Transition>
 
     <!-- Several links: a list to check, then one button adds them all -->
@@ -706,6 +724,45 @@ textarea:not(.input)::placeholder {
   gap: 0.6rem;
 }
 
+.kicker.saved-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  color: var(--good-ink);
+}
+
+.saved-kicker > svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-right: -0.2rem;
+}
+
+.filling {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-3);
+}
+
+.desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.empty-note {
+  margin: -0.1rem 0.35rem 0;
+}
+
 .kicker {
   margin: 0;
   font-size: var(--text-xs);
@@ -713,22 +770,6 @@ textarea:not(.input)::placeholder {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--accent);
-}
-
-.loading .sk-line {
-  display: block;
-  height: 0.85rem;
-  border-radius: var(--radius-xs);
-}
-
-.loading .sk-title {
-  height: 2.6rem;
-  border-radius: var(--radius-sm);
-}
-
-.loading .sk-desc {
-  height: 3.6rem;
-  border-radius: var(--radius-sm);
 }
 
 .site {

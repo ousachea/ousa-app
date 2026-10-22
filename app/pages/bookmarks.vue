@@ -242,13 +242,13 @@ const folderAdder = ref<{ focus: () => void }>()
 useAddAction(() => adder.value?.focus())
 const flashId = ref<string>()
 
-function flash(id: string) {
+function flash(id: string, scroll = true) {
   // Make sure it's drawn even in a long list
   const at = shown.value.findIndex(b => b.id === id)
   if (at >= limit.value) limit.value = at + 1
   flashId.value = id
   setTimeout(() => flashId.value === id && (flashId.value = undefined), 1600)
-  nextTick(() => document.getElementById(`bm-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+  if (scroll) nextTick(() => document.getElementById(`bm-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
 }
 
 // The open folder is where a new link goes; this opens a folder and puts you in its add box
@@ -271,27 +271,32 @@ const suggestFor = (url: string, exceptId?: string) => {
   return name ? folderName(name) : undefined
 }
 
-// Saved from the adder: one checked bookmark, or several at once. Pages that couldn't be read yet
-// get their details in the background.
+// Saved from the adder: one link the moment you press Add, or several picked at once. Pages that
+// couldn't be read yet get their details in the background. One link's Just added card says it's saved
+// (with Undo), so it gets no toast and the page stays put; several get a toast and a look at the list.
 function onAdded(entries: { record: NewBookmark, read: boolean }[]) {
   if (!entries.length) return
   const added = entries.length === 1 ? [add(entries[0]!.record)] : addMany(entries.map(e => e.record))
   play('success')
   const first = added[0]!
-  if (added.length === 1) {
-    toast.success('Bookmark saved', {
-      description: first.folders?.length ? `${first.title} · ${pathsOf(first).join(', ')}` : first.title,
-      action: { label: 'Undo', onClick: () => remove(first.id, { undoAdd: true }) }
-    })
-  } else {
+  if (added.length > 1) {
     toast.success(`${marksText(added.length)} saved`, {
       description: first.folders?.length ? `In ${pathsOf(first).join(', ')}` : undefined,
       action: { label: 'Undo', onClick: () => added.forEach(b => remove(b.id, { undoAdd: true })) }
     })
   }
-  flash(first.id)
+  flash(first.id, added.length > 1)
   const unread = added.filter((_, i) => !entries[i]!.read)
   if (unread.length) enrich(unread)
+}
+
+// Changes made on the Just added card, and its Undo
+function onAddedEdit(id: string, patch: Partial<Bookmark>) {
+  update(id, { ...patch, updatedAt: new Date().toISOString() }, { quiet: true })
+}
+
+function onAddedUndo(id: string) {
+  remove(id, { undoAdd: true })
 }
 
 // Asked to look at one that's already saved: show it in the list
@@ -1064,8 +1069,8 @@ async function refreshAllDetails() {
     />
     <template #actions><ClientOnly><DataSource :sync="sync" /></ClientOnly></template>
 
-    <!-- 1: add a bookmark, or several. Paste links, check what the pages say, pick a folder, save -->
-    <Step :n="1" title="Add bookmarks" hint="Paste a link and its title, picture and description fill in for you to check. Paste several, one per line, to add them all at once." class="save-step">
+    <!-- 1: add a bookmark, or several. One link saves on Add, then shows to change; several are listed to pick from -->
+    <Step :n="1" title="Add bookmarks" hint="Paste a link and press Add: it’s saved, and its title, picture and description fill in by themselves. Paste several, one per line, to pick which to add." class="save-step">
       <ClientOnly>
         <BookmarkAdder
           ref="adder"
@@ -1077,6 +1082,8 @@ async function refreshAllDetails() {
           :suggest-for="url => suggestFor(url)"
           @save="onAdded"
           @show="showBookmark"
+          @edit="onAddedEdit"
+          @undo="onAddedUndo"
         />
         <template #fallback><div class="adder-placeholder skeleton" /></template>
       </ClientOnly>
@@ -1228,6 +1235,8 @@ async function refreshAllDetails() {
                   :create-folder="name => ensureFolder(name)"
                   @save="onAdded"
                   @show="showBookmark"
+                  @edit="onAddedEdit"
+                  @undo="onAddedUndo"
                 />
               </li>
               <li v-for="b in visibleMarks" :id="`bm-${b.id}`" :key="b.id" :data-item-id="b.id" class="mark" v-bind="menuFor(() => bookmarkMenu(b), b.title)" v-swipe-delete="() => del(b)" :data-swipe-off="sel.selecting || undefined" :class="{ 'flash': flashId === b.id, 'picked': sel.has(b.id), 'is-pinned': b.pinned, 'is-dupe': duplicateIds.has(b.id) }" :draggable="finePointer ? 'true' : undefined" @dragstart="onBookmarkDrag($event, b)" @dragend="draggingMarks = false" @click.capture="sel.onRowClick($event, b.id)">
