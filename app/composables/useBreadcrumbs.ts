@@ -13,9 +13,22 @@ export interface Crumb {
 const trail = shallowRef<Crumb[]>([])
 // Clicking the app's own crumb: back to the app's top level (All bookmarks, All notes…)
 const root = shallowRef<(() => void) | undefined>()
+// A view laid over the whole app (its settings page) shows its own trail instead of the page's, without
+// the page losing its: when the view closes, the folder you were in is back in the bar
+const override = shallowRef<{ crumbs: Crumb[], root?: () => void }>()
 
 export function useBreadcrumbs() {
-  return { trail: readonly(trail), root: readonly(root) }
+  return {
+    trail: computed(() => override.value?.crumbs ?? trail.value),
+    root: computed(() => (override.value ? override.value.root : root.value))
+  }
+}
+
+/** For a view over the whole app: its trail, and what the app's crumb does, while it returns one */
+export function useBreadcrumbOverride(get: () => { crumbs: Crumb[], root?: () => void } | undefined) {
+  if (import.meta.server) return
+  onMounted(() => watchEffect(() => (override.value = get())))
+  onBeforeUnmount(() => (override.value = undefined))
 }
 
 /** The page's levels below the app, kept up to date while the page is open */

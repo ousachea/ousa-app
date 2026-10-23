@@ -83,9 +83,10 @@ const isNew = computed(() => recent.value && !!latest.value && seenVersions.valu
 const releaseDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 // This app's own settings, when the page has any (#settings slot)
 const slots = useSlots()
-// Shared so a page can open its own settings too (Notes' "Notes settings" link); closed when the page goes
+// A page of their own at ?settings (useAppSettingsOpen), shared so a page can open them from its own links
+// (Notes' "Notes settings"). While they show, the app is only hidden, so whatever you were doing in it is
+// still there when you come back, scrolled where you left it.
 const settingsOpen = useAppSettingsOpen()
-onBeforeUnmount(() => (settingsOpen.value = false))
 // Listed apps always have settings, if only Import & export; pages that save nothing (the CV) don't
 // Signed out, its Import & export would hand over the data the example is hiding
 const appPage = computed(() => [...TOOLS, ...TAB_PAGES].some(t => t.to === route.path) && !page.value.readOnly)
@@ -93,6 +94,9 @@ const hasSettings = computed(() => !walled.value && !example.value && (!!slots.s
 function openSettings() {
   settingsOpen.value = true
   play('open')
+}
+function closeSettings() {
+  settingsOpen.value = false
 }
 
 function openWhatsNew() {
@@ -123,6 +127,24 @@ const gate = useSignInGate()
 const locked = computed(() => isGatedPage(route.path) && !gate.open.value)
 const example = computed(() => locked.value && demo.supported.value)
 const walled = computed(() => locked.value && (route.path === TRASH.to || (demo.supported.value && gate.state.value === 'checking')))
+
+// ---------- The settings page: after walled and example, which decide whether there are settings ----------
+const showSettings = computed(() => hasSettings.value && settingsOpen.value)
+const settingsHeading = ref<HTMLElement>()
+let appScroll = 0
+watch(showSettings, async (open) => {
+  if (import.meta.server) return
+  if (open) appScroll = window.scrollY
+  await nextTick()
+  if (open) {
+    window.scrollTo({ top: 0 })
+    settingsHeading.value?.focus({ preventScroll: true })
+  } else {
+    window.scrollTo({ top: appScroll })
+  }
+})
+// In the bar: the app, then Settings; the app's crumb goes back to it
+useBreadcrumbOverride(() => (showSettings.value ? { crumbs: [{ label: 'Settings' }], root: closeSettings } : undefined))
 const { play } = useSound()
 function toggleDemo() {
   demo.active.value = !demo.active.value
@@ -140,7 +162,7 @@ function openSignIn() {
   <main class="tool" :class="`header-${header}`" :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--accent-btn': tool.buttonColor, '--on-accent': tool.onColor ?? '#fff', '--width': props.width, ...checkInk }">
     <SiteBar v-if="siteBar" back />
 
-    <header v-if="header !== 'none'" class="head">
+    <header v-if="header !== 'none'" v-show="!showSettings" class="head">
       <!-- The icon; sync status is in the Apps menu -->
       <span class="icon-wrap">
       <button
@@ -209,24 +231,6 @@ function openSignIn() {
       <ToolIcon v-if="header === 'band'" :name="tool.icon" class="band-art" aria-hidden="true" />
     </header>
 
-    <Modal v-if="hasSettings" :open="settingsOpen" :title="`${page.name} settings`" :wide="settingsWide" @close="settingsOpen = false">
-      <template v-if="slots.settings">
-        <div class="app-settings">
-          <slot name="settings" />
-        </div>
-        <p class="app-settings-note">Saved on this device. They set where {{ page.name }} starts; you can still change things on the page.</p>
-      </template>
-      <!-- Every app can take its data and settings out to a file and bring them back -->
-      <section v-if="appPage" class="app-data" aria-label="Import and export">
-        <h3 class="app-data-head">Import &amp; export</h3>
-        <DataPanel v-if="settingsOpen" :app="route.path" :app-name="page.name" />
-        <!-- Apps with formats of their own (CSV, browser bookmarks, Markdown) open them from here -->
-        <div v-if="slots.transfer" class="app-data-more">
-          <slot name="transfer" />
-        </div>
-      </section>
-    </Modal>
-
     <Modal :open="signInOpen" :title="`Sign in to use ${tool.name}`" @close="signInOpen = false">
       <VaultAuth purpose="account" @done="signInOpen = false" />
     </Modal>
@@ -248,6 +252,34 @@ function openSignIn() {
 
     <!-- The header keeps the app's own colour; buttons and highlights can use one accent everywhere -->
     <div class="body" :style="accent.override ? { '--accent': accent.color, '--accent-btn': `var(--${prefs.accent}-btn, ${accent.color})`, '--on-accent': accent.on, '--check-mark': 'var(--check-mark-light)', '--check-dash': 'var(--check-dash-light)' } : undefined">
+      <!-- This app's settings, as a page of its own (?settings) -->
+      <section v-if="showSettings" class="settings-page" :class="{ wide: settingsWide }" aria-labelledby="app-settings-title">
+        <div class="settings-page-head">
+          <span class="settings-page-icon" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
+          <div class="settings-page-text">
+            <h1 id="app-settings-title" ref="settingsHeading" tabindex="-1">{{ page.name }} settings</h1>
+            <p v-if="slots.settings">Saved on this device. They set where {{ page.name }} starts; you can still change things on the page.</p>
+            <p v-else>Take {{ page.name }}’s data out to a file, or bring it back.</p>
+          </div>
+          <button type="button" class="btn btn-sm" @click="closeSettings">Done</button>
+        </div>
+        <div v-if="slots.settings" class="panel settings-card">
+          <div class="app-settings">
+            <slot name="settings" />
+          </div>
+        </div>
+        <!-- Every app can take its data and settings out to a file and bring them back -->
+        <section v-if="appPage" class="panel settings-card app-data" aria-label="Import and export">
+          <h2 class="app-data-head">Import &amp; export</h2>
+          <DataPanel :app="route.path" :app-name="page.name" />
+          <!-- Apps with formats of their own (CSV, browser bookmarks, Markdown) open them from here -->
+          <div v-if="slots.transfer" class="app-data-more">
+            <slot name="transfer" />
+          </div>
+        </section>
+      </section>
+      <!-- The app itself: hidden, not closed, while its settings show -->
+      <div v-show="!showSettings" class="body-main">
       <SignInWall v-if="walled" :name="tool.name" :checking="gate.state.value === 'checking'" />
       <template v-else>
       <p v-if="example" class="demo-banner" role="status">
@@ -262,6 +294,7 @@ function openSignIn() {
       </p>
       <slot />
       </template>
+      </div>
     </div>
   </main>
 </template>
@@ -543,7 +576,88 @@ h1 {
   opacity: 1;
 }
 
-/* ---------- This app's settings ---------- */
+/* ---------- This app's settings: a page of its own, a centred column of cards ---------- */
+.settings-page {
+  width: 100%;
+  max-width: 40rem;
+  margin: 1.5rem auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: settings-in var(--dur-slow) var(--ease-out);
+}
+
+.settings-page.wide {
+  max-width: 56rem;
+}
+
+@keyframes settings-in {
+  from { opacity: 0; translate: 0 0.5rem; }
+}
+
+.settings-page-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.settings-page-icon {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  font-size: var(--text-xl);
+  color: var(--on-accent);
+  background: var(--sticker, var(--accent));
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 3px var(--plastic), 0 0 0 4px var(--plastic-edge);
+}
+
+.settings-page-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-page-text h1 {
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+  outline: none;
+}
+
+.settings-page-text p {
+  margin: 0.2rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.settings-card {
+  padding: 0.5rem 1.25rem 1rem;
+}
+
+.settings-card.app-data {
+  margin-top: 0;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+/* The app, hidden behind its settings, keeps its own layout untouched */
+.body-main {
+  display: contents;
+}
+
+.header-band:has(.settings-page) .body {
+  margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-page {
+    animation: none;
+  }
+}
+
+/* ---------- This app's settings rows ---------- */
 .app-settings {
   display: flex;
   flex-direction: column;
@@ -597,12 +711,6 @@ h1 {
   height: 2.5rem;
   padding: 0.25rem;
   cursor: pointer;
-}
-
-.app-settings-note {
-  margin: 0.75rem 0 0;
-  font-size: var(--text-sm);
-  color: var(--ink-3);
 }
 
 .app-data {
