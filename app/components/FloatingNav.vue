@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
           </template>
           <template v-else>
             <span class="cloud" aria-hidden="true">
-              <AppIcon name="cloud" />
+              <AnimatedIcon name="cloud" trigger="loop" />
             </span>
             <span class="account-text">
               <strong>Saved on this device</strong>
@@ -346,7 +346,7 @@ onBeforeUnmount(() => {
       </div>
 
       <label v-if="!onHome" class="search">
-        <AppIcon name="search" />
+        <AnimatedIcon name="search" />
         <input
           ref="searchInput"
           v-model="query"

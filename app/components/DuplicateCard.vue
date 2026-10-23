@@ -16,7 +16,7 @@ const emit = defineEmits<{ open: [], keep: [], cancel: [] }>()
       <button type="button" class="btn btn-sm" @click="emit('open')">{{ openLabel ?? 'Open existing' }}</button>
       <button type="button" class="btn btn-quiet btn-sm" @click="emit('keep')">Keep both</button>
       <button type="button" class="icon-btn" aria-label="Dismiss" title="Dismiss" @click="emit('cancel')">
-        <AppIcon name="x" />
+        <AnimatedIcon name="x" />
       </button>
     </div>
   </div>

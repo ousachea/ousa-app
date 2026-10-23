@@ -1091,7 +1091,7 @@ function listMenu() {
           <h2 class="phone-title">Folders</h2>
           <div class="new-row">
             <button type="button" class="btn new-btn" title="New note (A, Alt+N)" @click="newNote()">
-              <AppIcon name="plus" />New note
+              <AnimatedIcon name="plus" />New note
             </button>
             <button type="button" class="btn new-more" aria-label="New note from a template, or a quick note" title="Templates and quick note" @click="newMenu">
               <AppIcon name="chevron-down" />
@@ -1125,7 +1125,7 @@ function listMenu() {
                   <b v-if="v[2]">{{ v[2] }}</b>
                 </button>
                 <NuxtLink to="/trash?app=/notes" class="view-row">
-                  <AppIcon name="trash-2" />
+                  <AnimatedIcon name="trash-2" />
                   <span>Recycle Bin</span>
                 </NuxtLink>
                 <!-- Markdown in and out, without digging into Settings -->
@@ -1181,7 +1181,7 @@ function listMenu() {
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
             </div>
             <label class="search">
-              <AppIcon name="search" />
+              <AnimatedIcon name="search" />
               <input ref="searchInput" v-model="query" type="search" placeholder="Search notes" aria-label="Search notes" title="Words, or folder:work tag:idea is:favorite is:archived before:2026-10-01 after:…" @keydown.enter.prevent="shown[0] && openNoteById(shown[0].id)">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
@@ -1314,7 +1314,7 @@ function listMenu() {
                 <AppIcon :name="({ star: 'star', move: 'folder-input', archive: 'archive', delete: 'trash-2', pin: 'pin', copy: 'link' } as const)[a.icon]" />{{ a.label }}
               </button>
               <button type="button" class="pick-action" :disabled="!picked.length" :title="picked.length > 1 ? 'One Markdown file per note, in a .zip' : 'As a Markdown file'" @click="exportPicked">
-                <AppIcon name="download" />Export
+                <AnimatedIcon name="download" />Export
               </button>
             </div>
             <button type="button" class="link pick-cancel" @click="sel.stop()">Done selecting <kbd>Esc</kbd></button>
@@ -1357,13 +1357,13 @@ function listMenu() {
                   <AppIcon :name="focusMode ? 'minimize' : 'maximize'" />
                 </button>
                 <button type="button" class="icon-btn" :class="{ on: openNote.favorite }" :aria-pressed="!!openNote.favorite" :aria-label="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" :title="openNote.favorite ? 'Remove from favourites' : 'Add to favourites'" @click="toggleFavorite(openNote)">
-                  <AppIcon name="star" />
+                  <AnimatedIcon name="star" />
                 </button>
                 <button type="button" class="icon-btn width-btn" :class="{ on: notePrefs.width === 'full' }" :aria-pressed="notePrefs.width === 'full'" aria-label="Full width" :title="notePrefs.width === 'full' ? 'Centre the note' : 'Full width'" @click="toggleWidth">
                   <AppIcon :name="notePrefs.width === 'full' ? 'fold-horizontal' : 'move-horizontal'" />
                 </button>
                 <button type="button" class="icon-btn" aria-label="Copy note" title="Copy note" @click="copyNote(openNote)">
-                  <AppIcon name="copy" />
+                  <AnimatedIcon name="copy" />
                 </button>
                 <button type="button" class="icon-btn history-btn" aria-label="Version history" title="Version history" @click="historyOpen = true">
                   <AppIcon name="history" />

@@ -250,7 +250,7 @@ onBeforeUnmount(() => clearTimeout(clipboardTimer))
             <h2>How your passwords are protected</h2>
             <ul>
               <li>
-                <AppIcon name="lock" />
+                <AnimatedIcon name="lock" />
                 <span>Each entry is encrypted with AES-256 in this browser before it’s sent. Firebase only stores scrambled data.</span>
               </li>
               <li>
@@ -258,7 +258,7 @@ onBeforeUnmount(() => clearTimeout(clipboardTimer))
                 <span>Your master password never leaves this device. The key that unlocks the vault exists only in this tab.</span>
               </li>
               <li>
-                <AppIcon name="clock" />
+                <AnimatedIcon name="clock" />
                 <span>The vault locks itself after 5 minutes without activity, and whenever the page reloads.</span>
               </li>
               <li>

@@ -103,7 +103,7 @@ usePullToRefresh(async () => {
 
       <!-- Phones: Quick Add stays in reach of the thumb on every section -->
       <button type="button" class="quick-add" aria-label="Add expense" @click="store.openEntry()">
-        <AppIcon name="plus" />
+        <AnimatedIcon name="plus" />
         <span>Expense</span>
       </button>
 

@@ -53,6 +53,24 @@ export function occurrenceBefore(anchor: string, cycle: Cycle, before: string) {
   return prev && iso(prev)
 }
 
+/**
+ * When the billing period that ends at `next` began: the charge before it, worked back from the billing
+ * day first entered (`anchor`). Undefined for something that doesn't repeat.
+ */
+export function cycleStart(anchor: string, cycle: Cycle, next: string) {
+  if (cycle === 'once') return undefined
+  const before = occurrenceBefore(anchor, cycle, next)
+  if (before) return before
+  // The first charge is still ahead: step one cycle back from it, clamping to the month's last day
+  const d = parse(next)
+  if (cycle === 'weekly') return iso(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7))
+  const months = cycle === 'monthly' ? 1 : cycle === 'quarterly' ? 3 : cycle === 'halfyearly' ? 6 : 12
+  const target = new Date(d.getFullYear(), d.getMonth() - months, 1)
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+  target.setDate(Math.min(parse(anchor).getDate(), lastDay))
+  return iso(target)
+}
+
 export function daysUntil(date: string, today = new Date()) {
   const now = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   return Math.round((parse(date).getTime() - now.getTime()) / 86_400_000)

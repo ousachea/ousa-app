@@ -116,7 +116,7 @@ function onKey(e: KeyboardEvent) {
         <span>Google Calendar<small>Opens in a new tab</small></span>
       </a>
       <button type="button" role="menuitem" @click="downloadIcs">
-        <span class="icon" aria-hidden="true"><AppIcon name="download" /></span>
+        <span class="icon" aria-hidden="true"><AnimatedIcon name="download" /></span>
         <span>Apple, Outlook or phone<small>Downloads an .ics file</small></span>
       </button>
     </div>

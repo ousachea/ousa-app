@@ -22,7 +22,7 @@ const SECTIONS: Section[] = [
   { id: 'sound', label: 'Sound', hint: 'Effects, volume and style', icon: 'lucide:volume-2', keywords: 'sound effects volume audio style pack mute' },
   { id: 'features', label: 'App features', hint: 'What each app can do', icon: 'lucide:table', keywords: 'features compare apps table drag drop folders search sync demo which app' },
   { id: 'gauges', label: 'Gauges', hint: 'Every dial the apps use, to copy', icon: 'lucide:gauge', keywords: 'gauge dial meter needle ring arc reference components code design' },
-  { id: 'icons', label: 'Logos & icons', hint: 'Every icon and logo the apps use, and where', icon: 'lucide:shapes', keywords: 'icons logos brands lucide simple icons svg reference components code design' },
+  { id: 'icons', label: 'Logos & icons', hint: 'Every icon and logo the apps use, and animated icons', icon: 'lucide:shapes', keywords: 'icons logos brands lucide simple icons svg animated motion animation hover loop reference components code design' },
   { id: 'about', label: 'About', hint: 'Version, what’s new, install', icon: 'lucide:info', keywords: 'about version what’s new changelog install app shortcuts help' }
 ]
 const isSection = (h: string): h is SectionId => SECTIONS.some(s => s.id === h)
@@ -233,7 +233,7 @@ const volume = computed({
       <div class="settings">
         <nav v-sticky-fit class="snav" aria-label="Settings sections">
           <label class="find">
-            <AppIcon name="search" />
+            <AnimatedIcon name="search" />
             <input v-model="find" type="search" placeholder="Find a setting" aria-label="Find a setting">
           </label>
           <ul class="snav-list">
@@ -357,7 +357,7 @@ const volume = computed({
           <div v-else-if="current === 'performance'" class="group">
             <section class="panel lowspec" :class="{ on: prefs.lowSpec }">
               <div class="lowspec-head">
-                <span class="lowspec-icon" aria-hidden="true"><AppIcon name="zap" /></span>
+                <span class="lowspec-icon" aria-hidden="true"><AnimatedIcon name="zap" trigger="loop" /></span>
                 <SettingRow v-model="lowSpec" class="lowspec-row" title="Low-spec PC mode" description="Makes every app lighter, so it runs smoothly and quickly on an old or slow computer." />
               </div>
               <ul class="lowspec-list">

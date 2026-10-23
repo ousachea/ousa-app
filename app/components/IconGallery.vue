@@ -4,7 +4,8 @@ import appIcons from '#build/app-icons.mjs'
 import builtUsage from '#build/app-icons-usage.mjs'
 import type { ToolIconName } from '~/utils/tools'
 
-// Settings → Logos & icons: every icon and logo the apps show, and where. Line icons are Lucide
+// Settings → Logos & icons: every icon and logo the apps show, and where, and the animated icons
+// (AnimatedIconGallery) to copy. Line icons are Lucide
 // (@iconify-json/lucide, <AppIcon>), brand logos Simple Icons (simple-icons, <BrandLogo>). Where each one
 // is used comes from modules/app-icons.ts, which reads the code at build time: the file and line, and the
 // apps that end up showing it. Search covers the whole of each set, used or not.
@@ -18,8 +19,13 @@ const usage = builtUsage as {
   pages: Record<string, string[]>
 }
 const { play } = useSound()
-type Kind = 'icons' | 'logos'
+type Kind = 'icons' | 'logos' | 'animated'
 const kind = ref<Kind>('icons')
+const KINDS: { value: Kind, label: string }[] = [
+  { value: 'icons', label: 'Icons' },
+  { value: 'logos', label: 'Logos' },
+  { value: 'animated', label: 'Animated' }
+]
 const query = ref('')
 const appFilter = ref('')
 
@@ -193,11 +199,18 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
 </script>
 
 <template>
-  <div class="gallery">
+  <!-- Animated: its own library, with the same switch at the head of its controls -->
+  <AnimatedIconGallery v-if="kind === 'animated'">
+    <template #switch>
+      <div class="segmented kinds" role="radiogroup" aria-label="Show">
+        <label v-for="k in KINDS" :key="k.value" :class="{ active: kind === k.value }"><input v-model="kind" type="radio" name="icon-kind" :value="k.value">{{ k.label }}</label>
+      </div>
+    </template>
+  </AnimatedIconGallery>
+  <div v-else class="gallery">
     <section class="panel controls">
       <div class="segmented kinds" role="radiogroup" aria-label="Show">
-        <label :class="{ active: kind === 'icons' }"><input v-model="kind" type="radio" name="icon-kind" value="icons">Icons</label>
-        <label :class="{ active: kind === 'logos' }"><input v-model="kind" type="radio" name="icon-kind" value="logos">Logos</label>
+        <label v-for="k in KINDS" :key="k.value" :class="{ active: kind === k.value }"><input v-model="kind" type="radio" name="icon-kind" :value="k.value">{{ k.label }}</label>
       </div>
       <label class="search">
         <AppIcon name="search" />
@@ -325,9 +338,11 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   padding: 1.1rem 1.25rem;
 }
 
+/* Room for three: Icons, Logos and Animated */
 .kinds {
   flex: none;
-  width: 12rem;
+  width: 16rem;
+  max-width: 100%;
 }
 
 .search {

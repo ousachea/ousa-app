@@ -229,6 +229,18 @@ function filterByCategory(category: string) {
   play(on ? 'toggle-off' : 'toggle-on')
 }
 
+// "Where the value is" as one thin bar or as a ring of stacked parts, remembered on this device
+const breakdown = useRemembered<'gauge' | 'bar'>('things-breakdown', 'gauge', v => v === 'gauge' || v === 'bar')
+// The kind pointed at in the list below, lifted out of the ring
+const hoverCategory = ref<string>()
+const valueParts = computed(() => byCategory.value.map(c => ({
+  key: c.category,
+  label: typeLabel(c.category),
+  value: c.usd,
+  color: typeOf(c.category).color,
+  detail: `${c.count} ${c.count === 1 ? 'item' : 'items'}`
+})))
+
 // Cards or a compact list (#15)
 const view = smoothRef(useRemembered<'cards' | 'grid' | 'list'>('things-view', 'cards', v => v === 'cards' || v === 'grid' || v === 'list'))
 
@@ -735,8 +747,32 @@ function del(t: Thing) {
 
               <!-- Where the value is: one bar split by category, then each category with its share -->
               <div class="breakdown">
-                <span class="label">Where the value is</span>
-                <div class="stack" :class="{ filtered: !!filters.type }" role="img" :aria-label="byCategory.map(c => `${typeLabel(c.category)} ${Math.round((c.usd / (totals.now || 1)) * 100)}%`).join(', ')">
+                <div class="breakdown-head">
+                  <span class="label">Where the value is</span>
+                  <div class="segmented breakdown-views" role="radiogroup" aria-label="Show as">
+                    <label :class="{ active: breakdown === 'gauge' }"><input v-model="breakdown" type="radio" name="things-breakdown" value="gauge">Gauge</label>
+                    <label :class="{ active: breakdown === 'bar' }"><input v-model="breakdown" type="radio" name="things-breakdown" value="bar">Bar</label>
+                  </div>
+                </div>
+                <!-- Stacked parts (components/gauge/Parts.vue): the list below is its legend -->
+                <GaugeParts
+                  v-if="breakdown === 'gauge'"
+                  class="value-ring"
+                  :parts="valueParts"
+                  :format="v => formatMoney(v, 'USD')"
+                  caption="worth now"
+                  label="Value by kind"
+                  :active="hoverCategory ?? (filters.type || undefined)"
+                  :limit="0"
+                  :legend="false"
+                  @pick="filterByCategory"
+                >
+                  <template #center="{ total }">
+                    <strong>{{ formatMoney(total, 'USD') }}</strong>
+                    <span class="what">{{ byCategory.length }} {{ byCategory.length === 1 ? 'kind' : 'kinds' }}</span>
+                  </template>
+                </GaugeParts>
+                <div v-else class="stack" :class="{ filtered: !!filters.type }" role="img" :aria-label="byCategory.map(c => `${typeLabel(c.category)} ${Math.round((c.usd / (totals.now || 1)) * 100)}%`).join(', ')">
                   <span
                     v-for="c in byCategory"
                     :key="c.category"
@@ -747,7 +783,7 @@ function del(t: Thing) {
                 </div>
                 <!-- Each category filters the list below; tap it again to show everything -->
                 <ul class="cats" :class="{ filtered: !!filters.type }">
-                  <li v-for="c in byCategory" :key="c.category" :class="{ hidden: hiddenTypes.includes(c.category) }" :style="categoryStyle(c.category)">
+                  <li v-for="c in byCategory" :key="c.category" :class="{ hidden: hiddenTypes.includes(c.category) }" :style="categoryStyle(c.category)" @pointerenter="hoverCategory = c.category" @pointerleave="hoverCategory = undefined" @focusin="hoverCategory = c.category" @focusout="hoverCategory = undefined">
                     <button
                       type="button"
                       class="cat-btn"
@@ -835,7 +871,7 @@ function del(t: Thing) {
                     <b>{{ formatMoney(t.price, t.currency) }}</b>
                     <small>{{ formatDate(t.purchaseDate) }}</small>
                   </div>
-                  <AppIcon class="arrow" name="arrow-right" />
+                  <AnimatedIcon class="arrow" name="arrow-right" />
                   <div class="col end">
                     <span class="k">Worth now</span>
                     <b>{{ formatMoney(worth(t), t.currency) }}</b>
@@ -889,7 +925,7 @@ function del(t: Thing) {
             <b>{{ formatMoney(viewing.price, viewing.currency) }}</b>
             <small>{{ formatDate(viewing.purchaseDate) }}</small>
           </div>
-          <AppIcon class="arrow" name="arrow-right" />
+          <AnimatedIcon class="arrow" name="arrow-right" />
           <div class="col end">
             <span class="k">Worth now</span>
             <b>{{ formatMoney(worth(viewing), viewing.currency) }}</b>
@@ -1180,6 +1216,26 @@ function del(t: Thing) {
   margin: 1rem 0 0;
   font-size: var(--text-sm);
   color: var(--ink-3);
+}
+
+.breakdown-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.breakdown-views {
+  font-size: var(--text-sm);
+}
+
+.breakdown-views label {
+  padding: 0.25rem 0.75rem;
+}
+
+.value-ring {
+  --parts-size: 13rem;
+  margin: 0.5rem 0 0.25rem;
 }
 
 .stack {

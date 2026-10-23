@@ -110,7 +110,7 @@ export interface PaymentMethod {
   archived?: boolean
 }
 
-export type Widget = 'totals' | 'alerts' | 'trend' | 'categories' | 'bills' | 'recent'
+export type Widget = 'totals' | 'gauges' | 'alerts' | 'trend' | 'categories' | 'bills' | 'recent'
 
 export interface BudgetSettings extends Stamped {
   primaryCurrency: Currency

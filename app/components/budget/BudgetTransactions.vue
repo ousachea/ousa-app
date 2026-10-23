@@ -168,7 +168,7 @@ const describe = computed(() => {
     <section class="panel b-panel filters" aria-label="Filters">
       <div class="filter-row">
         <label class="search input">
-          <AppIcon name="search" />
+          <AnimatedIcon name="search" />
           <input v-model="searchText" type="search" placeholder="Search notes, merchants, tags…" aria-label="Search transactions">
         </label>
         <div class="segmented kinds" role="radiogroup" aria-label="Type">

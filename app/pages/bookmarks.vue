@@ -380,6 +380,66 @@ function toggleImages() {
 }
 const searchInput = ref<HTMLInputElement>()
 
+// ---------- Overview: the whole library as stacked parts (components/gauge/Parts.vue) ----------
+// Open or closed, and what it splits by, are remembered on this device. Everything comes from what's
+// already stored: folders, opens (visits) and pins; nothing is tracked for its sake.
+const statsOpen = useRemembered<boolean>('bookmarks-stats', false, v => typeof v === 'boolean')
+type StatsBy = 'folders' | 'opened' | 'pinned'
+const STATS_BY: { value: StatsBy, label: string }[] = [
+  { value: 'folders', label: 'Folders' },
+  { value: 'opened', label: 'Opened' },
+  { value: 'pinned', label: 'Pinned' }
+]
+const statsBy = useRemembered<StatsBy>('bookmarks-stats-by', 'folders', v => STATS_BY.some(x => x.value === v))
+function toggleStats() {
+  statsOpen.value = !statsOpen.value
+  play(statsOpen.value ? 'toggle-on' : 'toggle-off')
+}
+// Top-level folders without a colour of their own take one from here in turn, so neighbours differ
+const STATS_PALETTE = ['blue', 'teal', 'orange', 'purple', 'pink', 'gold', 'green', 'indigo', 'cyan', 'brown']
+const rootOf = (id: string) => {
+  let f = folderById(id)
+  for (let guard = 0; f?.parentId && guard < 50; guard++) f = folderById(f.parentId) ?? f
+  return f?.id ?? id
+}
+const statParts = computed(() => {
+  const n = (count: number) => `${count} ${count === 1 ? 'bookmark' : 'bookmarks'}`
+  if (statsBy.value === 'opened') {
+    const opened = items.value.filter(b => b.visits > 0).length
+    return [
+      { key: 'opened', label: 'Opened from here', value: opened, color: 'var(--accent)', detail: n(opened) },
+      { key: 'never', label: 'Never opened', value: items.value.length - opened, color: 'color-mix(in srgb, var(--ink) 28%, var(--surface))', detail: n(items.value.length - opened) }
+    ]
+  }
+  if (statsBy.value === 'pinned') {
+    const count = items.value.filter(b => b.pinned).length
+    return [
+      { key: 'pinned', label: 'Pinned', value: count, color: 'var(--accent)', detail: 'On the shelf at the top' },
+      { key: 'rest', label: 'Not pinned', value: items.value.length - count, color: 'color-mix(in srgb, var(--ink) 28%, var(--surface))', detail: n(items.value.length - count) }
+    ]
+  }
+  // Each bookmark counts once, under the top folder of the first folder it's in, so the parts add up
+  const tally = new Map<string, number>()
+  for (const b of items.value) {
+    const first = foldersOf(b)[0]
+    const key = first ? rootOf(first) : UNFILED
+    tally.set(key, (tally.get(key) ?? 0) + 1)
+  }
+  let spare = 0
+  return [...tally].sort((a, b) => b[1] - a[1]).map(([key, count]) => {
+    const f = key === UNFILED ? undefined : folderById(key)
+    const color = key === UNFILED ? 'var(--slate)' : f?.color ? `var(--${f.color})` : `var(--${STATS_PALETTE[spare++ % STATS_PALETTE.length]})`
+    return { key, label: f?.name ?? 'Not in a folder', value: count, color, detail: n(count) }
+  })
+})
+const multiFiled = computed(() => items.value.filter(b => foldersOf(b).length > 1).length)
+// Picking a folder's part opens that folder in the list
+function pickStat(key: string) {
+  if (statsBy.value !== 'folders') return
+  activeFolder.value = key
+  play('select')
+}
+
 // How many bookmarks sit directly in each folder; the tree adds up sub-folders itself
 const counts = computed(() => {
   const out: Record<string, number> = {}
@@ -1161,7 +1221,7 @@ async function refreshAllDetails() {
 
           <div class="side-tools">
             <button v-if="items.length" type="button" class="btn btn-quiet btn-sm details-btn" :disabled="fetchingDetails" title="Read the preview image, description, icon and name for bookmarks still missing some (complete ones are skipped)" @click="refreshAllDetails">
-              <AppIcon name="rotate-cw" />
+              <AnimatedIcon name="rotate-cw" :spin="fetchingDetails" />
               {{ fetchingDetails ? 'Getting site details…' : 'Get site details' }}<template v-if="!fetchingDetails && missingDetails"> <span class="count-pill info">{{ missingDetails }}</span></template>
             </button>
             <button type="button" class="link" @click="dupesOpen = true">Find duplicates<template v-if="duplicateCount"> <span class="count-pill">{{ duplicateCount }}</span></template></button>
@@ -1185,14 +1245,14 @@ async function refreshAllDetails() {
             <h2 v-else class="list-title">{{ listTitle }}</h2>
             <template v-if="activeFolderRecord">
               <button type="button" class="view-btn folder-act" :class="{ on: activeFolderRecord.pinned }" :aria-pressed="!!activeFolderRecord.pinned" :title="activeFolderRecord.pinned ? 'Unpin this folder' : 'Pin this folder to the top'" @click="togglePinFolder(activeFolderRecord)">
-                <AppIcon name="pin" /><span class="sr-only">{{ activeFolderRecord.pinned ? 'Unpin' : 'Pin' }} {{ activeFolderRecord.name }}</span>
+                <AnimatedIcon name="pin" trigger="hover" /><span class="sr-only">{{ activeFolderRecord.pinned ? 'Unpin' : 'Pin' }} {{ activeFolderRecord.name }}</span>
               </button>
               <button type="button" class="view-btn folder-act" :class="{ on: !!activeFolderRecord.shareId }" :title="activeFolderRecord.shareId ? 'Shared: anyone with the link can view it' : 'Share this folder'" @click="openShare(activeFolderRecord)">
-                <AppIcon name="share-2" /><span class="sr-only">Share {{ activeFolderRecord.name }}</span>
+                <AnimatedIcon name="share-2" /><span class="sr-only">Share {{ activeFolderRecord.name }}</span>
               </button>
             </template>
             <label class="search">
-              <AppIcon name="search" />
+              <AnimatedIcon name="search" />
               <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
@@ -1212,13 +1272,44 @@ async function refreshAllDetails() {
                 <span class="sr-only">Compact</span>
               </button>
             </div>
+            <div v-if="items.length" class="views">
+              <button type="button" class="view-btn toggle-btn" :aria-expanded="statsOpen" aria-controls="bookmark-stats" :title="statsOpen ? 'Hide the overview' : 'Show an overview of your bookmarks'" @click="toggleStats">
+                <AppIcon name="chart-pie" />
+                <span class="sr-only">Overview</span>
+              </button>
+            </div>
             <div v-if="view !== 'compact'" class="views">
-              <button type="button" class="view-btn" :aria-pressed="showImages" :title="showImages ? 'Hide preview images' : 'Show preview images'" @click="toggleImages">
+              <button type="button" class="view-btn toggle-btn" :aria-pressed="showImages" :title="showImages ? 'Hide preview images' : 'Show preview images'" @click="toggleImages">
                 <AppIcon :name="showImages ? 'image' : 'image-off'" />
                 <span class="sr-only">Preview images</span>
               </button>
             </div>
           </div>
+
+          <!-- Overview: stacked parts of the whole library; a folder's part opens it below -->
+          <Transition name="stats">
+            <section v-if="statsOpen && items.length" id="bookmark-stats" class="stats-panel" aria-label="Overview">
+              <div class="stats-head">
+                <h3>{{ items.length }} {{ items.length === 1 ? 'bookmark' : 'bookmarks' }}</h3>
+                <div class="segmented stats-by" role="radiogroup" aria-label="Split by">
+                  <label v-for="o in STATS_BY" :key="o.value" :class="{ active: statsBy === o.value }">
+                    <input v-model="statsBy" type="radio" name="bookmarks-stats-by" :value="o.value">{{ o.label }}
+                  </label>
+                </div>
+              </div>
+              <GaugeParts
+                :parts="statParts"
+                :format="v => v.toLocaleString()"
+                caption="bookmarks"
+                :label="`Bookmarks by ${statsBy === 'folders' ? 'folder' : statsBy === 'opened' ? 'whether they’ve been opened' : 'pinned or not'}`"
+                :limit="statsBy === 'folders' ? 7 : 0"
+                :active="statsBy === 'folders' && activeFolder ? activeFolder : undefined"
+                @pick="pickStat"
+              />
+              <p v-if="statsBy === 'folders' && multiFiled" class="stats-note">{{ multiFiled }} {{ multiFiled === 1 ? 'bookmark is' : 'bookmarks are' }} in more than one folder, and {{ multiFiled === 1 ? 'counts' : 'count' }} once, under the first.</p>
+              <p v-else-if="statsBy === 'opened'" class="stats-note">Opens are counted when you open a bookmark from this app.</p>
+            </section>
+          </Transition>
 
           <template v-if="shown.length || showFolderAdd">
             <TransitionGroup tag="ul" name="list" class="marks" :class="[view === 'compact' ? ['list', 'compact'] : view, { 'selecting': sel.selecting, 'no-images': !showImages }]">
@@ -2560,6 +2651,69 @@ kbd {
 }
 
 /* ---------- View switch ---------- */
+/* ---------- Overview ---------- */
+/* On/off toggles (overview, preview images): on or open, they take the tool colour, like a pinned folder's pin */
+.view-btn.toggle-btn:is([aria-pressed='true'], [aria-expanded='true']) {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.stats-panel {
+  margin: 0.25rem 0 1rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+}
+
+.stats-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.stats-head h3 {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--ink-2);
+}
+
+.stats-by {
+  font-size: var(--text-sm);
+}
+
+.stats-by label {
+  padding: 0.25rem 0.75rem;
+}
+
+.stats-note {
+  margin: 0.75rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.stats-enter-active,
+.stats-leave-active {
+  transition: opacity var(--dur), translate var(--dur) var(--ease-out);
+}
+
+.stats-enter-from,
+.stats-leave-to {
+  opacity: 0;
+  translate: 0 -0.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats-enter-active,
+  .stats-leave-active {
+    transition: none;
+  }
+}
+
 .views {
   flex: none;
   display: flex;

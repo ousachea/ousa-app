@@ -121,7 +121,7 @@ function onKey(e: KeyboardEvent) {
           <text v-if="i % labelEvery === 0" :x="PAD.left + slot * i + slot / 2" :y="height - 6" class="xtick">{{ p.label }}</text>
         </g>
       </svg>
-      <div v-if="activePoint" class="tooltip" role="status" :style="{ left: `${Math.min(Math.max(PAD.left + slot * (active ?? 0) + slot / 2, 80), width - 80)}px` }">
+      <div v-if="activePoint" class="tooltip chart-tip" role="status" :style="{ left: `${Math.min(Math.max(PAD.left + slot * (active ?? 0) + slot / 2, 80), width - 80)}px` }">
         <strong>{{ activePoint.title }}</strong>
         <span v-for="(s, i) in series" :key="s.name"><i :style="{ background: s.color }" />{{ series.length > 1 ? `${s.name}: ` : '' }}{{ activePoint.values[i] === undefined ? '…' : format(activePoint.values[i]!) }}</span>
       </div>
@@ -219,26 +219,11 @@ svg:focus-visible {
   vertical-align: -1px;
 }
 
+/* The look is .chart-tip (main.css); this only places it over the bar */
 .tooltip {
   position: absolute;
   top: 0;
   transform: translate(-50%, -100%);
-  padding: 0.45rem 0.65rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  font-size: var(--text-xs);
-  color: var(--ink-2);
-  white-space: nowrap;
-  pointer-events: none;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.15);
-}
-
-.tooltip strong {
-  color: var(--ink);
 }
 
 .table-view {

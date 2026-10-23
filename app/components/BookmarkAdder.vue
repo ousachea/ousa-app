@@ -342,7 +342,7 @@ const busy = computed(() => !!(justAdded.value || batch.value || duplicateOf.val
           <AppIcon name="clipboard" /><span class="paste-label">Paste</span>
         </button>
         <button type="submit" class="btn add-btn">
-          <AppIcon name="plus" />
+          <AnimatedIcon name="plus" />
           {{ many ? `Add ${links.length}` : 'Add' }}
         </button>
       </div>
@@ -383,7 +383,7 @@ const busy = computed(() => !!(justAdded.value || batch.value || duplicateOf.val
         </div>
         <div class="review-fields">
           <p class="kicker saved-kicker" role="status">
-            <AppIcon name="check" />Saved{{ folderNames ? ` to ${folderNames}` : '' }}
+            <AnimatedIcon name="check" appear />Saved{{ folderNames ? ` to ${folderNames}` : '' }}
             <span v-if="filling" class="filling"><span class="spinner" aria-hidden="true" />Reading the page…</span>
           </p>
           <p class="site">{{ added.siteName || hostOf(added.url) }} · <span class="url">{{ added.url }}</span></p>

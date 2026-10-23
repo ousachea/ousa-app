@@ -35,7 +35,7 @@ const short = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('e
         @touchstart.passive="active = i"
       >
         <span class="bar" :class="{ on: active === i, empty: !d.value }" :style="{ height: max ? `${Math.max(d.value ? 2 : 0, (d.value / max) * 100)}%` : '0%' }" />
-        <span v-if="active === i" class="tip" :class="{ left: i > days.length / 2 }" role="status">
+        <span v-if="active === i" class="tip chart-tip" :class="{ left: i > days.length / 2 }" role="status">
           <b>{{ format(d.value) }}</b>
           <span>{{ dayLabel(d.day) }}</span>
         </span>
@@ -87,23 +87,14 @@ const short = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('e
   box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--accent);
 }
 
+/* The look is .chart-tip (main.css); this only places it over the bar */
 .tip {
   position: absolute;
   z-index: 2;
   bottom: calc(100% + 0.4rem);
   left: 50%;
   translate: -50% 0;
-  display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  padding: 0.4rem 0.6rem;
-  font-size: var(--text-xs);
-  white-space: nowrap;
-  color: var(--ink-2);
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.18), 0 0 0 1px var(--line);
-  pointer-events: none;
 }
 
 .tip.left {
@@ -112,11 +103,6 @@ const short = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('e
   translate: 0 0;
 }
 
-.tip b {
-  font-size: var(--text-sm);
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
 
 .ticks {
   position: relative;

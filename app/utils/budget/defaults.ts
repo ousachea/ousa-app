@@ -140,6 +140,7 @@ export const DEFAULT_METHODS: PaymentMethod[] = [
 
 export const WIDGETS: { value: Widget, label: string }[] = [
   { value: 'totals', label: 'Totals' },
+  { value: 'gauges', label: 'Gauges' },
   { value: 'alerts', label: 'Budget alerts' },
   { value: 'trend', label: 'Daily spending' },
   { value: 'categories', label: 'Top categories' },
@@ -161,7 +162,7 @@ export const defaultSettings = (now = new Date().toISOString()): BudgetSettings 
   methods: DEFAULT_METHODS,
   alerts: [80],
   overAlert: 0,
-  widgets: { totals: true, alerts: true, trend: true, categories: true, bills: true, recent: true },
+  widgets: { totals: true, gauges: true, alerts: true, trend: true, categories: true, bills: true, recent: true },
   defaultsVersion: DEFAULTS_VERSION
 })
 

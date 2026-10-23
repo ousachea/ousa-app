@@ -119,7 +119,12 @@ function createStore() {
     const list = settingsList.items.value
     return list.find(s => s.id === SETTINGS_ID) ?? [...list].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0]
   })
-  const settings = computed<BudgetSettings>(() => ({ ...defaultSettings(), ...settingsRecord.value }))
+  // Widgets merge one level down, so a widget added since the record was saved starts switched on
+  const settings = computed<BudgetSettings>(() => {
+    const base = defaultSettings()
+    const rec = settingsRecord.value
+    return { ...base, ...rec, widgets: { ...base.widgets, ...rec?.widgets } }
+  })
   function updateSettings(patch: Partial<Draft<BudgetSettings>>) {
     const rec = settingsRecord.value
     if (rec) settingsList.update(rec.id, patch, { quiet: true })

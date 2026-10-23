@@ -1,15 +1,8 @@
 <script setup lang="ts">
-import type { BudgetLevel } from '~/utils/budget/calc'
+import { LEVELS, type BudgetLevel } from '~/utils/budget/calc'
 
 // A budget's progress: a thin bar plus the level in words, so it never depends on colour alone
 const props = defineProps<{ share: number | undefined, level: BudgetLevel, label: string, pace?: number }>()
-
-const LEVELS: Record<BudgetLevel, { word: string, badge: string }> = {
-  ok: { word: 'On track', badge: 'good' },
-  warn: { word: 'Nearly there', badge: 'warn' },
-  reached: { word: 'Limit reached', badge: 'warn' },
-  over: { word: 'Over budget', badge: 'bad' }
-}
 const pct = computed(() => (props.share === undefined ? undefined : Math.round(props.share * 100)))
 // Where the month is heading at this pace, as a share of the limit
 const markAt = computed(() => (props.pace !== undefined ? Math.min(100, props.pace * 100) : undefined))

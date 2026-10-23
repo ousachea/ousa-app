@@ -161,6 +161,27 @@ const totalText = (usd: number) => showIn.value === 'KHR' && rate.value
   ? formatMoney(usd * rate.value, 'KHR')
   : showIn.value === 'both' ? formatBoth(usd, 'USD', rate.value) : formatMoney(usd, 'USD')
 
+// ---------- Next charge: one renewal counted down to the second, beside each row's own countdown ----------
+// The soonest by default; pick another and it's remembered on this device. A one-off that has ended stays
+// chosen and shows that it has ended, rather than swapping silently to something else.
+const featuredId = useRemembered<string>('renewals-featured', '', v => typeof v === 'string')
+const soonest = computed(() => active.value.reduce<(typeof active.value)[number] | undefined>((best, r) => (!best || r.days < best.days ? r : best), undefined))
+const featured = computed(() => upcoming.value.find(r => r.id === featuredId.value) ?? soonest.value)
+const featuredOptions = computed(() => [
+  { value: '', label: 'The soonest' },
+  ...upcoming.value.map(r => ({ value: r.id, label: r.name }))
+])
+// How far through its billing period it is, from the charge before (the ring round its icon)
+const featuredCycle = computed(() => {
+  const r = featured.value
+  if (!r || r.status === 'expired') return undefined
+  const start = cycleStart(r.nextDate, r.cycle, r.next)
+  if (!start) return undefined
+  const from = renewalMoment(start).getTime()
+  const to = renewalMoment(r.next).getTime()
+  return { start, share: to > from ? Math.min(1, Math.max(0, (nowMs.value - from) / (to - from))) : 1 }
+})
+
 const dueSoon = computed(() => upcoming.value.filter(r => r.status === 'due' || r.status === 'soon'))
 const expired = computed(() => upcoming.value.filter(r => r.status === 'expired'))
 
@@ -489,6 +510,28 @@ function del(r: Renewal) {
         <template #aside><ClientOnly><BulkToggle v-if="items.length" :select="sel" /></ClientOnly></template>
         <ClientOnly>
           <template v-if="ready && items.length">
+            <!-- Next charge: a second countdown to the second, for the one that matters most right now -->
+            <section v-if="featured" class="panel next-up" :class="`is-${featured.status}`" aria-label="Next charge">
+              <div class="next-ring">
+                <Gauge :value="featuredCycle?.share ?? 0" :min="0" :max="1" :start-angle="0" :end-angle="360" :radius="200" :padding="20" transition :initial-value="0">
+                  <GaugeTrack :width="26" color="var(--ink)" :opacity="0.08" />
+                  <GaugeArc v-if="featuredCycle" :width="26" color="var(--accent)" />
+                </Gauge>
+                <RenewalIcon :name="featured.name" :icon="featured.icon" />
+              </div>
+              <div class="next-main">
+                <div class="next-head">
+                  <span class="label"><AnimatedIcon v-if="featured.status !== 'expired'" class="label-icon" name="hourglass" trigger="loop" />{{ featured.status === 'expired' ? 'Ended' : featured.cycle === 'once' ? 'Ends' : 'Next charge' }}</span>
+                  <AppSelect v-model="featuredId" class="next-pick" aria-label="Count down to" :options="featuredOptions" />
+                </div>
+                <strong class="next-name">{{ featured.name }} <span>{{ formatBoth(featured.price, featured.currency, rate) }}</span></strong>
+                <RenewalClock :key="featured.id" class="next-clock" :target="renewalMoment(featured.next).getTime()" :done-text="featured.status === 'expired' ? `Ended ${formatDate(featured.next)}` : `${featured.cycle === 'once' ? 'Ends' : 'Renews'} today`" />
+                <p class="next-note">
+                  {{ formatDate(featured.next) }}, at midnight your time<template v-if="featuredCycle"> · {{ Math.floor(featuredCycle.share * 100) }}% of this {{ featured.cycle === 'weekly' ? 'week' : 'billing period' }} gone since {{ formatDate(featuredCycle.start) }}</template>
+                </p>
+              </div>
+            </section>
+
             <div class="list-head">
               <h3>{{ items.length }} {{ items.length === 1 ? 'subscription' : 'subscriptions' }}</h3>
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
@@ -827,6 +870,117 @@ function del(r: Renewal) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+/* Next charge: the ring of the billing period round the service's icon, the clock beside it */
+.next-up {
+  margin-top: 0.25rem;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.next-ring {
+  position: relative;
+  flex: none;
+  width: 5.5rem;
+  display: grid;
+  place-items: center;
+}
+
+.next-ring :deep(.renewal-icon) {
+  position: absolute;
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.next-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.next-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.next-head .label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.next-head .label-icon {
+  margin-right: 0.35rem;
+  vertical-align: -0.15em;
+}
+
+.next-pick {
+  width: 11rem;
+  font-size: var(--text-sm);
+}
+
+.next-name {
+  font-size: var(--text-lg);
+  overflow-wrap: anywhere;
+}
+
+.next-name span {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.next-clock {
+  margin-top: 0.15rem;
+  font-size: clamp(0.85rem, 0.7rem + 0.9vw, 1.05rem);
+}
+
+.next-note {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.next-up.is-expired .next-ring {
+  opacity: 0.5;
+}
+
+@media (max-width: 520px) {
+  .next-up {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .next-ring {
+    position: absolute;
+    top: 1rem;
+    right: 1.1rem;
+    width: 3.6rem;
+  }
+
+  .next-up {
+    position: relative;
+  }
+
+  .next-ring :deep(.renewal-icon) {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+
+  .next-head {
+    padding-right: 4.5rem;
+    flex-wrap: wrap;
+  }
 }
 
 .list-head {

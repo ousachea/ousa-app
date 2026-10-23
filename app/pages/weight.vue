@@ -360,7 +360,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
                 </svg>
                 <div
                   v-if="activePoint"
-                  class="tooltip"
+                  class="tooltip chart-tip"
                   role="status"
                   :style="{ left: `${Math.min(Math.max(activePoint.px, 70), width - 70)}px`, top: `${activePoint.py - 12}px` }"
                 >
@@ -701,26 +701,10 @@ svg:focus-visible {
   stroke-dasharray: 3 3;
 }
 
+/* The look is .chart-tip (main.css); this only places it over the point */
 .tooltip {
   position: absolute;
   transform: translate(-50%, -100%);
-  padding: 0.45rem 0.65rem;
-  display: flex;
-  flex-direction: column;
-  font-size: var(--text-sm);
-  color: var(--ink-2);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.15);
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-.tooltip strong {
-  font-size: var(--text-base);
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
 }
 
 .no-data {

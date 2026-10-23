@@ -492,6 +492,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <span class="phase-tag" :class="phase">
                 <AppIcon v-if="phase === 'download' || phase === 'done'" name="arrow-down" />
                 <AppIcon v-else-if="phase === 'upload'" name="arrow-up" />
+                <AnimatedIcon v-else-if="phase === 'ping'" name="activity" trigger="loop" />
                 {{ PHASE_LABEL[phase] }}
               </span>
               <span class="big">{{ phase === 'ping' ? (ping ?? (pingSamples.at(-1) ? Math.round(pingSamples.at(-1)!) : '–')) : fmt(shown) }}</span>
@@ -519,7 +520,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             Stop
           </button>
           <button v-else-if="phase === 'done'" type="button" class="btn btn-sm" @click="start">
-            <AppIcon name="rotate-cw" />
+            <AnimatedIcon name="rotate-cw" />
             Test again
           </button>
         </div>
@@ -617,7 +618,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <div class="history-tools">
             <AppSelect v-model="sort" class="history-sort" aria-label="Sort past tests" :options="SORTS" />
             <button type="button" class="btn btn-quiet btn-sm clear-btn" title="Clear past tests" @click="clearHistory">
-              <AppIcon name="trash-2" />
+              <AnimatedIcon name="trash-2" />
               Clear
             </button>
           </div>

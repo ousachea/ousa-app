@@ -232,9 +232,12 @@ async function submit() {
   padding: 1.5rem;
 }
 
-/* Inside the sign-in popup the dialog is already the panel */
+/* Inside the sign-in popup the dialog is already the panel. It fills what holds it: an auto margin
+   here would beat the holder's stretch and shrink it to the width of its button */
 .auth.bare {
   max-width: none;
+  width: 100%;
+  margin: 0;
   padding: 0;
   background: none;
   border: 0;
@@ -286,10 +289,9 @@ h2 {
   gap: 0.6rem;
 }
 
-/* ---------- Signing in: quick password and/or Google, one column of equal widths ---------- */
+/* ---------- Signing in: quick password and/or Google, one column the full width of its place ---------- */
 .signin {
   width: 100%;
-  max-width: 24rem;
   margin-top: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -299,11 +301,6 @@ h2 {
 /* In Settings or the sign-in popup it lines up with the text above it */
 .bare .signin {
   margin-top: 0.25rem;
-}
-
-/* The vault's own panel centres it */
-.auth:not(.bare) .signin {
-  margin-inline: auto;
 }
 
 .quick-card {

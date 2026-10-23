@@ -70,6 +70,29 @@ export function stepValues(min: number, max: number, intervals: number) {
   return Array.from({ length: n + 1 }, (_, i) => min + ((max - min) * i) / n)
 }
 
+/**
+ * Whole percentages of `values` against `basis` (their sum by default) that still add up exactly: each
+ * is rounded down, then the points left over go to the largest remainders. Shares rounded one by one
+ * can read 33 + 33 + 33 = 99. With a basis above the sum, the gap counts as a part of its own, unshown.
+ */
+export function wholePercents(values: number[], basis?: number) {
+  const vals = values.map(v => Math.max(0, v))
+  const sum = vals.reduce((n, v) => n + v, 0)
+  const whole = Math.max(basis ?? sum, sum)
+  if (!whole) return vals.map(() => 0)
+  const all = whole > sum ? [...vals, whole - sum] : vals
+  const raw = all.map(v => (v / whole) * 100)
+  const out = raw.map(Math.floor)
+  let left = 100 - out.reduce((n, v) => n + v, 0)
+  const order = raw.map((v, i) => [v - Math.floor(v), i] as const).sort((a, b) => b[0] - a[0])
+  for (const [, i] of order) {
+    if (left <= 0) break
+    out[i]!++
+    left--
+  }
+  return out.slice(0, vals.length)
+}
+
 /* ---------- Zones ---------- */
 
 export interface Zone {

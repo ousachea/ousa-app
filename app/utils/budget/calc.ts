@@ -114,6 +114,14 @@ export function budgetMatches(limit: Pick<BudgetLimit, 'scope' | 'targetId'>, t:
 
 export type BudgetLevel = 'ok' | 'warn' | 'reached' | 'over'
 
+/** Each level in words and its badge, so a budget's state never depends on colour alone */
+export const LEVELS: Record<BudgetLevel, { word: string, badge: string }> = {
+  ok: { word: 'On track', badge: 'good' },
+  warn: { word: 'Nearly there', badge: 'warn' },
+  reached: { word: 'Limit reached', badge: 'warn' },
+  over: { word: 'Over budget', badge: 'bad' }
+}
+
 export interface BudgetStatus {
   range: DateRange
   limit: number | undefined

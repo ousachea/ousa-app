@@ -180,12 +180,12 @@ function openSignIn() {
             :title="pinned ? 'Unpin from the top of the menu' : 'Pin to the top of the menu and home page'"
             @click="togglePinnedApp(tool.to)"
           >
-            <AppIcon name="pin" />
+            <AnimatedIcon name="pin" trigger="hover" />
             {{ pinned ? 'Pinned' : 'Pin' }}
           </button>
         </ClientOnly>
         <button v-if="hasSettings" type="button" class="pin gear" :title="`${page.name} settings`" @click="openSettings">
-          <AppIcon name="settings" />
+          <AnimatedIcon name="settings" />
           Settings
         </button>
         </div>

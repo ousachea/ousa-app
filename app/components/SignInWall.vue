@@ -7,7 +7,7 @@ defineProps<{ name: string, checking?: boolean }>()
   <div v-if="checking" class="wall checking" aria-busy="true" aria-label="Checking your sign-in" />
   <section v-else class="wall" aria-labelledby="wall-title">
     <span class="lock" aria-hidden="true">
-      <AppIcon name="lock" />
+      <AnimatedIcon name="lock" trigger="loop" />
     </span>
     <h2 id="wall-title">Sign in to open {{ name }}</h2>
     <p>Your data only shows once you’re signed in, so nobody else using this device can see it.</p>

@@ -133,6 +133,8 @@ const showTxs = (r: DateRange, extra: Record<string, string> = {}) => go('transa
       </section>
       <BudgetRateNote :totals="[flow.expenses, flow.income]" />
 
+      <BudgetGauges v-if="w.gauges" class="b-gap" :range="range" />
+
       <div class="b-grid b-gap">
         <section v-if="w.alerts && alerts.length" class="panel b-panel alerts">
           <h3>Budget alerts</h3>

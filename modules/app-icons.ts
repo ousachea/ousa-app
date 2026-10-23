@@ -81,7 +81,7 @@ function scan(srcDir: string) {
   }
 
   for (const { path, code } of sources) {
-    for (const m of code.matchAll(/<AppIcon\b[^>]*>/g)) {
+    for (const m of code.matchAll(/<(?:AppIcon|AnimatedIcon)\b[^>]*>/g)) {
       const spot: Spot = [path, lineAt(code, m.index)]
       const fixed = m[0].match(/(?:^|\s)name="([a-z0-9-]+)"/)?.[1]
       if (fixed) icon(fixed, spot, true)

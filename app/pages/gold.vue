@@ -658,7 +658,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                   </label>
                 </div>
                 <button v-if="source === 'api'" type="button" class="refresh" :disabled="loading" @click="refresh">
-                  <AppIcon :class="{ spinning: loading }" name="rotate-cw" />
+                  <AnimatedIcon name="rotate-cw" :spin="loading" />
                   {{ loading ? 'Loading…' : w.refresh }}
                 </button>
               </div>
@@ -726,7 +726,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                     <path :d="chart.line" class="chart-line" vector-effect="non-scaling-stroke" />
                     <line v-if="hover" :x1="hover.x" :x2="hover.x" y1="0" :y2="CHART_H" class="chart-cross" vector-effect="non-scaling-stroke" />
                   </svg>
-                  <div v-if="hover" class="tip" :style="{ left: `${(hover.x / CHART_W) * 100}%` }">
+                  <div v-if="hover" class="tip chart-tip" :style="{ left: `${(hover.x / CHART_W) * 100}%` }">
                     <strong>{{ money(hover.price) }}</strong>
                     <span>{{ new Date(hover.time).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</span>
                   </div>
@@ -1209,9 +1209,6 @@ const PURITIES: { value: Purity, label: string }[] = [
   stroke-linejoin: round;
 }
 
-.spinning { animation: spin 0.9s linear infinite; }
-@keyframes spin { to { rotate: 360deg; } }
-
 .custom-price {
   margin-top: 1rem;
   display: flex;
@@ -1291,27 +1288,12 @@ const PURITIES: { value: Purity, label: string }[] = [
   stroke-dasharray: 3 3;
 }
 
+/* The look is .chart-tip (main.css); this only places it over the crosshair */
 .tip {
   position: absolute;
   top: -0.4rem;
   translate: -50% -100%;
-  padding: 0.35rem 0.6rem;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  white-space: nowrap;
-  font-size: var(--text-xs);
-  color: var(--ink-2);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 6px 16px rgb(var(--shadow) / 0.15);
-  pointer-events: none;
-}
-
-.tip strong {
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
 }
 
 .chart-scale {
@@ -1885,10 +1867,6 @@ const PURITIES: { value: Purity, label: string }[] = [
   .form-row.amount-row { grid-template-columns: minmax(0, 1fr) 7.5rem; }
   .form-actions .btn[type='submit'] { flex: 1; }
   .convert-row { grid-template-columns: 1fr 7.5rem; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spinning { animation: none; }
 }
 
 /* The card clips its shine, so while selecting the badge sits just inside the corner and the heading makes room */

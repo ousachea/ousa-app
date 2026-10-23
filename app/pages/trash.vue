@@ -161,7 +161,7 @@ function daysLeft(iso: string) {
             <span class="row-actions menu-dup">
               <button type="button" class="btn btn-quiet btn-sm" :aria-label="`Restore ${e.label}`" @click="restore([e])">Restore</button>
               <button type="button" class="icon-btn danger" :aria-label="`Delete ${e.label} for good`" title="Delete for good" @click="askDelete([e])">
-                <AppIcon name="trash-2" />
+                <AnimatedIcon name="trash-2" />
               </button>
             </span>
           </li>

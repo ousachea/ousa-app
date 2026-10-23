@@ -27,7 +27,7 @@ onBeforeUnmount(() => document.body.classList.remove('bulk-open'))
         <div v-if="select.selecting" class="bulk-bar" role="toolbar" :aria-label="label" :style="select.accent ? { '--accent': select.accent } : undefined">
           <div class="bulk-head">
             <button type="button" class="bulk-close" aria-label="Stop selecting" title="Done (Esc)" @click="select.stop()">
-              <AppIcon name="x" />
+              <AnimatedIcon name="x" />
             </button>
             <span class="bulk-count" aria-live="polite">
               <template v-if="select.selected.size">{{ select.selected.size }} selected<span v-if="select.hiddenCount" class="bulk-hidden"> · {{ select.hiddenCount }} not shown</span></template>

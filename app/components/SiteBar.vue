@@ -49,7 +49,8 @@ function goBack(e: MouseEvent) {
       >
         <AppIcon v-if="back" class="chev" name="chevron-left" />
         <AppLogo class="logo" />
-        <span class="brand-name">Ousa’s Apps</span>
+        <!-- In an app the back button is the chevron and logo alone; the app's name follows it -->
+        <span v-if="!back" class="brand-name">Ousa’s Apps</span>
       </NuxtLink>
       <ClientOnly>
         <ol v-if="app" class="trail">
@@ -71,7 +72,7 @@ function goBack(e: MouseEvent) {
 
     <div class="tools">
       <button type="button" class="bar-btn search" aria-keyshortcuts="Control+K Meta+K" title="Search everything" @click="open = false; openPalette()">
-        <AppIcon name="search" />
+        <AnimatedIcon name="search" />
         <span class="label">Search</span>
         <ClientOnly><kbd>{{ isMac ? '⌘' : 'Ctrl' }} K</kbd></ClientOnly>
       </button>
@@ -374,11 +375,6 @@ function goBack(e: MouseEvent) {
   .bar-btn svg {
     width: 1.25rem;
     height: 1.25rem;
-  }
-
-  /* In an app, the logo stands for Ousa’s Apps, so the app's name and where you are get the room */
-  .crumbs:has(.trail) .brand-name {
-    display: none;
   }
 
   .crumbs:has(.trail) .brand {

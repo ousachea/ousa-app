@@ -7,7 +7,7 @@ const emit = defineEmits<{ use: [], ignore: [] }>()
 <template>
   <div class="suggestion" role="status">
     <span class="text">
-      <AppIcon name="sparkles" />
+      <AnimatedIcon name="sparkles" trigger="loop" />
       {{ label }}: <strong>{{ value }}</strong>
     </span>
     <button type="button" class="link" @click="emit('use')">Use suggestion</button>

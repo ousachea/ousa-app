@@ -148,9 +148,6 @@ useAppSeo({
             :style="{ '--accent': tool.color, '--sticker': tool.gradient, '--on-accent': tool.onColor ?? '#fff', '--col': spots.get(tool.to)?.col, '--row': spots.get(tool.to)?.row }"
           >
             <span v-if="group.name === 'Pinned'" class="drag-grip corner" aria-hidden="true"><AppIcon name="grip-vertical" /></span>
-            <span v-if="tool.demo" class="demo-badge" title="Open it and click the app’s icon to see it with example data">
-              <AppIcon name="play" />Try it
-            </span>
             <span class="sticker" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
             <strong>{{ tool.name }}</strong>
             <span class="summary">{{ tool.summary }}</span>
@@ -342,33 +339,6 @@ h1 {
       inset 0 5px 8px rgb(255 255 255 / 0.25),
       0 0 0 transparent;
   }
-}
-
-/* Apps you can try with sample data; same purple as the demo switch inside each app */
-.demo-badge {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.12rem 0.5rem 0.12rem 0.35rem;
-  font-size: var(--text-2xs);
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--purple);
-  background: color-mix(in srgb, var(--purple) 12%, var(--surface));
-  border-radius: var(--radius-pill);
-}
-
-:root[data-theme='dark'] .demo-badge {
-  color: #c4b1ff;
-}
-
-.demo-badge svg {
-  width: 0.7rem;
-  height: 0.7rem;
-  fill: currentColor;
 }
 
 .tile strong {
@@ -566,10 +536,6 @@ h1 {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
-
-  .demo-badge {
-    display: none;
   }
 
   .hero-cube {
