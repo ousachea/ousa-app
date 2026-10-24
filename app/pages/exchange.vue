@@ -203,7 +203,7 @@ async function reloadRate() {
               <span class="amount-row">
                 <span class="money input">
                   <span class="unit" aria-hidden="true">{{ from === 'USD' ? '$' : '៛' }}</span>
-                  <input v-model.number="amount" type="number" :data-keys="from === 'KHR' ? 'riel' : undefined" inputmode="decimal" min="0" :step="from === 'USD' ? 0.01 : 100" :aria-label="`Amount in ${from}`">
+                  <GroupedNumberInput v-model="amount" :data-keys="from === 'KHR' ? 'riel' : undefined" min="0" :aria-label="`Amount in ${from}`" />
                 </span>
                 <!-- Flip the direction; the amount is converted so it stays the same money -->
                 <button
@@ -233,7 +233,7 @@ async function reloadRate() {
             <label class="field">
               <span class="field-head">1 USD =</span>
               <span class="money input">
-                <input v-model.number="rate" type="number" data-keys="rate" inputmode="decimal" min="0" step="1" aria-label="Exchange rate in riel per dollar">
+                <GroupedNumberInput v-model="rate" data-keys="rate" min="0" aria-label="Exchange rate in riel per dollar" />
                 <span class="unit" aria-hidden="true">៛</span>
               </span>
             </label>
@@ -267,7 +267,7 @@ async function reloadRate() {
           <label v-if="useOwnRate" class="field">
             <span class="field-head">1 USD =</span>
             <span class="money input">
-              <input v-model.number="ownRate" type="number" data-keys="rate" inputmode="decimal" min="0" step="1" aria-label="Your market rate in riel per dollar">
+              <GroupedNumberInput v-model="ownRate" data-keys="rate" min="0" aria-label="Your market rate in riel per dollar" />
               <span class="unit" aria-hidden="true">៛</span>
             </span>
           </label>

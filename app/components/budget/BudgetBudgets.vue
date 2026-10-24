@@ -162,7 +162,7 @@ const showSpending = (l: BudgetLimit, range: { from: string, to: string }) =>
         <div class="field">
           <span class="field-head">Limit</span>
           <div class="b-amount">
-            <input v-model.number="form.amount" class="input" type="number" inputmode="decimal" min="0" step="any" placeholder="0" aria-label="Limit" required v-check="Number(form.amount) > 0 ? '' : 'Enter a limit above 0'" :data-keys="form.currency === 'KHR' ? 'riel' : 'money'">
+            <GroupedNumberInput v-model="form.amount" class="input" min="0" placeholder="0" aria-label="Limit" required v-check="Number(form.amount) > 0 ? '' : 'Enter a limit above 0'" :data-keys="form.currency === 'KHR' ? 'riel' : 'money'" />
             <span class="segmented" role="radiogroup" aria-label="Currency">
               <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }"><input v-model="form.currency" type="radio" name="b-currency" :value="c">{{ c === 'USD' ? '$' : '៛' }}</label>
             </span>

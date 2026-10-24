@@ -50,7 +50,7 @@ const form = reactive<Form>(blank())
 const moreOpen = ref(false)
 const saving = ref(false)
 const confirmDupe = ref(false)
-const amountField = ref<HTMLInputElement>()
+const amountField = ref<{ $el: HTMLInputElement }>()
 const formEl = ref<HTMLFormElement>()
 
 // Picking a chip doesn't type into the hidden required inputs, so tell v-validate they changed
@@ -138,7 +138,7 @@ function useCombo(c: { categoryId: string, subcategoryId: string }) {
   form.categoryId = c.categoryId
   form.subcategoryId = c.subcategoryId
   play('select')
-  focusField(amountField.value)
+  focusField(amountField.value?.$el)
 }
 
 // Add a subcategory without leaving the form
@@ -257,21 +257,18 @@ function del() {
       <label class="field">
         <span class="field-head">Amount</span>
         <span class="amount">
-          <input
+          <GroupedNumberInput
             ref="amountField"
-            v-model.number="form.amount"
+            v-model="form.amount"
             class="input"
-            type="number"
-            inputmode="decimal"
             min="0"
-            step="any"
             placeholder="0"
             required
             autofocus
             :data-keys="form.currency === 'KHR' ? 'riel' : 'money'"
             v-check="Number(form.amount) > 0 ? '' : 'Enter an amount above 0'"
             data-error="Enter an amount"
-          >
+          />
           <span class="segmented" role="radiogroup" aria-label="Currency">
             <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }">
               <input v-model="form.currency" type="radio" name="currency" :value="c">{{ c === 'USD' ? '$' : '៛' }}

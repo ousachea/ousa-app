@@ -158,7 +158,7 @@ function delContribution(c: BudgetContribution) {
         <div class="field">
           <span class="field-head">Target</span>
           <div class="b-amount">
-            <input v-model.number="form.target" class="input" type="number" inputmode="decimal" min="0" step="any" required aria-label="Target amount" v-check="Number(form.target) > 0 ? '' : 'Enter a target above 0'" :data-keys="form.currency === 'KHR' ? 'riel' : 'money'">
+            <GroupedNumberInput v-model="form.target" class="input" min="0" required aria-label="Target amount" v-check="Number(form.target) > 0 ? '' : 'Enter a target above 0'" :data-keys="form.currency === 'KHR' ? 'riel' : 'money'" />
             <span class="segmented" role="radiogroup" aria-label="Currency">
               <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }"><input v-model="form.currency" type="radio" name="g-cur" :value="c" :disabled="!!editingId">{{ c === 'USD' ? '$' : '៛' }}</label>
             </span>
@@ -171,7 +171,7 @@ function delContribution(c: BudgetContribution) {
           </label>
           <label v-if="!editingId" class="field">
             <span class="field-head">Already saved <span class="optional">Optional</span></span>
-            <input v-model.number="form.start" class="input" type="number" inputmode="decimal" min="0" step="any" placeholder="0" aria-label="Already saved">
+            <GroupedNumberInput v-model="form.start" class="input" min="0" placeholder="0" aria-label="Already saved" />
           </label>
         </div>
         <label class="field">
@@ -193,18 +193,15 @@ function delContribution(c: BudgetContribution) {
       <form v-validate class="b-form" @submit.prevent="saveMove">
         <label class="field">
           <span class="field-head">Amount ({{ move.goal?.currency }})</span>
-          <input
-            v-model.number="move.amount"
+          <GroupedNumberInput
+            v-model="move.amount"
             class="input"
-            type="number"
-            inputmode="decimal"
             min="0"
-            step="any"
             required
             autofocus
             aria-label="Amount"
             v-check="!(Number(move.amount) > 0) ? 'Enter an amount' : move.type === 'withdrawal' && Number(move.amount) > maxOut + 1e-9 ? `Only ${formatMoney(maxOut, move.goal?.currency ?? 'USD')} is saved` : ''"
-          >
+          />
         </label>
         <div class="row">
           <label class="field">

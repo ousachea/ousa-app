@@ -58,6 +58,19 @@ export function formatMoney(value: number, currency: Currency, { signed = false 
   return `${value < 0 ? '−' : '+'}${text}`
 }
 
+/** "1234567.5" or "1,2345" → "1,234,567.5" / "12,345": digits and one dot kept, the whole part grouped */
+export function groupDigits(raw: string) {
+  const [whole = '', ...rest] = raw.replace(/[^\d.]/g, '').split('.')
+  const int = whole.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return rest.length ? `${int}.${rest.join('')}` : int
+}
+
+/** The number in a grouped string, or null when it's empty */
+export function parseGrouped(text: string) {
+  const n = Number(text.replace(/,/g, ''))
+  return text === '' || Number.isNaN(n) ? null : n
+}
+
 // ---------- One place for converting saved amounts (CHECKLIST.md #57) ----------
 // `rate` is riel per dollar (useMarketRate). Without a rate yet, conversions return undefined
 // so the page can show "…" rather than a wrong number.

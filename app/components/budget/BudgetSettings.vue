@@ -84,7 +84,7 @@ const rateLabel = computed(() => {
       <div v-if="rateMode === 'fixed'" class="rate-row">
         <label class="field">
           <span class="field-head">Riel per $1</span>
-          <input v-model.number="fixedRate" class="input" type="number" inputmode="numeric" min="1" step="1" aria-label="Riel per dollar" data-keys="rate">
+          <GroupedNumberInput v-model="fixedRate" class="input" min="1" aria-label="Riel per dollar" data-keys="rate" />
         </label>
         <button type="button" class="btn btn-sm" @click="saveRate">Save rate</button>
       </div>

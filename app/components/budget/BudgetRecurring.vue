@@ -193,7 +193,7 @@ const when = (d: string) => {
         <div class="field">
           <span class="field-head">Amount paid</span>
           <div class="b-amount">
-            <input v-model.number="paying.amount" class="input" type="number" inputmode="decimal" min="0" step="any" required aria-label="Amount paid" v-check="paying.amount > 0 ? '' : 'Enter an amount'">
+            <GroupedNumberInput v-model="paying.amount" class="input" min="0" required aria-label="Amount paid" v-check="Number(paying.amount) > 0 ? '' : 'Enter an amount'" />
             <span class="segmented" role="radiogroup" aria-label="Currency">
               <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: paying.currency === c }"><input v-model="paying.currency" type="radio" name="pay-cur" :value="c">{{ c === 'USD' ? '$' : '៛' }}</label>
             </span>
@@ -225,7 +225,7 @@ const when = (d: string) => {
         <div class="field">
           <span class="field-head">Amount</span>
           <div class="b-amount">
-            <input v-model.number="form.amount" class="input" type="number" inputmode="decimal" min="0" step="any" required aria-label="Amount" v-check="Number(form.amount) > 0 ? '' : 'Enter an amount'" :data-keys="form.currency === 'KHR' ? 'riel' : 'money'">
+            <GroupedNumberInput v-model="form.amount" class="input" min="0" required aria-label="Amount" v-check="Number(form.amount) > 0 ? '' : 'Enter an amount'" :data-keys="form.currency === 'KHR' ? 'riel' : 'money'" />
             <span class="segmented" role="radiogroup" aria-label="Currency">
               <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }"><input v-model="form.currency" type="radio" name="bill-cur" :value="c">{{ c === 'USD' ? '$' : '៛' }}</label>
             </span>
