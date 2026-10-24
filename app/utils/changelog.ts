@@ -179,6 +179,18 @@ export const CHANGELOG: Record<string, Release[]> = {
       'Income, savings goals, reports, CSV import and export, and a dashboard for the month.'
     ] }
   ],
+  '/days': [
+    { version: '1.1.0', date: '2026-10-24', changes: ['A Time tab: the hours between two times, less a break and past midnight too, in hours and minutes or as a decimal for timesheets.', 'Add or subtract hours and minutes from a time, and see if it lands on the next day.', 'A time picker in the app’s own style: tap an hour, then a minute.'] },
+    { version: '1.0.0', date: '2026-10-24', changes: ['Count the days, weeks, months and working days between two dates.', 'Add or subtract days, weeks, months or working days from a date.', 'Working days skip weekends and Cambodian public holidays; Saturday can count as a work day.'] }
+  ],
+  '/focus': [
+    { version: '1.1.0', date: '2026-10-24', changes: ['Progress runs round the edge of the window, with a marker at each quarter that fills as you pass it. Turn it off in Settings.'] },
+    { version: '1.0.0', date: '2026-10-24', changes: ['25-minute focus sessions with 5-minute breaks, and a longer break every fourth session.', 'Set your own lengths, and choose whether the next session starts by itself.', 'The time left shows in the browser tab, with a sound when it’s up.'] }
+  ],
+  '/color': [
+    { version: '1.1.0', date: '2026-10-24', changes: ['20 preset colours to start from in one click.', 'A gradient maker: pick a From and a To colour, linear at any angle or radial, with ready-made gradients and CSS to copy.', 'A colour picker in the app’s own style: drag for shade and hue, type a HEX, or pick from the screen.'] },
+    { version: '1.0.0', date: '2026-10-24', changes: ['Pick or paste a colour and copy it as HEX, RGB or HSL.', 'Check the contrast of text on a background against WCAG AA and AAA.', 'Tints and shades of your colour, each one click to copy.'] }
+  ],
   '/2048': [
     { version: '1.0.0', date: '2026-10-20', changes: ['Slide the tiles with the arrow keys, or swipe on a phone; matching numbers join into one.', 'Undo your last move (Z), keep going after 2048, and your best score is kept.', 'A game in progress is still there when you come back.'] }
   ],

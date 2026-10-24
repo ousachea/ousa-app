@@ -141,6 +141,26 @@ defineProps<{ name: ToolIconName }>()
       <path d="M9.5 8h5" />
     </template>
 
+    <!-- Date calculator: a calendar page with a plus and a minus -->
+    <template v-else-if="name === 'days'">
+      <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" />
+      <path d="M3.5 9.5h17M8 2.5v4M16 2.5v4" />
+      <path d="M7 15h3.5M15.25 13.25v3.5M13.5 15H17" />
+    </template>
+
+    <!-- Focus timer: a stopwatch with its hand on a quarter -->
+    <template v-else-if="name === 'focus'">
+      <circle cx="12" cy="13.5" r="7.5" />
+      <path d="M10 2.5h4M12 2.5v3.5M12 13.5V10M18.5 6.5l1.2-1.2" />
+    </template>
+
+    <!-- Color tools: a dropper over a drop of colour -->
+    <template v-else-if="name === 'color'">
+      <path d="M14.5 6.5l3 3M15.8 4.2a2.1 2.1 0 0 1 3 3l-1.3 1.3-3-3z" />
+      <path d="M14.5 7.5l-8 8-1 3 3-1 8-8" />
+      <path d="M5.5 21.5h.01" />
+    </template>
+
     <!-- Phone battery: a battery with a charge bar -->
     <template v-else-if="name === 'battery'">
       <rect x="2.5" y="7" width="17" height="10" rx="2.5" />

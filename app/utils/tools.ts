@@ -2,6 +2,7 @@ export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
   | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'speed' | 'claude' | 'budget' | 'cv' | 'game'
+  | 'days' | 'focus' | 'color'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -224,6 +225,34 @@ export const TOOLS: Tool[] = [
     seoTitle: 'Gold price in chi and damlung today',
     description: 'Live gold price per chi, damlung and gram for Cambodia, a gold unit converter, and what your gold purchases are worth now.',
     demo: true
+  },
+  {
+    to: '/days',
+    name: 'Date calculator',
+    summary: 'Count the days between two dates, add days or working days to one, or work out hours between two times.',
+    color: 'var(--brown)',
+    icon: 'days',
+    seoTitle: 'Date and time calculator: days between dates, working days and hours',
+    description: 'Count the days, weeks and working days between two dates, add days or working days skipping Cambodian holidays, and count hours between two times.'
+  },
+  {
+    to: '/focus',
+    name: 'Focus timer',
+    summary: 'Work in 25-minute focus sessions with short breaks in between.',
+    color: '#e11d48',
+    icon: 'focus',
+    seoTitle: 'Pomodoro focus timer',
+    description: 'A free Pomodoro timer: 25 minutes of focus, then a short break, and a longer one every fourth session. Set your own lengths, with a sound when time is up.'
+  },
+  {
+    to: '/color',
+    name: 'Color tools',
+    summary: 'Pick a colour, copy it as HEX, RGB or HSL, check its contrast, and make gradients, tints and shades.',
+    color: '#4f46e5',
+    gradient: 'linear-gradient(135deg, #f43f5e 0%, #8b5cf6 50%, #0ea5e9 100%)',
+    icon: 'color',
+    seoTitle: 'Color picker, contrast checker and palette generator',
+    description: 'Pick or paste a colour, copy it as HEX, RGB or HSL, check text contrast against WCAG AA and AAA, make CSS gradients, and get tints and shades to copy.'
   },
   {
     to: '/2048',
