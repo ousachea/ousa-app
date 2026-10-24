@@ -78,7 +78,7 @@ interface AppKeyboard {
 }
 
 // Search on Home and in the Recycle Bin: tap an app's name to find it, or what was deleted from it
-const APP_NAMES: KeySet = { title: 'Apps', keys: words('Notes', 'Bookmarks', 'Things', 'Renewals', 'Calendar', 'Gold', 'Weight', 'Budget', 'Speed') }
+const APP_NAMES: KeySet = { title: 'Apps', keys: words('Jot', 'Pinboard', 'Stash', 'Renewals', 'Countdown', 'Chi', 'Scale', 'Wallet', 'Ping') }
 
 const APPS: Record<string, AppKeyboard> = {
   '/qr': {

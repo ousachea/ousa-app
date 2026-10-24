@@ -37,7 +37,7 @@ export interface Tool {
 export const TOOLS: Tool[] = [
   {
     to: '/qr',
-    name: 'QR code',
+    name: 'Scan Me',
     summary: 'Turn a link or text into a QR code you can download.',
     color: 'var(--blue)',
     icon: 'qr',
@@ -46,7 +46,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/phone',
-    name: 'Phone checker',
+    name: 'Who’s Calling',
     summary: 'Check a Cambodian number and see its network.',
     color: 'var(--red)',
     icon: 'phone',
@@ -56,7 +56,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/compress',
-    name: 'Image compressor',
+    name: 'Squeeze',
     summary: 'Make images and PDFs smaller without uploading them.',
     color: 'var(--orange)',
     buttonColor: 'var(--orange-btn)',
@@ -67,7 +67,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/text',
-    name: 'Text tools',
+    name: 'Wordsmith',
     summary: 'Change text to any case, or compare two versions and see exactly what changed.',
     color: 'var(--yellow)',
     onColor: '#1b1f2a',
@@ -78,7 +78,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/password',
-    name: 'Passwords',
+    name: 'Keyring',
     summary: 'Make strong passwords and save them, encrypted on this device.',
     color: 'var(--green)',
     buttonColor: 'var(--green-btn)',
@@ -88,7 +88,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/exchange',
-    name: 'KHR/USD exchange',
+    name: 'Riel Deal',
     summary: 'See if an exchange rate makes you gain or lose money.',
     color: 'var(--teal)',
     buttonColor: 'var(--teal-btn)',
@@ -98,7 +98,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/things',
-    name: 'Things I own',
+    name: 'Stash',
     summary: 'Keep track of what you own, what you paid and what it’s all worth.',
     color: 'var(--plum)',
     icon: 'things',
@@ -109,7 +109,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/eat',
-    name: 'What should I eat?',
+    name: 'Hungry?',
     summary: 'Swipe through your saved foods and places until one sounds good.',
     color: 'var(--pink)',
     buttonColor: 'var(--pink-btn)',
@@ -121,7 +121,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/weight',
-    name: 'Weight',
+    name: 'Scale',
     summary: 'Log your weight and see the trend.',
     color: 'var(--lime)',
     buttonColor: 'var(--lime-btn)',
@@ -133,7 +133,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/budget',
-    name: 'Budget',
+    name: 'Wallet',
     summary: 'Track spending, budgets, bills, income and savings goals, in dollars or riel.',
     color: '#047857',
     icon: 'budget',
@@ -144,7 +144,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/countdown',
-    name: 'Calendar',
+    name: 'Countdown',
     summary: 'Count down to the dates that matter, and see when subscriptions renew.',
     color: 'var(--purple)',
     icon: 'countdown',
@@ -156,7 +156,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/bookmarks',
-    name: 'Bookmarks',
+    name: 'Pinboard',
     summary: 'Save links in folders, and pin the ones you open every day.',
     color: 'var(--rust)',
     icon: 'bookmarks',
@@ -167,7 +167,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/notes',
-    name: 'Notes',
+    name: 'Jot',
     summary: 'Write things down fast, then find them again.',
     color: 'var(--sky)',
     icon: 'notes',
@@ -178,7 +178,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/battery',
-    name: 'Phone battery',
+    name: 'Juice',
     summary: 'See how much of your phone battery is really left compared with when it was new.',
     color: 'var(--cyan)',
     icon: 'battery',
@@ -187,7 +187,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/salary',
-    name: 'Salary & raise',
+    name: 'Payday',
     summary: 'Work out what a raise is really worth after Cambodian salary tax.',
     color: 'var(--slate)',
     icon: 'salary',
@@ -196,7 +196,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/speed',
-    name: 'Speed test',
+    name: 'Ping',
     summary: 'Test your internet download, upload and ping, and see what it’s good for.',
     color: '#a21caf',
     icon: 'speed',
@@ -205,7 +205,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/claude',
-    name: 'Claude usage',
+    name: 'Tokens',
     summary: 'What you spend on the Claude API, and how much you use Claude Code.',
     color: '#c2410c',
     icon: 'claude',
@@ -216,7 +216,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/gold',
-    name: 'Gold tracker',
+    name: 'Chi',
     summary: 'Live gold price in chi and damlung, and what your gold is worth now.',
     color: 'var(--gold)',
     onColor: '#1b1f2a',
@@ -228,7 +228,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/days',
-    name: 'Date calculator',
+    name: 'Day Math',
     summary: 'Count the days between two dates, add days or working days to one, or work out hours between two times.',
     color: 'var(--brown)',
     icon: 'days',
@@ -237,7 +237,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/focus',
-    name: 'Focus timer',
+    name: 'Tomato',
     summary: 'Work in 25-minute focus sessions with short breaks in between.',
     color: '#e11d48',
     icon: 'focus',
@@ -246,7 +246,7 @@ export const TOOLS: Tool[] = [
   },
   {
     to: '/color',
-    name: 'Color tools',
+    name: 'Swatch',
     summary: 'Pick a colour, copy it as HEX, RGB or HSL, check its contrast, and make gradients, tints and shades.',
     color: '#4f46e5',
     gradient: 'linear-gradient(135deg, #f43f5e 0%, #8b5cf6 50%, #0ea5e9 100%)',

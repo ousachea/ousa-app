@@ -344,7 +344,7 @@ const volume = computed({
               </div>
               <div v-ants class="type-preview" aria-label="Preview">
                 <span class="preview-label">Preview</span>
-                <strong class="preview-title">Gold tracker</strong>
+                <strong class="preview-title">Chi</strong>
                 <p>Live gold price in chi and damlung, and what your gold is worth now.</p>
                 <p class="preview-row"><span class="preview-num">$4,148.00</span><span class="preview-km">សួស្តី · តម្លៃមាស</span><span class="btn btn-sm preview-button" aria-hidden="true">Add purchase</span></p>
               </div>

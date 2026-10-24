@@ -158,7 +158,7 @@ async function copy(text: string) {
       <SettingRow v-model="prefs.includeEnd" title="Include the end day" description="1 to 3 May counts as 3 days instead of 2." />
     </template>
 
-    <div class="tabs" role="tablist" aria-label="Date calculator">
+    <div class="tabs" role="tablist" aria-label="Day Math">
       <button
         v-for="t in TABS"
         :id="`tab-${t.value}`"
