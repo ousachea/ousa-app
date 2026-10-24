@@ -149,7 +149,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--purple)',
     icon: 'countdown',
     group: 'Life',
-    seoTitle: 'Countdown: date countdowns, Cambodian holidays, renewals and a clock screen saver',
+    seoTitle: 'Countdown: date countdowns and Cambodian holidays',
     description: 'Count down to birthdays, trips and deadlines, see Cambodian public holidays and what your subscriptions cost and when they renew, plus a full-screen clock.',
     demo: true,
     tabs: [{ to: '/countdown', label: 'Dates' }, { to: '/renewals', label: 'Renewals' }]
