@@ -41,7 +41,7 @@ export const TOOLS: Tool[] = [
     summary: 'Turn a link or text into a QR code you can download.',
     color: 'var(--blue)',
     icon: 'qr',
-    seoTitle: 'Free QR code generator with logo',
+    seoTitle: 'Scan Me: free QR code generator with logo',
     description: 'Make a QR code for any link or text, add your logo, colours and a frame, check it scans, then download it as PNG or SVG. Free, no sign-up.'
   },
   {
@@ -50,7 +50,7 @@ export const TOOLS: Tool[] = [
     summary: 'Check a Cambodian number and see its network.',
     color: 'var(--red)',
     icon: 'phone',
-    seoTitle: 'Cambodian phone number checker',
+    seoTitle: 'Who’s Calling: Cambodian phone number checker',
     description: 'Check any Cambodian phone number: see if it’s Smart, Cellcard, Metfone or a landline, catch missing digits, and format it for WhatsApp or Telegram.',
     demo: true
   },
@@ -61,7 +61,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--orange)',
     buttonColor: 'var(--orange-btn)',
     icon: 'compress',
-    seoTitle: 'Compress images and PDFs in your browser',
+    seoTitle: 'Squeeze: compress images and PDFs in your browser',
     description: 'Make JPG, PNG, WebP and PDF files smaller without uploading them. Keep PDF text sharp or shrink scans, compare before and after, and download.',
     demo: true
   },
@@ -72,7 +72,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--yellow)',
     onColor: '#1b1f2a',
     icon: 'case',
-    seoTitle: 'Text case converter and text compare',
+    seoTitle: 'Wordsmith: text case converter and text compare',
     description: 'Change text to lowercase, UPPERCASE, Title Case or Sentence case, or compare two texts side by side and see every word added, removed or changed.',
     demo: true
   },
@@ -83,7 +83,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--green)',
     buttonColor: 'var(--green-btn)',
     icon: 'password',
-    seoTitle: 'Strong password generator and saver',
+    seoTitle: 'Keyring: strong password generator and saver',
     description: 'Generate strong passwords, see how long they’d take to crack, and save them in an encrypted vault that only you can unlock.'
   },
   {
@@ -93,7 +93,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--teal)',
     buttonColor: 'var(--teal-btn)',
     icon: 'exchange',
-    seoTitle: 'KHR to USD exchange rate calculator',
+    seoTitle: 'Riel Deal: KHR to USD exchange rate calculator',
     description: 'See today’s riel to dollar rate and find out if a money changer’s rate makes you gain or lose money on your exchange.'
   },
   {
@@ -103,7 +103,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--plum)',
     icon: 'things',
     group: 'Life',
-    seoTitle: 'Things I own: track what your stuff is worth',
+    seoTitle: 'Stash: track what your stuff is worth',
     description: 'Keep a list of your phone, laptop and everything else you own, what you paid, and an estimate of what it’s worth today.',
     demo: true
   },
@@ -115,7 +115,7 @@ export const TOOLS: Tool[] = [
     buttonColor: 'var(--pink-btn)',
     icon: 'eat',
     group: 'Life',
-    seoTitle: 'What should I eat? Food picker',
+    seoTitle: 'Hungry? What should I eat? Food picker',
     description: 'Can’t decide what to eat? Swipe through your favourite foods and places until one sounds good, with your own photos.',
     demo: true
   },
@@ -127,7 +127,7 @@ export const TOOLS: Tool[] = [
     buttonColor: 'var(--lime-btn)',
     icon: 'weight',
     group: 'Life',
-    seoTitle: 'Weight tracker with trend chart',
+    seoTitle: 'Scale: weight tracker with trend chart',
     description: 'Log your weight and see the trend over weeks and months on a clear chart, with your progress toward a goal.',
     demo: true
   },
@@ -138,7 +138,7 @@ export const TOOLS: Tool[] = [
     color: '#047857',
     icon: 'budget',
     group: 'Life',
-    seoTitle: 'Budget planner and expense tracker in dollars and riel',
+    seoTitle: 'Wallet: budget planner and expense tracker in dollars and riel',
     description: 'Log daily expenses and income in dollars or riel, set monthly budgets, track recurring bills and savings goals, and see where your money goes.',
     demo: true
   },
@@ -149,7 +149,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--purple)',
     icon: 'countdown',
     group: 'Life',
-    seoTitle: 'Calendar: countdowns, Cambodian holidays, renewals and a clock screen saver',
+    seoTitle: 'Countdown: date countdowns, Cambodian holidays, renewals and a clock screen saver',
     description: 'Count down to birthdays, trips and deadlines, see Cambodian public holidays and what your subscriptions cost and when they renew, plus a full-screen clock.',
     demo: true,
     tabs: [{ to: '/countdown', label: 'Dates' }, { to: '/renewals', label: 'Renewals' }]
@@ -161,7 +161,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--rust)',
     icon: 'bookmarks',
     group: 'Life',
-    seoTitle: 'Bookmark manager with folders',
+    seoTitle: 'Pinboard: bookmark manager with folders',
     description: 'Save links in nested folders with notes, pin the sites you open every day, and import or export your browser bookmarks.',
     demo: true
   },
@@ -172,7 +172,7 @@ export const TOOLS: Tool[] = [
     color: 'var(--sky)',
     icon: 'notes',
     group: 'Life',
-    seoTitle: 'Fast personal notes with folders, checklists and links',
+    seoTitle: 'Jot: fast personal notes with folders, checklists and links',
     description: 'Quick notes and longer ones with checklists, folders, tags, links between notes and version history. Works offline and syncs to your other devices.',
     demo: true
   },
@@ -182,7 +182,7 @@ export const TOOLS: Tool[] = [
     summary: 'See how much of your phone battery is really left compared with when it was new.',
     color: 'var(--cyan)',
     icon: 'battery',
-    seoTitle: 'Phone battery health calculator',
+    seoTitle: 'Juice: phone battery health calculator',
     description: 'See how much of your phone battery is really left: capacity in mAh, wear, and hours of screen time, for iPhone, Samsung, Pixel and more.'
   },
   {
@@ -191,7 +191,7 @@ export const TOOLS: Tool[] = [
     summary: 'Work out what a raise is really worth after Cambodian salary tax.',
     color: 'var(--slate)',
     icon: 'salary',
-    seoTitle: 'Cambodia salary tax and raise calculator',
+    seoTitle: 'Payday: Cambodia salary tax and raise calculator',
     description: 'Work out your take-home pay under Cambodian Tax on Salary, and how much of a raise you really keep after tax, overtime and deductions.'
   },
   {
@@ -200,7 +200,7 @@ export const TOOLS: Tool[] = [
     summary: 'Test your internet download, upload and ping, and see what it’s good for.',
     color: '#a21caf',
     icon: 'speed',
-    seoTitle: 'Internet speed test',
+    seoTitle: 'Ping: internet speed test',
     description: 'Test your internet speed: download, upload, ping and jitter in Mbps, what your connection is good for, and how close you get to your plan.'
   },
   {
@@ -209,7 +209,7 @@ export const TOOLS: Tool[] = [
     summary: 'What you spend on the Claude API, and how much you use Claude Code.',
     color: '#c2410c',
     icon: 'claude',
-    seoTitle: 'Claude API spend and Claude Code usage',
+    seoTitle: 'Tokens: Claude API spend and Claude Code usage',
     description: 'See your Claude API spend and tokens by day and model from Anthropic’s Usage and Cost reports, and your Claude Code sessions, tokens and estimated cost by project.',
     // Nothing of yours is saved here: the Admin key stays in the browser and the logs stay on your computer
     readOnly: true
@@ -222,7 +222,7 @@ export const TOOLS: Tool[] = [
     onColor: '#1b1f2a',
     icon: 'gold',
     group: 'Life',
-    seoTitle: 'Gold price in chi and damlung today',
+    seoTitle: 'Chi: gold price in chi and damlung today',
     description: 'Live gold price per chi, damlung and gram for Cambodia, a gold unit converter, and what your gold purchases are worth now.',
     demo: true
   },
@@ -232,7 +232,7 @@ export const TOOLS: Tool[] = [
     summary: 'Count the days between two dates, add days or working days to one, or work out hours between two times.',
     color: 'var(--brown)',
     icon: 'days',
-    seoTitle: 'Date and time calculator: days between dates, working days and hours',
+    seoTitle: 'Day Math: days between dates, working days and hours',
     description: 'Count the days, weeks and working days between two dates, add days or working days skipping Cambodian holidays, and count hours between two times.'
   },
   {
@@ -241,7 +241,7 @@ export const TOOLS: Tool[] = [
     summary: 'Work in 25-minute focus sessions with short breaks in between.',
     color: '#e11d48',
     icon: 'focus',
-    seoTitle: 'Pomodoro focus timer',
+    seoTitle: 'Tomato: Pomodoro focus timer',
     description: 'A free Pomodoro timer: 25 minutes of focus, then a short break, and a longer one every fourth session. Set your own lengths, with a sound when time is up.'
   },
   {
@@ -251,7 +251,7 @@ export const TOOLS: Tool[] = [
     color: '#4f46e5',
     gradient: 'linear-gradient(135deg, #f43f5e 0%, #8b5cf6 50%, #0ea5e9 100%)',
     icon: 'color',
-    seoTitle: 'Color picker, contrast checker and palette generator',
+    seoTitle: 'Swatch: color picker, contrast checker and palette generator',
     description: 'Pick or paste a colour, copy it as HEX, RGB or HSL, check text contrast against WCAG AA and AAA, make CSS gradients, and get tints and shades to copy.'
   },
   {
