@@ -30,6 +30,18 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.8.0',
+    date: '2026-10-26',
+    changes: [
+      'Four new apps: Tasks, a to-do list with due dates and repeating chores; Habits, with streaks; Split, for sharing a bill in dollars or riel; and Electricity, for working out an EDC bill and logging your meter.',
+      'Today on the home page shows the tasks due today and how many habits you’ve ticked off.',
+      'Gold’s change since yesterday shows on Today without opening the Gold app first.',
+      'Installed as an app, it now works offline as it should: the part that keeps pages for offline use wasn’t starting.',
+      'QR codes warn once when a design stops scanning, not on every change.',
+      'Quick Add has Task, Habit and Meter reading, and the installed app has a Log an expense shortcut.'
+    ]
+  },
+  {
     version: '2.7.0',
     date: '2026-10-26',
     changes: [
@@ -193,6 +205,18 @@ export const CHANGELOG: Record<string, Release[]> = {
   '/days': [
     { version: '1.1.0', date: '2026-10-24', changes: ['A Time tab: the hours between two times, less a break and past midnight too, in hours and minutes or as a decimal for timesheets.', 'Add or subtract hours and minutes from a time, and see if it lands on the next day.', 'A time picker in the app’s own style: tap an hour, then a minute.'] },
     { version: '1.0.0', date: '2026-10-24', changes: ['Count the days, weeks, months and working days between two dates.', 'Add or subtract days, weeks, months or working days from a date.', 'Working days skip weekends and Cambodian public holidays; Saturday can count as a work day.'] }
+  ],
+  '/split': [
+    { version: '1.0.0', date: '2026-10-26', changes: ['Add who’s splitting and what each thing cost, and tap names to share an item between some of you.', 'Service charge, VAT and a tip, shared in proportion to what each person had.', 'Everyone’s share in dollars and riel at today’s rate, and a summary to copy into your group chat.'] }
+  ],
+  '/electricity': [
+    { version: '1.0.0', date: '2026-10-26', changes: ['Work out an EDC bill from the kWh you used, block by block, in riel and dollars.', 'Log your meter now and then to see each stretch’s use per day and roughly what it cost.', 'The block rates are in Settings, so you can match them to your bill.'] }
+  ],
+  '/habits': [
+    { version: '1.0.0', date: '2026-10-26', changes: ['Add small daily habits and tick them off each day.', 'Your streak and best run for each one, and a week row to fill in a day you forgot.', 'The last 12 weeks as a grid, darker on the days you kept more habits.'] }
+  ],
+  '/tasks': [
+    { version: '1.0.0', date: '2026-10-26', changes: ['Add tasks with a due date: today, tomorrow, next week, any day or none.', 'Today’s and overdue tasks first, then what’s coming up and what has no date.', 'Chores can repeat every day, week or month, and move to their next date when you tick them.'] }
   ],
   '/focus': [
     { version: '1.1.0', date: '2026-10-24', changes: ['Progress runs round the edge of the window, with a marker at each quarter that fills as you pass it. Turn it off in Settings.'] },

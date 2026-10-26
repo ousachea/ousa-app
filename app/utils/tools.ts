@@ -2,7 +2,7 @@ export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
   | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'speed' | 'claude' | 'budget' | 'cv' | 'game'
-  | 'days' | 'focus' | 'color'
+  | 'days' | 'focus' | 'color' | 'habits' | 'tasks' | 'split' | 'electricity'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -28,7 +28,7 @@ export interface Tool {
   gradient?: string
   /** A page to read, with nothing saved: no Settings or Import & export */
   readOnly?: boolean
-  /** The app's tabs, each its own page (Calendar: Dates and Renewals); shown under the app's name */
+  /** The app's tabs, each its own page (Countdown: Dates and Renewals); shown under the app's name */
   tabs?: { to: string, label: string }[]
   /** For a tab: the app it belongs to, whose name, icon, colour and pin it shares */
   app?: string
@@ -255,6 +255,49 @@ export const TOOLS: Tool[] = [
     description: 'Pick or paste a colour, copy it as HEX, RGB or HSL, check text contrast against WCAG AA and AAA, make CSS gradients, and get tints and shades to copy.'
   },
   {
+    to: '/split',
+    name: 'Split',
+    summary: 'Split a bill between friends, in dollars or riel, with service, VAT and tip shared fairly.',
+    color: '#b45309',
+    icon: 'split',
+    seoTitle: 'Split a bill: who owes what, in dollars or riel',
+    description: 'Split a restaurant or trip bill: add people and what each had, share items between some of them, add service, VAT and tip, and see everyone’s share in dollars and riel.'
+  },
+  {
+    to: '/electricity',
+    name: 'Electricity',
+    summary: 'Work out an EDC bill from the kWh you used, and log your meter to see what each month costs.',
+    color: '#f59e0b',
+    onColor: '#1b1f2a',
+    buttonColor: '#b45309',
+    icon: 'electricity',
+    seoTitle: 'EDC electricity bill calculator for Cambodia',
+    description: 'Work out an EDC electricity bill from your kWh with Cambodia’s household block rates, in riel and dollars, and log meter readings to see each month’s use and cost.',
+    demo: true
+  },
+  {
+    to: '/habits',
+    name: 'Habits',
+    summary: 'Tick off small daily habits and keep your streak going.',
+    color: '#0f766e',
+    icon: 'habits',
+    group: 'Life',
+    seoTitle: 'Habit tracker with streaks',
+    description: 'Track daily habits: tick each one off, see your streak and best run, fill in a day you forgot, and see the last 12 weeks at a glance. Syncs across your devices.',
+    demo: true
+  },
+  {
+    to: '/tasks',
+    name: 'Tasks',
+    summary: 'A to-do list with due dates, today’s tasks first, and chores that repeat.',
+    color: '#1d4ed8',
+    icon: 'tasks',
+    group: 'Life',
+    seoTitle: 'To-do list with due dates and repeating tasks',
+    description: 'A simple to-do list: add tasks with a due date, see today’s and overdue ones first, and let chores repeat every day, week or month. Syncs across your devices.',
+    demo: true
+  },
+  {
     to: '/2048',
     name: '2048',
     summary: 'Slide the tiles, join matching numbers, and reach 2048.',
@@ -297,7 +340,7 @@ export const TRASH: Tool = {
   icon: 'trash'
 }
 
-// Renewals is Calendar's second tab: its own page and data, under Calendar's name, icon and pin.
+// Renewals is Countdown's second tab: its own page and data, under Countdown's name, icon and pin.
 // Kept out of TOOLS so it isn't listed as an app of its own; its name and icon still label its
 // records in activity, search and the Recycle Bin.
 export const RENEWALS: Tool = {
@@ -321,7 +364,7 @@ export const toolFor = (path: string) => [...TOOLS, ...TAB_PAGES, SETTINGS].find
 /** Any page with a name and icon, including the Recycle Bin */
 export const pageFor = (path: string) => [...TOOLS, ...TAB_PAGES, SETTINGS, TRASH].find(t => t.to === path)
 
-/** The app a page belongs to: itself, or for a tab like Renewals, the app it's in (Calendar) */
+/** The app a page belongs to: itself, or for a tab like Renewals, the app it's in (Countdown) */
 export const appFor = (path: string) => {
   const page = toolFor(path)
   return page?.app ? toolFor(page.app) : page

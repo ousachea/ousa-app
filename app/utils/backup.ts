@@ -31,7 +31,10 @@ export const BACKUP_SECTIONS: BackupSection[] = [
   { name: 'budget-settings', label: 'Budget settings', app: '/budget' },
   { name: 'gold', label: 'Gold purchases', app: '/gold' },
   { name: 'gold-prices', label: 'Gold price history', app: '/gold' },
-  { name: 'speed', label: 'Speed tests', app: '/speed' }
+  { name: 'speed', label: 'Speed tests', app: '/speed' },
+  { name: 'habits', label: 'Habits', app: '/habits' },
+  { name: 'tasks', label: 'Tasks', app: '/tasks' },
+  { name: 'meter-readings', label: 'Meter readings', app: '/electricity' }
 ]
 
 // Settings that travel with a backup: preferences, theme, effects, sound, remembered choices and each

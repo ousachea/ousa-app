@@ -30,6 +30,7 @@ export interface AddOption {
 
 // What Quick Add offers, in the order people reach for them (CHECKLIST.md #08)
 export const ADD_OPTIONS: AddOption[] = [
+  { label: 'Task', app: '/tasks', hint: 'Something to do' },
   { label: 'Note', app: '/notes', hint: 'Write something down' },
   { label: 'Bookmark', app: '/bookmarks', hint: 'Save a link' },
   { label: 'Device', app: '/things', hint: 'Something you own' },
@@ -38,6 +39,8 @@ export const ADD_OPTIONS: AddOption[] = [
   { label: 'Contact', app: '/phone', hint: 'A name and number' },
   { label: 'Food or place', app: '/eat', hint: 'Somewhere or something to eat' },
   { label: 'Weight', app: '/weight', hint: 'Log today’s weight' },
+  { label: 'Habit', app: '/habits', hint: 'Something to do every day' },
+  { label: 'Meter reading', app: '/electricity', hint: 'The number on your electricity meter' },
   { label: 'Gold purchase', app: '/gold', hint: 'Gold you bought' },
   { label: 'Password', app: '/password?tab=saved', hint: 'Save a login in your vault' }
 ]

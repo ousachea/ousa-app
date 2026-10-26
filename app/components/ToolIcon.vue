@@ -113,7 +113,7 @@ defineProps<{ name: ToolIconName }>()
       <path d="M12 11.5l1.6-2.6" />
     </template>
 
-    <!-- Calendar (the countdown app): a calendar page with a clock on its corner -->
+    <!-- Countdown: a calendar page with a clock on its corner -->
     <template v-else-if="name === 'countdown'">
       <path d="M11 20.5H6a2.5 2.5 0 0 1-2.5-2.5V7.5A2.5 2.5 0 0 1 6 5h12a2.5 2.5 0 0 1 2.5 2.5V11" />
       <path d="M3.5 9.5h17M8 3v4M16 3v4" />
@@ -146,6 +146,29 @@ defineProps<{ name: ToolIconName }>()
       <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" />
       <path d="M3.5 9.5h17M8 2.5v4M16 2.5v4" />
       <path d="M7 15h3.5M15.25 13.25v3.5M13.5 15H17" />
+    </template>
+
+    <!-- Habits: a tick with a streak of marks beside it -->
+    <template v-else-if="name === 'habits'">
+      <path d="M3.5 12.5l3.5 3.5 6.5-7" />
+      <path d="M15.5 8h5M17 12h3.5M18.5 16h2" />
+    </template>
+
+    <!-- Tasks: a checklist with two ticked lines -->
+    <template v-else-if="name === 'tasks'">
+      <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
+      <path d="M7.5 9l1.5 1.5 2.5-3M7.5 15l1.5 1.5 2.5-3M14 9h3M14 15h3" />
+    </template>
+
+    <!-- Split: a receipt with a dividing line down the middle -->
+    <template v-else-if="name === 'split'">
+      <path d="M5.5 3.5h13v17l-2.2-1.5-2.1 1.5-2.2-1.5-2.2 1.5-2.1-1.5-2.2 1.5z" />
+      <path d="M12 7v9M8.5 9h1M14.5 9h1M8.5 13h1M14.5 13h1" />
+    </template>
+
+    <!-- Electricity: a lightning bolt -->
+    <template v-else-if="name === 'electricity'">
+      <path d="M13.5 2.5 5.5 13.5h6l-1 8 8-11h-6z" />
     </template>
 
     <!-- Focus timer: a stopwatch with its hand on a quarter -->

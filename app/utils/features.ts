@@ -50,6 +50,10 @@ export const APP_FEATURES: Record<string, FeatureKey[]> = {
   '/2048': [],
   '/days': ['copy'],
   '/focus': [],
+  '/split': ['copy'],
+  '/electricity': ['sync', 'demo', 'trash', 'quickAdd'],
+  '/habits': ['sync', 'demo', 'trash', 'quickAdd'],
+  '/tasks': ['sync', 'demo', 'trash', 'quickAdd'],
   '/color': ['copy'],
   '/gold': ['sync', 'demo', 'select', 'trash', 'quickAdd', 'drafts', 'formats', 'download']
 }

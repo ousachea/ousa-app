@@ -8,7 +8,7 @@ import { defaultSettings, SETTINGS_ID } from '~/utils/budget/defaults'
 // The home page's look at the day, under the cube: today's prices, what's coming up, this month's
 // spending and today's focus. Everything is read from what the apps keep on this device (and sync), so
 // it shows instantly and works offline; each card links to its app. Nothing is saved here.
-const COLLECTIONS = ['countdown', 'renewals', 'gold-prices', 'budget-transactions', 'budget-limits', 'budget-recurring', 'budget-settings'] as const
+const COLLECTIONS = ['countdown', 'renewals', 'gold-prices', 'budget-transactions', 'budget-limits', 'budget-recurring', 'budget-settings', 'tasks', 'habits'] as const
 type Name = typeof COLLECTIONS[number]
 const data = ref<Partial<Record<Name, Record<string, any>[]>>>({})
 const loaded = ref(false)
@@ -66,10 +66,22 @@ onMounted(async () => {
   try {
     const r = await fetch('https://api.gold-api.com/price/XAU', { cache: 'no-store', signal: AbortSignal.timeout(8000) })
     const price = Number((await r.json())?.price)
-    if (r.ok && price >= 100 && price <= 20000) goldLive.value = price
+    if (r.ok && price >= 100 && price <= 20000) {
+      goldLive.value = price
+      recordGold(price)
+    }
   } catch {}
   goldLoading.value = false
 })
+// Prices seen here join the Gold app's synced history, so "since yesterday" works without opening Gold.
+// At most one every half hour from here; Gold keeps the history to its newest few hundred
+const RECORD_GAP_MS = 30 * 60_000
+function recordGold(price: number) {
+  const last = Math.max(0, ...list<{ time: number }>('gold-prices').map(p => p.time))
+  if (Date.now() - last < RECORD_GAP_MS) return
+  const point = { id: crypto.randomUUID(), price, time: Date.now() }
+  writeToCollection('gold-prices', [point]).catch(() => {})
+}
 const ounce = computed(() => goldLive.value ?? goldSaved.value)
 const perChi = computed(() => (ounce.value ? ounce.value / TROY * CHI : undefined))
 const perDamlung = computed(() => (ounce.value ? ounce.value / TROY * DAMLUNG : undefined))
@@ -142,6 +154,15 @@ const spending = computed(() => {
   return { month: spentMonth.value, today: spentToday.value, todayCount: spentToday.count, status }
 })
 const monthName = computed(() => now.value.toLocaleDateString('en-GB', { month: 'long' }))
+
+// ---------- Tasks and habits ----------
+const todayIso = computed(() => localIsoDate(now.value))
+const tasksDue = computed(() => list<{ id: string, title: string, due: string, done: boolean }>('tasks')
+  .filter(t => !t.done && t.due && t.due <= todayIso.value)
+  .sort((a, b) => a.due.localeCompare(b.due)))
+const tasksOpen = computed(() => list<{ done: boolean }>('tasks').filter(t => !t.done).length)
+const habits = computed(() => list<{ id: string, name: string, done: string[] }>('habits'))
+const habitsDone = computed(() => habits.value.filter(h => h.done?.includes(todayIso.value)).length)
 
 // ---------- Focus ----------
 const focusToday = ref(0)
@@ -239,6 +260,41 @@ const toolColor = (path: string) => ({ '--c': pageFor(path)?.color, '--on-c': pa
           <p v-else class="empty">
             Log what you spend in <NuxtLink to="/budget">Budget</NuxtLink> and this month’s total shows here.
           </p>
+        </section>
+
+        <!-- Tasks -->
+        <section class="panel card tasks" aria-labelledby="today-tasks">
+          <header>
+            <h3 id="today-tasks">Tasks</h3>
+            <NuxtLink to="/tasks" class="link">All tasks</NuxtLink>
+          </header>
+          <template v-if="tasksDue.length">
+            <p class="big">{{ tasksDue.length }} <small>for today</small></p>
+            <ul class="mini">
+              <li v-for="t in tasksDue.slice(0, 3)" :key="t.id">
+                <span class="badge" :class="t.due < todayIso ? 'bad' : 'warn'">{{ t.due < todayIso ? 'Overdue' : 'Today' }}</span>
+                <span class="mini-text">{{ t.title }}</span>
+              </li>
+            </ul>
+          </template>
+          <p v-else class="sub">{{ tasksOpen ? `Nothing due today. ${tasksOpen} still to do.` : 'Nothing to do. Add what needs doing and when.' }}</p>
+          <NuxtLink to="/tasks?add=1" class="btn btn-sm" :style="toolColor('/tasks')">Add a task</NuxtLink>
+        </section>
+
+        <!-- Habits -->
+        <section class="panel card habits" aria-labelledby="today-habits">
+          <header>
+            <h3 id="today-habits">Habits</h3>
+            <NuxtLink to="/habits" class="link">Habits</NuxtLink>
+          </header>
+          <template v-if="habits.length">
+            <p class="big">{{ habitsDone }}<small> of {{ habits.length }} done today</small></p>
+            <div class="meter" role="meter" :aria-valuenow="habitsDone" aria-valuemin="0" :aria-valuemax="habits.length" :aria-label="`${habitsDone} of ${habits.length} habits done today`">
+              <span :style="{ width: `${habitsDone / habits.length * 100}%` }" />
+            </div>
+          </template>
+          <p v-else class="sub">Add a small habit to tick off each day.</p>
+          <NuxtLink to="/habits" class="btn btn-sm" :style="toolColor('/habits')">{{ habits.length ? (habitsDone < habits.length ? 'Tick them off' : 'See your streaks') : 'Add a habit' }}</NuxtLink>
         </section>
 
         <!-- Focus -->
@@ -458,6 +514,29 @@ const toolColor = (path: string) => ({ '--c': pageFor(path)?.color, '--on-c': pa
 
 .meter span.bad {
   background: var(--red);
+}
+
+.mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mini li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.mini-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sub {
