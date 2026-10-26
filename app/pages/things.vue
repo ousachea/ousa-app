@@ -554,7 +554,7 @@ function del(t: Thing) {
 
     <TransferDialog
       :open="transferOpen"
-      title="Stash"
+      title="Things"
       collection="things"
       app="/things"
       :items="items"

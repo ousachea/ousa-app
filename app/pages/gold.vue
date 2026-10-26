@@ -895,7 +895,7 @@ const PURITIES: { value: Purity, label: string }[] = [
       </div>
 
       <!-- Phones only (CSS): the bar of tabs at the foot of the screen; the bulk bar takes its place while selecting -->
-      <nav v-if="!sel.selecting" class="tab-bar" aria-label="Chi">
+      <nav v-if="!sel.selecting" class="tab-bar" aria-label="Gold">
         <button v-for="t in TABS" :key="t" type="button" :class="{ active: tab === t }" :aria-current="tab === t ? 'page' : undefined" @click="pickTab(t)">
           <AppIcon :name="t === 'price' ? 'trending-up' : t === 'gold' ? 'coins' : 'scale'" />
           <span>{{ t === 'price' ? w.tabPrice : t === 'gold' ? w.myGold : w.tabUnits }}</span>

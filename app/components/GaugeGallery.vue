@@ -82,7 +82,7 @@ const EXAMPLES: Example[] = [
   {
     id: 'progress',
     title: 'Progress arc',
-    use: 'A share of something, with the number in the middle. Wallet, Squeeze, Stash, Scale goal, Renewals limit.',
+    use: 'A share of something, with the number in the middle. Budget, Compress, Things, Weight goal, Renewals limit.',
     code: `<Gauge :value="share" :min="0" :max="1" :start-angle="45" :end-angle="315"
   :radius="200" :padding="22" fit="content" transition :initial-value="0">
   <GaugeTrack :width="34" color="var(--ink)" :opacity="0.08" />
@@ -93,7 +93,7 @@ const EXAMPLES: Example[] = [
   {
     id: 'zones',
     title: 'Needle on bands',
-    use: 'A reading against bands that mean something. Juice health, Keyring strength.',
+    use: 'A reading against bands that mean something. Battery health, Passwords strength.',
     code: `<Gauge :value="health" :min="50" :max="100" :start-angle="90" :end-angle="270"
   :radius="200" :padding="34" fit="content" transition :initial-value="50">
   <GaugeZones :zones="[{ to: 70, color: 'var(--red)' }, { to: 80, color: 'var(--orange)' },
@@ -107,7 +107,7 @@ const EXAMPLES: Example[] = [
   {
     id: 'centred',
     title: 'Centred on zero',
-    use: 'Better or worse than a reference, with “about the same” in the middle. Riel Deal.',
+    use: 'Better or worse than a reference, with “about the same” in the middle. Exchange.',
     code: `<Gauge :value="percent" :min="-2" :max="2" :start-angle="90" :end-angle="270"
   :radius="200" :padding="64" fit="content" transition :initial-value="0">
   <GaugeZones :zones="[{ to: -0.1, color: 'var(--red)' }, { to: 0.1, color: 'var(--ink-3)' },
@@ -135,7 +135,7 @@ const EXAMPLES: Example[] = [
   {
     id: 'ring',
     title: 'Full ring',
-    use: 'Progress that closes a circle; put words in the middle. Countdown, Payday.',
+    use: 'Progress that closes a circle; put words in the middle. Countdown, Salary.',
     code: `<Gauge :value="progress" :min="0" :max="1" :start-angle="180" :end-angle="540"
   :radius="200" :padding="24" transition :initial-value="0">
   <GaugeTrack :width="40" color="var(--ink)" :opacity="0.1" />
@@ -146,7 +146,7 @@ const EXAMPLES: Example[] = [
   {
     id: 'range',
     title: 'Needle in a range',
-    use: 'Where a value sits between a low and a high. Chi’s price range.',
+    use: 'Where a value sits between a low and a high. Gold’s price range.',
     code: `<Gauge :value="price" :min="low" :max="high" :start-angle="90" :end-angle="270"
   :radius="200" :padding="26" fit="content" transition>
   <GaugeTrack :width="22" color="var(--ink)" :opacity="0.08" />

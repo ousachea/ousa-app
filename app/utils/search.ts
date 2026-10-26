@@ -64,7 +64,7 @@ export const SEARCH_SOURCES: Source[] = [
   {
     collection: 'things',
     app: '/things',
-    group: 'Stash',
+    group: 'Things',
     title: t => t.name,
     subtitle: t => [typeOf(t.category).label, t.company, t.year].filter(Boolean).join(' · '),
     text: t => [t.category, t.type, t.company, t.model, t.generation, t.notes]

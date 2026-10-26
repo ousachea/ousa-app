@@ -16,7 +16,7 @@ export const BACKUP_SECTIONS: BackupSection[] = [
   { name: 'note-folders', label: 'Note folders', app: '/notes' },
   { name: 'note-templates', label: 'Note templates', app: '/notes' },
   { name: 'note-versions', label: 'Note version history', app: '/notes' },
-  { name: 'things', label: 'Stash', app: '/things' },
+  { name: 'things', label: 'Things', app: '/things' },
   { name: 'renewals', label: 'Renewals', app: '/renewals' },
   { name: 'countdown', label: 'Countdowns', app: '/countdown' },
   { name: 'contacts', label: 'Contacts', app: '/phone' },

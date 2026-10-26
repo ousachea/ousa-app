@@ -445,7 +445,7 @@ async function shareResult() {
   const url = shareUrl()
   if (typeof navigator.share === 'function') {
     try {
-      await navigator.share({ title: 'Juice', text, url })
+      await navigator.share({ title: 'Battery', text, url })
       sfx.play('success')
       return
     } catch (e) {
