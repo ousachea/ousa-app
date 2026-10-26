@@ -26,7 +26,7 @@ interface Form {
   recurringId: string
 }
 
-const recent = computed(() => [...transactions.items.value].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 80))
+const recent = computed(() => [...transactions.items.value].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '')).slice(0, 80))
 
 // Smart defaults: the currency and payment method used last time
 function blank(kind: Kind = 'expense'): Form {

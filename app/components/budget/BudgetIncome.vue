@@ -9,7 +9,7 @@ const { transactions, settings, conv, money, categoryById, go } = store
 
 const mode = ref<RangeMode>('month')
 const range = ref<DateRange>(monthRange(today()))
-const list = computed(() => incomeIn(transactions.items.value, range.value).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)))
+const list = computed(() => incomeIn(transactions.items.value, range.value).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? '')))
 const flow = computed(() => cashFlow(transactions.items.value, range.value, conv.value))
 const bySource = computed(() => groupTotals(list.value, t => t.categoryId, conv.value).map((s) => {
   const c = categoryById.value.get(s.key)

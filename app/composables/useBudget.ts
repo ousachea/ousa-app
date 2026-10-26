@@ -117,7 +117,7 @@ function createStore() {
   // One settings record; if two devices ever made one each, the fixed id (or else the oldest) wins
   const settingsRecord = computed(() => {
     const list = settingsList.items.value
-    return list.find(s => s.id === SETTINGS_ID) ?? [...list].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0]
+    return list.find(s => s.id === SETTINGS_ID) ?? [...list].sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))[0]
   })
   // Widgets merge one level down, so a widget added since the record was saved starts switched on
   const settings = computed<BudgetSettings>(() => {

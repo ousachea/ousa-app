@@ -91,10 +91,10 @@ const filtered = computed(() => {
   const amountOf = (t: BudgetTransaction) => conv.value(t.amount, t.currency) ?? 0
   const s = sort.value
   return list.sort((a, b) =>
-    s === 'oldest' ? a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)
+    s === 'oldest' ? a.date.localeCompare(b.date) || (a.createdAt ?? '').localeCompare(b.createdAt ?? '')
       : s === 'high' ? amountOf(b) - amountOf(a)
         : s === 'low' ? amountOf(a) - amountOf(b)
-          : b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+          : b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 })
 
 const spentTotal = computed(() => total(filtered.value.filter(t => t.kind === 'expense'), conv.value))

@@ -11,7 +11,7 @@ const { play } = useSound()
 const day = today()
 
 const showArchived = ref(false)
-const historyOf = (id: string) => contributions.items.value.filter(c => c.goalId === id).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+const historyOf = (id: string) => contributions.items.value.filter(c => c.goalId === id).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 const savedOf = (id: string) => historyOf(id).reduce((n, c) => n + (c.type === 'deposit' ? c.amount : -c.amount), 0)
 
 const cards = computed(() => goals.items.value

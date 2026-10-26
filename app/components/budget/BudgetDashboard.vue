@@ -72,7 +72,7 @@ const bills = computed(() => store.recurring.items.value
   .sort((a, b) => (a.s.overdue[0] ?? a.s.next ?? '').localeCompare(b.s.overdue[0] ?? b.s.next ?? ''))
   .slice(0, 6))
 
-const recent = computed(() => [...all.value].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, 6))
+const recent = computed(() => [...all.value].sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? '')).slice(0, 6))
 const w = computed(() => settings.value.widgets)
 const showTxs = (r: DateRange, extra: Record<string, string> = {}) => go('transactions', { from: r.from, to: r.to, ...extra })
 </script>
