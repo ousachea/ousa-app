@@ -30,6 +30,17 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.7.0',
+    date: '2026-10-26',
+    changes: [
+      'Under the cube on the home page: today’s gold and riel prices, what’s coming up, this month’s spending and your focus sessions.',
+      'Every app has a plain one-word name that says what it does: QR, Phone, Compress, Budget, Speed and so on.',
+      'The sitemap and every app that gets live data (holidays, the exchange rate, icons) work again.',
+      'On netlify.app addresses, bars along the bottom of the screen sit above Netlify’s badge instead of under it.',
+      'Better on a tablet on its side: Focus keeps its dial and Start button on one screen, and Passwords puts the password beside its settings.'
+    ]
+  },
+  {
     version: '2.6.0',
     date: '2026-10-20',
     changes: [
