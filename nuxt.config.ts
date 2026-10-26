@@ -5,6 +5,13 @@ const netlifyPreview = ['deploy-preview', 'branch-deploy'].includes(process.env.
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  hooks: {
+    // Nuxt's default ignore of a root /vendor folder reaches Nitro as a path up to the filesystem root
+    // (../../../vendor), and the file scan then skips everything: no sitemap, robots.txt or /api routes
+    'nitro:config'(config) {
+      config.ignore = config.ignore?.filter(pattern => !/^(\.\.\/)+vendor$/.test(pattern))
+    }
+  },
   // The fonts come from this site (public/fonts), so a page never waits on Google Fonts before it can show
   css: ['~/assets/css/fonts.css', '~/assets/css/main.css'],
   experimental: {
