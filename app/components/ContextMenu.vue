@@ -234,7 +234,7 @@ hr {
 .context-menu.sheet {
   left: 0.5rem;
   right: 0.5rem;
-  bottom: max(0.5rem, env(safe-area-inset-bottom));
+  bottom: calc(max(0.5rem, env(safe-area-inset-bottom)) + var(--dock-lift));
   max-width: 34rem;
   margin: 0 auto;
   padding: 0.5rem;

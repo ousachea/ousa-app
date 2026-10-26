@@ -2871,7 +2871,7 @@ h3 {
   position: fixed;
   z-index: 160;
   left: 50%;
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + var(--dock-lift));
   display: flex;
   align-items: center;
   gap: 0.75rem;

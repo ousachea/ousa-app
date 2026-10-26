@@ -1952,7 +1952,7 @@ onMounted(async () => {
     position: fixed;
     z-index: 80;
     left: 50%;
-    bottom: max(0.85rem, env(safe-area-inset-bottom));
+    bottom: calc(max(0.85rem, env(safe-area-inset-bottom)) + var(--dock-lift));
     translate: -50% 0;
     max-width: calc(100vw - 1.5rem);
     display: flex;

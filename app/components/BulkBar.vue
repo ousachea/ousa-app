@@ -82,7 +82,7 @@ body.bulk-open main.tool {
   position: fixed;
   z-index: 90;
   left: 50%;
-  bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem));
+  bottom: calc(max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem)) + var(--dock-lift));
   translate: -50% 0;
   display: flex;
   align-items: center;

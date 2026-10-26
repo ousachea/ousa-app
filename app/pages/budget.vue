@@ -244,7 +244,7 @@ usePullToRefresh(async () => {
   .quick-add {
     position: fixed;
     right: max(1rem, env(safe-area-inset-right));
-    bottom: max(1rem, env(safe-area-inset-bottom));
+    bottom: calc(max(1rem, env(safe-area-inset-bottom)) + var(--dock-lift));
     z-index: 50;
     min-height: 3.25rem;
     padding: 0 1.2rem 0 1rem;

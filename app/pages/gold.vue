@@ -1888,7 +1888,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 @media (max-width: 719.98px) {
   .workspace {
     gap: 1.5rem;
-    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom) + var(--dock-lift));
     scroll-margin-top: var(--pin-top, 0px);
   }
 
@@ -1985,7 +1985,7 @@ const PURITIES: { value: Purity, label: string }[] = [
     z-index: 80;
     left: 0.75rem;
     right: 0.75rem;
-    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + var(--dock-lift));
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.25rem;

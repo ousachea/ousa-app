@@ -1,4 +1,8 @@
 :root {
+  /* Room kept clear at the foot of the screen for Netlify's Drawer, the bar it floats over Deploy Previews
+     and branch deploys (data-netlify-preview, set in nuxt.config.ts). Nothing on the live site */
+  --dock-lift: 0px;
+
   /* Widest an app's content gets: the whole window, less the side gutters. Pages lay themselves out
      in more columns as the room grows instead of leaving big margins */
   --page-width: 100%;
@@ -1540,4 +1544,8 @@ svg.ants rect {
 :root[data-motion='reduced'] .app-tip {
   scale: 1;
   transition: opacity 0.12s;
+}
+
+:root[data-netlify-preview] {
+  --dock-lift: 4.5rem;
 }

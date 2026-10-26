@@ -1,4 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+// Netlify's build context: production, deploy-preview, branch-deploy or dev. Previews and branch deploys get its Drawer
+const netlifyPreview = ['deploy-preview', 'branch-deploy'].includes(process.env.CONTEXT ?? '')
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -43,7 +46,8 @@ export default defineNuxtConfig({
     // Default for the first navigation; the transition middleware picks the direction after that
     pageTransition: { name: 'slide-forward', mode: 'out-in' },
     head: {
-      htmlAttrs: { lang: 'en' },
+      // On previews, the bars along the foot of the screen sit above Netlify's Drawer (--dock-lift in main.css)
+      htmlAttrs: { lang: 'en', ...(netlifyPreview ? { 'data-netlify-preview': '' } : {}) },
       title: 'Ousa’s Apps',
       titleTemplate: '%s · Ousa’s Apps',
       meta: [
