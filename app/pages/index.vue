@@ -134,6 +134,7 @@ useAppSeo({
           Swipe for the apps
           <AppIcon name="chevron-right" />
         </button>
+        <TodayPanel class="hero-today" />
       </div>
       <section v-for="group in GROUPS" :key="group.name" class="group" :aria-labelledby="`group-${group.name}`">
         <h2 :id="`group-${group.name}`">{{ group.name }}</h2>
@@ -193,6 +194,11 @@ useAppSeo({
   margin: -1rem 0 1rem;
 }
 
+/* The day at a glance, under the cube and the welcome */
+.hero-today {
+  margin-top: 2.5rem;
+}
+
 h1 {
   font-size: clamp(3.25rem, 12vw, 6.5rem);
   font-weight: 800;
@@ -201,7 +207,7 @@ h1 {
   font-variation-settings: 'opsz' 96;
 }
 
-.hero p {
+.hero > p {
   margin: 1rem 0 0;
   max-width: 28rem;
   font-size: var(--text-title);
@@ -408,13 +414,37 @@ h1 {
     grid-row: var(--row);
   }
 
-  /* The hero is the first screen, filling the pager's height with its content centred */
+  /* The hero is the first screen, filling the pager's height: the cube and welcome, then the day at a
+     glance below them, scrolling up and down within the screen while sideways swipes go to the apps */
   .hero {
     grid-column: 1 / span 4;
     grid-row: 1 / -1;
     align-self: stretch;
-    justify-content: center;
-    padding: 0 0.5rem;
+    padding: 0 0.5rem 1.5rem;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+  }
+
+  .hero::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Centred while it all fits; once it doesn't, it starts at the top so nothing is out of reach */
+  .hero::before,
+  .hero::after {
+    content: '';
+    flex: 1 0 0;
+  }
+
+  /* Each part keeps its own height and the screen scrolls, rather than squashing the cube */
+  .hero > * {
+    flex-shrink: 0;
+  }
+
+  .hero-today {
+    margin-top: 2rem;
   }
 
   .page-start {
@@ -425,7 +455,14 @@ h1 {
   /* The dots sit at the foot of the screen: last in a page that's exactly the screen tall, with
      just enough room under them to clear the phone's home bar */
   .home {
+    height: 100dvh;
+    min-height: 0;
     padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+  }
+
+  /* Exactly the room left on the screen, so a long first screen scrolls within itself */
+  .groups {
+    min-height: 0;
   }
 
   .page-dots {
