@@ -197,8 +197,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   margin: 0 auto;
 }
 
-/* Wide screens: the password and its settings side by side, so changes show up right next to them */
-@media (min-width: 1400px) {
+/* Wide screens, a landscape tablet included: the password and its settings side by side, so changes
+   show up right next to them */
+@media (min-width: 1100px) {
   .workspace {
     max-width: none;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);

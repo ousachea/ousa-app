@@ -288,4 +288,33 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   font-size: var(--text-sm);
   color: var(--ink-3);
 }
+
+/* A short, wide screen (a tablet on its side, a laptop): the dial on the left and everything you press
+   beside it, so Start is on screen without scrolling */
+@media (orientation: landscape) and (min-width: 900px) and (max-height: 900px) {
+  .focus {
+    display: grid;
+    grid-template-columns: auto minmax(0, 26rem);
+    grid-template-areas:
+      'dial phases'
+      'dial controls'
+      'dial count'
+      'dial hint';
+    grid-template-rows: 1fr auto auto 1fr;
+    justify-content: center;
+    align-items: center;
+    column-gap: 3rem;
+    row-gap: 1.25rem;
+  }
+
+  .phases { grid-area: phases; align-self: end; }
+  .controls { grid-area: controls; justify-content: flex-start; }
+  .count { grid-area: count; text-align: left; }
+  .hint { grid-area: hint; align-self: start; text-align: left; }
+
+  .dial {
+    grid-area: dial;
+    width: min(22rem, 52vh);
+  }
+}
 </style>
