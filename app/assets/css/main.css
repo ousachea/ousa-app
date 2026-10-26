@@ -1,6 +1,7 @@
 :root {
-  /* Room kept clear at the foot of the screen for Netlify's Drawer, the bar it floats over Deploy Previews
-     and branch deploys (data-netlify-preview, set in nuxt.config.ts). Nothing on the live site */
+  /* Room kept clear at the foot of the screen for Netlify: its Drawer on Deploy Previews and branch deploys
+     (data-netlify-preview, set in nuxt.config.ts), or the "Powered by Netlify" badge, measured by
+     plugins/hide-netlify-badge.client.ts. Nothing on other hosts */
   --dock-lift: 0px;
 
   /* Widest an app's content gets: the whole window, less the side gutters. Pages lay themselves out

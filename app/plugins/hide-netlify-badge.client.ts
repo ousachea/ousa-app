@@ -19,6 +19,31 @@ export default defineNuxtPlugin(() => {
     if (el instanceof HTMLElement && isNetlifyChrome(el)) el.style.setProperty('display', 'none', 'important')
   }
   ;[...document.body.children].forEach(hide)
-  new MutationObserver(records => records.forEach(r => r.addedNodes.forEach(n => n instanceof Element && hide(n))))
-    .observe(document.body, { childList: true })
+
+  // The "Powered by Netlify" badge (#nl-badge-frame, on free sites) stays: the bars along the foot of the
+  // screen sit above it instead, lifted by however much of the screen's foot it covers (--dock-lift in main.css)
+  const root = document.documentElement
+  let badge: Element | null = null
+  const sizer = new ResizeObserver(() => fitAboveBadge())
+  function fitAboveBadge() {
+    const rect = badge?.isConnected ? badge.getBoundingClientRect() : undefined
+    const covered = rect && rect.height ? Math.max(0, Math.round(innerHeight - rect.top)) : 0
+    if (covered) root.style.setProperty('--dock-lift', `${covered}px`)
+    else root.style.removeProperty('--dock-lift')
+  }
+  function watchBadge() {
+    const found = document.getElementById('nl-badge-frame')
+    if (found === badge) return
+    if (badge) sizer.unobserve(badge)
+    badge = found
+    if (badge) sizer.observe(badge)
+    fitAboveBadge()
+  }
+  watchBadge()
+  addEventListener('resize', fitAboveBadge)
+
+  new MutationObserver(records => {
+    records.forEach(r => r.addedNodes.forEach(n => n instanceof Element && hide(n)))
+    watchBadge()
+  }).observe(document.body, { childList: true })
 })
