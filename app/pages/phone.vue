@@ -496,7 +496,8 @@ async function copyResults() {
 }
 
 /* One narrow column, like a phone screen: dial, see the SIM, reference tucked below.
-   On wide screens the checker stays phone-sized on the left and the contacts fill the rest. */
+   From a tablet held upright, the checker and the contacts sit side by side across the width; on wide
+   screens the checker stays phone-sized on the left and the contacts fill the rest. */
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr); /* never wider than the screen */
@@ -507,7 +508,7 @@ async function copyResults() {
 
 /* Narrow screens: no sticking at all; the left column's parts flow in the page order
    checker → contacts → prefix list */
-@media (max-width: 1100px) {
+@media (max-width: 759.98px) {
   .left {
     display: contents;
   }
@@ -517,10 +518,10 @@ async function copyResults() {
   .reference { order: 2; }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 760px) {
   .workspace {
     max-width: none;
-    grid-template-columns: minmax(380px, 520px) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas: 'left contacts';
     gap: 1.5rem 2.5rem;
     align-items: start;
@@ -1123,8 +1124,8 @@ h2 {
   from { opacity: 0; transform: translateY(4px); }
 }
 
-@media (max-width: 900px) {
-  .workspace { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1100px) {
+  .workspace { grid-template-columns: minmax(380px, 520px) minmax(0, 1fr); }
 }
 
 @media (max-width: 480px) {

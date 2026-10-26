@@ -410,7 +410,7 @@ async function reloadRate() {
 }
 
 /* A calculator: one narrow column, amount → rate → market → the receipt prints out underneath.
-   On wide screens the receipt sits beside the inputs and stays in view while you change them. */
+   From a tablet held upright, the receipt sits beside the inputs and stays in view while you change them. */
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr); /* never wider than the screen */
@@ -419,7 +419,7 @@ async function reloadRate() {
   margin: 0 auto;
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 760px) {
   .workspace {
     max-width: none;
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
@@ -668,7 +668,7 @@ dd {
   color: var(--ink-3);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 759.98px) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
   .result-step { position: static; }
 }
