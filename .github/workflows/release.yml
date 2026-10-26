@@ -1,0 +1,57 @@
+# A GitHub release for each new version of the app as a whole: push to main with a new release at the
+# top of APP_RELEASES (app/utils/changelog.ts) and this tags it v<version> and publishes its notes.
+# Pushes that keep the same version change nothing.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency: release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Read the version and its notes from the changelog
+        id: version
+        run: |
+          node -e "
+            import('./app/utils/changelog.ts').then(({ APP_RELEASES }) => {
+              const [latest] = APP_RELEASES
+              const fs = require('node:fs')
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + latest.version + '\n')
+              fs.writeFileSync('notes.md', latest.changes.map(c => '- ' + c).join('\n') + '\n')
+            })
+          "
+
+      - name: Publish the release, unless this version already has one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          tag="v$VERSION"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag is already released"
+            exit 0
+          fi
+          # The commits since the last release, under the changelog's notes
+          previous=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          {
+            echo
+            echo '## Commits'
+            echo
+            git log --format='- %s (%h)' ${previous:+"$previous"..HEAD} -n 50
+          } >> notes.md
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
