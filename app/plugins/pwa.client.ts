@@ -7,7 +7,9 @@ export default defineNuxtPlugin(() => {
   startInstallWatch()
   if (import.meta.dev || !('serviceWorker' in navigator)) return
 
-  window.addEventListener('load', async () => {
+  // After the page has loaded, so it doesn't compete with it. The app usually starts after load has already
+  // fired, and then waiting for it would mean never registering at all
+  async function register() {
     try {
       const reg = await navigator.serviceWorker.register('/sw.js')
       // A new version finished downloading while the app was open: offer to switch
@@ -20,7 +22,9 @@ export default defineNuxtPlugin(() => {
         })
       })
     } catch {}
-  })
+  }
+  if (document.readyState === 'complete') register()
+  else window.addEventListener('load', register, { once: true })
 
   // Ask the browser to keep this site's data even when the device runs low on space,
   // once there's something worth keeping

@@ -23,6 +23,7 @@
     { "name": "Add a bookmark", "short_name": "Bookmark", "url": "/bookmarks?add=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Renewals", "url": "/renewals", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Countdown", "url": "/countdown", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Things I own", "url": "/things", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+    { "name": "Log an expense", "short_name": "Expense", "url": "/budget?add=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Things", "url": "/things", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }
