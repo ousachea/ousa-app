@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { UpcomingKind, UpcomingMark } from '~/utils/calendar'
 
-// Calendar's next 30 days on one track: your dates, renewals (with their price) and public holidays,
+// Countdown's next 30 days on one track: your dates, renewals (with their price) and public holidays,
 // each kind in its own colour. Shown on both tabs, so either one answers "what's coming up?"
 const props = defineProps<{ marks: UpcomingMark[], empty?: string }>()
 
@@ -91,7 +91,7 @@ const whenOf = (day: number) => (day === 0 ? 'today' : day === 1 ? 'tomorrow' : 
   padding: 1.1rem 1.4rem 2.4rem; /* room for the date labels under the track */
 }
 
-/* Each kind's colour: your dates in Calendar's purple, renewals in their indigo, holidays in red */
+/* Each kind's colour: your dates in Countdown's purple, renewals in their indigo, holidays in red */
 [data-kind='date'] { --kind: var(--purple); }
 [data-kind='renewal'] { --kind: var(--indigo); }
 [data-kind='holiday'] { --kind: var(--red); }

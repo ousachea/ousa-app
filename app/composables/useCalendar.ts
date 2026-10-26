@@ -2,7 +2,7 @@ import { toast } from 'vue-sonner'
 import type { Cached } from '~/utils/cache'
 import type { CountdownEvent, DueItem, HolidayLike, Renewal } from '~/utils/calendar'
 
-// What Calendar's two tabs (Dates and Renewals) share: both lists, one clock, the public holidays and the
+// What Countdown's two tabs (Dates and Renewals) share: both lists, one clock, the public holidays and the
 // "due today or tomorrow" reminder. Each tab reads the other's list too, for the 30-day timeline.
 
 /** Your dates (the Dates tab) */
@@ -78,11 +78,11 @@ export function useHolidays(now: Readonly<Ref<number>>) {
 
 export type SaverLook = 'page' | 'clock'
 
-/** Calendar settings (the Dates tab's gear); the holidays switch applies to both tabs */
+/** Countdown settings (the Dates tab's gear); the holidays switch applies to both tabs */
 export const useCalendarPrefs = () => useAppPrefs('countdown', { clock: true, holidays: true, saver: 'page' as SaverLook })
 
 // ---------- Due today or tomorrow ----------
-// One heads-up a day for the whole of Calendar, on whichever tab opens first: renewals, your dates and
+// One heads-up a day for the whole of Countdown, on whichever tab opens first: renewals, your dates and
 // public holidays together. Never for example data.
 export function useDueReminder(source: () => { dates?: CountdownEvent[], renewals?: Renewal[], holidays?: HolidayLike[] } | undefined) {
   let done = false

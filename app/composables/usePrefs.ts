@@ -90,7 +90,7 @@ function start() {
     }
     // The cube colours used to be a switch on the home page with a key of their own
     if (saved.cubeColors === undefined && localStorage.getItem('ousa-app:cube-colors') === 'apps') prefs.cubeColors = 'apps'
-    // A tab that used to be an app of its own (Renewals, now in Calendar): its pin moves to the app
+    // A tab that used to be an app of its own (Renewals, now in Countdown): its pin moves to the app
     prefs.pinnedApps = [...new Set(prefs.pinnedApps.map(p => appFor(p)?.to ?? p))]
     // Text size used to be four steps
     const steps: Record<string, number> = { small: 15, large: 17, larger: 18 }

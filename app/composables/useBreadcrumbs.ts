@@ -1,5 +1,5 @@
 // The breadcrumb trail in the top bar (SiteBar): Ousa’s Apps › the app › wherever you are inside it.
-// The bar adds the app (and a tab page like Renewals under Calendar) by itself; an app with levels of
+// The bar adds the app (and a tab page like Renewals under Countdown) by itself; an app with levels of
 // its own (a folder and its sub-folders in Bookmarks and Notes, a section of Settings) hands over the
 // rest with useBreadcrumbTrail. Each step takes you back up to it; the last is where you are.
 // Browser-only: the trail comes from what's open on this device, and holds functions.

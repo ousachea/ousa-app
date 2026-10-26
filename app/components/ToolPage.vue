@@ -2,7 +2,7 @@
 import type { Tool } from '~/utils/tools'
 
 // Pages listed in TOOLS are found by route; other pages pass their own `tool`.
-// A tab of an app (Renewals in Calendar) is a page of its own for search and settings, but wears
+// A tab of an app (Renewals in Countdown) is a page of its own for search and settings, but wears
 // the app's name, icon, colour and pin, with the app's tabs under its name.
 // hero: big centred header (single-purpose tools)
 // bar: compact left-aligned header so the workspace starts high (editors, studios)
@@ -211,7 +211,7 @@ function openSignIn() {
           Settings
         </button>
         </div>
-        <!-- An app with tabs that are pages of their own (Calendar: Dates and Renewals). They replace
+        <!-- An app with tabs that are pages of their own (Countdown: Dates and Renewals). They replace
              the history entry, so Back leaves the app rather than stepping through its tabs. -->
         <nav v-if="tool.tabs" class="app-tabs" :aria-label="`${tool.name} sections`">
           <NuxtLink

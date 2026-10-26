@@ -3,7 +3,7 @@ import { CYCLES, STATUS, daysUntil, nextRenewal, occurrenceBefore, statusOf, typ
 import { isoDaysAhead } from './demoDates'
 import type { RenewalCategory } from './services'
 
-// Calendar's two tabs, Dates (/countdown) and Renewals (/renewals), are one app: each keeps its own
+// Countdown's two tabs, Dates (/countdown) and Renewals (/renewals), are one app: each keeps its own
 // records, but both are dates you're waiting for. What they share lives here: the records, their example
 // data, how a date repeats, the 30-day timeline and what's due today or tomorrow.
 

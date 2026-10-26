@@ -7,7 +7,7 @@ import type { MenuEntry } from '~/composables/useContextMenu'
 
 const { play } = useSound()
 const online = useOnline()
-// Calendar's Dates tab: your dates, plus your renewals and the holidays for the 30-day timeline (useCalendar)
+// Countdown's Dates tab: your dates, plus your renewals and the holidays for the 30-day timeline (useCalendar)
 const { items, ready, sync, add, update, replace, remove, restore } = useDates()
 const renewals = useRenewals()
 
@@ -31,7 +31,7 @@ function timeOptionsFor(current: string) {
 const timeOptions = computed(() => timeOptionsFor(form.time))
 const editingId = ref<string>()
 
-// Calendar's clock, every second here: the header clock and the next date's flip clock show seconds
+// Countdown's clock, every second here: the header clock and the next date's flip clock show seconds
 const now = useNow(() => true)
 
 // Live clock in Cambodia time, whatever time zone this device is set to
@@ -71,7 +71,7 @@ const DAY = 86_400_000
 
 const nextHoliday = computed(() => holidays.value[0])
 const showAllHolidays = ref(false)
-// Calendar settings (the gear in the header); the holidays switch covers the timeline on both tabs
+// Countdown settings (the gear in the header); the holidays switch covers the timeline on both tabs
 const { prefs: cdPrefs } = useCalendarPrefs()
 const laterHolidays = computed(() => holidays.value.slice(1, showAllHolidays.value ? undefined : 7))
 
@@ -84,7 +84,7 @@ function holidayRange(h: { startAt: number, endAt: number, days: number }) {
 const holidayDay = (h: { startAt: number }) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric' }).format(h.startAt)
 const holidayMonth = (h: { startAt: number }) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, month: 'short' }).format(h.startAt)
 
-// Read the same way as every countdown in Calendar (countdown() in utils/renewals.ts): weeks, then months
+// Read the same way as every countdown in the app (countdown() in utils/renewals.ts): weeks, then months
 function holidayWhen(h: { start: string, startAt: number, onNow: boolean }) {
   if (h.onNow) return 'On now'
   const today = khMidnight(new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now.value))
@@ -149,7 +149,7 @@ const formatWhen = (e: Shown) =>
 const monthOf = (e: Shown) => new Date(e.at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
 const dayOf = (e: Shown) => new Date(e.at).getDate()
 const weekdayOf = (e: Shown) => new Date(e.at).toLocaleDateString('en-GB', { weekday: 'long' })
-// Time left, worded like every countdown in Calendar
+// Time left, worded like every countdown in the app
 const togo = (e: { at: number }) => countdown(new Date(e.at), new Date(now.value))
 
 // ---------- The next 30 days, and the day's reminder: shared with the Renewals tab ----------
@@ -332,7 +332,7 @@ function del(e: CountdownEvent) {
               </div>
             </section>
 
-            <!-- The next 30 days across Calendar: your dates, renewals and holidays on one track -->
+            <!-- The next 30 days across Countdown: your dates, renewals and holidays on one track -->
             <UpcomingTimeline class="timeline" :marks="marks" />
 
             <!-- Later dates: a date tile, how long to go (more exact as it nears) and how much of the wait is done -->

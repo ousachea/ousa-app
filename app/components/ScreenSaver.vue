@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Calendar's screen saver, in two looks (Calendar settings, the L key or the Switch look button):
+// Countdown's screen saver, in two looks (Countdown settings, the L key or the Switch look button):
 // - page: like a page from a printed wall calendar. The month's facts in a row along the top, the month's
 //   name huge between hairlines, every day listed week by week, and the day as a giant number running off
 //   the bottom corner. ← → (or a sideways swipe) step a day, ↑ ↓ (or an up/down swipe) a month, and T

@@ -43,12 +43,13 @@ export function useAppSeo(seo: AppSeo | (() => AppSeo)) {
     ogImageType: 'image/png',
     ogImageAlt: () => value.value.imageAlt ?? `${value.value.title} — ${SITE_NAME}`,
     ogLocale: 'en_US',
-    // X reads title, description and image from the Open Graph tags; only the card type is its own
-    twitterCard: 'summary_large_image',
     robots: () => (value.value.noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large')
   })
 
   useHead({
+    // X reads title, description and image from the Open Graph tags; only the card type is its own. It goes
+    // in as a plain meta tag, since useSeoMeta warns about twitterCard although X still needs it
+    meta: [{ key: 'twitter-card', name: 'twitter:card', content: 'summary_large_image' }],
     link: [{ key: 'canonical', rel: 'canonical', href: () => url.value }],
     script: () => value.value.jsonLd
       ? [{ key: 'ld-json', type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', ...value.value.jsonLd }) }]
