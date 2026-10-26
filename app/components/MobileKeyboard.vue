@@ -72,7 +72,7 @@ function claim(el: Field, k: FieldKind) {
   el.setAttribute('inputmode', 'none')
   // Number and email fields don't say where the caret is (and a number field won't hold “12.” while the
   // next digit is on its way), so while the app's keyboard has them they're plain text fields
-  if (el.type === 'number' || el.type === 'email') el.type = 'text'
+  if (el.type === 'number' || el.type === 'email') (el as HTMLInputElement).type = 'text'
 }
 
 function release(el: Field) {

@@ -58,6 +58,13 @@ watch(items, (list) => {
 })
 
 const checkOf = (c: Pick<Contact, 'phone'>) => checkCambodiaPhone(c.phone)
+/** A row's network tag: its colour and words, or why the number doesn't check out */
+function netOf(c: Pick<Contact, 'phone'>) {
+  const r = checkOf(c)
+  return r.valid
+    ? { valid: true, color: r.operator?.color ?? 'var(--ink-3)', label: r.operator?.name ?? r.region }
+    : { valid: false, color: 'var(--red)', label: r.match ? 'Wrong length' : 'Invalid' }
+}
 const initials = (c: Contact) => (c.name || c.phone).split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
 const shownNumber = (c: Contact) => {
   const r = checkOf(c)
@@ -197,14 +204,13 @@ const contactMenu = (c: Contact): MenuEntry[] => [
         <TransitionGroup v-if="shown.length" tag="ul" name="list" class="rows">
           <li v-for="c in shown" :key="c.id" :data-item-id="c.id" class="row" :class="{ checked: selected.has(c.id) }" v-bind="menuFor(() => contactMenu(c), c.name || c.phone)" v-swipe-delete="() => del(c)">
             <input type="checkbox" class="row-check" :checked="selected.has(c.id)" :aria-label="`Select ${c.name || c.phone}`" @change="toggle(c.id)">
-            <span class="avatar" :style="{ '--op': checkOf(c).valid ? checkOf(c).operator?.color ?? 'var(--ink-3)' : 'var(--red)' }" aria-hidden="true">{{ initials(c) || '?' }}</span>
+            <span class="avatar" :style="{ '--op': netOf(c).color }" aria-hidden="true">{{ initials(c) || '?' }}</span>
             <button type="button" class="who" :title="`Check ${shownNumber(c)}`" @click="emit('check', c.phone)">
               <span class="who-name">{{ c.name || 'No name' }}<span v-if="c.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span></span>
               <span class="who-number">{{ shownNumber(c) }}<template v-if="c.email"> · {{ c.email }}</template></span>
               <span v-if="c.notes" class="who-notes">{{ c.notes }}</span>
             </button>
-            <span v-if="checkOf(c).valid" class="net-tag" :style="{ '--op': checkOf(c).operator?.color ?? 'var(--ink-3)' }">{{ checkOf(c).operator?.name ?? checkOf(c).region }}</span>
-            <span v-else class="net-tag bad">{{ checkOf(c).match ? 'Wrong length' : 'Invalid' }}</span>
+            <span class="net-tag" :class="{ bad: !netOf(c).valid }" :style="netOf(c).valid ? { '--op': netOf(c).color } : undefined">{{ netOf(c).label }}</span>
             <span class="row-actions menu-dup">
               <button type="button" class="icon-btn" :aria-label="`Edit ${c.name || c.phone}`" title="Edit" @click="openEdit(c)">
                 <AppIcon name="pencil" />

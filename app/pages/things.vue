@@ -90,7 +90,7 @@ const formOpen = ref(false)
 const draft = useDraft('things', form, {
   active: () => formOpen.value && !editingId.value,
   isEmpty: f => !f.name.trim() && !f.price && !f.notes.trim() && !f.model?.trim(),
-  summary: f => [f.name || [f.company, f.model].filter(Boolean).join(' '), typeLabel(f.category), f.price && `${f.price} ${f.currency}`]
+  summary: f => [f.name || [f.company, f.model].filter(Boolean).join(' '), typeLabel(f.category), f.price ? `${f.price} ${f.currency}` : '']
 })
 
 // ---------- Type first, then details (CHECKLIST.md #44) ----------
@@ -430,7 +430,7 @@ function showDetails(t: Thing) {
 }
 // Clicks on the card's own buttons and links, a selection, a long-press or a swipe aren't a request to open it
 function onCardClick(e: MouseEvent, t: Thing) {
-  if (e.defaultPrevented || sel.selecting.value) return
+  if (e.defaultPrevented || sel.selecting) return
   if ((e.target as HTMLElement).closest('button, a, input, label, select, textarea, .bulk-check')) return
   showDetails(t)
 }
@@ -610,15 +610,15 @@ function del(t: Thing) {
           <div class="device-row">
             <label class="field">
               <span class="field-head">Company <span class="optional">Optional</span></span>
-              <ComboInput v-model="form.company" :options="companyOptions" placeholder="Apple, Samsung, Lenovo…" aria-label="Company" />
+              <ComboInput v-model="form.company!" :options="companyOptions" placeholder="Apple, Samsung, Lenovo…" aria-label="Company" />
             </label>
             <label class="field">
               <span class="field-head">Model <span class="optional">Optional</span></span>
-              <ComboInput v-model="form.model" :options="modelOptions" :placeholder="modelOptions[0]?.value ?? 'Model name'" aria-label="Model" @pick="pickModel" />
+              <ComboInput v-model="form.model!" :options="modelOptions" :placeholder="modelOptions[0]?.value ?? 'Model name'" aria-label="Model" @pick="pickModel" />
             </label>
             <label v-if="generationOptions.length || form.generation" class="field">
               <span class="field-head">Generation</span>
-              <ComboInput v-model="form.generation" :options="generationOptions" placeholder="Gen 3, M2, 2nd generation…" aria-label="Generation" />
+              <ComboInput v-model="form.generation!" :options="generationOptions" placeholder="Gen 3, M2, 2nd generation…" aria-label="Generation" />
             </label>
           </div>
           <div v-if="specSuggestion && !specIgnored" class="spec-suggest" role="status">

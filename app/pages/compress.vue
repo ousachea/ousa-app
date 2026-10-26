@@ -192,7 +192,7 @@ async function encodePdf(item: Item, run: number) {
   )
   item.pages = result.pages
   item.imagesChanged = result.imagesChanged
-  return { blob: new Blob([result.bytes], { type: 'application/pdf' }), w: item.width, h: item.height }
+  return { blob: new Blob([result.bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }), w: item.width, h: item.height }
 }
 
 async function compress(item: Item, { initial = false } = {}) {

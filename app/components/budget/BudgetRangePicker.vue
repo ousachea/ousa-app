@@ -25,7 +25,7 @@ function shift(by: number) {
   const next = monthRange(addMonths(range.value.from, by))
   if (next.from > today()) return
   viewTransition(() => (range.value = next))
-  play('tap')
+  play('select')
 }
 
 const from = computed({ get: () => range.value.from, set: v => (range.value = { from: v, to: v > range.value.to ? v : range.value.to }) })

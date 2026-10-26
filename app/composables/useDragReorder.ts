@@ -25,7 +25,7 @@ export function useDragReorder<T>(opts: {
   function bind(item: T, index: number) {
     const key = opts.keyOf(item)
     return {
-      'draggable': 'true',
+      'draggable': 'true' as const,
       'data-drop': over.value?.key === key ? over.value.side : undefined,
       'class': { 'is-dragging': dragging.value === key },
       'aria-keyshortcuts': 'Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight',

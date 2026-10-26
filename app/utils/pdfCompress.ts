@@ -110,13 +110,13 @@ async function recompressImages(bytes: Uint8Array, quality: number, maxPx: numbe
     const isJpeg = filter === N('DCTDecode') || (filter instanceof PDFArray && filter.size() === 1 && filter.get(0) === N('DCTDecode'))
     const cs = d.get(N('ColorSpace'))
     return isJpeg && (cs === N('DeviceRGB') || cs === N('DeviceGray') || cs === undefined)
-  }) as [import('pdf-lib').PDFRef, InstanceType<typeof PDFRawStream>][]
+  }) as [import('pdf-lib').PDFRef, import('pdf-lib').PDFRawStream][]
 
   let changed = 0
   for (const [i, [ref, stream]] of images.entries()) {
     try {
       const original = stream.getContents()
-      const bitmap = await createImageBitmap(new Blob([original], { type: 'image/jpeg' }))
+      const bitmap = await createImageBitmap(new Blob([original as Uint8Array<ArrayBuffer>], { type: 'image/jpeg' }))
       const scale = maxPx && Math.max(bitmap.width, bitmap.height) > maxPx ? maxPx / Math.max(bitmap.width, bitmap.height) : 1
       const w = Math.max(1, Math.round(bitmap.width * scale))
       const h = Math.max(1, Math.round(bitmap.height * scale))

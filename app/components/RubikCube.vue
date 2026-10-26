@@ -74,7 +74,7 @@ function rotation(axis: number, angle: number): Mat3 {
 
 function mulMat(a: Mat3, b: Mat3): Mat3 {
   return a.map((row, i) =>
-    [0, 1, 2].map(j => row[0] * b[0][j] + row[1] * b[1][j] + row[2] * b[2][j])
+    [0, 1, 2].map(j => row[0]! * b[0]![j]! + row[1]! * b[1]![j]! + row[2]! * b[2]![j]!)
   ) as Mat3
 }
 

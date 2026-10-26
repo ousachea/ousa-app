@@ -27,7 +27,7 @@ export function useCvContent() {
 
   async function load() {
     const { data } = await useFetch('/api/cv', { key: 'cv-content' })
-    content.value = withDefaults(data.value?.content as Partial<CvContent> | null)
+    content.value = withDefaults((data.value?.content ?? null) as Partial<CvContent> | null)
   }
 
   // Watches who is signed in (browser only); the owner gets the editing tools

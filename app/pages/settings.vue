@@ -456,7 +456,7 @@ const volume = computed({
               <h3 class="sub">Style</h3>
               <div class="packs" role="radiogroup" aria-label="Sound style">
                 <label v-for="pack in PACKS" :key="pack.name" class="pack" :class="{ active: state.pack === pack.name }" :style="{ '--pack': pack.color }">
-                  <input type="radio" name="pack" :value="pack.name" :checked="state.pack === pack.name" @change="choosePack(pack.name)">
+                  <input type="radio" name="pack" :value="pack.name" :checked="state.pack === pack.name" @change="choosePack(pack.name as PackName)">
                   <span class="swatch" aria-hidden="true"><SoundIcon :name="pack.name" /></span>
                   <strong>{{ pack.label }}</strong>
                   <span class="desc">{{ pack.description }}</span>

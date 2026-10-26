@@ -369,7 +369,7 @@ const canSave = computed(() => (form.weight ?? 0) > 0 && (form.price ?? 0) > 0)
 const draft = useDraft('gold', form, {
   active: () => formOpen.value && !editingId.value,
   isEmpty: f => !f.weight && !f.price,
-  summary: f => [f.weight && `${f.weight} ${w.value[f.unit]}`, f.price && money(f.price)]
+  summary: f => [f.weight ? `${f.weight} ${w.value[f.unit]}` : '', f.price ? money(f.price) : '']
 })
 
 useAddAction(() => openAdd())

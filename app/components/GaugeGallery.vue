@@ -436,7 +436,7 @@ async function copy(e: Example) {
       <p class="note">The slider sets every dial, mapped onto its own scale. Click any dial for a random value, or Play to watch them all move. The parts live in <code>components/gauge</code>; the maths and animation in <code>lib/gauge.ts</code>.</p>
     </section>
 
-    <template v-for="group in [{ title: 'Used in the apps', list: EXAMPLES }, { title: 'More you can build', note: 'The same parts, put together other ways. None of these is in an app yet.', list: MORE }, { title: 'Newly ported', note: 'The rest of Gauge UI, brought over: stacks, tick fills, insets, dots, tooltips, dragging, ranges, wrapping, a turning scale and two more needles.', list: NEW }]" :key="group.title">
+    <template v-for="group in [{ title: 'Used in the apps', note: '', list: EXAMPLES }, { title: 'More you can build', note: 'The same parts, put together other ways. None of these is in an app yet.', list: MORE }, { title: 'Newly ported', note: 'The rest of Gauge UI, brought over: stacks, tick fills, insets, dots, tooltips, dragging, ranges, wrapping, a turning scale and two more needles.', list: NEW }]" :key="group.title">
     <header class="group-head">
       <h3>{{ group.title }}</h3>
       <p v-if="group.note">{{ group.note }}</p>

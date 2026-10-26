@@ -228,13 +228,16 @@ useAddAction(() => saved.value?.openAdd(valid.value ? { phone: valid.value.natio
 
 // Keep the checked numbers: valid ones not already saved
 function saveChecked() {
-  const have = new Set((saved.value?.items ?? []).map(c => checkCambodiaPhone(c.phone).e164 ?? c.phone))
+  const have = new Set((saved.value?.items ?? []).map((c) => {
+    const r = checkCambodiaPhone(c.phone)
+    return r.valid ? r.e164 : c.phone
+  }))
   const fresh = contacts.value.filter(c => c.result.valid && !have.has(c.result.e164!) && have.add(c.result.e164!))
   if (!fresh.length) {
     toast('Nothing new to save', { description: 'Every valid number here is already in My contacts.' })
     return
   }
-  const added = saved.value!.addMany(fresh.map(c => ({ name: c.name, phone: c.result.national!, email: '', notes: '', createdAt: new Date().toISOString() })))
+  const added = saved.value!.addMany(fresh.map(c => ({ name: c.name, phone: 'national' in c.result ? c.result.national : c.raw, email: '', notes: '', createdAt: new Date().toISOString() })))
   play('success')
   toast.success(`${added.length} saved to My contacts`, { action: { label: 'Undo', onClick: () => added.forEach(c => saved.value?.remove(c.id, { undoAdd: true })) } })
 }

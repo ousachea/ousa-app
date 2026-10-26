@@ -245,7 +245,8 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
             <span class="label">{{ f.label }}<span v-if="f.required" class="req" aria-hidden="true">*</span></span>
             <textarea
               v-if="f.type === 'textarea'"
-              v-model="draft[f.key]"
+              :value="draft[f.key] as string"
+              @input="draft[f.key] = ($event.target as HTMLTextAreaElement).value"
               class="input"
               rows="3"
               :placeholder="f.placeholder"

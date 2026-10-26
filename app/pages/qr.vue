@@ -111,6 +111,8 @@ const previewUrl = computed(() => (svg.value ? `data:image/svg+xml;charset=utf-8
 const scan = ref<'idle' | 'checking' | 'ok' | 'fail'>('idle')
 let scanTimer: ReturnType<typeof setTimeout> | undefined
 let scanRun = 0
+// The last finished check, so the warning shows once when a design stops scanning, not on every tweak
+let lastScan: 'ok' | 'fail' | undefined
 
 async function checkScan() {
   const url = previewUrl.value
@@ -138,8 +140,9 @@ async function checkScan() {
     if (run !== scanRun) return
     const next = decoded?.data === text.value ? 'ok' : 'fail'
     // Toast only on the change from scanning to not scanning, not on every tweak
-    if (next === 'fail' && scan.value !== 'fail') toast.warning('This design might not scan', { description: 'Try more contrast, square dots or a smaller logo.' })
+    if (next === 'fail' && lastScan !== 'fail') toast.warning('This design might not scan', { description: 'Try more contrast, square dots or a smaller logo.' })
     scan.value = next
+    lastScan = next
   } catch {
     if (run === scanRun) scan.value = 'fail'
   }

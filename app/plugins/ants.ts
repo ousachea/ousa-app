@@ -23,7 +23,7 @@ const SPEED = 16
 function borderColor(el: HTMLElement, s: CSSStyleDeclaration) {
   for (const a of el.getAnimations()) {
     if (a instanceof CSSTransition && a.transitionProperty === 'border-top-color') {
-      const end = a.effect?.getKeyframes().at(-1)?.borderTopColor
+      const end = (a.effect as KeyframeEffect | null)?.getKeyframes().at(-1)?.borderTopColor
       if (typeof end === 'string') return end
     }
   }

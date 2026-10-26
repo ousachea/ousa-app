@@ -7,7 +7,7 @@ import type { CsvColumn } from '~/utils/transfer'
 import type { MenuEntry } from '~/composables/useContextMenu'
 
 const { play } = useSound()
-// Calendar's Renewals tab: your subscriptions, plus your dates and the holidays for the 30-day timeline (useCalendar)
+// Countdown's Renewals tab: your subscriptions, plus your dates and the holidays for the 30-day timeline (useCalendar)
 const { items, ready, sync, add, addMany, update, replace, remove, restore } = useRenewals()
 const dates = useDates()
 const calPrefs = useCalendarPrefs().prefs
@@ -52,7 +52,7 @@ watch(iconText, t => (form.icon = iconFrom(t)))
 const libraryOpen = ref(false)
 const noLogo = computed(() => form.name.trim().length > 1 && !form.icon && !knownService.value)
 const libraryIcon = computed({
-  get: () => form.icon.startsWith(ICON_LIBRARY_PREFIX) ? form.icon.slice(ICON_LIBRARY_PREFIX.length) : '',
+  get: () => form.icon?.startsWith(ICON_LIBRARY_PREFIX) ? form.icon.slice(ICON_LIBRARY_PREFIX.length) : '',
   set: (id: string) => (iconText.value = textFromIcon(id ? ICON_LIBRARY_PREFIX + id : ''))
 })
 
@@ -71,7 +71,7 @@ const formOpen = ref(false)
 const draft = useDraft('renewals', form, {
   active: () => formOpen.value && !editingId.value,
   isEmpty: f => !f.name.trim() && !f.price,
-  summary: f => [f.name, f.price && formatMoney(f.price, f.currency), CYCLES.find(c => c.value === f.cycle)?.label]
+  summary: f => [f.name, f.price ? formatMoney(f.price, f.currency) : '', CYCLES.find(c => c.value === f.cycle)?.label]
 })
 
 useAddAction(() => openAdd())
@@ -92,7 +92,7 @@ function openAddAs(name: string) {
 const usdOf = (r: Pick<Renewal, 'price' | 'currency'>) => toUsd(r.price, r.currency, rate.value)
 const perMonth = (r: Renewal) => CYCLES.find(c => c.value === r.cycle)!.perMonth
 
-// Calendar's clock for the countdowns (#55): every second while something is under an hour away, else every 30 s
+// Countdown's clock for the countdowns (#55): every second while something is under an hour away, else every 30 s
 const nowMs = useNow(() => upcoming.value.some(r => r.countdown.live))
 const now = computed(() => new Date(nowMs.value))
 const { holidays } = useHolidays(nowMs)
@@ -408,7 +408,7 @@ function del(r: Renewal) {
         </div>
         <label class="field">
           <span class="field-head">Category <span class="optional">Optional</span></span>
-          <AppSelect v-model="form.category" aria-label="Category" :options="CATEGORY_OPTIONS" />
+          <AppSelect v-model="form.category!" aria-label="Category" :options="CATEGORY_OPTIONS" />
         </label>
         <div class="field">
           <span class="field-head">Icon <span class="optional">Automatic</span></span>

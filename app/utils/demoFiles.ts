@@ -181,7 +181,7 @@ async function makeBrochure(photo: Blob) {
     page.drawImage(image, { x: 50, y: 330, width: 495, height: 330 })
     page.drawText(`Page ${n} of 2`, { x: 50, y: 50, size: 9, font, color: rgb(0.45, 0.48, 0.55) })
   }
-  return new Blob([await doc.save()], { type: 'application/pdf' })
+  return new Blob([(await doc.save()) as Uint8Array<ArrayBuffer>], { type: 'application/pdf' })
 }
 
 export async function makeDemoFiles(): Promise<File[]> {

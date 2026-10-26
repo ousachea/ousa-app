@@ -134,7 +134,7 @@ function edgePoint(f: number) {
 // Nudged inside the window so the round markers aren't cut in half by its edge
 const MARK = 9
 const milestones = computed(() => MILESTONES.map((f) => {
-  const [x, y] = edgePoint(f)
+  const [x = 0, y = 0] = edgePoint(f)
   return { f, at: [Math.min(Math.max(x, MARK), view.value.w - MARK), Math.min(Math.max(y, MARK), view.value.h - MARK)], passed: elapsed.value >= f }
 }))
 
