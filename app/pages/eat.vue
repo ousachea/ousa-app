@@ -164,46 +164,30 @@ const focusText = (f: { x: number, y: number }) => `${Math.round(f.x)}% ${Math.r
 const clamp = (n: number) => Math.min(100, Math.max(0, n))
 const cssUrl = (src: string) => `url("${src.replace(/["\\\n]/g, encodeURIComponent)}")`
 
-// The photo being positioned, and its shape: only the longer side has room to move
+// The photo being positioned: the whole picture shows, and a click (or drag) puts the dot on the part
+// that should stay in view. The dot's place on the photo is its CSS position in the square frames.
 const framePhoto = computed(() => editPhoto.value?.preview || editPreview.value)
 const frameStyle = computed(() => framePhoto.value && { backgroundImage: cssUrl(framePhoto.value), backgroundPosition: focusText(editForm.focus) })
-const frameRatio = ref(1) // width ÷ height
-watch(framePhoto, (src) => {
-  frameRatio.value = 1
-  if (!src || import.meta.server) return
-  const img = new Image()
-  img.referrerPolicy = 'no-referrer'
-  img.onload = () => {
-    if (framePhoto.value === src && img.naturalHeight) frameRatio.value = img.naturalWidth / img.naturalHeight
-  }
-  img.src = src
-}, { immediate: true })
 
-let frameDrag: { x: number, y: number, focus: { x: number, y: number }, size: number } | undefined
-function onFrameDown(e: PointerEvent) {
-  const el = e.currentTarget as HTMLElement
-  el.setPointerCapture(e.pointerId)
-  frameDrag = { x: e.clientX, y: e.clientY, focus: { ...editForm.focus }, size: el.clientWidth }
+let placingDot = false
+function placeDot(e: PointerEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  editForm.focus = { x: clamp(((e.clientX - rect.left) / rect.width) * 100), y: clamp(((e.clientY - rect.top) / rect.height) * 100) }
 }
-function onFrameMove(e: PointerEvent) {
-  if (!frameDrag) return
-  // With cover in a square, the spare width (or height) is size × (ratio − 1); dragging the photo
-  // that many pixels takes it from one edge to the other
-  const r = frameRatio.value
-  const spareX = frameDrag.size * Math.max(0, r - 1)
-  const spareY = frameDrag.size * Math.max(0, 1 / r - 1)
-  editForm.focus = {
-    x: spareX ? clamp(frameDrag.focus.x - ((e.clientX - frameDrag.x) / spareX) * 100) : 50,
-    y: spareY ? clamp(frameDrag.focus.y - ((e.clientY - frameDrag.y) / spareY) * 100) : 50
-  }
+function onDotDown(e: PointerEvent) {
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  placingDot = true
+  placeDot(e)
 }
-function onFrameUp() {
-  frameDrag = undefined
+function onDotMove(e: PointerEvent) {
+  if (placingDot) placeDot(e)
 }
-// Arrow keys move the photo the way it looks: left shows more of its right side
-function onFrameKey(e: KeyboardEvent) {
+function onDotUp() {
+  placingDot = false
+}
+function onDotKey(e: KeyboardEvent) {
   const step = e.shiftKey ? 20 : 5
-  const move: Record<string, [number, number]> = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }
+  const move: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }
   const d = move[e.key]
   if (!d) return
   e.preventDefault()
@@ -1010,22 +994,28 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
         <button v-if="editPhoto" type="button" class="link remove-photo" @click="clearEditPhoto">Keep the old photo</button>
         <button v-else-if="editPreview" type="button" class="link remove-photo" @click="editForm.imageUrl = ''; editForm.removeImage = true">Remove photo</button>
         <div v-if="framePhoto" class="field">
-          <span class="field-head">Position <span class="optional">Drag the photo to choose what shows</span></span>
+          <span class="field-head">Position <span class="optional">Click the part of the photo to keep in view</span></span>
           <div class="frame-row">
             <div
-              class="photo-frame"
+              class="focus-pick"
               role="slider"
               tabindex="0"
-              aria-label="Photo position. Use the arrow keys to move it"
+              aria-label="Photo position. Use the arrow keys to move the dot"
               :aria-valuetext="`${Math.round(editForm.focus.x)}% across, ${Math.round(editForm.focus.y)}% down`"
-              :style="frameStyle || undefined"
-              @pointerdown="onFrameDown"
-              @pointermove="onFrameMove"
-              @pointerup="onFrameUp"
-              @pointercancel="onFrameUp"
-              @keydown="onFrameKey"
-            />
-            <button v-if="editForm.focus.x !== 50 || editForm.focus.y !== 50" type="button" class="link" @click="editForm.focus = { x: 50, y: 50 }">Centre it</button>
+              @pointerdown="onDotDown"
+              @pointermove="onDotMove"
+              @pointerup="onDotUp"
+              @pointercancel="onDotUp"
+              @keydown="onDotKey"
+            >
+              <img :src="framePhoto" alt="" draggable="false" referrerpolicy="no-referrer">
+              <span class="focus-dot" :style="{ left: `${editForm.focus.x}%`, top: `${editForm.focus.y}%` }" aria-hidden="true" />
+            </div>
+            <div class="frame-side">
+              <!-- What the cards will show -->
+              <div class="photo-frame" :style="frameStyle || undefined" aria-hidden="true" />
+              <button v-if="editForm.focus.x !== 50 || editForm.focus.y !== 50" type="button" class="link" @click="editForm.focus = { x: 50, y: 50 }">Centre it</button>
+            </div>
           </div>
         </div>
         <label class="field">
@@ -1311,29 +1301,63 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
   flex: none;
 }
 
-.photo-frame {
-  width: min(14rem, 100%);
-  aspect-ratio: 1; /* the same square as the cards */
-  background: var(--surface-2) center / cover no-repeat;
-  border-radius: var(--radius-lg);
-  outline: 1px solid rgb(0 0 0 / 0.1);
-  outline-offset: -1px;
-  cursor: grab;
+.focus-pick {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  width: fit-content; /* hugs the photo, so a click's place in the box is its place on the photo */
+  cursor: crosshair;
   touch-action: none;
+  border-radius: var(--radius-lg);
 }
 
-.photo-frame:active {
-  cursor: grabbing;
+.focus-pick img {
+  display: block;
+  max-width: 100%;
+  max-height: 16rem;
+  border-radius: var(--radius-lg);
+  user-select: none;
+  pointer-events: none;
 }
 
-.photo-frame:focus-visible {
+.focus-pick:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 
+/* The chosen spot: a white ring that reads on light and dark photos */
+.focus-dot {
+  position: absolute;
+  width: 1.1rem;
+  height: 1.1rem;
+  translate: -50% -50%;
+  background: var(--accent);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35), 0 2px 6px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}
+
+.frame-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.photo-frame {
+  width: 6rem;
+  aspect-ratio: 1; /* the same square as the cards */
+  background: var(--surface-2) center / cover no-repeat;
+  border-radius: var(--radius-sm);
+  outline: 1px solid rgb(0 0 0 / 0.1);
+  outline-offset: -1px;
+}
+
 .frame-row {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 1rem;
 }
 
