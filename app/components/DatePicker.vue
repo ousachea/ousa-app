@@ -8,6 +8,8 @@ import { toast } from 'vue-sonner'
 // when you paste or leave it); the calendar button beside it still opens the picker
 const props = defineProps<{ min?: string, max?: string, required?: boolean, ariaLabel?: string, placeholder?: string, typed?: boolean }>()
 const model = defineModel<string>({ default: '' })
+// typed: the text a date was typed or pasted as, once it's read (Days' Formats tab shows which format it was)
+const emit = defineEmits<{ entered: [text: string, date: string] }>()
 defineOptions({ inheritAttrs: false })
 
 const uid = useId()
@@ -34,17 +36,23 @@ const label = computed(() => {
 })
 
 // ---------- Copy and paste ----------
-// Reads a date however it was written: 2026-10-28, 28/10/2026 (day first), 28 Oct 2026, Oct 28, 2026,
-// "Wed 28 Oct 2026" (what Copy gives), with or without the weekday. Two-digit years are 20xx.
+// Reads a date however it was written: 2026-10-28, 28/10/2026 (day first, or month first when the
+// first number can't be a month), 20261028, 28 Oct 2026, Oct 28, 2026, "Wed 28 Oct 2026", with or
+// without the weekday, and in Khmer (ទី២៨ ខែតុលា ឆ្នាំ២០២៦). Two-digit years are 20xx.
 const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 function readDate(text: string) {
-  const t = text.trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ')
+  const t = fromKmDigits(text).trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ')
   const year = (y: string) => (y.length === 2 ? 2000 + Number(y) : Number(y))
   const month = (name: string) => MONTH_NAMES.indexOf(name.slice(0, 3)) + 1
   let y = 0, m = 0, d = 0
   let r: RegExpMatchArray | null
-  if ((r = t.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/))) [y, m, d] = [Number(r[1]), Number(r[2]), Number(r[3])]
-  else if ((r = t.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/))) [d, m, y] = [Number(r[1]), Number(r[2]), year(r[3]!)]
+  if ((r = t.match(/ទី\s*(\d{1,2})\s*ខែ\s*(\S+?)\s*ឆ្នាំ\s*(\d{4})/))) [d, m, y] = [Number(r[1]), KM_MONTHS.indexOf(r[2]!) + 1, Number(r[3])]
+  else if ((r = t.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/))) [y, m, d] = [Number(r[1]), Number(r[2]), Number(r[3])]
+  else if ((r = t.match(/^(\d{4})(\d{2})(\d{2})$/))) [y, m, d] = [Number(r[1]), Number(r[2]), Number(r[3])]
+  else if ((r = t.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/))) {
+    [d, m, y] = [Number(r[1]), Number(r[2]), year(r[3]!)]
+    if (m > 12 && d <= 12) [d, m] = [m, d] // 10/28/2026: month first
+  }
   else if ((r = t.match(/(\d{1,2})(?:st|nd|rd|th)? ([a-z]{3,}) (\d{2,4})/))) [d, m, y] = [Number(r[1]), month(r[2]!), year(r[3]!)]
   else if ((r = t.match(/([a-z]{3,}) (\d{1,2})(?:st|nd|rd|th)? (\d{2,4})/))) [m, d, y] = [month(r[1]!), Number(r[2]), year(r[3]!)]
   if (!y || m < 1 || m > 12 || d < 1) return undefined
@@ -87,6 +95,7 @@ function tidy() {
   }
   invalid.value = false
   model.value = s
+  if (raw !== label.value) emit('entered', raw, s)
   text.value = label.value
 }
 function onPaste() {

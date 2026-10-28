@@ -140,6 +140,8 @@ function flip() {
 
 // ---------- Formats: one date written the common ways, each with what it's called ----------
 const formatDate = ref(today)
+// What the date was typed or pasted as, so its format can be picked out below
+const entered = ref<{ text: string, date: string }>()
 const formats = computed(() => {
   if (!isIsoDate(formatDate.value)) return undefined
   const [y, m, d] = formatDate.value.split('-').map(Number) as [number, number, number]
@@ -167,6 +169,26 @@ const formats = computed(() => {
     { name: 'Day of the year', note: 'Ordinal date', value: `Day ${dayOfYear} of ${yearDays} (${y}-${String(dayOfYear).padStart(3, '0')})` },
     { name: 'Unix time', note: 'Seconds since 1 Jan 1970, at midnight your time', value: String(date.getTime() / 1000) }
   ]
+})
+
+// The format the date came in as: the one it matches exactly (ignoring case, commas and spaces), else the
+// closest by its shape. Only while the date is still the one that was entered.
+const squash = (t: string) => t.toLowerCase().replace(/[,\s]+/g, ' ').replace(/(\d)(st|nd|rd|th)\b/g, '$1').trim()
+const enteredFormat = computed(() => {
+  const e = entered.value
+  if (!e || e.date !== formatDate.value || !formats.value) return undefined
+  const t = squash(e.text)
+  const exact = formats.value.find(f => squash(f.value) === t)
+  if (exact) return exact.name
+  if (/[\u1780-\u17ff]/.test(t)) return 'Khmer'
+  if (/^\d{8}$/.test(t)) return 'Compact'
+  if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/.test(t)) return 'ISO 8601'
+  const num = t.match(/^(\d{1,2})[-/.](\d{1,2})[-/.]\d{2,4}$/)
+  if (num) return Number(num[2]) > 12 ? 'Month/day/year' : 'Day/month/year'
+  if (/^[a-z]+ \d{1,2} [a-z]+/.test(t) || /^\d{1,2} [a-z]{4,} /.test(t)) return 'Long date'
+  if (/^[a-z]+ \d/.test(t)) return 'US long date'
+  if (/^\d{1,2} [a-z]/.test(t)) return 'Short date'
+  return undefined
 })
 
 async function copy(text: string) {
@@ -227,7 +249,7 @@ async function copy(text: string) {
         <template v-else-if="tab === 'formats'">
           <label class="field">
             Date
-            <DatePicker v-model="formatDate" aria-label="Date" typed />
+            <DatePicker v-model="formatDate" aria-label="Date" typed @entered="(text, date) => (entered = { text, date })" />
           </label>
           <div class="chips">
             <button type="button" class="btn btn-quiet btn-sm" @click="formatDate = today; play('select')">Today</button>
@@ -349,8 +371,8 @@ async function copy(text: string) {
         <template v-else-if="tab === 'formats' && formats">
           <p class="label">The same date, written different ways</p>
           <dl class="formats">
-            <div v-for="f in formats" :key="f.name">
-              <dt>{{ f.name }}<small>{{ f.note }}</small></dt>
+            <div v-for="f in formats" :key="f.name" :class="{ pasted: f.name === enteredFormat }">
+              <dt>{{ f.name }}<small>{{ f.note }}</small><span v-if="f.name === enteredFormat" class="pasted-tag">Your format</span></dt>
               <dd :lang="f.km ? 'km' : undefined" :class="{ km: f.km }">{{ f.value }}</dd>
               <button type="button" class="btn btn-quiet btn-sm" :aria-label="`Copy the ${f.name} format`" @click="copy(f.value)">Copy</button>
             </div>
@@ -510,6 +532,25 @@ async function copy(text: string) {
   margin-left: 0.5rem;
   font-weight: 400;
   color: var(--ink-3);
+}
+
+.formats .pasted {
+  margin-inline: -0.75rem;
+  padding-inline: 0.75rem;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-top-color: transparent;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.pasted-tag {
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--on-accent, #fff);
+  background: var(--accent);
+  border-radius: var(--radius-pill);
 }
 
 .formats dd {
