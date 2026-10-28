@@ -55,14 +55,10 @@ function openSaver() {
   play('open')
 }
 
-// Written out by hand: not every browser ships Khmer locale data for Intl
-const KM_DAYS = ['អាទិត្យ', 'ច័ន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍']
-const KM_MONTHS = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
-const kmDigits = (n: number) => String(n).replace(/\d/g, d => '០១២៣៤៥៦៧៨៩'[+d]!)
 const todayKhmer = computed(() => {
   // Shift to UTC+7 (Cambodia has no daylight saving) and read the fields in UTC
   const d = new Date(now.value + 7 * 3_600_000)
-  return `ថ្ងៃ${KM_DAYS[d.getUTCDay()]} ទី${kmDigits(d.getUTCDate())} ខែ${KM_MONTHS[d.getUTCMonth()]} ឆ្នាំ${kmDigits(d.getUTCFullYear())}`
+  return khmerDate(d.getUTCDay(), d.getUTCDate(), d.getUTCMonth(), d.getUTCFullYear())
 })
 
 // Public holidays (useHolidays): fetched fresh, or the last list this device saw when offline

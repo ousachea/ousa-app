@@ -4,13 +4,14 @@ import { toast } from 'vue-sonner'
 // Calendar date picker in the app's own style, replacing <input type="date">. Works with yyyy-mm-dd strings.
 // Click the month to jump by month or year. Keyboard: arrows move a day or week, Page Up/Down a month,
 // Enter picks, Esc closes.
-// clipboard: Copy and Paste buttons beside it (and Ctrl/⌘ C and V while it has focus)
-const props = defineProps<{ min?: string, max?: string, required?: boolean, ariaLabel?: string, placeholder?: string, clipboard?: boolean }>()
+// typed: a text box instead of a button, so a date can be typed or pasted in any common format (tidied
+// when you paste or leave it); the calendar button beside it still opens the picker
+const props = defineProps<{ min?: string, max?: string, required?: boolean, ariaLabel?: string, placeholder?: string, typed?: boolean }>()
 const model = defineModel<string>({ default: '' })
 defineOptions({ inheritAttrs: false })
 
 const uid = useId()
-const trigger = ref<HTMLButtonElement>()
+const trigger = ref<HTMLElement>()
 const panel = ref<HTMLDivElement>()
 const { open, placement, show, hide } = useAnchoredPopover(trigger, panel)
 const { play } = useSound()
@@ -51,40 +52,48 @@ function readDate(text: string) {
   return date.getMonth() === m - 1 ? iso(date) : undefined // 31/02 isn't a date
 }
 
-async function copyDate(e?: ClipboardEvent) {
-  if (!label.value) return
-  try {
-    if (e?.clipboardData) e.clipboardData.setData('text/plain', label.value)
-    else await navigator.clipboard.writeText(label.value)
-    toast.success(`Copied ${label.value}`)
-    play('success')
-  } catch {
-    toast.error('Couldn’t copy the date')
-  }
-}
+// ---------- Typing or pasting (typed) ----------
+const text = ref('')
+const textInput = ref<HTMLInputElement>()
+const invalid = ref(false)
+// Shows the date tidily, except while you're typing in it
+watch(label, (v) => {
+  if (document.activeElement !== textInput.value) text.value = v
+  invalid.value = false
+}, { immediate: import.meta.client })
+onMounted(() => (text.value = label.value))
 
-function useText(text: string) {
-  const s = readDate(text)
-  if (!s) {
-    toast.error('That isn’t a date', { description: `Couldn’t read a date from “${text.trim().slice(0, 40)}”.` })
-    play('error')
-  } else if (!inRange(s)) {
-    toast.error('That date is out of range')
-    play('error')
-  } else {
-    model.value = s
-    play('drop')
-  }
+// While typing: the date takes effect as soon as it reads as one, without reformatting under the cursor
+function onType() {
+  const s = readDate(text.value)
+  invalid.value = false
+  if (s && inRange(s)) model.value = s
 }
-
-async function pasteDate(e?: ClipboardEvent) {
-  const fromEvent = e?.clipboardData?.getData('text/plain')
-  if (fromEvent !== undefined) return useText(fromEvent)
-  try {
-    useText(await navigator.clipboard.readText())
-  } catch {
-    toast.error('Couldn’t read the clipboard', { description: 'Allow clipboard access, or press Ctrl+V (⌘V) on the date instead.' })
+// Pasting or leaving the box: read it, then show it the tidy way; an empty box clears the date
+function tidy() {
+  const raw = text.value.trim()
+  if (!raw) {
+    if (!props.required) model.value = ''
+    text.value = label.value
+    return
   }
+  const s = readDate(raw)
+  if (!s || !inRange(s)) {
+    invalid.value = true
+    if (!s) toast.error('That isn’t a date', { description: `Couldn’t read a date from “${raw.slice(0, 40)}”. Try 28/10/2026 or 28 Oct 2026.` })
+    else toast.error('That date is out of range')
+    play('error')
+    return
+  }
+  invalid.value = false
+  model.value = s
+  text.value = label.value
+}
+function onPaste() {
+  nextTick(() => {
+    tidy()
+    if (!invalid.value) play('drop')
+  })
 }
 
 const inRange = (s: string) => (!props.min || s >= props.min) && (!props.max || s <= props.max)
@@ -216,7 +225,37 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
 
 <template>
   <div class="date-picker" data-validate-target v-bind="$attrs">
+    <div v-if="typed" ref="trigger" class="input text-field" :class="{ open, invalid }">
+      <input
+        ref="textInput"
+        v-model="text"
+        class="text-input"
+        type="text"
+        inputmode="text"
+        autocomplete="off"
+        spellcheck="false"
+        :placeholder="placeholder ?? 'dd/mm/yyyy or 28 Oct 2026'"
+        :aria-label="ariaLabel ?? 'Date'"
+        :aria-invalid="invalid || undefined"
+        @input="onType"
+        @paste="onPaste"
+        @blur="tidy"
+        @keydown.enter.prevent="tidy"
+      >
+      <button
+        type="button"
+        class="cal-btn"
+        aria-haspopup="dialog"
+        :aria-expanded="open"
+        :aria-controls="`${uid}-panel`"
+        :aria-label="`Choose ${ariaLabel ?? 'a date'} on a calendar`"
+        @click="open ? close() : openPicker()"
+      >
+        <AppIcon class="icon" name="calendar" />
+      </button>
+    </div>
     <button
+      v-else
       ref="trigger"
       type="button"
       class="input trigger"
@@ -226,18 +265,12 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
       :aria-controls="`${uid}-panel`"
       :aria-label="`${ariaLabel ?? 'Date'}: ${label || placeholder || 'Pick a date'}`"
       @click="open ? close() : openPicker()"
-      @copy="clipboard && ($event.preventDefault(), copyDate($event))"
-      @paste="clipboard && ($event.preventDefault(), pasteDate($event))"
     >
       <AppIcon class="icon" name="calendar" />
       <span class="value">{{ label || placeholder || 'Pick a date' }}</span>
     </button>
-    <span v-if="clipboard" class="clip">
-      <button type="button" class="clip-btn" :disabled="!label" :aria-label="`Copy ${ariaLabel ?? 'the date'}`" title="Copy" @click="copyDate()"><AppIcon name="copy" /></button>
-      <button type="button" class="clip-btn" :aria-label="`Paste into ${ariaLabel ?? 'the date'}`" title="Paste" @click="pasteDate()"><AppIcon name="clipboard-paste" /></button>
-    </span>
     <!-- Keeps the browser's "please fill in this field" check for required dates -->
-    <input v-if="required" ref="validateInput" class="validate" :value="model" required data-error="Pick a date" tabindex="-1" aria-hidden="true" @focus="trigger?.focus()">
+    <input v-if="required" ref="validateInput" class="validate" :value="model" required data-error="Pick a date" tabindex="-1" aria-hidden="true" @focus="(textInput ?? trigger)?.focus()">
 
     <div
       :id="`${uid}-panel`"
@@ -324,13 +357,54 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
   min-width: 0;
 }
 
-.date-picker:has(.clip) {
+.text-field {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  padding-block: 0;
+  padding-inline-end: 0.3rem;
 }
 
-.date-picker:has(.clip) .trigger {
+.text-field:focus-within,
+.text-field.open {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.text-field.invalid {
+  border-color: var(--red);
+}
+
+.text-input {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  background: none;
+  border: 0;
+  outline: none;
+}
+
+.cal-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.cal-btn:hover {
+  background: var(--surface-2);
+}
+
+.trigger {
   flex: 1;
   min-width: 0;
 }

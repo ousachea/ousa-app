@@ -6,11 +6,12 @@ const route = useRoute()
 const router = useRouter()
 const { play } = useSound()
 
-type Tab = 'between' | 'add' | 'time'
+type Tab = 'between' | 'add' | 'time' | 'formats'
 const TABS: { value: Tab, label: string }[] = [
   { value: 'between', label: 'Days between' },
   { value: 'add', label: 'Add days' },
-  { value: 'time', label: 'Hours' }
+  { value: 'time', label: 'Hours' },
+  { value: 'formats', label: 'Formats' }
 ]
 type Unit = 'days' | 'weeks' | 'months' | 'years' | 'workdays'
 const UNITS: { value: Unit, label: string }[] = [
@@ -137,6 +138,37 @@ function flip() {
   play('select')
 }
 
+// ---------- Formats: one date written the common ways, each with what it's called ----------
+const formatDate = ref(today)
+const formats = computed(() => {
+  if (!isIsoDate(formatDate.value)) return undefined
+  const [y, m, d] = formatDate.value.split('-').map(Number) as [number, number, number]
+  const date = new Date(y, m - 1, d)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const en = (o: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-GB', o)
+  const us = (o: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-US', o)
+  // ISO week: the week (Monday first) holding the year's first Thursday is week 1
+  const thursday = new Date(y, m - 1, d + 3 - ((date.getDay() + 6) % 7))
+  const weekYear = thursday.getFullYear()
+  const jan4 = new Date(weekYear, 0, 4)
+  const week = 1 + Math.round(((thursday.getTime() - jan4.getTime()) / 86_400_000 - 3 + ((jan4.getDay() + 6) % 7)) / 7)
+  const dayOfYear = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 1)) / 86_400_000) + 1
+  const yearDays = new Date(y, 1, 29).getDate() === 29 ? 366 : 365
+  return [
+    { name: 'ISO 8601', note: 'International standard; sorts correctly', value: formatDate.value },
+    { name: 'Day/month/year', note: 'Cambodia, the UK and most of the world', value: `${pad(d)}/${pad(m)}/${y}` },
+    { name: 'Month/day/year', note: 'The United States', value: `${pad(m)}/${pad(d)}/${y}` },
+    { name: 'Short date', note: 'Day, short month, year', value: en({ day: 'numeric', month: 'short', year: 'numeric' }) },
+    { name: 'Long date', note: 'With the weekday, written in full', value: en({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) },
+    { name: 'US long date', note: 'Month first, with a comma', value: us({ month: 'long', day: 'numeric', year: 'numeric' }) },
+    { name: 'Khmer', note: 'ថ្ងៃខែឆ្នាំ in Khmer script and digits', value: khmerDate(date.getDay(), d, m - 1, y), km: true },
+    { name: 'Compact', note: 'ISO basic format, for file names', value: `${y}${pad(m)}${pad(d)}` },
+    { name: 'ISO week date', note: 'Year, week number and weekday (1 = Monday)', value: `${weekYear}-W${pad(week)}-${(date.getDay() + 6) % 7 + 1}` },
+    { name: 'Day of the year', note: 'Ordinal date', value: `Day ${dayOfYear} of ${yearDays} (${y}-${String(dayOfYear).padStart(3, '0')})` },
+    { name: 'Unix time', note: 'Seconds since 1 Jan 1970, at midnight your time', value: String(date.getTime() / 1000) }
+  ]
+})
+
 async function copy(text: string) {
   try {
     await navigator.clipboard.writeText(text)
@@ -179,16 +211,26 @@ async function copy(text: string) {
         <template v-if="tab === 'between'">
           <label class="field">
             From
-            <DatePicker v-model="from" aria-label="From" clipboard />
+            <DatePicker v-model="from" aria-label="From" typed />
           </label>
           <button type="button" class="btn btn-quiet btn-sm swap" aria-label="Swap the two dates" @click="flip">⇅ Swap</button>
           <label class="field">
             To
-            <DatePicker v-model="to" aria-label="To" clipboard />
+            <DatePicker v-model="to" aria-label="To" typed />
           </label>
           <div class="chips">
             <button type="button" class="btn btn-quiet btn-sm" @click="from = today; play('select')">From today</button>
             <button type="button" class="btn btn-quiet btn-sm" @click="to = `${today.slice(0, 4)}-12-31`; play('select')">To the end of the year</button>
+          </div>
+        </template>
+
+        <template v-else-if="tab === 'formats'">
+          <label class="field">
+            Date
+            <DatePicker v-model="formatDate" aria-label="Date" typed />
+          </label>
+          <div class="chips">
+            <button type="button" class="btn btn-quiet btn-sm" @click="formatDate = today; play('select')">Today</button>
           </div>
         </template>
 
@@ -242,7 +284,7 @@ async function copy(text: string) {
         <template v-else>
           <label class="field">
             Start date
-            <DatePicker v-model="start" aria-label="Start date" clipboard />
+            <DatePicker v-model="start" aria-label="Start date" typed />
           </label>
           <div class="segmented" role="radiogroup" aria-label="Add or subtract">
             <label v-for="s in [1, -1] as const" :key="s" :class="{ active: sign === s }">
@@ -302,6 +344,17 @@ async function copy(text: string) {
           <p class="big"><output>{{ timeAdded.time }}</output></p>
           <p class="note">{{ timeStart }} {{ timeAdded.n < 0 ? '−' : '+' }} {{ fmtDuration(Math.abs(timeAdded.n)) }}</p>
           <button type="button" class="btn copy" @click="copy(timeAdded.time)">Copy</button>
+        </template>
+
+        <template v-else-if="tab === 'formats' && formats">
+          <p class="label">The same date, written different ways</p>
+          <dl class="formats">
+            <div v-for="f in formats" :key="f.name">
+              <dt>{{ f.name }}<small>{{ f.note }}</small></dt>
+              <dd :lang="f.km ? 'km' : undefined" :class="{ km: f.km }">{{ f.value }}</dd>
+              <button type="button" class="btn btn-quiet btn-sm" :aria-label="`Copy the ${f.name} format`" @click="copy(f.value)">Copy</button>
+            </div>
+          </dl>
         </template>
 
         <p v-else class="note">{{ tab === 'time' ? 'Pick a time to see the result.' : 'Pick a date to see the result.' }}</p>
@@ -430,6 +483,45 @@ async function copy(text: string) {
   margin: 0;
   font-weight: 600;
   text-align: right;
+}
+
+.formats {
+  display: grid;
+  margin: 0;
+}
+
+.formats div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  padding-block: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.formats dt {
+  grid-column: 1 / -1;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.formats dt small {
+  margin-left: 0.5rem;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.formats dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.formats .km {
+  font-family: 'Noto Sans Khmer', var(--font);
+  line-height: 1.6;
 }
 
 .note {
