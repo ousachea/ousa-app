@@ -121,7 +121,7 @@ export function withTimeout<T>(promise: Promise<T>, ms = 10_000) {
 }
 
 // Rules to publish once in the Firebase console: each signed-in user reads and writes only their own data,
-// and shared bookmark folders (shares/<id>) can be read by anyone with the link
+// shared bookmark folders (shares/<id>) can be read by anyone with the link, and so can Eat's shared foods
 export const FIRESTORE_RULES = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -134,6 +134,29 @@ service cloud.firestore {
       allow update: if request.auth != null && resource.data.owner == request.auth.uid
         && request.resource.data.owner == request.auth.uid;
       allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+    }
+    // Eat's shared foods (/eat): anyone can read them; a signed-in person adds their own, and only they
+    // (or the site owner's account, which can take anything down) can change or delete it
+    match /eatShared/{id} {
+      function validSpot(d) {
+        return d.keys().hasOnly(['name', 'nameKm', 'kind', 'note', 'price', 'image', 'focus', 'owner', 'createdAt'])
+          && d.name is string && d.name.size() > 0 && d.name.size() <= 120
+          && (!('nameKm' in d) || (d.nameKm is string && d.nameKm.size() <= 120))
+          && (!('note' in d) || (d.note is string && d.note.size() <= 300))
+          && d.kind in ['food', 'place'] && d.price in [1, 2, 3]
+          && d.image is string && d.image.size() <= 400000
+          && (!('focus' in d) || (d.focus is string && d.focus.size() <= 20));
+      }
+      function siteOwner() {
+        return request.auth != null && request.auth.token.email == 'ousauser@gmail.com'
+          && request.auth.token.email_verified == true;
+      }
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.owner == request.auth.uid
+        && validSpot(request.resource.data);
+      allow update: if request.auth != null && resource.data.owner == request.auth.uid
+        && request.resource.data.owner == request.auth.uid && validSpot(request.resource.data);
+      allow delete: if request.auth != null && (resource.data.owner == request.auth.uid || siteOwner());
     }
   }
 }`

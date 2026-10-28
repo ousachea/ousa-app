@@ -34,6 +34,101 @@ const { play } = useSound()
 const DEMO = (): Omit<Spot, 'id'>[] => PUBLISHED.map(s => ({ ...s }))
 const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Spot>('eat', SEED, { demo: DEMO })
 
+// ---------- Shared with everyone ----------
+// Every signed-in person's foods that have a photo are copied to eatShared/<id> in Firestore, which anyone
+// can read, so they join everyone's deck straight away. Each copy keeps its owner: they can change or
+// delete it, and so can the site owner's account (firestore.rules). Kept in step with your own list by
+// shareMine, so adding, editing and deleting anywhere (Recycle Bin, other devices) carries over.
+interface SharedSpot extends Omit<Spot, 'lastEaten'> { owner: string }
+const shared = ref<SharedSpot[]>([])
+const sharedReady = ref(false)
+const myUid = ref<string>()
+// The same account firestore.rules lets take things down
+const ownerEmail = ((useRuntimeConfig().public.ownerEmail as string | undefined)?.trim() || 'ousauser@gmail.com').toLowerCase()
+const isSiteOwner = ref(false)
+const SHARED_FIELDS = ['name', 'nameKm', 'kind', 'note', 'price', 'image', 'focus'] as const
+const shareable = (s: Spot) => Object.fromEntries(SHARED_FIELDS.filter(k => s[k] !== undefined && s[k] !== '').map(k => [k, s[k]]))
+
+let stopShared: (() => void) | undefined
+let left = false
+onMounted(() => {
+  if (!firebaseConfigured()) return
+  loadFirebase().then(({ db, auth, sdk }) => {
+    if (left) return
+    const off = sdk.onSnapshot(sdk.query(sdk.collection(db, 'eatShared'), sdk.orderBy('createdAt', 'desc'), sdk.limit(300)), (snap) => {
+      shared.value = snap.docs.map(d => ({ ...(d.data() as Omit<SharedSpot, 'id'>), id: d.id }))
+      sharedReady.value = true
+    }, (e) => console.warn('Shared foods unavailable', e))
+    const offAuth = sdk.onAuthStateChanged(auth, (user) => {
+      myUid.value = user?.uid
+      isSiteOwner.value = !!user?.email && user.email.toLowerCase() === ownerEmail && user.emailVerified
+    })
+    stopShared = () => {
+      off()
+      offAuth()
+    }
+  }).catch(() => {})
+})
+onBeforeUnmount(() => {
+  left = true
+  stopShared?.()
+})
+
+// Puts your foods with photos into the shared list, changes them there when they change here, and takes
+// them out when they're deleted here or lose their photo. Only once both lists have loaded.
+const writing = new Set<string>()
+async function shareMine() {
+  const uid = myUid.value
+  if (!uid || !ready.value || !sharedReady.value || sync.state.value === 'demo' || sync.state.value === 'device') return
+  const fb = firebaseNow()
+  if (!fb) return
+  const { db, sdk } = fb
+  const mine = new Map(items.value.filter(s => s.image).map(s => [s.id, s]))
+  const there = new Map(shared.value.filter(s => s.owner === uid).map(s => [s.id, s]))
+  const jobs: Promise<unknown>[] = []
+  for (const [id, s] of mine) {
+    const want = shareable(s)
+    const have = there.get(id)
+    const same = have && SHARED_FIELDS.every(k => (have[k] ?? '') === (want[k] ?? ''))
+    if (same || writing.has(id)) continue
+    writing.add(id)
+    jobs.push(sdk.setDoc(sdk.doc(db, 'eatShared', id), { ...want, owner: uid, createdAt: have ? (have as { createdAt?: unknown }).createdAt ?? sdk.serverTimestamp() : sdk.serverTimestamp() })
+      .catch(e => console.warn('Couldn’t share', s.name, e))
+      .finally(() => writing.delete(id)))
+  }
+  for (const id of there.keys()) {
+    if (mine.has(id) || writing.has(id)) continue
+    writing.add(id)
+    jobs.push(sdk.deleteDoc(sdk.doc(db, 'eatShared', id)).catch(e => console.warn('Couldn’t unshare', e)).finally(() => writing.delete(id)))
+  }
+  await Promise.all(jobs)
+}
+watch([items, shared, myUid, ready, sharedReady], () => void shareMine(), { deep: true })
+
+// Others' shared foods: in the deck alongside yours (or, signed out, alongside the published list)
+const others = computed(() => {
+  const own = new Set(items.value.map(s => s.id))
+  return shared.value.filter(s => s.owner !== myUid.value && !own.has(s.id)) as Spot[]
+})
+const pool = computed(() => [...items.value, ...others.value])
+const isMine = (s: Spot) => items.value.some(i => i.id === s.id)
+
+// The site owner can take down anything shared
+async function takeDown(s: Spot) {
+  const fb = firebaseNow()
+  if (!fb) return
+  try {
+    await fb.sdk.deleteDoc(fb.sdk.doc(fb.db, 'eatShared', s.id))
+    deck.value = deck.value.filter(id => id !== s.id)
+    liked.value = liked.value.filter(id => id !== s.id)
+    toast.success(`${s.name} removed for everyone`)
+    play('delete')
+  } catch {
+    toast.error('Couldn’t remove it', { description: 'Check that the Firestore rules allow your account to.' })
+    play('error')
+  }
+}
+
 // Signed out, the published list is the real thing to choose from, not an example
 const exampleNote = PUBLISHED.length
   ? { title: 'Foods to choose from.', long: 'Swipe and pick as much as you like. Sign in to keep a list of your own; changes here aren’t saved.', short: 'Sign in to save your own.' }
@@ -91,15 +186,15 @@ const PHOTO_SIZE = 1200 // longest side
 
 // Shrink to WebP in the browser, so files stay small. The whole picture is kept (not cropped),
 // so which part shows in the square frames can be moved later (Edit → Position).
-async function shrinkPhoto(file: File) {
+async function shrinkPhoto(file: Blob, size = PHOTO_SIZE, quality = 0.82) {
   const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, PHOTO_SIZE / Math.max(bitmap.width, bitmap.height))
+  const scale = Math.min(1, size / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)
   canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
-  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.82))
+  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', quality))
   if (!blob) throw new Error('Could not prepare the photo')
   return blob
 }
@@ -146,8 +241,20 @@ function clearPhoto() {
   photo.value = undefined
 }
 
-// Saved into public/eat/ by a local-only server route, so the photo lives in the project for git
+// Running locally, saved into public/eat/ by a local-only server route, so the photo lives in the project
+// for git. On the site there's no folder to save into, so the photo is kept in the record itself as a
+// small data: URL (SHARED_PHOTO_SIZE), which also lets it be shared with everyone (shareMine, below).
+const SHARED_PHOTO_SIZE = 640
 async function uploadPhoto(blob: Blob) {
+  if (!import.meta.dev) {
+    const small = await shrinkPhoto(blob, SHARED_PHOTO_SIZE, 0.75)
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(small)
+    })
+  }
   const res = await $fetch<{ path: string }>('/api/eat-image', {
     method: 'POST',
     body: blob,
@@ -459,7 +566,7 @@ const inDeck = (s: Spot) => (filter.value === 'all' || s.kind === filter.value)
   && !(skipRecent.value && (daysSince(s) ?? Infinity) < RECENT_DAYS)
 
 function shuffle() {
-  const ids = items.value.filter(inDeck).map(s => s.id)
+  const ids = pool.value.filter(inDeck).map(s => s.id)
   for (let i = ids.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[ids[i], ids[j]] = [ids[j]!, ids[i]!]
@@ -486,7 +593,7 @@ function startOver() {
 // ---------- The result ----------
 // Let's eat: remembered on the item, so it shows "Had today" and sinks down the deck for a while
 function eatIt(spot: Spot) {
-  update(spot.id, { lastEaten: new Date().toISOString() }, { quiet: true })
+  if (isMine(spot)) update(spot.id, { lastEaten: new Date().toISOString() }, { quiet: true })
   // The result card shows the updated item (Had today)
   chosen.value = byId(spot.id) ?? spot
   ate.value = true
@@ -585,7 +692,16 @@ watch(demoActive, () => {
   shuffle()
 }, { flush: 'post' })
 
-const byId = (id?: string) => items.value.find(s => s.id === id)
+const byId = (id?: string) => pool.value.find(s => s.id === id)
+
+// Foods others share while you're here join the end of the deck
+watch(() => others.value.map(s => s.id), (ids, before) => {
+  const seen = new Set([...(before ?? []), ...deck.value])
+  for (const id of ids) {
+    const s = byId(id)
+    if (!seen.has(id) && s && inDeck(s)) deck.value.push(id)
+  }
+})
 const shortlist = computed(() => liked.value.map(id => byId(id)).filter((s): s is Spot => !!s))
 const current = computed(() => byId(deck.value[0]))
 
@@ -923,6 +1039,21 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
         </TransitionGroup>
         <p v-else-if="items.length" class="panel step-empty">Nothing matches{{ libQuery ? ` “${libQuery}”` : '' }}. <button type="button" class="link" @click="libQuery = ''; libKind = 'all'">Show everything</button></p>
         <p v-else class="panel step-empty">Add a few foods or places and they’ll show here, and in the deck.</p>
+        <!-- Everyone else's shared foods: in the deck too; the site owner can take any of them down -->
+        <template v-if="others.length">
+          <h3 class="others-head">Shared by others <span class="optional">{{ others.length }}</span></h3>
+          <ul class="thumbs">
+            <li v-for="s in others" :key="s.id" class="thumb" :data-kind="s.kind">
+              <span class="thumb-img" :style="photoStyle(s)" aria-hidden="true" />
+              <span class="thumb-name">{{ s.name }}</span>
+              <span v-if="s.nameKm" class="thumb-name-km" lang="km">{{ s.nameKm }}</span>
+              <span class="thumb-meta">{{ priceText(s.price) }}</span>
+              <span v-if="isSiteOwner" class="thumb-links">
+                <button type="button" class="link" :aria-label="`Remove ${s.name} for everyone`" @click="takeDown(s)">Remove</button>
+              </span>
+            </li>
+          </ul>
+        </template>
       </ClientOnly>
     </Step>
 
@@ -975,7 +1106,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
           <button type="submit" class="btn" :disabled="saving">{{ saving && !editingId ? 'Saving photo…' : 'Add' }}</button>
           <button type="button" class="btn btn-quiet" @click="closeAdd">Cancel</button>
         </div>
-        <p class="hint">A photo link works anywhere and syncs with the item. Picked photos are saved to <code>public/eat/</code> in this project so you can commit them, which only works while running the app locally.</p>
+        <p class="hint">A photo link works anywhere and syncs with the item. Signed in, foods with a photo are shared, so everyone sees them in their deck.</p>
       </form>
     </Modal>
     <Modal :open="!!editingId" :title="editingSpot ? `Edit ${editingSpot.name}` : 'Edit'" @close="cancelEdit">
@@ -1392,6 +1523,13 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.others-head {
+  margin: 1.6rem 0 0.8rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink-2);
 }
 
 .add-photos {

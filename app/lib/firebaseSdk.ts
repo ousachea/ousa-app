@@ -10,5 +10,5 @@ export {
 } from 'firebase/auth'
 export {
   addDoc, collection, connectFirestoreEmulator, deleteDoc, doc, getDocFromServer, getDocsFromServer, initializeFirestore,
-  limit, onSnapshot, query, runTransaction, serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch
+  limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch
 } from 'firebase/firestore'
