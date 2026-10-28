@@ -1,1 +1,48 @@
-[]
+[
+  {
+    "name": "Fish amok",
+    "nameKm": "អាម៉ុកត្រី",
+    "kind": "food",
+    "note": "Steamed curry in banana leaf",
+    "price": 2,
+    "image": "/eat/56bf893a-3739-415d-8a68-df663aa90b9e.webp"
+  },
+  {
+    "name": "Num banh chok",
+    "nameKm": "នំបញ្ចុក",
+    "kind": "food",
+    "note": "Rice noodles with green curry",
+    "price": 1,
+    "image": "/eat/687895ff-f5b4-40cf-ab36-7f65ac4ff491.webp",
+    "focus": "50% 70%"
+  },
+  {
+    "name": "Beef lok lak",
+    "nameKm": "ឡុកឡាក់សាច់គោ",
+    "kind": "food",
+    "note": "With lime-pepper dip",
+    "price": 2,
+    "image": "/eat/6d049c7e-1230-4ab3-a55e-0d055903a3e5.webp"
+  },
+  {
+    "name": "Bai sach chrouk",
+    "nameKm": "បាយសាច់ជ្រូក",
+    "kind": "food",
+    "note": "Grilled pork and rice for breakfast",
+    "price": 1
+  },
+  {
+    "name": "Kuy teav",
+    "nameKm": "គុយទាវ",
+    "kind": "food",
+    "note": "Noodle soup",
+    "price": 1
+  },
+  {
+    "name": "Lort cha",
+    "nameKm": "លតឆា",
+    "kind": "food",
+    "note": "Stir-fried short noodles",
+    "price": 1
+  }
+]
