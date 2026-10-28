@@ -23,26 +23,5 @@
     "note": "With lime-pepper dip",
     "price": 2,
     "image": "/eat/6d049c7e-1230-4ab3-a55e-0d055903a3e5.webp"
-  },
-  {
-    "name": "Bai sach chrouk",
-    "nameKm": "បាយសាច់ជ្រូក",
-    "kind": "food",
-    "note": "Grilled pork and rice for breakfast",
-    "price": 1
-  },
-  {
-    "name": "Kuy teav",
-    "nameKm": "គុយទាវ",
-    "kind": "food",
-    "note": "Noodle soup",
-    "price": 1
-  },
-  {
-    "name": "Lort cha",
-    "nameKm": "លតឆា",
-    "kind": "food",
-    "note": "Stir-fried short noodles",
-    "price": 1
   }
 ]

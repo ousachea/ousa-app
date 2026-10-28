@@ -18,17 +18,9 @@ interface Spot {
 }
 
 // The list published from a local run (Publish, below): what everyone sees before signing in, and what
-// a new account starts from. Until something is published, the built-in examples stand in.
+// a new account starts from
 const PUBLISHED = published as Omit<Spot, 'id'>[]
-
-const SEED = (): Spot[] => (PUBLISHED.length ? PUBLISHED : [
-  { name: 'Fish amok', kind: 'food', note: 'Steamed curry in banana leaf', price: 2 },
-  { name: 'Bai sach chrouk', kind: 'food', note: 'Grilled pork and rice for breakfast', price: 1 },
-  { name: 'Beef lok lak', kind: 'food', note: 'With lime-pepper dip', price: 2 },
-  { name: 'Kuy teav', kind: 'food', note: 'Noodle soup', price: 1 },
-  { name: 'Num banh chok', kind: 'food', note: 'Rice noodles with green curry', price: 1 },
-  { name: 'Lort cha', kind: 'food', note: 'Stir-fried short noodles', price: 1 }
-] as Omit<Spot, 'id'>[]).map(s => ({ ...s, id: crypto.randomUUID() }))
+const SEED = (): Spot[] => PUBLISHED.map(s => ({ ...s, id: crypto.randomUUID() }))
 
 const FILTERS: { value: 'all' | Kind, label: string }[] = [
   { value: 'all', label: 'Everything' },
@@ -38,17 +30,8 @@ const FILTERS: { value: 'all' | Kind, label: string }[] = [
 const SWIPE_THRESHOLD = 110 // px of drag that counts as a decision
 
 const { play } = useSound()
-// Demo: a mix of dishes and places to swipe through
-const DEMO = (): Omit<Spot, 'id'>[] => (PUBLISHED.length ? PUBLISHED.map(s => ({ ...s })) : [
-  { name: 'Fish amok', kind: 'food', note: 'Steamed curry in banana leaf', price: 2 },
-  { name: 'Beef lok lak', kind: 'food', note: 'With lime-pepper dip', price: 2 },
-  { name: 'Kuy teav', kind: 'food', note: 'Noodle soup for breakfast', price: 1 },
-  { name: 'Bai sach chrouk', kind: 'food', note: 'Grilled pork and broken rice', price: 1 },
-  { name: 'Nom banh chok', kind: 'food', note: 'Rice noodles with green curry', price: 1 },
-  { name: 'Malis', kind: 'place', note: 'Khmer fine dining by the river', price: 3 },
-  { name: 'Brown Coffee', kind: 'place', note: 'Iced latte and a quiet corner', price: 2 },
-  { name: 'Night market noodle cart', kind: 'place', note: 'Open late, always busy', price: 1 }
-])
+// Demo: the published list too
+const DEMO = (): Omit<Spot, 'id'>[] => PUBLISHED.map(s => ({ ...s }))
 const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Spot>('eat', SEED, { demo: DEMO })
 
 // Signed out, the published list is the real thing to choose from, not an example
@@ -135,8 +118,26 @@ async function onPhotoPick(e: Event) {
     if (photo.value) URL.revokeObjectURL(photo.value.preview)
     photo.value = { blob, preview: URL.createObjectURL(blob) }
     play('drop')
+    if (canBulkPhotos && !form.name.trim()) fillFromPhoto(blob)
   } catch {
     toast.error('Couldn’t read that image')
+  }
+}
+
+// Fills only what's still empty, so nothing typed meanwhile is overwritten
+const naming = ref(false)
+async function fillFromPhoto(blob: Blob) {
+  naming.value = true
+  try {
+    const named = await namePhoto(blob)
+    if (photo.value?.blob !== blob) return
+    if (!form.name.trim()) Object.assign(form, { name: named.name, kind: named.kind, price: named.price })
+    if (!form.nameKm.trim()) form.nameKm = named.nameKm
+    if (!form.note.trim()) form.note = named.note
+  } catch (e) {
+    toast.error('Couldn’t name the photo', { description: nameError(e) })
+  } finally {
+    naming.value = false
   }
 }
 
@@ -316,6 +317,11 @@ const canBulkPhotos = import.meta.dev
 const bulkAdding = ref(false)
 const nameFromFile = (file: File) => file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Untitled'
 
+// Running locally, Claude names a photo: the dish (or place) in English and Khmer, a short note and a price
+type Named = Pick<Spot, 'name' | 'kind' | 'note' | 'price'> & { nameKm: string }
+const nameError = (e: unknown) => (e as { data?: { message?: string } }).data?.message ?? 'Naming it with Claude failed.'
+const namePhoto = (blob: Blob) => $fetch<Named>('/api/eat-name', { method: 'POST', body: blob, headers: { 'Content-Type': blob.type } })
+
 async function addPhotos(e: Event) {
   const input = e.target as HTMLInputElement
   const files = [...(input.files ?? [])].filter(f => f.type.startsWith('image/'))
@@ -324,10 +330,19 @@ async function addPhotos(e: Event) {
   bulkAdding.value = true
   const added: Spot[] = []
   let failed = 0
+  let unnamed: string | undefined // why naming failed, said once; those keep their file names
   for (const file of files) {
     try {
-      const image = await uploadPhoto(await shrinkPhoto(file))
-      const spot = add({ name: nameFromFile(file), kind: 'food', note: '', price: 1, image })
+      const blob = await shrinkPhoto(file)
+      const [image, named] = await Promise.all([
+        uploadPhoto(blob),
+        namePhoto(blob).catch((err) => {
+          unnamed = nameError(err)
+          return undefined
+        })
+      ])
+      const { nameKm, ...rest } = named ?? { name: nameFromFile(file), nameKm: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'] }
+      const spot = add({ ...rest, ...(nameKm ? { nameKm } : {}), image })
       deck.value.push(spot.id)
       added.push(spot)
     } catch {
@@ -337,7 +352,7 @@ async function addPhotos(e: Event) {
   bulkAdding.value = false
   if (added.length) {
     toast.success(`${added.length} ${added.length === 1 ? 'food' : 'foods'} added`, {
-      description: `${failed ? `${failed} couldn’t be saved. ` : ''}Photos saved to public/eat/. Commit them to keep them.`,
+      description: `${failed ? `${failed} couldn’t be saved. ` : ''}${unnamed ? `Some kept their file names: ${unnamed} ` : ''}Photos saved to public/eat/. Commit them to keep them.`,
       action: {
         label: 'Undo',
         onClick: () => {
@@ -928,7 +943,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
           <div class="form-fields">
             <label class="field">
               <span class="field-head">Name</span>
-              <input ref="nameField" v-model="form.name" class="input" :placeholder="form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required :data-error="form.kind === 'food' ? 'Name the food' : 'Name the place'">
+              <input ref="nameField" v-model="form.name" class="input" :placeholder="naming ? 'Naming the photo…' : form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required :data-error="form.kind === 'food' ? 'Name the food' : 'Name the place'">
             </label>
             <label class="field">
               <span class="field-head">Khmer name <span class="optional">Optional</span></span>
