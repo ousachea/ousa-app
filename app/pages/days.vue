@@ -179,12 +179,12 @@ async function copy(text: string) {
         <template v-if="tab === 'between'">
           <label class="field">
             From
-            <DatePicker v-model="from" aria-label="From" />
+            <DatePicker v-model="from" aria-label="From" clipboard />
           </label>
           <button type="button" class="btn btn-quiet btn-sm swap" aria-label="Swap the two dates" @click="flip">⇅ Swap</button>
           <label class="field">
             To
-            <DatePicker v-model="to" aria-label="To" />
+            <DatePicker v-model="to" aria-label="To" clipboard />
           </label>
           <div class="chips">
             <button type="button" class="btn btn-quiet btn-sm" @click="from = today; play('select')">From today</button>
@@ -242,7 +242,7 @@ async function copy(text: string) {
         <template v-else>
           <label class="field">
             Start date
-            <DatePicker v-model="start" aria-label="Start date" />
+            <DatePicker v-model="start" aria-label="Start date" clipboard />
           </label>
           <div class="segmented" role="radiogroup" aria-label="Add or subtract">
             <label v-for="s in [1, -1] as const" :key="s" :class="{ active: sign === s }">

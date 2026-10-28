@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { toast } from 'vue-sonner'
+
 // Calendar date picker in the app's own style, replacing <input type="date">. Works with yyyy-mm-dd strings.
 // Click the month to jump by month or year. Keyboard: arrows move a day or week, Page Up/Down a month,
 // Enter picks, Esc closes.
-const props = defineProps<{ min?: string, max?: string, required?: boolean, ariaLabel?: string, placeholder?: string }>()
+// clipboard: Copy and Paste buttons beside it (and Ctrl/⌘ C and V while it has focus)
+const props = defineProps<{ min?: string, max?: string, required?: boolean, ariaLabel?: string, placeholder?: string, clipboard?: boolean }>()
 const model = defineModel<string>({ default: '' })
 defineOptions({ inheritAttrs: false })
 
@@ -28,6 +31,61 @@ const label = computed(() => {
   const d = parse(model.value)
   return d ? d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : ''
 })
+
+// ---------- Copy and paste ----------
+// Reads a date however it was written: 2026-10-28, 28/10/2026 (day first), 28 Oct 2026, Oct 28, 2026,
+// "Wed 28 Oct 2026" (what Copy gives), with or without the weekday. Two-digit years are 20xx.
+const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+function readDate(text: string) {
+  const t = text.trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ')
+  const year = (y: string) => (y.length === 2 ? 2000 + Number(y) : Number(y))
+  const month = (name: string) => MONTH_NAMES.indexOf(name.slice(0, 3)) + 1
+  let y = 0, m = 0, d = 0
+  let r: RegExpMatchArray | null
+  if ((r = t.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/))) [y, m, d] = [Number(r[1]), Number(r[2]), Number(r[3])]
+  else if ((r = t.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/))) [d, m, y] = [Number(r[1]), Number(r[2]), year(r[3]!)]
+  else if ((r = t.match(/(\d{1,2})(?:st|nd|rd|th)? ([a-z]{3,}) (\d{2,4})/))) [d, m, y] = [Number(r[1]), month(r[2]!), year(r[3]!)]
+  else if ((r = t.match(/([a-z]{3,}) (\d{1,2})(?:st|nd|rd|th)? (\d{2,4})/))) [m, d, y] = [month(r[1]!), Number(r[2]), year(r[3]!)]
+  if (!y || m < 1 || m > 12 || d < 1) return undefined
+  const date = new Date(y, m - 1, d)
+  return date.getMonth() === m - 1 ? iso(date) : undefined // 31/02 isn't a date
+}
+
+async function copyDate(e?: ClipboardEvent) {
+  if (!label.value) return
+  try {
+    if (e?.clipboardData) e.clipboardData.setData('text/plain', label.value)
+    else await navigator.clipboard.writeText(label.value)
+    toast.success(`Copied ${label.value}`)
+    play('success')
+  } catch {
+    toast.error('Couldn’t copy the date')
+  }
+}
+
+function useText(text: string) {
+  const s = readDate(text)
+  if (!s) {
+    toast.error('That isn’t a date', { description: `Couldn’t read a date from “${text.trim().slice(0, 40)}”.` })
+    play('error')
+  } else if (!inRange(s)) {
+    toast.error('That date is out of range')
+    play('error')
+  } else {
+    model.value = s
+    play('drop')
+  }
+}
+
+async function pasteDate(e?: ClipboardEvent) {
+  const fromEvent = e?.clipboardData?.getData('text/plain')
+  if (fromEvent !== undefined) return useText(fromEvent)
+  try {
+    useText(await navigator.clipboard.readText())
+  } catch {
+    toast.error('Couldn’t read the clipboard', { description: 'Allow clipboard access, or press Ctrl+V (⌘V) on the date instead.' })
+  }
+}
 
 const inRange = (s: string) => (!props.min || s >= props.min) && (!props.max || s <= props.max)
 
@@ -168,10 +226,16 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
       :aria-controls="`${uid}-panel`"
       :aria-label="`${ariaLabel ?? 'Date'}: ${label || placeholder || 'Pick a date'}`"
       @click="open ? close() : openPicker()"
+      @copy="clipboard && ($event.preventDefault(), copyDate($event))"
+      @paste="clipboard && ($event.preventDefault(), pasteDate($event))"
     >
       <AppIcon class="icon" name="calendar" />
       <span class="value">{{ label || placeholder || 'Pick a date' }}</span>
     </button>
+    <span v-if="clipboard" class="clip">
+      <button type="button" class="clip-btn" :disabled="!label" :aria-label="`Copy ${ariaLabel ?? 'the date'}`" title="Copy" @click="copyDate()"><AppIcon name="copy" /></button>
+      <button type="button" class="clip-btn" :aria-label="`Paste into ${ariaLabel ?? 'the date'}`" title="Paste" @click="pasteDate()"><AppIcon name="clipboard-paste" /></button>
+    </span>
     <!-- Keeps the browser's "please fill in this field" check for required dates -->
     <input v-if="required" ref="validateInput" class="validate" :value="model" required data-error="Pick a date" tabindex="-1" aria-hidden="true" @focus="trigger?.focus()">
 
@@ -258,6 +322,50 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
 .date-picker {
   position: relative;
   min-width: 0;
+}
+
+.date-picker:has(.clip) {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.date-picker:has(.clip) .trigger {
+  flex: 1;
+  min-width: 0;
+}
+
+.clip {
+  flex: none;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.clip-btn {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.clip-btn:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.clip-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.clip-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .trigger {
