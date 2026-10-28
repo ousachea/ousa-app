@@ -21,13 +21,14 @@ export function useDemo() {
 
   // Locked: on, and nothing switches it off. Signing in brings your own data back.
   const gate = useSignInGate()
+  const gated = isGatedPage(path)
   watch(gate.state, (state, before) => {
-    if (state === 'locked') active.value = true
-    else if (state === 'open' && before === 'locked') active.value = false
+    if (state === 'locked' && gated) active.value = true
+    else if (state === 'open' && before === 'locked' && gated) active.value = false
   }, { immediate: true })
   // (supported goes false first when the page closes, so leaving still switches it off)
   watch(active, (on) => {
-    if (!on && supported.value && gate.state.value === 'locked') active.value = true
+    if (!on && supported.value && gated && gate.state.value === 'locked') active.value = true
   }, { flush: 'sync' })
 
   onBeforeUnmount(() => {

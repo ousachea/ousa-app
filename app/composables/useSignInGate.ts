@@ -13,4 +13,9 @@ export function useSignInGate() {
 
 /** Pages that keep your data out of sight while signed out: every app shows its example instead (ToolPage), and the Recycle Bin its sign-in wall. The CV is a public page with nothing saved. */
 export const isGatedPage = (path: string) =>
-  path === TRASH.to || [...TOOLS, ...TAB_PAGES].some(t => t.to === path && !t.readOnly)
+  !(import.meta.dev && DEV_OPEN.has(path))
+  && (path === TRASH.to || [...TOOLS, ...TAB_PAGES].some(t => t.to === path && !t.readOnly))
+
+// Open without signing in while running locally (npm run dev): Eat's photos are saved into the
+// project folder (server/api/eat-image), so the list is managed from here on this device
+const DEV_OPEN = new Set(['/eat'])

@@ -12,7 +12,9 @@ type Header = 'hero' | 'bar' | 'band' | 'none'
 
 // siteBar: false leaves out the app's top bar, for a page with a nav of its own (the CV)
 // settingsWide: a wider settings popup, for apps with many settings (Notes)
-const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header, siteBar?: boolean, settingsWide?: boolean }>(), { width: 'var(--page-width)', tool: undefined, header: 'hero', siteBar: true, settingsWide: false })
+// exampleNote: what the signed-out banner says, for an app whose signed-out list isn't just an example (Eat)
+type ExampleNote = { title: string, long: string, short: string }
+const props = withDefaults(defineProps<{ width?: string, tool?: Tool, header?: Header, siteBar?: boolean, settingsWide?: boolean, exampleNote?: ExampleNote }>(), { width: 'var(--page-width)', tool: undefined, header: 'hero', siteBar: true, settingsWide: false, exampleNote: undefined })
 
 const route = useRoute()
 const page = computed(() => props.tool ?? toolFor(route.path)!)
@@ -283,8 +285,14 @@ function openSignIn() {
       <SignInWall v-if="walled" :name="tool.name" :checking="gate.state.value === 'checking'" />
       <template v-else>
       <p v-if="example" class="demo-banner" role="status">
-        <span class="demo-long"><strong>This is example data.</strong> Sign in to use {{ tool.name }} with your own. Until then, changes here aren’t saved.</span>
-        <span class="demo-short" aria-hidden="true"><strong>Example data.</strong> Sign in to save your own.</span>
+        <template v-if="exampleNote">
+          <span class="demo-long"><strong>{{ exampleNote.title }}</strong> {{ exampleNote.long }}</span>
+          <span class="demo-short" aria-hidden="true"><strong>{{ exampleNote.title }}</strong> {{ exampleNote.short }}</span>
+        </template>
+        <template v-else>
+          <span class="demo-long"><strong>This is example data.</strong> Sign in to use {{ tool.name }} with your own. Until then, changes here aren’t saved.</span>
+          <span class="demo-short" aria-hidden="true"><strong>Example data.</strong> Sign in to save your own.</span>
+        </template>
         <button type="button" class="btn btn-sm" @click="openSignIn">Sign in</button>
       </p>
       <p v-else-if="demo.active.value" class="demo-banner" role="status">

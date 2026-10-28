@@ -1,27 +1,34 @@
 <script setup lang="ts">
 import type { BulkAction } from '~/composables/useBulkSelect'
 import { toast } from 'vue-sonner'
+import published from '~/data/eat.json'
 
 type Kind = 'food' | 'place'
 
 interface Spot {
   id: string
   name: string
+  nameKm?: string // the name in Khmer, shown under the English one
   kind: Kind
   note: string
   price: 1 | 2 | 3
   image?: string // a path inside public/ (e.g. /eat/3f2a….webp), or a link to an image on the web
+  focus?: string // which part of the photo shows in its square frame, as a CSS position ("30% 60%"); centred when unset
   lastEaten?: string // when you last picked it and pressed Let's eat (ISO); recent ones sink down the deck
 }
 
-const SEED = (): Spot[] => [
+// The list published from a local run (Publish, below): what everyone sees before signing in, and what
+// a new account starts from. Until something is published, the built-in examples stand in.
+const PUBLISHED = published as Omit<Spot, 'id'>[]
+
+const SEED = (): Spot[] => (PUBLISHED.length ? PUBLISHED : [
   { name: 'Fish amok', kind: 'food', note: 'Steamed curry in banana leaf', price: 2 },
   { name: 'Bai sach chrouk', kind: 'food', note: 'Grilled pork and rice for breakfast', price: 1 },
   { name: 'Beef lok lak', kind: 'food', note: 'With lime-pepper dip', price: 2 },
   { name: 'Kuy teav', kind: 'food', note: 'Noodle soup', price: 1 },
   { name: 'Num banh chok', kind: 'food', note: 'Rice noodles with green curry', price: 1 },
   { name: 'Lort cha', kind: 'food', note: 'Stir-fried short noodles', price: 1 }
-].map(s => ({ ...s, id: crypto.randomUUID() }) as Spot)
+] as Omit<Spot, 'id'>[]).map(s => ({ ...s, id: crypto.randomUUID() }))
 
 const FILTERS: { value: 'all' | Kind, label: string }[] = [
   { value: 'all', label: 'Everything' },
@@ -32,7 +39,7 @@ const SWIPE_THRESHOLD = 110 // px of drag that counts as a decision
 
 const { play } = useSound()
 // Demo: a mix of dishes and places to swipe through
-const DEMO = (): Omit<Spot, 'id'>[] => [
+const DEMO = (): Omit<Spot, 'id'>[] => (PUBLISHED.length ? PUBLISHED.map(s => ({ ...s })) : [
   { name: 'Fish amok', kind: 'food', note: 'Steamed curry in banana leaf', price: 2 },
   { name: 'Beef lok lak', kind: 'food', note: 'With lime-pepper dip', price: 2 },
   { name: 'Kuy teav', kind: 'food', note: 'Noodle soup for breakfast', price: 1 },
@@ -41,11 +48,34 @@ const DEMO = (): Omit<Spot, 'id'>[] => [
   { name: 'Malis', kind: 'place', note: 'Khmer fine dining by the river', price: 3 },
   { name: 'Brown Coffee', kind: 'place', note: 'Iced latte and a quiet corner', price: 2 },
   { name: 'Night market noodle cart', kind: 'place', note: 'Open late, always busy', price: 1 }
-]
+])
 const { items, ready, sync, add, update, replace, remove, restore } = useCollection<Spot>('eat', SEED, { demo: DEMO })
 
+// Signed out, the published list is the real thing to choose from, not an example
+const exampleNote = PUBLISHED.length
+  ? { title: 'Foods to choose from.', long: 'Swipe and pick as much as you like. Sign in to keep a list of your own; changes here aren’t saved.', short: 'Sign in to save your own.' }
+  : undefined
+
+// Running locally: write this list into the project (app/data/eat.json) so it goes live with the next deploy
+const publishing = ref(false)
+async function publish() {
+  if (publishing.value || sync.state.value === 'demo') return
+  publishing.value = true
+  try {
+    const { count } = await $fetch<{ count: number }>('/api/eat-foods', { method: 'POST', body: items.value })
+    toast.success(`Published ${count} ${count === 1 ? 'item' : 'items'}`, { description: 'Saved to app/data/eat.json. Commit it with the photos in public/eat/ to put it live.' })
+    play('success')
+  } catch (e) {
+    const message = (e as { data?: { message?: string } }).data?.message
+    toast.error('List not published', { description: message ?? 'Saving it to the project folder failed.' })
+    play('error')
+  } finally {
+    publishing.value = false
+  }
+}
+
 // ---------- Adding ----------
-const form = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'], imageUrl: '' })
+const form = reactive({ name: '', nameKm: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'], imageUrl: '' })
 const photo = ref<{ blob: Blob, preview: string }>()
 
 // A photo can also be a link to an image anywhere on the web. It's stored as is, so it works on the live
@@ -61,7 +91,7 @@ const editLinkBroken = ref(false)
 const saving = ref(false)
 // Editing happens in a popup with its own copy of the fields
 const editingId = ref<string>()
-const editForm = reactive({ name: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'], imageUrl: '', removeImage: false })
+const editForm = reactive({ name: '', nameKm: '', kind: 'food' as Kind, note: '', price: 1 as Spot['price'], imageUrl: '', removeImage: false, focus: { x: 50, y: 50 } })
 watch(() => form.imageUrl, () => (addLinkBroken.value = false))
 watch(() => editForm.imageUrl, () => (editLinkBroken.value = false))
 const editPhoto = ref<{ blob: Blob, preview: string }>()
@@ -74,15 +104,17 @@ const editPreview = computed(() => {
   const current = editingSpot.value?.image
   return isWebImage(current) ? '' : current ?? '' // a cleared link field means no link photo
 })
-const PHOTO_SIZE = 800
+const PHOTO_SIZE = 1200 // longest side
 
-// Crop to a centred square and shrink to 800×800 WebP in the browser, so files stay small
-async function squarePhoto(file: File) {
+// Shrink to WebP in the browser, so files stay small. The whole picture is kept (not cropped),
+// so which part shows in the square frames can be moved later (Edit → Position).
+async function shrinkPhoto(file: File) {
   const bitmap = await createImageBitmap(file)
-  const side = Math.min(bitmap.width, bitmap.height)
+  const scale = Math.min(1, PHOTO_SIZE / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = PHOTO_SIZE
-  canvas.getContext('2d')!.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, PHOTO_SIZE, PHOTO_SIZE)
+  canvas.width = Math.round(bitmap.width * scale)
+  canvas.height = Math.round(bitmap.height * scale)
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
   const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.82))
   if (!blob) throw new Error('Could not prepare the photo')
@@ -99,7 +131,7 @@ async function onPhotoPick(e: Event) {
     return
   }
   try {
-    const blob = await squarePhoto(file)
+    const blob = await shrinkPhoto(file)
     if (photo.value) URL.revokeObjectURL(photo.value.preview)
     photo.value = { blob, preview: URL.createObjectURL(blob) }
     play('drop')
@@ -123,9 +155,64 @@ async function uploadPhoto(blob: Blob) {
   return res.path
 }
 
+// ---------- Positioning a photo in its square frame (Edit → Position) ----------
+const parseFocus = (focus?: string) => {
+  const [x = 50, y = 50] = focus?.match(/-?[\d.]+/g)?.map(Number) ?? []
+  return { x, y }
+}
+const focusText = (f: { x: number, y: number }) => `${Math.round(f.x)}% ${Math.round(f.y)}%`
+const clamp = (n: number) => Math.min(100, Math.max(0, n))
+const cssUrl = (src: string) => `url("${src.replace(/["\\\n]/g, encodeURIComponent)}")`
+
+// The photo being positioned, and its shape: only the longer side has room to move
+const framePhoto = computed(() => editPhoto.value?.preview || editPreview.value)
+const frameStyle = computed(() => framePhoto.value && { backgroundImage: cssUrl(framePhoto.value), backgroundPosition: focusText(editForm.focus) })
+const frameRatio = ref(1) // width ÷ height
+watch(framePhoto, (src) => {
+  frameRatio.value = 1
+  if (!src || import.meta.server) return
+  const img = new Image()
+  img.referrerPolicy = 'no-referrer'
+  img.onload = () => {
+    if (framePhoto.value === src && img.naturalHeight) frameRatio.value = img.naturalWidth / img.naturalHeight
+  }
+  img.src = src
+}, { immediate: true })
+
+let frameDrag: { x: number, y: number, focus: { x: number, y: number }, size: number } | undefined
+function onFrameDown(e: PointerEvent) {
+  const el = e.currentTarget as HTMLElement
+  el.setPointerCapture(e.pointerId)
+  frameDrag = { x: e.clientX, y: e.clientY, focus: { ...editForm.focus }, size: el.clientWidth }
+}
+function onFrameMove(e: PointerEvent) {
+  if (!frameDrag) return
+  // With cover in a square, the spare width (or height) is size × (ratio − 1); dragging the photo
+  // that many pixels takes it from one edge to the other
+  const r = frameRatio.value
+  const spareX = frameDrag.size * Math.max(0, r - 1)
+  const spareY = frameDrag.size * Math.max(0, 1 / r - 1)
+  editForm.focus = {
+    x: spareX ? clamp(frameDrag.focus.x - ((e.clientX - frameDrag.x) / spareX) * 100) : 50,
+    y: spareY ? clamp(frameDrag.focus.y - ((e.clientY - frameDrag.y) / spareY) * 100) : 50
+  }
+}
+function onFrameUp() {
+  frameDrag = undefined
+}
+// Arrow keys move the photo the way it looks: left shows more of its right side
+function onFrameKey(e: KeyboardEvent) {
+  const step = e.shiftKey ? 20 : 5
+  const move: Record<string, [number, number]> = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }
+  const d = move[e.key]
+  if (!d) return
+  e.preventDefault()
+  editForm.focus = { x: clamp(editForm.focus.x + d[0]), y: clamp(editForm.focus.y + d[1]) }
+}
+
 function edit(s: Spot) {
   editingId.value = s.id
-  Object.assign(editForm, { name: s.name, kind: s.kind, note: s.note ?? '', price: s.price, imageUrl: isWebImage(s.image) ? s.image : '', removeImage: false })
+  Object.assign(editForm, { name: s.name, nameKm: s.nameKm ?? '', kind: s.kind, note: s.note ?? '', price: s.price, imageUrl: isWebImage(s.image) ? s.image : '', removeImage: false, focus: parseFocus(s.focus) })
   clearEditPhoto()
   play('open')
 }
@@ -150,9 +237,10 @@ async function onEditPhotoPick(e: Event) {
     return
   }
   try {
-    const blob = await squarePhoto(file)
+    const blob = await shrinkPhoto(file)
     clearEditPhoto()
     editPhoto.value = { blob, preview: URL.createObjectURL(blob) }
+    editForm.focus = { x: 50, y: 50 }
     play('drop')
   } catch {
     toast.error('Couldn’t read that image')
@@ -176,7 +264,8 @@ async function saveEdit() {
     toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed. Your other changes were saved.' })
   }
   // Changes show straight away on its card, in the deck and on the shortlist
-  const before = update(id, { name: editForm.name.trim(), kind: editForm.kind, note: editForm.note.trim(), price: editForm.price, image })
+  const focus = image && (editForm.focus.x !== 50 || editForm.focus.y !== 50) ? focusText(editForm.focus) : undefined
+  const before = update(id, { name: editForm.name.trim(), nameKm: editForm.nameKm.trim() || undefined, kind: editForm.kind, note: editForm.note.trim(), price: editForm.price, image, focus })
   toastSaved(before && (() => replace(before)), `${editForm.name.trim()} updated`)
   play('success')
   saving.value = false
@@ -186,8 +275,8 @@ async function saveEdit() {
 const nameField = ref<HTMLInputElement>()
 const draft = useDraft('eat', form, {
   active: () => true,
-  isEmpty: f => !f.name.trim() && !f.note.trim() && !f.imageUrl.trim(),
-  summary: f => [f.name, f.note, f.kind === 'place' ? 'A place' : 'A food']
+  isEmpty: f => !f.name.trim() && !f.nameKm.trim() && !f.note.trim() && !f.imageUrl.trim(),
+  summary: f => [f.name, f.nameKm, f.note, f.kind === 'place' ? 'A place' : 'A food']
 })
 onMounted(() => draft.check())
 useAddAction(() => openAdd())
@@ -217,7 +306,7 @@ async function save() {
     const message = (e as { data?: { message?: string } }).data?.message
     toast.error('Photo not saved', { description: message ?? 'Saving it to the project folder failed. The item was added without it.' })
   }
-  const spot = add({ name: form.name.trim(), kind: form.kind, note: form.note.trim(), price: form.price, ...(image ? { image } : {}) })
+  const spot = add({ name: form.name.trim(), ...(form.nameKm.trim() ? { nameKm: form.nameKm.trim() } : {}), kind: form.kind, note: form.note.trim(), price: form.price, ...(image ? { image } : {}) })
   draft.clear()
   deck.value.push(spot.id) // new cards join the end of the current deck
   toast.success(`${spot.name} added`, {
@@ -231,10 +320,54 @@ async function save() {
     }
   })
   play('success')
-  Object.assign(form, { name: '', note: '', imageUrl: '' })
+  Object.assign(form, { name: '', nameKm: '', note: '', imageUrl: '' })
   clearPhoto()
   saving.value = false
   closeAdd()
+}
+
+// Running locally, several photos can be added at once: one food per photo, named after its file
+// (rename any of them with Edit). Photos are saved into the project, so this only works in npm run dev.
+const canBulkPhotos = import.meta.dev
+const bulkAdding = ref(false)
+const nameFromFile = (file: File) => file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Untitled'
+
+async function addPhotos(e: Event) {
+  const input = e.target as HTMLInputElement
+  const files = [...(input.files ?? [])].filter(f => f.type.startsWith('image/'))
+  input.value = ''
+  if (!files.length || bulkAdding.value) return
+  bulkAdding.value = true
+  const added: Spot[] = []
+  let failed = 0
+  for (const file of files) {
+    try {
+      const image = await uploadPhoto(await shrinkPhoto(file))
+      const spot = add({ name: nameFromFile(file), kind: 'food', note: '', price: 1, image })
+      deck.value.push(spot.id)
+      added.push(spot)
+    } catch {
+      failed++
+    }
+  }
+  bulkAdding.value = false
+  if (added.length) {
+    toast.success(`${added.length} ${added.length === 1 ? 'food' : 'foods'} added`, {
+      description: `${failed ? `${failed} couldn’t be saved. ` : ''}Photos saved to public/eat/. Commit them to keep them.`,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          const ids = new Set(added.map(a => a.id))
+          for (const a of added) remove(a.id, { undoAdd: true })
+          deck.value = deck.value.filter(id => !ids.has(id))
+        }
+      }
+    })
+    play('success')
+  } else {
+    toast.error('No photos saved', { description: 'Saving them to the project folder failed.' })
+    play('error')
+  }
 }
 
 onBeforeUnmount(() => {
@@ -249,8 +382,8 @@ async function setPhoto(spot: Spot, e: Event) {
   input.value = ''
   if (!file) return
   try {
-    const path = await uploadPhoto(await squarePhoto(file))
-    update(spot.id, { image: path })
+    const path = await uploadPhoto(await shrinkPhoto(file))
+    update(spot.id, { image: path, focus: undefined })
     toast.success(`Photo added to ${spot.name}`, { description: `Saved to public${path}. Commit it to keep it.` })
     play('success')
   } catch (err) {
@@ -441,7 +574,7 @@ const libKind = ref<'all' | Kind>('all')
 const library = computed(() => {
   const q = libQuery.value.trim().toLowerCase()
   return items.value.filter(s => (libKind.value === 'all' || s.kind === libKind.value)
-    && (!q || s.name.toLowerCase().includes(q) || s.note?.toLowerCase().includes(q)))
+    && (!q || s.name.toLowerCase().includes(q) || s.nameKm?.includes(q) || s.note?.toLowerCase().includes(q)))
 })
 
 // Switching the example data on or off swaps every card, so deal a fresh deck from the new list.
@@ -573,11 +706,11 @@ const cardStyle = computed(() => {
 
 const priceText = (p: number) => '$'.repeat(p)
 // A card's photo as a CSS variable; the card styles add a gradient so text stays readable
-const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image.replace(/["\\\n]/g, encodeURIComponent)}")` } : undefined)
+const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image), ...(spot.focus ? { '--photo-pos': spot.focus } : {}) } : undefined)
 </script>
 
 <template>
-  <ToolPage header="bar">
+  <ToolPage header="bar" :example-note="exampleNote">
     <template #settings>
       <SettingChoice v-model="eatPrefs.filter" title="Show" description="What the deck deals when you open the app." :options="[{ value: 'all', label: 'Both' }, { value: 'food', label: 'Foods' }, { value: 'place', label: 'Places' }]" />
     </template>
@@ -632,6 +765,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               >
                 <span class="badge">{{ s.kind === 'food' ? 'Food' : 'Place' }}</span>
                 <strong>{{ s.name }}</strong>
+                <span v-if="s.nameKm" class="name-km" lang="km">{{ s.nameKm }}</span>
                 <span v-if="s.note" class="duel-note">{{ s.note }}</span>
                 <span class="price">{{ priceText(s.price) }}</span>
               </button>
@@ -648,6 +782,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           <div v-else-if="chosen" class="result" :class="{ 'has-photo': chosen.image }" :data-kind="chosen.kind" :style="photoStyle(chosen)" role="status">
             <span class="result-label">{{ ate ? 'Enjoy!' : 'Tonight it’s' }}</span>
             <h2>{{ chosen.name }}</h2>
+            <span v-if="chosen.nameKm" class="name-km" lang="km">{{ chosen.nameKm }}</span>
             <p v-if="chosen.note">{{ chosen.note }}</p>
             <span class="result-meta">{{ chosen.kind === 'food' ? 'Food' : 'Place' }} · {{ priceText(chosen.price) }}<template v-if="lastHad(chosen)"> · {{ lastHad(chosen) }}</template></span>
             <div class="result-actions">
@@ -675,6 +810,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               <span class="verdict no" :style="{ opacity: no }" aria-hidden="true">Skip</span>
               <span class="badge">{{ current.kind === 'food' ? 'Food' : 'Place' }}</span>
               <h2 class="card-title">{{ current.name }}</h2>
+              <span v-if="current.nameKm" class="name-km" lang="km">{{ current.nameKm }}</span>
               <p v-if="current.note">{{ current.note }}</p>
               <span class="price">{{ priceText(current.price) }}<span v-if="lastHad(current)" class="card-had"> · {{ lastHad(current) }}</span></span>
             </div>
@@ -760,6 +896,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           </label>
         </div>
         <button type="button" class="btn add-btn" @click="openAdd">+ Add</button>
+        <label v-if="canBulkPhotos" class="btn btn-quiet add-btn add-photos" :aria-disabled="bulkAdding || undefined">
+          <input type="file" accept="image/*" multiple :disabled="bulkAdding" aria-label="Add foods from photos" @change="addPhotos">
+          {{ bulkAdding ? 'Adding…' : '+ Photos' }}
+        </label>
+        <button v-if="canBulkPhotos && items.length" type="button" class="btn btn-quiet add-btn" :disabled="publishing || sync.state.value === 'demo'" title="Make this the list everyone sees before signing in" @click="publish">{{ publishing ? 'Publishing…' : 'Publish' }}</button>
       </div>
       <ClientOnly>
         <TransitionGroup v-if="library.length" tag="ul" name="list" class="thumbs">
@@ -773,6 +914,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               <span class="thumb-hint" aria-hidden="true">{{ s.image ? 'Replace photo' : '+ Photo' }}</span>
             </label>
             <span class="thumb-name">{{ s.name }}</span>
+            <span v-if="s.nameKm" class="thumb-name-km" lang="km">{{ s.nameKm }}</span>
             <span class="thumb-meta">{{ priceText(s.price) }}<template v-if="lastHad(s)"> · {{ lastHad(s) }}</template></span>
             <span class="thumb-links">
               <button type="button" class="link" :aria-label="`Edit ${s.name}`" @click="edit(s)">Edit</button>
@@ -805,6 +947,10 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
               <input ref="nameField" v-model="form.name" class="input" :placeholder="form.kind === 'food' ? 'Fried rice' : 'The noodle shop on Street 51'" required :data-error="form.kind === 'food' ? 'Name the food' : 'Name the place'">
             </label>
             <label class="field">
+              <span class="field-head">Khmer name <span class="optional">Optional</span></span>
+              <input v-model="form.nameKm" class="input" lang="km" placeholder="អាម៉ុកត្រី">
+            </label>
+            <label class="field">
               <span class="field-head">Note <span class="optional">Optional</span></span>
               <input v-model="form.note" class="input" placeholder="Extra spicy, good for lunch…">
             </label>
@@ -830,7 +976,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
           <button type="submit" class="btn" :disabled="saving">{{ saving && !editingId ? 'Saving photo…' : 'Add' }}</button>
           <button type="button" class="btn btn-quiet" @click="closeAdd">Cancel</button>
         </div>
-        <p class="hint">A photo link works anywhere and syncs with the item. Picked photos are cropped square and saved to <code>public/eat/</code> in this project so you can commit them, which only works while running the app locally.</p>
+        <p class="hint">A photo link works anywhere and syncs with the item. Picked photos are saved to <code>public/eat/</code> in this project so you can commit them, which only works while running the app locally.</p>
       </form>
     </Modal>
     <Modal :open="!!editingId" :title="editingSpot ? `Edit ${editingSpot.name}` : 'Edit'" @close="cancelEdit">
@@ -842,14 +988,18 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
         <div class="form-row">
           <label v-ants class="photo-pick" :class="{ filled: editPhoto || editPreview }">
             <input type="file" accept="image/*" aria-label="Choose a new photo" @change="onEditPhotoPick">
-            <img v-if="editPhoto" :src="editPhoto.preview" alt="New photo preview">
-            <img v-else-if="editPreview" :src="editPreview" alt="Photo" referrerpolicy="no-referrer" @error="editLinkBroken = true">
+            <img v-if="editPhoto" :src="editPhoto.preview" alt="New photo preview" :style="{ objectPosition: focusText(editForm.focus) }">
+            <img v-else-if="editPreview" :src="editPreview" alt="Photo" referrerpolicy="no-referrer" :style="{ objectPosition: focusText(editForm.focus) }" @error="editLinkBroken = true">
             <span v-else>+ Photo</span>
           </label>
           <div class="form-fields">
             <label class="field">
               <span class="field-head">Name</span>
               <input v-model="editForm.name" class="input" required data-error="Give it a name">
+            </label>
+            <label class="field">
+              <span class="field-head">Khmer name <span class="optional">Optional</span></span>
+              <input v-model="editForm.nameKm" class="input" lang="km" placeholder="អាម៉ុកត្រី">
             </label>
             <label class="field">
               <span class="field-head">Note <span class="optional">Optional</span></span>
@@ -859,6 +1009,25 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
         </div>
         <button v-if="editPhoto" type="button" class="link remove-photo" @click="clearEditPhoto">Keep the old photo</button>
         <button v-else-if="editPreview" type="button" class="link remove-photo" @click="editForm.imageUrl = ''; editForm.removeImage = true">Remove photo</button>
+        <div v-if="framePhoto" class="field">
+          <span class="field-head">Position <span class="optional">Drag the photo to choose what shows</span></span>
+          <div class="frame-row">
+            <div
+              class="photo-frame"
+              role="slider"
+              tabindex="0"
+              aria-label="Photo position. Use the arrow keys to move it"
+              :aria-valuetext="`${Math.round(editForm.focus.x)}% across, ${Math.round(editForm.focus.y)}% down`"
+              :style="frameStyle || undefined"
+              @pointerdown="onFrameDown"
+              @pointermove="onFrameMove"
+              @pointerup="onFrameUp"
+              @pointercancel="onFrameUp"
+              @keydown="onFrameKey"
+            />
+            <button v-if="editForm.focus.x !== 50 || editForm.focus.y !== 50" type="button" class="link" @click="editForm.focus = { x: 50, y: 50 }">Centre it</button>
+          </div>
+        </div>
         <label class="field">
           <span class="field-head">Photo link <span class="optional">Optional</span></span>
           <input v-model="editForm.imageUrl" class="input" type="url" inputmode="url" spellcheck="false" placeholder="https://… paste an image address" @input="editForm.removeImage = false">
@@ -1018,7 +1187,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   border-radius: var(--radius-2xl);
   background:
     linear-gradient(to top, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0.1) 60%, transparent),
-    var(--photo, none) center / cover,
+    var(--photo, none) var(--photo-pos, center) / cover,
     var(--pink);
   box-shadow: 0 0 0 4px var(--plastic), 0 0 0 9px var(--accent), 0 18px 40px -16px rgb(var(--shadow) / 0.5);
   animation: result-in 0.45s cubic-bezier(0.3, 1.4, 0.6, 1);
@@ -1027,7 +1196,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .result[data-kind='place'] {
   background:
     linear-gradient(to top, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0.1) 60%, transparent),
-    var(--photo, none) center / cover,
+    var(--photo, none) var(--photo-pos, center) / cover,
     var(--indigo);
 }
 
@@ -1140,6 +1309,67 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 
 .add-btn {
   flex: none;
+}
+
+.photo-frame {
+  width: min(14rem, 100%);
+  aspect-ratio: 1; /* the same square as the cards */
+  background: var(--surface-2) center / cover no-repeat;
+  border-radius: var(--radius-lg);
+  outline: 1px solid rgb(0 0 0 / 0.1);
+  outline-offset: -1px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.photo-frame:active {
+  cursor: grabbing;
+}
+
+.photo-frame:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.frame-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.name-km {
+  font-family: 'Noto Sans Khmer', var(--font);
+  font-size: 1.05em;
+  font-weight: 600;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+.thumb-name-km {
+  margin-top: -0.3rem;
+  font-family: 'Noto Sans Khmer', var(--font);
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-photos {
+  position: relative;
+  cursor: pointer;
+}
+
+.add-photos input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.add-photos:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
 }
 
 .thumb-icon {
@@ -1288,7 +1518,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   font-size: var(--text-2xl);
   font-weight: 800;
   color: #fff;
-  background: var(--photo, none) center / cover, var(--pink);
+  background: var(--photo, none) var(--photo-pos, center) / cover, var(--pink);
   border-radius: var(--radius-lg);
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
 }
@@ -1333,7 +1563,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 }
 
 .thumb[data-kind='place'] .thumb-img {
-  background: var(--photo, none) center / cover, var(--indigo);
+  background: var(--photo, none) var(--photo-pos, center) / cover, var(--indigo);
 }
 
 .thumb-links {
@@ -1490,7 +1720,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .card.behind[style*='--photo'] {
   background:
     linear-gradient(to bottom, rgb(0 0 0 / 0) 35%, rgb(0 0 0 / 0.72)),
-    var(--photo) center / cover;
+    var(--photo) var(--photo-pos, center) / cover;
 }
 
 .card[data-kind='place'] {
@@ -1633,11 +1863,11 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 50%;
-  background: var(--photo, none) center / cover, var(--pink);
+  background: var(--photo, none) var(--photo-pos, center) / cover, var(--pink);
 }
 
 .chip-img[data-kind='place'] {
-  background: var(--photo, none) center / cover, var(--indigo);
+  background: var(--photo, none) var(--photo-pos, center) / cover, var(--indigo);
 }
 
 .chip-x {
@@ -1808,7 +2038,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': `url("${spot.image
 .duel-card.has-photo {
   background:
     linear-gradient(to bottom, rgb(0 0 0 / 0) 30%, rgb(0 0 0 / 0.75)),
-    var(--photo) center / cover;
+    var(--photo) var(--photo-pos, center) / cover;
 }
 
 /* Only with a mouse: on a phone the tapped card kept its hover ring into the next round,
