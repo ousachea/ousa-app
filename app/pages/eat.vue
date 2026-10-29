@@ -581,6 +581,8 @@ function shuffle() {
   chosen.value = undefined
   ate.value = false
   duel.value = undefined
+  // Open straight into the head-to-head over the whole deck; Stop drops back to swiping
+  if (deck.value.length > 1) narrow(deck.value)
 }
 
 function startOver() {
@@ -624,8 +626,8 @@ const duelPair = computed(() => {
   return a && b ? [a, b] as const : undefined
 })
 
-function narrow() {
-  const ids = [...liked.value]
+function narrow(from = liked.value) {
+  const ids = [...from]
   for (let i = ids.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[ids[i], ids[j]] = [ids[j]!, ids[i]!]
@@ -985,7 +987,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
             </li>
           </TransitionGroup>
           <div v-if="!chosen && !duel" class="shortlist-actions">
-            <button v-if="shortlist.length > 1" type="button" class="btn narrow-btn" @click="narrow">
+            <button v-if="shortlist.length > 1" type="button" class="btn narrow-btn" @click="narrow()">
               <AppIcon name="funnel" />
               Narrow it down
             </button>
