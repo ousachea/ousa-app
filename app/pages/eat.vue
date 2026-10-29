@@ -1230,7 +1230,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
 
 @media (min-width: 1100px) {
   .decide {
-    grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
+    grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
     gap: 2.5rem;
   }
 }
@@ -1798,7 +1798,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
 
 .stage {
   position: relative;
-  width: min(400px, 100%);
+  width: min(560px, 100%);
   aspect-ratio: 1; /* square cards */
   border-radius: var(--radius-2xl);
 }
