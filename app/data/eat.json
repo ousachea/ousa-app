@@ -1,27 +1,240 @@
 [
   {
-    "name": "Fish amok",
-    "nameKm": "អាម៉ុកត្រី",
-    "kind": "food",
-    "note": "Steamed curry in banana leaf",
-    "price": 2,
-    "image": "/eat/56bf893a-3739-415d-8a68-df663aa90b9e.webp"
-  },
-  {
     "name": "Num banh chok",
-    "nameKm": "នំបញ្ចុក",
     "kind": "food",
     "note": "Rice noodles with green curry",
     "price": 1,
-    "image": "/eat/687895ff-f5b4-40cf-ab36-7f65ac4ff491.webp",
-    "focus": "50% 70%"
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQWDlwCPR1HCerb1Pa0bOQY-9hDZx-Tu1L58cgZBkR9NmKl0De4L9BWR98d&s=10"
+  },
+  {
+    "name": "Bai sach chrouk",
+    "kind": "food",
+    "note": "Grilled pork and rice for breakfast",
+    "price": 1,
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS3nGHLghzr9xtdWe_vJY8YB7fehwWKo3U0I4NAn-gfXQGnE6KstMSlgEI&s=10"
   },
   {
     "name": "Beef lok lak",
-    "nameKm": "ឡុកឡាក់សាច់គោ",
     "kind": "food",
     "note": "With lime-pepper dip",
     "price": 2,
-    "image": "/eat/6d049c7e-1230-4ab3-a55e-0d055903a3e5.webp"
+    "image": "https://spicygelato.kitchen/wp-content/uploads/2022/03/BeefLokLak-scaled.jpg"
+  },
+  {
+    "name": "Lort cha",
+    "kind": "food",
+    "note": "Stir-fried short noodles",
+    "price": 1,
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS9O7v87A9mTSpU6kajiY9LCbVg79VynwLnGFFXIFatpZYjeegd9Nvzn8&s=10"
+  },
+  {
+    "name": "Kuy teav",
+    "kind": "food",
+    "note": "Noodle soup",
+    "price": 1,
+    "image": "https://www.foodandwine.com/thmb/k2ROo2EoPEqWidP8tUkUMLG848Y=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/cambodian-rice-noodle-soup-XL-RECIPE0318_0-17acba679dca4c2a9fbd65400bfc3db2.jpg"
+  },
+  {
+    "name": "IMG 1940",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/294d64b5-49d5-4e85-aff3-4a4f2f512dad.webp"
+  },
+  {
+    "name": "IMG 1958",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/303f8e49-13f3-4b89-abcc-ca6b0383592d.webp"
+  },
+  {
+    "name": "IMG 1959",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/4abf73d2-7d6d-406f-9040-c4a222c47cc8.webp"
+  },
+  {
+    "name": "IMG 1957",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/85ec4ad8-a343-42eb-8520-f6c6af32f018.webp"
+  },
+  {
+    "name": "IMG 1965",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/65834804-3c9b-4983-9b09-a5b7e5e3e1c5.webp"
+  },
+  {
+    "name": "IMG 1966",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/22acd5bc-503e-435d-b76b-d30587d74848.webp"
+  },
+  {
+    "name": "IMG 1945",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/23c739dc-2e28-4e02-ae61-34ae608fb6d5.webp"
+  },
+  {
+    "name": "IMG 1946",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/8c1f4552-ea20-43cc-a7b1-8effc9f00430.webp"
+  },
+  {
+    "name": "IMG 1947",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/e8676f9c-1794-4ee5-8dbb-342af789f951.webp"
+  },
+  {
+    "name": "IMG 1948",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/3d2626b0-fcbd-4276-be3d-10c7df3a2418.webp"
+  },
+  {
+    "name": "IMG 1949",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/12ba714a-1098-4d50-9236-6a2c7a6b2efe.webp"
+  },
+  {
+    "name": "IMG 1950",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/bb96785a-e860-47a8-b0ca-dadf88c0b9f2.webp"
+  },
+  {
+    "name": "IMG 1951",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/a7c011be-0ca7-4a48-ba8a-67ad641e4ec5.webp"
+  },
+  {
+    "name": "IMG 1952",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/cb6b46b7-3153-4d27-9807-af01e76febea.webp"
+  },
+  {
+    "name": "IMG 1953",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/d42c6e23-2ef5-452a-bb04-e877f0ac2d49.webp"
+  },
+  {
+    "name": "IMG 1954",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/df73dbad-58cc-4dea-8591-b2a8e86d25a1.webp"
+  },
+  {
+    "name": "IMG 1955",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/0860fc63-a363-4509-93ea-b621d5c4af37.webp"
+  },
+  {
+    "name": "IMG 1956",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/aee27d73-d888-4935-be16-145c93481378.webp"
+  },
+  {
+    "name": "IMG 1963",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/e1362216-0512-4288-9df7-89fc6054dfaf.webp"
+  },
+  {
+    "name": "IMG 1961",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/d3d06d27-6f77-44a1-a3e7-8adc218103dd.webp"
+  },
+  {
+    "name": "IMG 1960",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/85545fdf-d2af-4251-8b8c-909d48ac812d.webp"
+  },
+  {
+    "name": "IMG 1962",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/39c3fd07-7d08-468d-ad11-a96c0f6144af.webp"
+  },
+  {
+    "name": "IMG 1964",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/602261a7-ab1e-4b9e-9f16-580155e1bacd.webp"
+  },
+  {
+    "name": "IMG 1967",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/acf034ce-c048-4f6c-ba0f-268569e0dbeb.webp"
+  },
+  {
+    "name": "IMG 1968",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/6670f94c-94a6-484e-87e6-321f02076ea7.webp"
+  },
+  {
+    "name": "IMG 1943",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/77dfa850-7517-4eaf-ad4d-a62cea01639b.webp"
+  },
+  {
+    "name": "IMG 1944",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/75b57567-6606-4002-b832-e07947814709.webp"
+  },
+  {
+    "name": "IMG 1941",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/c923c06e-6082-45f9-ae27-86163d0d3735.webp"
+  },
+  {
+    "name": "IMG 1942",
+    "kind": "food",
+    "note": "",
+    "price": 1,
+    "image": "/eat/8c8dd172-0639-49fc-873d-a81a19840240.webp"
   }
 ]
