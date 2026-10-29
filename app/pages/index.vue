@@ -134,7 +134,6 @@ useAppSeo({
           Swipe for the apps
           <AppIcon name="chevron-right" />
         </button>
-        <TodayPanel class="hero-today" />
       </div>
       <section v-for="group in GROUPS" :key="group.name" class="group" :aria-labelledby="`group-${group.name}`">
         <h2 :id="`group-${group.name}`">{{ group.name }}</h2>
@@ -194,11 +193,6 @@ useAppSeo({
   margin: -1rem 0 1rem;
 }
 
-/* The day at a glance, under the cube and the welcome */
-.hero-today {
-  margin-top: 2.5rem;
-}
-
 h1 {
   font-size: clamp(3.25rem, 12vw, 6.5rem);
   font-weight: 800;
@@ -220,6 +214,40 @@ h1 {
   flex-direction: column;
   align-items: center;
   gap: 3rem;
+}
+
+/* Wide screens: the cube on the left, every group of icons stacked on the right */
+@media (min-width: 1100px) {
+  .groups {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(0, 2fr);
+    align-items: start;
+    column-gap: 3rem;
+    row-gap: 0;
+  }
+
+  /* clip, not hidden: hidden makes .home a scroll box, and the cube would stick to that instead of the window */
+  .home {
+    overflow: clip;
+  }
+
+  /* Spans however many groups there are; with no row gap the spare rows take no room. Stays in view
+     while the icons scroll past */
+  .hero {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    position: sticky;
+    top: var(--pin-top);
+    padding-top: 3rem;
+  }
+
+  .group {
+    grid-column: 2;
+  }
+
+  .group + .group {
+    margin-top: 3rem;
+  }
 }
 
 /* Only phones page through the icons */
@@ -441,10 +469,6 @@ h1 {
   /* Each part keeps its own height and the screen scrolls, rather than squashing the cube */
   .hero > * {
     flex-shrink: 0;
-  }
-
-  .hero-today {
-    margin-top: 2rem;
   }
 
   .page-start {
