@@ -3,7 +3,7 @@ import { stepValues, useGauge, type StrokeCap, type ValueColor } from '~/lib/gau
 
 // Ticks that are the fill: the ones between `from` (min, or a range's low end) and `to` (the value) light up
 // in `color`, the rest stay `trackColor`. mode="pointer" lights only the tick nearest the value.
-const props = withDefaults(defineProps<{ count?: number, values?: number[], length?: number, width?: number, color?: ValueColor, trackColor?: string, cap?: StrokeCap, offset?: number, from?: number, to?: number, mode?: 'fill' | 'pointer' }>(), { count: 24, values: undefined, length: 24, width: 6, color: 'currentColor', trackColor: 'color-mix(in srgb, currentColor 14%, transparent)', cap: 'round', offset: 0, from: undefined, to: undefined, mode: 'fill' })
+const props = withDefaults(defineProps<{ count?: number, values?: number[], length?: number, width?: number, color?: ValueColor, trackColor?: string, cap?: StrokeCap, offset?: number, from?: number, to?: number, mode?: 'fill' | 'pointer' }>(), { count: 24, values: undefined, length: 24, width: 6, color: 'currentColor', trackColor: 'color-mix(in oklab, currentColor 14%, transparent)', cap: 'round', offset: 0, from: undefined, to: undefined, mode: 'fill' })
 const gauge = useGauge()
 const at = computed(() => {
   if (props.values) return props.values

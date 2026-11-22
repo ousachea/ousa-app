@@ -96,7 +96,7 @@ const spoken = computed(() => (left.value <= 0
   align-items: center;
   background: var(--surface-2);
   border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   transition: background-color var(--dur-slow), box-shadow var(--dur-slow);
 }
 
@@ -124,13 +124,13 @@ const spoken = computed(() => (left.value <= 0
 
 .is-soon .unit,
 .is-today .unit {
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 35%, var(--line));
 }
 
 .is-soon .num,
 .is-today .num {
-  color: color-mix(in srgb, var(--accent) 70%, var(--ink));
+  color: color-mix(in oklab, var(--accent) 70%, var(--ink));
 }
 
 /* The last day: a thin ring leaves the seconds once a second. Only scale and opacity move, which the

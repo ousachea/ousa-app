@@ -165,7 +165,7 @@ function onKey(e: KeyboardEvent) {
 
 .trigger.open {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
 }
 
 .icon {
@@ -199,7 +199,7 @@ function onKey(e: KeyboardEvent) {
   padding: 0.6rem;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: 0 22px 48px -14px rgb(var(--shadow) / 0.38), 0 2px 6px rgb(var(--shadow) / 0.08);
 }
@@ -274,7 +274,7 @@ function onKey(e: KeyboardEvent) {
   justify-content: space-between;
   margin-top: 0.5rem;
   padding-top: 0.55rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .link {

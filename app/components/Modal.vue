@@ -49,8 +49,8 @@ function onClick(e: MouseEvent) {
           <AnimatedIcon name="x" />
         </button>
       </header>
-      <!-- Only while open: a closed popup's form shouldn't sit in the page, and content that depends on
-           this device (sign-in state, saved drafts) can't differ between the server and the browser -->
+      <!-- Only while open: a closed popup’s form shouldn’t sit in the page, and content that depends on
+           this device (sign-in state, saved drafts) can’t differ between the server and the browser -->
       <slot v-if="open" />
     </div>
   </dialog>
@@ -65,7 +65,7 @@ function onClick(e: MouseEvent) {
   background: var(--surface);
   border: 0;
   border-radius: var(--radius-xl);
-  box-shadow: 0 30px 80px -20px rgb(var(--shadow) / 0.45), 0 0 0 1px var(--line);
+  box-shadow: 0 30px 80px -20px rgb(var(--shadow) / 0.45), 0 0 0 1px var(--border);
 }
 
 .modal.wide {

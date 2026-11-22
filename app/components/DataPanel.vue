@@ -330,7 +330,7 @@ h3 {
 .preview {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
   animation: preview-in var(--dur) var(--ease-out);
 }
 

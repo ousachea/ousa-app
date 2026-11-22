@@ -27,7 +27,7 @@ const emit = defineEmits<{ action: [] }>()
   margin-bottom: 0.25rem;
   font-size: var(--text-xl);
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
   border-radius: var(--radius-lg);
 }
 </style>

@@ -41,7 +41,7 @@ function save() {
           <GaugeTrack :width="26" color="var(--ink)" :opacity="0.08" />
           <GaugeZones :zones="ZONES" :width="6" :offset="-26" :gap="1.5" end-cap="round" :opacity="0.7" />
           <GaugeArc :width="26" color="var(--meter)" />
-          <!-- The arc stops at the end of the budget; the number doesn't -->
+          <!-- The arc stops at the end of the budget; the number doesn’t -->
           <GaugeValue v-if="share <= 1" :y="-58" :font-size="64" weight="bold" color="var(--ink)" :format="v => `${Math.round(v * 100)}%`" />
           <GaugeText v-else :y="-58" :font-size="64" weight="bold" color="var(--red)">{{ Math.round(share * 100) }}%</GaugeText>
         </Gauge>

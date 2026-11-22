@@ -533,9 +533,9 @@ defineExpose({
   gap: 0.15rem;
   /* The first button's label (centred in its 2.25rem button) lines up with the text at 1.25rem */
   padding: 0.35rem 0.95rem 0.35rem 0.55rem;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .tool {
@@ -557,7 +557,7 @@ defineExpose({
 
 .tool:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
 }
 
 .tool:active {
@@ -566,7 +566,7 @@ defineExpose({
 
 .tool.on {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
 }
 
 .tool svg {
@@ -600,7 +600,7 @@ defineExpose({
 }
 
 .style-btn:hover {
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
 }
 
 .style-btn svg {
@@ -645,7 +645,7 @@ defineExpose({
   padding: 0.25rem;
   background: var(--surface);
   border-radius: var(--radius);
-  box-shadow: 0 0 0 1px var(--line), 0 12px 28px -8px rgb(var(--shadow) / 0.35);
+  box-shadow: 0 0 0 1px var(--border), 0 12px 28px -8px rgb(var(--shadow) / 0.35);
 }
 
 .bubble .tool {
@@ -702,21 +702,21 @@ defineExpose({
   margin: 0;
   padding-left: 1em;
   color: var(--ink-2);
-  border-left: 3px solid color-mix(in srgb, var(--accent) 50%, var(--line));
+  border-left: 3px solid color-mix(in oklab, var(--accent) 50%, var(--line));
 }
 
 .content :deep(.note-body code) {
   padding: 0.1em 0.35em;
   font-size: 0.9em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
   border-radius: var(--radius-xs);
 }
 
 .content :deep(.note-body pre) {
   padding: 0.85em 1em;
   overflow-x: auto;
-  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  background: color-mix(in oklab, var(--ink) 6%, var(--surface));
   border-radius: var(--radius-sm);
 }
 
@@ -728,7 +728,7 @@ defineExpose({
 .content :deep(.note-body hr) {
   margin: 1.4em 0;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .content :deep(.note-body a) {
@@ -817,10 +817,10 @@ defineExpose({
   place-items: center;
   padding: 0;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
   border: 0;
   border-radius: var(--radius-pill);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 35%, var(--line));
   cursor: pointer;
   animation: table-add-in 0.15s ease-out;
   transition: background-color var(--dur-fast), color var(--dur-fast);
@@ -882,12 +882,12 @@ defineExpose({
   padding: 0.4em 0.6em;
   vertical-align: top;
   text-align: left;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
 }
 
 .content :deep(.note-body th) {
   font-weight: 700;
-  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 7%, var(--surface));
 }
 
 .content :deep(.note-body th > p),
@@ -899,7 +899,7 @@ defineExpose({
   content: '';
   position: absolute;
   inset: 0;
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
   pointer-events: none;
 }
 
@@ -908,7 +908,7 @@ defineExpose({
   padding: 0.05em 0.4em;
   font-weight: 600;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
   border-radius: var(--radius-xs);
   cursor: pointer;
 }
@@ -945,7 +945,7 @@ defineExpose({
     /* Wider phone buttons: the first label still lines up with the text at 1rem */
     padding-left: 0.1rem;
     padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--border);
     border-bottom: 0;
   }
 
@@ -967,7 +967,7 @@ defineExpose({
 
   .content :deep(.note-body) {
     padding: 0.75rem 1rem 2rem;
-    min-height: 40vh;
+    min-height: 40dvh;
   }
 
   /* Room for the fixed bar under the last lines */
@@ -1004,6 +1004,6 @@ defineExpose({
 
 .note-suggest li.on {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
 }
 </style>

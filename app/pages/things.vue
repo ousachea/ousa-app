@@ -818,7 +818,7 @@ function del(t: Thing) {
             <template v-if="items.length">
             <div v-sticky-bar class="toolbar">
               <BulkToggle v-if="items.length" :select="sel" />
-              <input v-model="query" class="input search" type="search" placeholder="Search your things" aria-label="Search your things">
+              <input v-model="query" class="input search" type="search" enterkeyhint="search" placeholder="Search your things" aria-label="Search your things">
               <AppSelect v-model="sort" class="sort" aria-label="Sort by" :options="SORTS" />
               <div class="views segmented" role="radiogroup" aria-label="View">
                 <label :class="{ active: view === 'cards' }"><input v-model="view" type="radio" name="things-view" value="cards">Cards</label>
@@ -849,7 +849,7 @@ function del(t: Thing) {
               </button>
             </p>
 
-            <!-- One card per thing: what it is, what you paid → what it's worth now, and how much of its price it keeps -->
+            <!-- One card per thing: what it is, what you paid → what it’s worth now, and how much of its price it keeps -->
             <TransitionGroup tag="ul" name="list" class="things" :class="view">
               <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing bulk-row" tabindex="0" :aria-label="`${t.name}, show details`" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)" @click="onCardClick($event, t)" @keydown.enter.self.prevent="showDetails(t)" :class="{ editing: editingId === t.id, 'bulk-picked': sel.has(t.id), excluded: t.excluded }" :style="categoryStyle(t.category)">
                 <BulkCheck v-if="sel.selecting" :checked="sel.has(t.id)" :label="`Select ${t.name}`" @pick="sel.pick(t.id, $event)" />
@@ -918,7 +918,7 @@ function del(t: Thing) {
           </p>
         </div>
 
-        <!-- What you paid against what it's worth, like the card but roomier -->
+        <!-- What you paid against what it’s worth, like the card but roomier -->
         <div class="compare details-compare">
           <div class="col">
             <span class="k">Paid</span>
@@ -1010,7 +1010,7 @@ function del(t: Thing) {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.55rem 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .details-list dt {
@@ -1095,7 +1095,7 @@ function del(t: Thing) {
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1103,7 +1103,7 @@ function del(t: Thing) {
 }
 
 .quick-type .cat-option-icon {
-  background: color-mix(in srgb, var(--cat) 12%, transparent);
+  background: color-mix(in oklab, var(--cat) 12%, transparent);
 }
 
 .quick-type:hover {
@@ -1267,7 +1267,7 @@ function del(t: Thing) {
 }
 
 .cats li {
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .cat-btn {
@@ -1301,8 +1301,8 @@ function del(t: Thing) {
 }
 
 .cat-btn.on {
-  background: color-mix(in srgb, var(--cat) 14%, transparent);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cat) 55%, transparent);
+  background: color-mix(in oklab, var(--cat) 14%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--cat) 55%, transparent);
 }
 
 /* While one category is chosen, the others step back */
@@ -1383,7 +1383,7 @@ function del(t: Thing) {
   font-weight: 600;
   color: var(--ink);
   background: var(--surface);
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
@@ -1405,7 +1405,7 @@ function del(t: Thing) {
   vertical-align: middle;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
 }
 
@@ -1483,7 +1483,7 @@ function del(t: Thing) {
   flex-direction: column;
   gap: 0.85rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   /* A thin band of the category colour along the top */
   box-shadow: inset 0 4px 0 var(--cat);
@@ -1658,12 +1658,12 @@ function del(t: Thing) {
 
 .add-btn {
   /* The app colour, nudged toward the text colour so it reads on light and dark surfaces */
-  color: color-mix(in srgb, var(--accent) 55%, var(--ink));
+  color: color-mix(in oklab, var(--accent) 55%, var(--ink));
   background: var(--surface);
 }
 
 .add-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--surface) 88%, var(--accent));
+  background: color-mix(in oklab, var(--surface) 88%, var(--accent));
 }
 
 .form {
@@ -1758,7 +1758,7 @@ function del(t: Thing) {
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: border-color var(--dur-fast), background-color var(--dur-fast), color var(--dur-fast), translate var(--dur-fast);
@@ -1772,7 +1772,7 @@ function del(t: Thing) {
 
 .type-option[aria-checked='true'] {
   color: var(--ink);
-  background: color-mix(in srgb, var(--cat) 12%, var(--surface));
+  background: color-mix(in oklab, var(--cat) 12%, var(--surface));
   border-color: var(--cat);
 }
 
@@ -1814,7 +1814,7 @@ function del(t: Thing) {
   padding: 0.6rem 0.8rem;
   font-size: var(--text-sm);
   color: var(--ink-2);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
   border-radius: var(--radius);
 }
 
@@ -1835,7 +1835,7 @@ function del(t: Thing) {
   font-weight: 700;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
@@ -1894,7 +1894,7 @@ function del(t: Thing) {
 
 .filter-select.set :deep(.trigger) {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
 }
 
 .filters-toggle {
@@ -2073,7 +2073,7 @@ function del(t: Thing) {
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: border-color var(--dur-fast), background-color var(--dur-fast), color var(--dur-fast);
@@ -2085,13 +2085,13 @@ function del(t: Thing) {
 
 .cat-option.active {
   color: var(--ink);
-  background: color-mix(in srgb, var(--cat) 14%, var(--surface));
+  background: color-mix(in oklab, var(--cat) 14%, var(--surface));
   border-color: var(--cat);
   box-shadow: 0 0 0 1px var(--cat);
 }
 
 .cat-option:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--cat) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--cat) 55%, transparent);
   outline-offset: 2px;
 }
 

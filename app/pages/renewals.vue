@@ -650,7 +650,7 @@ function del(r: Renewal) {
 
 .quick-service:hover {
   color: var(--ink);
-  border-color: var(--line);
+  border-color: var(--border);
 }
 
 .quick-service:active {
@@ -664,7 +664,7 @@ function del(r: Renewal) {
   font-size: var(--text-lg);
   font-weight: 700;
   color: var(--accent);
-  border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, var(--line));
+  border: 1.5px dashed color-mix(in oklab, var(--accent) 50%, var(--line));
 }
 
 @media (max-width: 419.98px) {

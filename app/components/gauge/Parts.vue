@@ -300,7 +300,7 @@ const summary = computed(() => `${props.label}: ${props.format(sum.value)} ${pro
 }
 
 .row[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .swatch {
@@ -308,7 +308,7 @@ const summary = computed(() => `${props.label}: ${props.format(sum.value)} ${pro
   width: 0.7rem;
   height: 0.7rem;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  background: color-mix(in oklab, var(--ink) 12%, transparent);
 }
 
 .name {

@@ -1028,12 +1028,12 @@ function switchCurrency(next) {
   font-weight: 600;
   text-align: left;
   color: var(--ink-2);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .bands td {
   padding: 0.45rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .bands .num {
@@ -1200,7 +1200,7 @@ function switchCurrency(next) {
   font-weight: 600;
   color: var(--ink-2);
   text-align: right;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .slip tbody th {
@@ -1295,7 +1295,7 @@ function switchCurrency(next) {
 .slip-foot {
   margin: 1rem 0 0;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .slip-foot div {
@@ -1344,12 +1344,12 @@ function switchCurrency(next) {
   font-weight: 600;
   text-align: left;
   color: var(--ink-2);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .proj td {
   padding: 0.6rem 0.75rem 0.6rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .proj .num {

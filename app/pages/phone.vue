@@ -314,7 +314,7 @@ async function copyResults() {
           Valid {{ valid.type === 'mobile' ? 'mobile' : 'landline' }} number
         </div>
 
-        <!-- A SIM card in the network's colour: cut corner, contact chip, the number printed on it -->
+        <!-- A SIM card in the network’s colour: cut corner, contact chip, the number printed on it -->
         <div class="sim" :style="{ '--op': valid.operator?.color ?? 'var(--blue)', '--sim-ink': simInk }">
           <div class="sim-top">
             <span class="chip" aria-hidden="true"><i /><i /><i /></span>
@@ -443,7 +443,7 @@ async function copyResults() {
           </button>
         </div>
 
-        <input v-model="contactQuery" class="input search" type="search" placeholder="Search by name or number" aria-label="Search contacts">
+        <input v-model="contactQuery" class="input search" type="search" enterkeyhint="search" placeholder="Search by name or number" aria-label="Search contacts">
         </div>
 
         <TransitionGroup tag="ul" name="list" v-if="filteredContacts.length" class="people">
@@ -584,7 +584,7 @@ async function copyResults() {
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--border);
   white-space: nowrap;
 }
 
@@ -617,7 +617,7 @@ async function copyResults() {
   padding: 1.5rem;
   text-align: center;
   color: var(--ink-3);
-  border: 2px dashed var(--line);
+  border: 2px dashed var(--border);
   border-radius: var(--radius-xl);
 }
 
@@ -638,7 +638,7 @@ async function copyResults() {
   color: var(--sim-ink);
   background:
     radial-gradient(circle at 85% 0%, rgb(255 255 255 / 0.28), transparent 55%),
-    linear-gradient(135deg, var(--op), color-mix(in srgb, var(--op) 70%, #000));
+    linear-gradient(135deg, var(--op), color-mix(in oklab, var(--op) 70%, #000));
   border-radius: var(--radius-lg);
   clip-path: polygon(0 0, calc(100% - 2.2rem) 0, 100% 2.2rem, 100% 100%, 0 100%);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15);
@@ -712,7 +712,7 @@ async function copyResults() {
   height: 1.6rem;
   border-radius: var(--radius-xs);
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1.5px var(--line);
+  box-shadow: inset 0 0 0 1.5px var(--border);
   transition: background-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
@@ -753,8 +753,8 @@ async function copyResults() {
 p.verdict {
   padding: 0.9rem 1.1rem;
   color: var(--bad-ink);
-  background: color-mix(in srgb, var(--red) 9%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  background: color-mix(in oklab, var(--red) 9%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--red) 30%, transparent);
   border-radius: var(--radius-lg);
   font-weight: 500;
 }
@@ -766,8 +766,8 @@ p.verdict {
   border-radius: 50%;
 }
 
-.ok .dot { background: var(--green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 20%, transparent); }
-.bad .dot { background: var(--red); box-shadow: 0 0 0 4px color-mix(in srgb, var(--red) 20%, transparent); }
+.ok .dot { background: var(--green); box-shadow: 0 0 0 4px color-mix(in oklab, var(--green) 20%, transparent); }
+.bad .dot { background: var(--red); box-shadow: 0 0 0 4px color-mix(in oklab, var(--red) 20%, transparent); }
 
 .owner {
   margin: 1.1rem 0 1.25rem;
@@ -775,7 +775,7 @@ p.verdict {
   display: flex;
   flex-direction: column;
   border-left: 5px solid var(--op);
-  background: color-mix(in srgb, var(--op) 9%, var(--surface));
+  background: color-mix(in oklab, var(--op) 9%, var(--surface));
   border-radius: 4px var(--radius) var(--radius) 4px;
 }
 
@@ -800,7 +800,7 @@ p.verdict {
   align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 dt {
@@ -855,7 +855,7 @@ dd {
 }
 
 .reference[open] summary {
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .reference .ops,
@@ -889,7 +889,7 @@ h2 {
   gap: 0.75rem;
   padding: 0.7rem 0.9rem;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-left: 5px solid var(--op);
   border-radius: 4px var(--radius) var(--radius) 4px;
 }
@@ -928,7 +928,7 @@ h2 {
   gap: 0.6rem;
   color: var(--ink);
   background: var(--surface);
-  box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(var(--shadow) / 0.12);
+  box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgb(var(--shadow) / 0.12);
 }
 
 .google:hover:not(:disabled) {
@@ -956,7 +956,7 @@ h2 {
   padding-top: 0.75rem;
   font-size: var(--text-sm);
   color: var(--ink-3);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .book {
@@ -986,7 +986,7 @@ h2 {
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background-color var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast), scale var(--dur-fast);
@@ -1030,7 +1030,7 @@ h2 {
 
 /* Pinned inside the white panel, so its backing is the panel's white, not the page grey */
 .contact-tools.is-stuck {
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  background: color-mix(in oklab, var(--surface) 90%, transparent);
 }
 
 .people {
@@ -1040,7 +1040,7 @@ h2 {
 }
 
 .people li + li {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .person {
@@ -1072,7 +1072,7 @@ h2 {
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--ink);
-  background: color-mix(in srgb, var(--op) 18%, var(--surface));
+  background: color-mix(in oklab, var(--op) 18%, var(--surface));
   border: 2px solid var(--op);
   border-radius: 50%;
 }
@@ -1103,7 +1103,7 @@ h2 {
   font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink);
-  background: color-mix(in srgb, var(--op) 14%, var(--surface));
+  background: color-mix(in oklab, var(--op) 14%, var(--surface));
   border-left: 3px solid var(--op);
   border-radius: 3px var(--radius-pill) var(--radius-pill) 3px;
 }

@@ -31,7 +31,7 @@ const ready = computed(() => pull.pull >= 72)
   color: var(--ink-2);
   background: var(--surface);
   border-radius: 50%;
-  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.25), 0 0 0 1px var(--line);
+  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.25), 0 0 0 1px var(--border);
 }
 
 .pull.ready {

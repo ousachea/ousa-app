@@ -167,7 +167,7 @@ h3 {
 
 .state.on {
   color: var(--good-ink);
-  background: color-mix(in srgb, var(--green) 14%, var(--surface));
+  background: color-mix(in oklab, var(--green) 14%, var(--surface));
 }
 
 .quick-actions {
@@ -183,7 +183,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .pair {

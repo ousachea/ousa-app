@@ -78,7 +78,7 @@ const shape = computed<Shape>(() => {
     <polygon :points="shape.head" :fill="color" stroke-linejoin="round" :stroke="color" :stroke-width="width * 0.4" />
   </g>
   <g v-else-if="variant === 'compass'">
-    <polygon v-if="shape.hasTail" :points="shape.rear" :fill="tailColor ?? 'color-mix(in srgb, currentColor 30%, transparent)'" />
+    <polygon v-if="shape.hasTail" :points="shape.rear" :fill="tailColor ?? 'color-mix(in oklab, currentColor 30%, transparent)'" />
     <polygon :points="shape.blade" :fill="color" />
   </g>
   <g v-else>

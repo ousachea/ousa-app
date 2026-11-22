@@ -53,7 +53,7 @@ const letter = computed(() => (props.name.trim()[0] ?? '?').toUpperCase())
 
 .renewal-icon.image {
   background: #fff;
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 img {

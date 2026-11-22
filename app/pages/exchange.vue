@@ -275,7 +275,7 @@ async function reloadRate() {
       </div>
 
       <Step :n="3" :title="mode === 'check' ? 'Do you gain or lose?' : 'Gain or loss if you convert back today'" v-sticky-fit class="result-step">
-        <!-- Printed like a money changer's receipt: header, dashed rules, a bold total, a torn edge -->
+        <!-- Printed like a money changer’s receipt: header, dashed rules, a bold total, a torn edge -->
         <div v-if="result" class="result receipt" :data-verdict="result.verdict" aria-live="polite">
           <header class="receipt-head">
             <span>{{ mode === 'check' ? 'Rate check' : 'Exchange check' }}</span>
@@ -347,7 +347,7 @@ async function reloadRate() {
   padding: 0;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius, 12px);
   cursor: pointer;
   transition: border-color var(--dur-fast, 0.15s), rotate var(--dur-slow) cubic-bezier(0.2, 0, 0, 1);
@@ -385,7 +385,7 @@ async function reloadRate() {
   margin: 0 0 1.75rem;
   padding: 4px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -406,7 +406,7 @@ async function reloadRate() {
 .tab[aria-selected='true'] {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
+  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--border);
 }
 
 /* A calculator: one narrow column, amount → rate → market → the receipt prints out underneath.
@@ -565,7 +565,7 @@ async function reloadRate() {
 
 /* Receipt paper: slightly warm, a zig-zag torn bottom edge, dashed rules */
 .receipt {
-  --paper: color-mix(in srgb, var(--surface) 94%, #f3e9d2);
+  --paper: color-mix(in oklab, var(--surface) 94%, #f3e9d2);
   position: relative;
   padding: 1.5rem 1.75rem 2.25rem;
   background: var(--paper);
@@ -631,7 +631,7 @@ async function reloadRate() {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.6rem 0;
-  border-top: 1px dashed color-mix(in srgb, var(--ink-3) 60%, transparent);
+  border-top: 1px dashed color-mix(in oklab, var(--ink-3) 60%, transparent);
 }
 
 /* The total line, double-ruled like a till receipt */

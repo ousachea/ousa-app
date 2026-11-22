@@ -210,7 +210,7 @@ function resetIgnored() {
   align-items: flex-start;
   gap: 0.6rem;
   padding: 0.55rem 0.65rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: border-color var(--dur-fast), background-color var(--dur-fast);
@@ -218,7 +218,7 @@ function resetIgnored() {
 
 .item.keep {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 7%, var(--surface));
 }
 
 .item input {

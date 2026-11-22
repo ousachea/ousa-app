@@ -395,7 +395,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
                   <tr v-for="e in tableRows" :key="e.id" class="bulk-row" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, e.id)" :class="{ 'bulk-picked': sel.has(e.id) }">
                     <td><span class="bulk-cell"><BulkCheck v-if="sel.selecting" inline :checked="sel.has(e.id)" :label="`Select ${formatDate(e.date, true)}`" @pick="sel.pick(e.id, $event)" />{{ formatDate(e.date, true) }}</span></td>
                     <td class="num">{{ fmt(e.kg) }}</td>
-                    <!-- Against the entry before it: gained ▲ or lost ▼, and the gap when it isn't the day before -->
+                    <!-- Against the entry before it: gained ▲ or lost ▼, and the gap when it isn’t the day before -->
                     <td class="change">
                       <template v-if="vsPrevious.get(e.id)">
                         <span class="delta" :class="changeDir(vsPrevious.get(e.id)!.diff)">
@@ -536,7 +536,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
 /* On a wide screen the goal sits third in the row, set off by a rule */
 .stats .goal {
   padding-left: 1.5rem;
-  border-left: 1px solid var(--line);
+  border-left: 1px solid var(--border);
 }
 
 /* Narrower, it takes the whole width under the two numbers */
@@ -549,7 +549,7 @@ const activePoint = computed(() => (active.value === undefined ? undefined : poi
     grid-column: 1 / -1;
     padding: 1rem 0 0;
     border-left: 0;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--border);
   }
 }
 
@@ -646,7 +646,7 @@ svg {
 }
 
 svg:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 4px;
   border-radius: var(--radius-sm);
 }
@@ -734,7 +734,7 @@ th,
 td {
   padding: 0.45rem 0.25rem;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 th {
@@ -777,7 +777,7 @@ th {
 /* The total under the entries, set apart by a heavier rule */
 tfoot th,
 tfoot td {
-  border-top: 2px solid var(--line);
+  border-top: 2px solid var(--border);
   border-bottom: 0;
   padding-top: 0.6rem;
 }

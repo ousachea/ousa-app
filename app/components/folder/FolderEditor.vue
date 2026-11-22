@@ -142,13 +142,13 @@ function submit() {
 }
 
 .icon-opt.on {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .icon-opt:has(input:focus-visible),
 .color-opt:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 

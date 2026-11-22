@@ -292,7 +292,7 @@ const status = computed(() => (game.over ? `No moves left. Final score ${game.sc
   flex-direction: column;
   background: var(--surface);
   border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .score .label {

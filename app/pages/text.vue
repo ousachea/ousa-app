@@ -108,7 +108,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 
     <div v-else class="workspace">
       <!-- Three numbered steps, the way every app here walks you through it. The case picker runs across
-           the top, so it's step 1 -->
+           the top, so it’s step 1 -->
       <Step :n="2" title="Paste your text" hint="Type or paste anything: a heading, a list, a whole document." class="input-step">
         <div class="panel editor">
           <textarea
@@ -255,7 +255,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   gap: 1rem;
   padding: 0.75rem 1rem 0.75rem 1.4rem;
   background: var(--surface-2);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .stats {
@@ -299,7 +299,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   gap: 0.3rem;
   text-align: left;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: border-color var(--dur-fast), background-color var(--dur-fast), box-shadow var(--dur-fast);
@@ -331,13 +331,13 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 .mode.active {
-  background: color-mix(in srgb, var(--yellow) 22%, var(--surface));
+  background: color-mix(in oklab, var(--yellow) 22%, var(--surface));
   border-color: var(--ink);
   box-shadow: 0 0 0 1px var(--ink);
 }
 
 .mode:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--ink) 40%, transparent);
   outline-offset: 2px;
 }
 

@@ -149,7 +149,7 @@ function go(s: { run: () => void }) {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--line) 60%, transparent);
 }
 
 /* The same numbered sticker as the app's step headings */
@@ -165,7 +165,7 @@ function go(s: { run: () => void }) {
   color: var(--ink-2);
   background: var(--surface-2);
   border-radius: var(--radius-xs);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .next .num {

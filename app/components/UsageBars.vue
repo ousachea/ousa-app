@@ -58,7 +58,7 @@ const short = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('e
   align-items: flex-end;
   /* 2px between bars, so neighbours never merge */
   gap: 2px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .slot {

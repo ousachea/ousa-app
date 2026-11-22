@@ -303,7 +303,7 @@ const showTxs = (extra: Record<string, string>) => go('transactions', { from: ra
 .tbl td {
   padding: 0.45rem 0.4rem;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .tbl th {

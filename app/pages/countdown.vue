@@ -262,7 +262,7 @@ function del(e: CountdownEvent) {
 
     <div class="workspace" :class="{ 'no-holidays': !cdPrefs.holidays }">
       <!-- Three numbered steps, the way every app here walks you through it. The first is a card
-           resting on the band, so its heading isn't on the colour -->
+           resting on the band, so its heading isn’t on the colour -->
       <Step :n="1" title="Add a date" hint="A birthday, a trip, a deadline. Add a time if it matters to the minute, and repeat it every year for birthdays." class="panel form-step">
         <form v-validate class="form" aria-label="Add a date" @submit.prevent="save">
           <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
@@ -602,9 +602,9 @@ function del(e: CountdownEvent) {
   /* A soft light from the top-left corner so the banner isn't a flat slab of colour */
   background:
     radial-gradient(120% 140% at 0% 0%, rgb(255 255 255 / 0.18), transparent 55%),
-    linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #1b1f2a));
+    linear-gradient(135deg in oklab, var(--accent), color-mix(in oklab, var(--accent) 70%, #1b1f2a));
   border: 0;
-  box-shadow: 0 18px 40px -22px color-mix(in srgb, var(--accent) 80%, black);
+  box-shadow: 0 18px 40px -22px color-mix(in oklab, var(--accent) 80%, black);
 }
 
 .featured.editing {
@@ -758,7 +758,7 @@ function del(e: CountdownEvent) {
   text-align: center;
   background: var(--surface);
   border-radius: var(--radius-sm);
-  box-shadow: 0 0 0 1px var(--line), 0 2px 4px rgb(var(--shadow) / 0.08);
+  box-shadow: 0 0 0 1px var(--border), 0 2px 4px rgb(var(--shadow) / 0.08);
 }
 
 .month {
@@ -883,7 +883,7 @@ function del(e: CountdownEvent) {
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .past li span:first-child {
@@ -1125,7 +1125,7 @@ function del(e: CountdownEvent) {
   align-items: flex-start;
   gap: 0.85rem;
   padding: 0.8rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 /* A small tear-off date, echoing the calendar pages */
@@ -1138,7 +1138,7 @@ function del(e: CountdownEvent) {
   align-items: center;
   background: var(--surface);
   border-radius: var(--radius-sm);
-  box-shadow: 0 0 0 1px var(--line), 0 2px 0 var(--line);
+  box-shadow: 0 0 0 1px var(--border), 0 2px 0 var(--line);
 }
 
 .h-date strong {

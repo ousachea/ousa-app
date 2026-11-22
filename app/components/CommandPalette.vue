@@ -274,7 +274,7 @@ onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
         <kbd class="esc">esc</kbd>
       </div>
 
-      <div id="palette-list" ref="listEl" class="list" role="listbox" :aria-label="placeholder">
+      <div id="palette-list" ref="listEl" class="list scroll-fade" role="listbox" :aria-label="placeholder">
         <section v-for="s in sections" :key="s.title" role="group" :aria-label="s.title">
           <h3>{{ s.title }}</h3>
           <div
@@ -356,7 +356,7 @@ onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .lead {
@@ -427,7 +427,7 @@ h3 {
 
 .option[aria-selected='true'] {
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .icon {
@@ -506,7 +506,7 @@ h3 {
   padding: 0.55rem 0.9rem;
   font-size: var(--text-xs);
   color: var(--ink-3);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
   background: var(--surface-2);
 }
 

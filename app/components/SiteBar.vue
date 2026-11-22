@@ -49,7 +49,7 @@ function goBack(e: MouseEvent) {
       >
         <AppIcon v-if="back" class="chev" name="chevron-left" />
         <AppLogo class="logo" />
-        <!-- In an app the back button is the chevron and logo alone; the app's name follows it -->
+        <!-- In an app the back button is the chevron and logo alone; the app’s name follows it -->
         <span v-if="!back" class="brand-name">Ousa’s Apps</span>
       </NuxtLink>
       <ClientOnly>
@@ -146,7 +146,7 @@ function goBack(e: MouseEvent) {
 }
 
 .brand:hover {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: color-mix(in oklab, var(--ink) 6%, transparent);
 }
 
 .brand:focus-visible {
@@ -237,7 +237,7 @@ function goBack(e: MouseEvent) {
 
 .crumb-link:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: color-mix(in oklab, var(--ink) 6%, transparent);
 }
 
 .crumb-link:focus-visible {
@@ -272,13 +272,13 @@ function goBack(e: MouseEvent) {
   background: var(--surface);
   border: 0;
   border-radius: var(--radius);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
   cursor: pointer;
   transition: background-color var(--dur-fast, 0.15s), box-shadow var(--dur-fast, 0.15s), scale var(--dur-fast);
 }
 
 .bar-btn:hover {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 25%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink) 25%, var(--line));
 }
 
 .bar-btn:active {
@@ -316,7 +316,7 @@ function goBack(e: MouseEvent) {
   font-weight: 600;
   color: var(--ink-3);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xs);
 }
 

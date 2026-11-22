@@ -25,7 +25,7 @@ defineProps<{ name: string, checking?: boolean }>()
   align-items: center;
   text-align: center;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
 }
 
@@ -42,8 +42,8 @@ defineProps<{ name: string, checking?: boolean }>()
   place-items: center;
   margin-bottom: 0.75rem;
   /* Darkened a little, so light app colours (yellow, gold) still show on their own tint */
-  color: color-mix(in srgb, var(--accent) 75%, var(--ink));
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: color-mix(in oklab, var(--accent) 75%, var(--ink));
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface));
   border-radius: var(--radius-lg);
 }
 

@@ -2,7 +2,7 @@
 import type { UpcomingKind, UpcomingMark } from '~/utils/calendar'
 
 // Countdown's next 30 days on one track: your dates, renewals (with their price) and public holidays,
-// each kind in its own colour. Shown on both tabs, so either one answers "what's coming up?"
+// each kind in its own colour. Shown on both tabs, so either one answers "what’s coming up?"
 const props = defineProps<{ marks: UpcomingMark[], empty?: string }>()
 
 const KINDS: Record<UpcomingKind, string> = { date: 'Your dates', renewal: 'Renewals', holiday: 'Holidays' }
@@ -137,7 +137,7 @@ const whenOf = (day: number) => (day === 0 ? 'today' : day === 1 ? 'tomorrow' : 
   position: relative;
   margin: 0.9rem 0.5rem 0 0.25rem;
   height: calc(var(--lanes) * 2.6rem + 1rem);
-  border-bottom: 2px solid var(--line);
+  border-bottom: 2px solid var(--border);
 }
 
 .tick {
@@ -177,7 +177,7 @@ const whenOf = (day: number) => (day === 0 ? 'today' : day === 1 ? 'tomorrow' : 
   bottom: 100%;
   width: 1px;
   height: calc(0.6rem + var(--lane) * 2.6rem);
-  background: color-mix(in srgb, var(--kind) 50%, transparent);
+  background: color-mix(in oklab, var(--kind) 50%, transparent);
 }
 
 .mark-label {
@@ -187,7 +187,7 @@ const whenOf = (day: number) => (day === 0 ? 'today' : day === 1 ? 'tomorrow' : 
   padding: 0.2rem 0.5rem;
   font-size: var(--text-xs);
   color: var(--ink-2);
-  background: color-mix(in srgb, var(--kind) 9%, var(--surface-2));
+  background: color-mix(in oklab, var(--kind) 9%, var(--surface-2));
   border-radius: var(--radius-xs);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;

@@ -157,7 +157,7 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
 
       <div class="grid">
         <template v-for="f in fields" :key="f.key">
-          <!-- Icons: one of the CV's set, as stickers -->
+          <!-- Icons: one of the CV’s set, as stickers -->
           <fieldset v-if="f.type === 'icon'" class="group span">
             <legend class="label">{{ f.label }}</legend>
             <div class="icon-grid" role="radiogroup" :aria-label="f.label">
@@ -289,7 +289,7 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
   --violet: #7c3aed;
   --accent: #7c3aed;
   --on-accent: #fff;
-  --gradient: linear-gradient(180deg, #8f5cf7 0%, #7c3aed 45%, #5b21b6 100%);
+  --gradient: linear-gradient(180deg in oklch, #8f5cf7 0%, #7c3aed 45%, #5b21b6 100%);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -306,8 +306,8 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
   padding: 0.65rem 0.8rem;
   font-size: var(--text-sm);
   color: var(--ink-2);
-  background: color-mix(in srgb, #7c3aed 7%, var(--surface));
-  border: 1px solid color-mix(in srgb, #7c3aed 18%, var(--line));
+  background: color-mix(in oklab, #7c3aed 7%, var(--surface));
+  border: 1px solid color-mix(in oklab, #7c3aed 18%, var(--line));
   border-radius: var(--radius-lg);
 }
 
@@ -369,7 +369,7 @@ const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
   font-weight: 700;
   text-align: center;
   color: var(--violet);
-  background: color-mix(in srgb, #7c3aed 12%, var(--surface));
+  background: color-mix(in oklab, #7c3aed 12%, var(--surface));
   border-radius: var(--radius-pill);
 }
 
@@ -488,7 +488,7 @@ textarea.input {
   min-width: 0;
   height: 6px;
   appearance: none;
-  background: linear-gradient(90deg, #8f5cf7, #6d28d9) 0 / var(--v) 100% no-repeat, var(--surface-2);
+  background: linear-gradient(90deg in oklch, #8f5cf7, #6d28d9) 0 / var(--v) 100% no-repeat, var(--surface-2);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
@@ -530,15 +530,15 @@ textarea.input {
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--violet);
-  background: color-mix(in srgb, #7c3aed 5%, transparent);
-  border: 1.5px dashed color-mix(in srgb, #7c3aed 40%, transparent);
+  background: color-mix(in oklab, #7c3aed 5%, transparent);
+  border: 1.5px dashed color-mix(in oklab, #7c3aed 40%, transparent);
   border-radius: var(--radius);
   cursor: pointer;
   transition: background-color var(--dur-fast), border-color var(--dur-fast);
 }
 
 .add-row:hover {
-  background: color-mix(in srgb, #7c3aed 10%, transparent);
+  background: color-mix(in oklab, #7c3aed 10%, transparent);
   border-color: #7c3aed;
 }
 
@@ -572,7 +572,7 @@ textarea.input {
   font-size: var(--text-lg);
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: background-color var(--dur-fast), color var(--dur-fast), transform var(--dur) cubic-bezier(0.3, 1.5, 0.6, 1);
@@ -617,7 +617,7 @@ textarea.input {
   margin: 0.25rem -1.4rem -1.4rem;
   padding: 0.9rem 1.4rem 1.4rem;
   background: var(--surface);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
@@ -638,7 +638,7 @@ textarea.input {
   font-weight: 700;
   color: var(--ink-3);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xs);
 }
 
@@ -664,7 +664,7 @@ textarea.input {
 .btn-x.quiet {
   color: var(--ink);
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .btn-x.save {
@@ -684,7 +684,7 @@ textarea.input {
 
 .danger-btn {
   color: var(--bad-ink);
-  background: color-mix(in srgb, var(--red) 8%, var(--surface));
+  background: color-mix(in oklab, var(--red) 8%, var(--surface));
 }
 
 .danger-btn.confirm {

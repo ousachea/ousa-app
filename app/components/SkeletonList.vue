@@ -35,7 +35,7 @@ withDefaults(defineProps<{ variant?: 'rows' | 'cards' | 'tiles', count?: number,
 .rows {
   background: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .row {
@@ -46,7 +46,7 @@ withDefaults(defineProps<{ variant?: 'rows' | 'cards' | 'tiles', count?: number,
 }
 
 .row + .row {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .icon {
@@ -91,7 +91,7 @@ withDefaults(defineProps<{ variant?: 'rows' | 'cards' | 'tiles', count?: number,
   padding: 1.1rem;
   background: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .block {

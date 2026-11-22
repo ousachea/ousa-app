@@ -408,14 +408,14 @@ const statParts = computed(() => {
     const opened = items.value.filter(b => b.visits > 0).length
     return [
       { key: 'opened', label: 'Opened from here', value: opened, color: 'var(--accent)', detail: n(opened) },
-      { key: 'never', label: 'Never opened', value: items.value.length - opened, color: 'color-mix(in srgb, var(--ink) 28%, var(--surface))', detail: n(items.value.length - opened) }
+      { key: 'never', label: 'Never opened', value: items.value.length - opened, color: 'color-mix(in oklab, var(--ink) 28%, var(--surface))', detail: n(items.value.length - opened) }
     ]
   }
   if (statsBy.value === 'pinned') {
     const count = items.value.filter(b => b.pinned).length
     return [
       { key: 'pinned', label: 'Pinned', value: count, color: 'var(--accent)', detail: 'On the shelf at the top' },
-      { key: 'rest', label: 'Not pinned', value: items.value.length - count, color: 'color-mix(in srgb, var(--ink) 28%, var(--surface))', detail: n(items.value.length - count) }
+      { key: 'rest', label: 'Not pinned', value: items.value.length - count, color: 'color-mix(in oklab, var(--ink) 28%, var(--surface))', detail: n(items.value.length - count) }
     ]
   }
   // Each bookmark counts once, under the top folder of the first folder it's in, so the parts add up
@@ -1253,7 +1253,7 @@ async function refreshAllDetails() {
             </template>
             <label class="search">
               <AnimatedIcon name="search" />
-              <input ref="searchInput" v-model="query" type="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
+              <input ref="searchInput" v-model="query" type="search" enterkeyhint="search" placeholder="Search" aria-label="Search bookmarks" @keydown.enter.prevent="openFirst">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
             <button v-if="items.length" type="button" class="btn btn-quiet btn-sm select-btn" :aria-pressed="sel.selecting" @click="sel.selecting ? sel.stop() : sel.start()">{{ sel.selecting ? 'Done' : 'Select' }}</button>
@@ -1286,7 +1286,7 @@ async function refreshAllDetails() {
             </div>
           </div>
 
-          <!-- Overview: stacked parts of the whole library; a folder's part opens it below -->
+          <!-- Overview: stacked parts of the whole library; a folder’s part opens it below -->
           <Transition name="stats">
             <section v-if="statsOpen && items.length" id="bookmark-stats" class="stats-panel" aria-label="Overview">
               <div class="stats-head">
@@ -1339,7 +1339,7 @@ async function refreshAllDetails() {
                 <span v-if="b.pinned" class="pin-ribbon" aria-hidden="true">
                   <AppIcon name="pin" />
                 </span>
-                <!-- The page's own preview image: a cover on cards, a thumbnail in the list -->
+                <!-- The page’s own preview image: a cover on cards, a thumbnail in the list -->
                 <img v-if="b.image && view !== 'compact' && !brokenImages.has(b.image)" class="mark-image" :src="b.image" alt="" loading="lazy" referrerpolicy="no-referrer" @error="brokenImages = new Set(brokenImages).add(b.image!)">
                 <!-- The icon doubles as the checkbox: always while selecting, and on hover with a mouse to start -->
                 <span class="mark-icon">
@@ -1537,7 +1537,7 @@ async function refreshAllDetails() {
   line-height: 1.5;
   text-align: center;
   color: var(--warn-ink);
-  background: color-mix(in srgb, var(--orange) 16%, var(--surface));
+  background: color-mix(in oklab, var(--orange) 16%, var(--surface));
   border-radius: var(--radius-pill);
 }
 
@@ -1583,7 +1583,7 @@ async function refreshAllDetails() {
 }
 
 .move-opt.current {
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
 }
 
 .move-opt.new {
@@ -1594,7 +1594,7 @@ async function refreshAllDetails() {
   margin-top: 1rem;
   background: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .import-hint {
@@ -1610,7 +1610,7 @@ async function refreshAllDetails() {
   color: var(--accent);
   background: var(--surface-2);
   border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .add-here :deep(svg) {
@@ -1652,9 +1652,9 @@ async function refreshAllDetails() {
 /* Closed, it keeps a bookmark's shape but reads as a slot to fill, not a bookmark: a dashed outline
    in the app's colour on a light tint, no card shadow, the + in the middle */
 .add-mark:has(.add-here-row) {
-  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 5%, var(--surface));
   /* Drawn by v-ants, so the dashes walk */
-  --ants-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  --ants-color: color-mix(in oklab, var(--accent) 45%, transparent);
   --ants-width: 1.5px;
   --ants-offset: -6px;
   border-radius: var(--radius-xl);
@@ -1666,7 +1666,7 @@ async function refreshAllDetails() {
 }
 
 .marks .add-mark:has(.add-here-row):hover {
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
   --ants-color: var(--accent);
 }
 
@@ -1724,7 +1724,7 @@ async function refreshAllDetails() {
   font-size: var(--text-xs);
   font-weight: 700;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
   border-radius: var(--radius-pill);
 }
 
@@ -1795,7 +1795,7 @@ async function refreshAllDetails() {
   color: var(--ink-2);
   background: var(--surface-2);
   border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .view-btn.folder-act.on {
@@ -1836,7 +1836,6 @@ async function refreshAllDetails() {
 .share-link .input {
   flex: 1;
   min-width: 0;
-  font-size: var(--text-sm);
 }
 
 .share-actions {
@@ -1874,7 +1873,7 @@ async function refreshAllDetails() {
 .folder-tile-icon {
   font-size: var(--text-xl);
   color: var(--tag, var(--accent));
-  background: color-mix(in srgb, var(--tag, var(--accent)) 14%, var(--surface));
+  background: color-mix(in oklab, var(--tag, var(--accent)) 14%, var(--surface));
 }
 
 /* ---------- Pinned tiles ---------- */
@@ -1897,7 +1896,7 @@ async function refreshAllDetails() {
   text-decoration: none;
   background: var(--surface);
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 0 1px var(--line), 0 6px 14px -8px rgb(var(--shadow) / 0.3);
+  box-shadow: 0 0 0 1px var(--border), 0 6px 14px -8px rgb(var(--shadow) / 0.3);
   transition: translate var(--dur-fast) cubic-bezier(0.2, 0, 0, 1), box-shadow var(--dur-fast), scale var(--dur-fast);
 }
 
@@ -1928,7 +1927,7 @@ async function refreshAllDetails() {
   overflow: hidden;
   font-weight: 700;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
 }
 
 .tile-icon {
@@ -2033,7 +2032,7 @@ async function refreshAllDetails() {
 .tag-row.on {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: inset 3px 0 0 var(--tag, var(--accent)), 0 0 0 1px var(--line);
+  box-shadow: inset 3px 0 0 var(--tag, var(--accent)), 0 0 0 1px var(--border);
 }
 
 .tag-row.muted span {
@@ -2055,7 +2054,7 @@ async function refreshAllDetails() {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.4rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 
@@ -2117,8 +2116,8 @@ async function refreshAllDetails() {
   inset: 0;
   margin: 0;
   border-radius: inherit;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 35%, transparent);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--ink) 35%, transparent);
   cursor: pointer;
   transition-property: background-color, box-shadow;
   transition-duration: 0.15s;
@@ -2184,7 +2183,7 @@ async function refreshAllDetails() {
 }
 
 .mark.picked {
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
 }
 
 .toolbar h2 {
@@ -2206,7 +2205,7 @@ async function refreshAllDetails() {
   width: min(100%, 16rem);
   padding: 0 0.6rem 0 0.75rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   transition: border-color var(--dur-fast);
 }
@@ -2241,7 +2240,7 @@ kbd {
   font: inherit;
   font-size: var(--text-xs);
   color: var(--ink-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xs);
 }
 
@@ -2257,7 +2256,7 @@ kbd {
   padding: 0;
   background: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .mark {
@@ -2324,7 +2323,7 @@ kbd {
   left: 0.25rem;
   translate: none;
   height: 1.6rem;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  background: color-mix(in oklab, var(--surface) 85%, transparent);
   border-radius: var(--radius-xs);
 }
 
@@ -2348,7 +2347,7 @@ kbd {
 .mark:hover:not(:has(.mark-actions:hover, .mark-tags:hover)),
 .mark:has(.mark-title:focus-visible) {
   --hl: 1;
-  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 7%, var(--surface));
 }
 
 /* Quick to light up; the slower fade-out belongs to the "just saved" flash */
@@ -2426,14 +2425,14 @@ kbd {
   font-size: var(--text-2xs);
   font-weight: 700;
   color: var(--warn-ink);
-  background: color-mix(in srgb, var(--dupe-color) 14%, var(--surface));
+  background: color-mix(in oklab, var(--dupe-color) 14%, var(--surface));
   border: 0;
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
 .dupe-badge:hover {
-  background: color-mix(in srgb, var(--dupe-color) 24%, var(--surface));
+  background: color-mix(in oklab, var(--dupe-color) 24%, var(--surface));
 }
 
 /* ---------- Preview images ---------- */
@@ -2446,7 +2445,7 @@ kbd {
   object-fit: cover;
   border-radius: var(--radius-sm);
   background: var(--surface-2);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 /* Cards: a cover across the top */
@@ -2547,12 +2546,12 @@ kbd {
 }
 
 .mark + .mark {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 /* A just-saved (or already-saved) bookmark glows briefly so you can see where it went */
 .mark.flash {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
   transition: none;
 }
 
@@ -2614,7 +2613,7 @@ kbd {
   padding: 0.35rem 0.6rem;
   font-size: var(--text-sm);
   color: var(--ink);
-  background: color-mix(in srgb, var(--yellow) 18%, var(--surface));
+  background: color-mix(in oklab, var(--yellow) 18%, var(--surface));
   border-left: 3px solid var(--yellow);
   border-radius: 2px var(--radius-sm) var(--radius-sm) 2px;
   white-space: pre-line;
@@ -2633,15 +2632,15 @@ kbd {
   font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink);
-  background: color-mix(in srgb, var(--tag) 13%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--tag) 35%, transparent);
+  background: color-mix(in oklab, var(--tag) 13%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--tag) 35%, transparent);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background-color var(--dur-fast);
 }
 
 .chip:hover {
-  background: color-mix(in srgb, var(--tag) 24%, var(--surface));
+  background: color-mix(in oklab, var(--tag) 24%, var(--surface));
 }
 
 .mark-actions {
@@ -2655,7 +2654,7 @@ kbd {
 /* On/off toggles (overview, preview images): on or open, they take the tool colour, like a pinned folder's pin */
 .view-btn.toggle-btn:is([aria-pressed='true'], [aria-expanded='true']) {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface));
   box-shadow: inset 0 0 0 1.5px var(--accent);
 }
 
@@ -2663,7 +2662,7 @@ kbd {
   margin: 0.25rem 0 1rem;
   padding: 1.1rem 1.25rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
 }
 
@@ -2721,7 +2720,7 @@ kbd {
   gap: 2px;
   background: var(--surface-2);
   border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .view-btn {
@@ -2836,18 +2835,18 @@ kbd {
   background: var(--surface);
   border: 0;
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
   transition: background-color 0.6s, translate var(--dur-fast), box-shadow var(--dur-fast);
 }
 
 .marks.grid .mark:hover:not(:has(.mark-actions:hover, .mark-tags:hover)),
 .marks.grid .mark:has(.mark-title:focus-visible) {
   translate: 0 -2px;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent), 0 16px 30px -18px rgb(var(--shadow) / 0.5);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 60%, transparent), 0 16px 30px -18px rgb(var(--shadow) / 0.5);
 }
 
 .marks.grid .mark.flash {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
 }
 
 .marks.grid .mark-icon {
@@ -2955,7 +2954,7 @@ kbd {
   gap: 0.75rem;
   text-align: center;
   color: var(--ink-2);
-  border: 2px dashed var(--line);
+  border: 2px dashed var(--border);
   border-radius: var(--radius-xl);
 }
 
@@ -3029,7 +3028,7 @@ kbd {
     flex: none;
     gap: 0.4rem;
     background: var(--surface);
-    box-shadow: 0 0 0 1px var(--line);
+    box-shadow: 0 0 0 1px var(--border);
   }
 
   .side-tools {

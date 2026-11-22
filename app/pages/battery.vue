@@ -834,8 +834,8 @@ onMounted(async () => {
               <AppIcon name="share" :size="16" />
             </span>
             <div class="detect-body">
-              <strong>You're viewing a shared result</strong>
-              <small>Changes here aren't saved. <button type="button" class="detect-link" @click="leaveSharedView">Check my own phone instead</button></small>
+              <strong>You’re viewing a shared result</strong>
+              <small>Changes here aren’t saved. <button type="button" class="detect-link" @click="leaveSharedView">Check my own phone instead</button></small>
             </div>
           </div>
 
@@ -851,7 +851,7 @@ onMounted(async () => {
                   <small>Picked automatically from {{ detection.via }}. <button type="button" class="detect-link" @click="undoDetect">Not my phone</button></small>
                 </template>
                 <template v-else-if="detection.kind === 'candidates'">
-                  <strong>You're on an iPhone. Which one?</strong>
+                  <strong>You’re on an iPhone. Which one?</strong>
                   <small>iPhones only share their screen size ({{ detection.via }}), and these models all use it.</small>
                   <div class="detect-chips">
                     <button
@@ -867,7 +867,7 @@ onMounted(async () => {
                 </template>
                 <template v-else>
                   <strong>Detected a {{ detectedBrandLabel }} phone</strong>
-                  <small>Model {{ detection.via }} isn't in the list yet, so pick the closest one below.</small>
+                  <small>Model {{ detection.via }} isn’t in the list yet, so pick the closest one below.</small>
                 </template>
               </div>
               <button type="button" class="detect-close" aria-label="Dismiss" @click="detectDismissed = true">
@@ -976,7 +976,7 @@ onMounted(async () => {
                 </p>
               </div>
             </div>
-            <small>Picking a model fills in its original capacity. Figures are the maker's published capacity, or regulatory filings and teardowns for iPhone. Where a phone's battery differs by region, the global version is listed.</small>
+            <small>Picking a model fills in its original capacity. Figures are the maker’s published capacity, or regulatory filings and teardowns for iPhone. Where a phone’s battery differs by region, the global version is listed.</small>
           </div>
 
           <label class="field">
@@ -1045,7 +1045,7 @@ onMounted(async () => {
             </div>
             <input v-model.number="chargePct" class="range" type="range" min="0" max="100" step="1" aria-label="Charge right now" @input="onChargeInput">
             <small v-if="liveBattery">Read from your phone and kept up to date. Type a value to override it.</small>
-            <small v-else-if="isIOS">iPhones don't share their battery level with web pages, so enter the % from your status bar.</small>
+            <small v-else-if="isIOS">iPhones don’t share their battery level with web pages, so enter the % from your status bar.</small>
             <small v-else>The percentage shown in your status bar.</small>
           </label>
           </section>
@@ -1065,7 +1065,7 @@ onMounted(async () => {
                   <AppIcon name="check" :size="14" />
                   Copied
                 </span>
-                <span v-else-if="shareState === 'failed'" key="fail" class="share-inner">Couldn't copy</span>
+                <span v-else-if="shareState === 'failed'" key="fail" class="share-inner">Couldn’t copy</span>
                 <span v-else key="idle" class="share-inner">
                   <AppIcon name="share" :size="14" />
                   Share
@@ -1230,7 +1230,7 @@ onMounted(async () => {
   --pb-over: #4a76b0;
   --pb-card: var(--surface);
   --pb-on-ink: var(--surface);
-  --pb-line-strong: color-mix(in srgb, var(--ink) 25%, var(--line));
+  --pb-line-strong: color-mix(in oklab, var(--ink) 25%, var(--line));
   --pb-hatch-a: var(--surface-2);
   --pb-hatch-b: var(--surface);
   width: 100%;
@@ -1963,8 +1963,8 @@ onMounted(async () => {
     font-size: var(--text-sm);
     color: var(--ink);
     white-space: nowrap;
-    background: color-mix(in srgb, var(--surface) 84%, transparent);
-    border: 1px solid var(--line);
+    background: color-mix(in oklab, var(--surface) 84%, transparent);
+    border: 1px solid var(--border);
     border-radius: var(--radius-pill);
     box-shadow: 0 12px 32px -14px rgb(0 0 0 / 0.45);
     backdrop-filter: blur(18px) saturate(1.6);

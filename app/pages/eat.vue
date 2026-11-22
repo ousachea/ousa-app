@@ -778,7 +778,7 @@ function decide(dir: 'left' | 'right') {
 }
 
 // The last card is decided: go straight on to choosing. Two or more liked starts the head-to-head,
-// one liked is the pick; none leaves the "That's everything" panel to shuffle again.
+// one liked is the pick; none leaves the "That’s everything" panel to shuffle again.
 function finishDeck() {
   if (chosen.value || duel.value) return
   if (shortlist.value.length > 1) setTimeout(narrow, reducedMotion ? 0 : 250)
@@ -840,7 +840,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
         <span class="focus-count">{{ deck.length ? `${deck.length} ${deck.length === 1 ? 'card' : 'cards'} left` : 'All done' }}</span>
         <button type="button" class="btn btn-sm focus-done" @click="setFocus(false)">Done</button>
       </div>
-      <!-- Before you swipe: what's in the deck -->
+      <!-- Before you swipe: what’s in the deck -->
       <div class="stage-top">
         <div class="segmented filter" role="radiogroup" aria-label="Show">
           <label v-for="f in FILTERS" :key="f.value" :class="{ active: filter === f.value }">
@@ -857,12 +857,12 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
           </label>
         </div>
       </div>
-      <!-- Off full screen, step 1's hint says this -->
+      <!-- Off full screen, step 1’s hint says this -->
       <p v-if="focus" class="how">Swipe right to add to your shortlist, left to skip. Arrow keys work too. Esc to leave.</p>
 
       <ClientOnly>
         <div ref="stageEl" class="stage" tabindex="0" aria-label="Food cards. Use the left and right arrow keys to decide." @keydown="onKey">
-          <!-- Narrowing down: tap the one you'd rather have -->
+          <!-- Narrowing down: tap the one you’d rather have -->
           <div v-if="duelPair && duel" class="duel" role="group" aria-label="Which one would you rather have?">
             <div class="duel-head">
               <strong>Which sounds better?</strong>
@@ -954,7 +954,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
           <button type="button" class="btn btn-quiet round" aria-label="Not today" @click="decide('left')">✕</button>
           <button type="button" class="btn round" aria-label="Add to shortlist" @click="decide('right')">♥</button>
         </div>
-        <!-- Start the deck full screen; once you're going it's just a way to get more room -->
+        <!-- Start the deck full screen; once you’re going it’s just a way to get more room -->
         <button v-if="!focus && current && !chosen && !duel" type="button" class="btn start-btn" :class="{ 'btn-quiet': liked.length }" @click="setFocus(true)">
           <AppIcon name="maximize" />
           {{ liked.length ? 'Full screen' : 'Start deciding' }}
@@ -1006,7 +1006,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
         <ClientOnly><span class="manage-tools"><BulkToggle v-if="items.length" :select="sel" /><DataSource :sync="sync" /></span></ClientOnly>
       </template>
       <div class="library-bar">
-        <input v-model="libQuery" class="input lib-search" type="search" placeholder="Search your foods and places" aria-label="Search your foods and places">
+        <input v-model="libQuery" class="input lib-search" type="search" enterkeyhint="search" placeholder="Search your foods and places" aria-label="Search your foods and places">
         <div class="segmented lib-kind" role="radiogroup" aria-label="Show in the list">
           <label v-for="f in FILTERS" :key="f.value" :class="{ active: libKind === f.value }">
             <input v-model="libKind" type="radio" name="lib-kind" :value="f.value">{{ f.label }}
@@ -1041,7 +1041,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
         </TransitionGroup>
         <p v-else-if="items.length" class="panel step-empty">Nothing matches{{ libQuery ? ` “${libQuery}”` : '' }}. <button type="button" class="link" @click="libQuery = ''; libKind = 'all'">Show everything</button></p>
         <p v-else class="panel step-empty">Add a few foods or places and they’ll show here, and in the deck.</p>
-        <!-- Everyone else's shared foods: in the deck too; the site owner can take any of them down -->
+        <!-- Everyone else’s shared foods: in the deck too; the site owner can take any of them down -->
         <template v-if="others.length">
           <h3 class="others-head">Shared by others <span class="optional">{{ others.length }}</span></h3>
           <ul class="thumbs">
@@ -1263,7 +1263,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
   font-weight: 700;
   color: var(--ink-3);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: color var(--dur-fast, 0.15s), border-color var(--dur-fast, 0.15s), background-color var(--dur-fast, 0.15s);
@@ -1271,8 +1271,8 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
 
 .price-toggle[aria-pressed='true'] {
   color: var(--accent-btn, var(--accent));
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
+  border-color: color-mix(in oklab, var(--accent) 55%, var(--line));
 }
 
 .skip-recent {
@@ -1469,7 +1469,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
 }
 
 .focus-pick:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -1547,7 +1547,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
 }
 
 .add-photos:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -1617,7 +1617,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 2px dashed var(--line);
+  border: 2px dashed var(--border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: border-color var(--dur-fast);
@@ -1636,7 +1636,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
 }
 
 .photo-pick:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -1716,7 +1716,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
 }
 
 .thumb-img:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -1829,7 +1829,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
   overflow-y: auto;
   overscroll-behavior: contain;
   background:
-    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 16%, var(--bg)), var(--bg) 70%);
+    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--accent) 16%, var(--bg)), var(--bg) 70%);
   animation: focus-in 0.25s cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -1872,7 +1872,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
 }
 
 .stage:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 6px;
 }
 
@@ -2029,7 +2029,7 @@ const photoStyle = (spot: Spot) => (spot.image ? { '--photo': cssUrl(spot.image)
   font-size: var(--text-sm);
   font-weight: 600;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
 }
 

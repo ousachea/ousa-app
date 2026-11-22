@@ -76,7 +76,7 @@ function onFiles(e: Event) {
 .part + .part {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 h3 {
@@ -87,7 +87,7 @@ h3 {
 .seg {
   display: inline-flex;
   padding: 0.2rem;
-  background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+  background: color-mix(in oklab, var(--ink) 5%, var(--surface));
   border-radius: var(--radius);
 }
 
@@ -123,7 +123,7 @@ h3 {
   gap: 0.1rem;
   padding: 0.6rem 0.7rem;
   font-size: var(--text-sm);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
 }

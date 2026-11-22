@@ -92,7 +92,7 @@ function del(t: BudgetTransaction) {
   font-weight: 600;
   color: var(--ink-3);
   background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .day-total {
@@ -114,7 +114,7 @@ ul {
 }
 
 .tx + .tx {
-  border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  border-top: 1px solid color-mix(in oklab, var(--line) 60%, transparent);
 }
 
 .icon {
@@ -125,7 +125,7 @@ ul {
   place-items: center;
   font-size: var(--text-title);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--slot) 16%, var(--surface));
+  background: color-mix(in oklab, var(--slot) 16%, var(--surface));
 }
 
 .what {

@@ -335,7 +335,7 @@ onBeforeUnmount(() => {
         </div>
       </ClientOnly>
 
-      <!-- Quick Add, for touch screens and anyone who doesn't know the keys. Search everything is the
+      <!-- Quick Add, for touch screens and anyone who doesn’t know the keys. Search everything is the
            Search button beside Apps in the top bar -->
       <div class="quick">
         <button type="button" class="quick-btn add" aria-keyshortcuts="A" @click="open = false; openPalette('add')">
@@ -350,7 +350,7 @@ onBeforeUnmount(() => {
         <input
           ref="searchInput"
           v-model="query"
-          type="search"
+          type="search" enterkeyhint="search"
           placeholder="Jump to an app"
           aria-label="Search apps"
           aria-keyshortcuts="/"
@@ -453,7 +453,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 0.75rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-2xl);
   box-shadow: 0 24px 60px -18px rgb(var(--shadow) / 0.45), 0 4px 12px rgb(var(--shadow) / 0.08);
   transform-origin: top right;
@@ -529,7 +529,7 @@ onBeforeUnmount(() => {
   background: var(--surface);
   border: 0;
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   cursor: pointer;
   transition: background-color var(--dur-fast), scale var(--dur-fast);
 }
@@ -616,7 +616,7 @@ a.chip {
   font-weight: 600;
   color: var(--ink);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: background-color var(--dur-fast), border-color var(--dur-fast);
@@ -664,7 +664,7 @@ a.chip {
   gap: 0.5rem;
   padding: 0 0.85rem;
   min-height: 2.75rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   transition: border-color var(--dur-fast);
 }
@@ -773,7 +773,7 @@ a.chip {
   align-items: center;
   gap: 0.4rem 0.5rem;
   padding-top: 0.65rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .foot-link {
@@ -818,7 +818,7 @@ button.foot-link:hover {
 .foot-icon.screen {
   color: var(--ink);
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .foot-icon svg {
@@ -865,7 +865,7 @@ kbd {
   color: var(--ink-2);
   background: var(--surface-2);
   border-radius: var(--radius-xs);
-  box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--line);
+  box-shadow: inset 0 0 0 1px var(--border), inset 0 -2px 0 var(--line);
 }
 
 .hint kbd {
@@ -884,7 +884,7 @@ kbd {
 .tile:focus-visible,
 .foot-link:focus-visible,
 .chip:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--ink) 40%, transparent);
   outline-offset: 2px;
 }
 

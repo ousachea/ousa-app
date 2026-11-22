@@ -1075,7 +1075,7 @@ function listMenu() {
 
     <ClientOnly>
       <div class="notes-app" :data-pane="pane" :class="{ 'has-open': !!openNote, reading, parked: parked && !!openNote && !isPhone }">
-        <!-- With a note centred, folders and the list reach out past the window's left edge on most
+        <!-- With a note centred, folders and the list reach out past the window’s left edge on most
              screens, headings and all; these stay at the edge to bring them back -->
         <nav v-if="reading" class="shift-rail" aria-label="Bring back folders and notes">
           <button type="button" class="rail-btn" title="Choose a folder" @click="park(true)">
@@ -1182,7 +1182,7 @@ function listMenu() {
             </div>
             <label class="search">
               <AnimatedIcon name="search" />
-              <input ref="searchInput" v-model="query" type="search" placeholder="Search notes" aria-label="Search notes" title="Words, or folder:work tag:idea is:favorite is:archived before:2026-10-01 after:…" @keydown.enter.prevent="shown[0] && openNoteById(shown[0].id)">
+              <input ref="searchInput" v-model="query" type="search" enterkeyhint="search" placeholder="Search notes" aria-label="Search notes" title="Words, or folder:work tag:idea is:favorite is:archived before:2026-10-01 after:…" @keydown.enter.prevent="shown[0] && openNoteById(shown[0].id)">
               <kbd v-if="!query" aria-hidden="true">/</kbd>
             </label>
             <!-- Selecting: a select-all box, the count and Done take over the row -->
@@ -1228,8 +1228,8 @@ function listMenu() {
                   @click.capture="sel.onRowClick($event, n.id)"
                 >
                   <span v-if="!sel.selecting" class="drag-grip corner end" aria-hidden="true"><AppIcon name="grip-vertical" /></span>
-                  <!-- Select mode: the app's own checkbox on the card's left; the note slides over to make room. The
-                       row's click picks it (Shift for a range), so the box only shows the state -->
+                  <!-- Select mode: the app’s own checkbox on the card’s left; the note slides over to make room. The
+                       row’s click picks it (Shift for a range), so the box only shows the state -->
                   <span class="check-col" :aria-hidden="!sel.selecting || undefined">
                     <input type="checkbox" class="note-check" :checked="sel.has(n.id)" :tabindex="sel.selecting ? 0 : -1" :aria-label="`Select ${displayTitle(n)}`">
                   </span>
@@ -1294,7 +1294,7 @@ function listMenu() {
         <!-- ---------- 3: the editor ---------- -->
         <Step :n="3" title="Write" hint="It saves by itself as you type." class="editor-step" @click="park(false)" @focusin="park(false)">
         <section ref="editorPane" class="editor-pane" :class="{ 'focus-mode': focusMode, 'is-typing': focusMode && focusTyping, 'dim': focusMode && focusDim }" aria-label="Note" @pointermove="focusMode && onFocusPointer()" @keydown="focusMode && onFocusKey($event)" @focusin="onEditorFocus" @focusout="nextTick(onEditorFocus)">
-          <!-- Selecting (beside the list, on a computer): what's picked and what to do with it -->
+          <!-- Selecting (beside the list, on a computer): what’s picked and what to do with it -->
           <div v-if="sel.selecting && !isPhone" class="pick-summary">
             <div class="pick-stack" :class="{ empty: !picked.length }" aria-hidden="true">
               <span v-for="(t, i) in pickedTitles.slice(0, 3).reverse()" :key="t + i" class="pick-sheet" :style="{ '--i': Math.min(pickedTitles.length, 3) - 1 - i }">{{ t }}</span>
@@ -1321,7 +1321,7 @@ function listMenu() {
           </div>
 
           <template v-else-if="openNote">
-            <!-- Focus mode's only controls: a small bar that hides while you type -->
+            <!-- Focus mode’s only controls: a small bar that hides while you type -->
             <div v-if="focusMode" class="focus-bar" role="toolbar" aria-label="Focus mode">
               <span class="focus-status" :data-kind="status.kind"><span class="dot" aria-hidden="true" />{{ status.text }}</span>
               <span class="focus-sep" aria-hidden="true" />
@@ -1331,7 +1331,7 @@ function listMenu() {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5h14" opacity=".35" /><path d="M5 12h14" /><path d="M5 17.5h9" opacity=".35" /></svg>
                 <span>Dim</span>
               </button>
-              <!-- Centred column or the full width, the same choice as the header's button -->
+              <!-- Centred column or the full width, the same choice as the header’s button -->
               <button type="button" class="focus-tool" :class="{ on: notePrefs.width === 'full' }" :aria-pressed="notePrefs.width === 'full'" :title="notePrefs.width === 'full' ? 'Centre the note' : 'Full width'" @click="toggleWidth">
                 <AppIcon :name="notePrefs.width === 'full' ? 'fold-horizontal' : 'move-horizontal'" />
                 <span>{{ notePrefs.width === 'full' ? 'Centre' : 'Wide' }}</span>
@@ -1522,7 +1522,7 @@ function listMenu() {
 
 .new-more {
   padding-inline: 0.55rem;
-  border-left: 1px solid color-mix(in srgb, var(--on-accent, #fff) 30%, transparent);
+  border-left: 1px solid color-mix(in oklab, var(--on-accent, #fff) 30%, transparent);
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
@@ -1572,7 +1572,7 @@ function listMenu() {
 .view-row.on {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1px var(--line);
+  box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1px var(--border);
 }
 
 .view-row.on svg {
@@ -1622,7 +1622,7 @@ function listMenu() {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
-  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  background: color-mix(in oklab, var(--ink) 6%, var(--surface));
   border: 0;
   border-radius: var(--radius-pill);
   cursor: pointer;
@@ -1636,7 +1636,7 @@ function listMenu() {
 .tag.on,
 .tag:hover {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
 }
 
 .tag.small {
@@ -1655,7 +1655,7 @@ function listMenu() {
 .list-pane {
   background: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
   container: list-pane / inline-size;
 }
 
@@ -1709,7 +1709,7 @@ function listMenu() {
   /* Search lines up with the rows' highlight; the title, count and filters with the titles inside */
   padding: 0.85rem 0.4rem 0.6rem;
   background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
@@ -1739,8 +1739,8 @@ function listMenu() {
   align-items: center;
   gap: 0.45rem;
   padding: 0 0.7rem;
-  background: color-mix(in srgb, var(--ink) 4%, var(--surface));
-  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--ink) 4%, var(--surface));
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
@@ -1774,7 +1774,7 @@ function listMenu() {
   padding: 0 0.35rem;
   font-size: var(--text-xs);
   color: var(--ink-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xs);
 }
 
@@ -1810,7 +1810,7 @@ function listMenu() {
 
 .view-btn[aria-checked='true'] {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
 }
 
 .view-btn svg {
@@ -1868,11 +1868,11 @@ function listMenu() {
 }
 
 .note-open:hover {
-  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  background: color-mix(in oklab, var(--ink) 5%, transparent);
 }
 
 .note-row.on .note-open {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
 }
 
 .note-title {
@@ -1906,7 +1906,7 @@ function listMenu() {
 
 mark {
   color: inherit;
-  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  background: color-mix(in oklab, var(--accent) 25%, transparent);
   border-radius: 3px;
 }
 
@@ -1934,7 +1934,7 @@ mark {
   padding: 0.05rem 0.4rem;
   font-weight: 700;
   color: var(--ink-2);
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  background: color-mix(in oklab, var(--ink) 8%, transparent);
   border-radius: var(--radius-xs);
 }
 
@@ -1961,7 +1961,7 @@ time {
 .note-list.grid .note-open {
   align-content: start;
   min-height: 9rem;
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .note-list.grid .note-preview {
@@ -2005,10 +2005,10 @@ time {
 /* ---------- Editor ---------- */
 .editor-pane {
   min-width: 0;
-  min-height: 70vh;
+  min-height: 70dvh;
   background: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .editor-head {
@@ -2107,7 +2107,7 @@ time {
 .focus-mode > .sheet {
   width: 100%;
   max-width: 42rem;
-  padding: 18vh 0 45vh;
+  padding: 18dvh 0 45dvh;
 }
 
 /* Full width (the bar's Wide, or the header's toggle): the writing spreads across the screen, with margins */
@@ -2137,7 +2137,7 @@ time {
   z-index: 2;
   left: 0;
   right: 0;
-  height: 12vh;
+  height: 12dvh;
   pointer-events: none;
 }
 
@@ -2179,10 +2179,10 @@ time {
   font-size: var(--text-sm);
   color: var(--ink-2);
   white-space: nowrap;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  background: color-mix(in oklab, var(--surface) 85%, transparent);
   backdrop-filter: blur(12px);
   border-radius: var(--radius-pill);
-  box-shadow: 0 0 0 1px var(--line), 0 10px 30px -12px rgb(var(--shadow) / 0.3);
+  box-shadow: 0 0 0 1px var(--border), 0 10px 30px -12px rgb(var(--shadow) / 0.3);
   translate: -50% 0;
   transition: opacity 0.4s ease, translate 0.4s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -2240,7 +2240,7 @@ time {
 
 .focus-tool:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
 }
 
 .focus-tool.on {
@@ -2259,11 +2259,11 @@ time {
 
 .focus-tool.exit {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
 }
 
 .focus-tool.exit:hover {
-  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  background: color-mix(in oklab, var(--ink) 12%, transparent);
 }
 
 .focus-tool kbd {
@@ -2273,7 +2273,7 @@ time {
   font-weight: 600;
   color: var(--ink-3);
   border-radius: var(--radius-xs);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2298,7 +2298,7 @@ time {
   }
 
   .focus-mode > .sheet {
-    padding: 5.5rem 0 40vh;
+    padding: 5.5rem 0 40dvh;
   }
 
   .focus-mode :deep(.note-body) {
@@ -2330,7 +2330,7 @@ time {
 
 .icon-btn:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: color-mix(in oklab, var(--ink) 6%, transparent);
 }
 
 .icon-btn svg {
@@ -2353,7 +2353,7 @@ time {
   padding: 0.5rem 0.75rem;
   font-size: var(--text-sm);
   color: var(--ink-2);
-  background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+  background: color-mix(in oklab, var(--ink) 5%, var(--surface));
   border-radius: var(--radius-sm);
 }
 
@@ -2425,7 +2425,7 @@ time {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
-  background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+  background: color-mix(in oklab, var(--ink) 5%, var(--surface));
   border: 0;
   border-radius: var(--radius-pill);
   cursor: pointer;
@@ -2448,7 +2448,7 @@ time {
   margin: 0 1.25rem 0.6rem;
   padding: 0.55rem 0.7rem;
   font-size: var(--text-sm);
-  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 7%, var(--surface));
   border-radius: var(--radius);
 }
 
@@ -2464,7 +2464,7 @@ time {
   background: var(--surface);
   border: 0;
   border-radius: var(--radius-pill);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent);
   cursor: pointer;
 }
 
@@ -2478,7 +2478,7 @@ time {
   gap: 1rem;
   margin: 0 1.25rem 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .links h3 {
@@ -2510,7 +2510,7 @@ time {
   padding: 0.9rem 0 1.75rem;
   font-size: var(--text-xs);
   color: var(--ink-3);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .details dt {
@@ -2566,9 +2566,9 @@ time {
     flex-direction: column;
     gap: 0.4rem;
     padding: 0.35rem;
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    background: color-mix(in oklab, var(--surface) 88%, transparent);
     backdrop-filter: blur(8px);
-    border: 1px solid var(--line);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
   }
@@ -2593,7 +2593,7 @@ time {
 
 .rail-btn:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: color-mix(in oklab, var(--ink) 6%, transparent);
 }
 
 .rail-btn:focus-visible {
@@ -2672,7 +2672,7 @@ time {
 
 .select-btn:hover {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
 }
 
 .select-btn svg {
@@ -2684,7 +2684,7 @@ time {
   min-height: 2rem;
   margin: 0 0.2rem;
   padding: 0.2rem 0.35rem 0.2rem 0.55rem;
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
   border-radius: var(--radius-sm);
 }
 
@@ -2750,7 +2750,7 @@ time {
 /* Picked: a soft tint in the app's colour, no heavy outline */
 .note-list .note-row.bulk-picked {
   outline: none;
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
 }
 
 /* Cards: the box sits inside the card's top-right corner, and the card itself takes the tint */
@@ -2778,8 +2778,8 @@ time {
 }
 
 .note-list.grid .note-row.bulk-picked .note-open {
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 45%, transparent);
 }
 
 .note-row.bulk-picked .note-open:hover {
@@ -2788,7 +2788,7 @@ time {
 
 /* Beside the list: a stack of the picked notes, how many, and the actions as big buttons */
 .pick-summary {
-  min-height: 60vh;
+  min-height: 60dvh;
   padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
@@ -2818,7 +2818,7 @@ time {
   color: var(--ink);
   background: var(--surface);
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 0 1px var(--line), 0 10px 24px -14px rgb(var(--shadow) / 0.45);
+  box-shadow: 0 0 0 1px var(--border), 0 10px 24px -14px rgb(var(--shadow) / 0.45);
   rotate: calc(var(--i, 0) * -5deg);
   translate: calc(var(--i, 0) * -6px) calc(var(--i, 0) * 4px);
   transition: rotate var(--dur), translate var(--dur);
@@ -2840,7 +2840,7 @@ time {
   place-items: center;
   color: var(--ink-3);
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1.5px var(--line);
+  box-shadow: inset 0 0 0 1.5px var(--border);
 }
 
 .pick-sheet.ghost::after {
@@ -2925,12 +2925,12 @@ time {
 
 .pick-action:hover:not(:disabled) {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
 }
 
 .pick-action.danger:hover:not(:disabled) {
   color: var(--bad-ink);
-  background: color-mix(in srgb, var(--red) 10%, var(--surface));
+  background: color-mix(in oklab, var(--red) 10%, var(--surface));
 }
 
 .pick-action:active:not(:disabled) {
@@ -2960,7 +2960,7 @@ time {
   justify-items: center;
   align-content: center;
   gap: 0.5rem;
-  min-height: 60vh;
+  min-height: 60dvh;
   padding: 2rem;
   text-align: center;
   color: var(--ink-2);
@@ -2980,7 +2980,7 @@ kbd {
   padding: 0 0.35rem;
   font: inherit;
   font-size: 0.85em;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xs);
 }
 
@@ -3004,7 +3004,7 @@ kbd {
 }
 
 .move-opt:hover {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
 }
 
 .move-opt.new {
@@ -3025,7 +3025,7 @@ kbd {
   }
 
   .side :deep(.tree-body) {
-    max-height: 40vh;
+    max-height: 40dvh;
     overflow-y: auto;
   }
 }
@@ -3093,7 +3093,7 @@ kbd {
     padding: 0.3rem;
     background: var(--surface);
     border-radius: var(--radius-lg);
-    box-shadow: 0 0 0 1px var(--line);
+    box-shadow: 0 0 0 1px var(--border);
   }
 
   .view-row {
@@ -3115,10 +3115,10 @@ kbd {
     justify-content: space-between;
     margin: 0.75rem -1rem 0;
     padding: 0.35rem 0.75rem max(0.35rem, env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    background: color-mix(in oklab, var(--bg) 85%, transparent);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--border);
   }
 
   .bar-btn {
@@ -3134,7 +3134,7 @@ kbd {
   }
 
   .bar-btn:active {
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    background: color-mix(in oklab, var(--accent) 12%, transparent);
   }
 
   .bar-btn svg,
@@ -3201,11 +3201,11 @@ kbd {
   .note-list:not(.grid) .note-row {
     background: var(--surface);
     border-radius: 0;
-    box-shadow: 0 0 0 1px var(--line);
+    box-shadow: 0 0 0 1px var(--border);
   }
 
   .note-list:not(.grid) .note-row.bulk-picked {
-    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    background: color-mix(in oklab, var(--accent) 10%, var(--surface));
   }
 
   .note-list:not(.grid) .note-row + .note-row {
@@ -3268,7 +3268,7 @@ kbd {
     z-index: 3;
     gap: 0.25rem;
     padding: 0.4rem 0.5rem 0.4rem 0.6rem;
-    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    background: color-mix(in oklab, var(--surface) 90%, transparent);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
   }

@@ -229,7 +229,7 @@ function openSignIn() {
         </nav>
       </div>
       <div v-if="$slots.actions" class="head-actions"><slot name="actions" /></div>
-      <!-- The band's artwork: the app's icon drawn large and faint behind the header -->
+      <!-- The band’s artwork: the app’s icon drawn large and faint behind the header -->
       <ToolIcon v-if="header === 'band'" :name="tool.icon" class="band-art" aria-hidden="true" />
     </header>
 
@@ -252,9 +252,9 @@ function openSignIn() {
       </ol>
     </Modal>
 
-    <!-- The header keeps the app's own colour; buttons and highlights can use one accent everywhere -->
+    <!-- The header keeps the app’s own colour; buttons and highlights can use one accent everywhere -->
     <div class="body" :style="accent.override ? { '--accent': accent.color, '--accent-btn': `var(--${prefs.accent}-btn, ${accent.color})`, '--on-accent': accent.on, '--check-mark': 'var(--check-mark-light)', '--check-dash': 'var(--check-dash-light)' } : undefined">
-      <!-- This app's settings, as a page of its own (?settings) -->
+      <!-- This app’s settings, as a page of its own (?settings) -->
       <section v-if="showSettings" class="settings-page" :class="{ wide: settingsWide }" aria-labelledby="app-settings-title">
         <div class="settings-page-head">
           <span class="settings-page-icon" aria-hidden="true"><ToolIcon :name="tool.icon" /></span>
@@ -368,7 +368,7 @@ function openSignIn() {
 }
 
 .demo-toggle:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--ink) 40%, transparent);
   outline-offset: 7px;
 }
 
@@ -384,7 +384,7 @@ function openSignIn() {
   color: var(--ink);
   background: var(--surface);
   border-radius: var(--radius-pill);
-  box-shadow: 0 0 0 1px var(--line), 0 2px 6px rgb(var(--shadow) / 0.15);
+  box-shadow: 0 0 0 1px var(--border), 0 2px 6px rgb(var(--shadow) / 0.15);
   transition: scale var(--dur-fast);
 }
 
@@ -427,8 +427,8 @@ function openSignIn() {
   font-size: var(--text-base);
   color: var(--ink);
   /* Quieter than the app: a light tint, with the colour only on its leading edge */
-  background: color-mix(in srgb, var(--purple) 8%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--purple) 18%, transparent);
+  background: color-mix(in oklab, var(--purple) 8%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--purple) 18%, transparent);
   border-left: 3px solid var(--purple);
   border-radius: var(--radius);
 }
@@ -495,7 +495,7 @@ h1 {
   font-weight: 700;
   color: var(--ink-3);
   background: none;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: color var(--dur-fast), border-color var(--dur-fast), background-color var(--dur-fast);
@@ -531,7 +531,7 @@ h1 {
   gap: 0.2rem;
   margin-top: 1rem;
   padding: 0.25rem;
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
   border-radius: var(--radius-pill);
 }
 
@@ -647,7 +647,7 @@ h1 {
 .settings-card.app-data {
   margin-top: 0;
   padding: 1.1rem 1.25rem 1.25rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 /* The app, hidden behind its settings, keeps its own layout untouched */
@@ -673,7 +673,7 @@ h1 {
 
 /* Rows (SettingRow, SettingChoice) with a hairline between them */
 .app-settings > :deep(* + *) {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .app-settings :deep(.settings-head) {
@@ -724,7 +724,7 @@ h1 {
 .app-data {
   margin-top: 1.25rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .app-data:first-child {
@@ -754,11 +754,11 @@ h1 {
 .header-band .pin {
   color: inherit;
   opacity: 0.85;
-  border-color: color-mix(in srgb, currentColor 30%, transparent);
+  border-color: color-mix(in oklab, currentColor 30%, transparent);
 }
 
 .header-band .pin.on {
-  background: color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in oklab, currentColor 12%, transparent);
 }
 
 .body {
@@ -820,8 +820,8 @@ h1 {
   text-align: left;
   color: var(--on-accent);
   background:
-    radial-gradient(90% 140% at 100% 0%, color-mix(in srgb, var(--accent) 70%, #fff) 0%, transparent 55%),
-    radial-gradient(70% 120% at 0% 100%, color-mix(in srgb, var(--accent) 60%, #000) 0%, transparent 65%),
+    radial-gradient(90% 140% at 100% 0%, color-mix(in oklab, var(--accent) 70%, #fff) 0%, transparent 55%),
+    radial-gradient(70% 120% at 0% 100%, color-mix(in oklab, var(--accent) 60%, #000) 0%, transparent 65%),
     var(--accent);
 }
 
@@ -908,8 +908,8 @@ h1 {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
-  background: color-mix(in srgb, currentColor 6%, transparent);
-  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  background: color-mix(in oklab, currentColor 6%, transparent);
+  border: 1px solid color-mix(in oklab, currentColor 18%, transparent);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background-color var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
@@ -917,7 +917,7 @@ h1 {
 
 .version:hover {
   color: var(--ink);
-  border-color: color-mix(in srgb, currentColor 35%, transparent);
+  border-color: color-mix(in oklab, currentColor 35%, transparent);
 }
 
 .version:focus-visible {
@@ -970,7 +970,7 @@ h1 {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: min(60vh, 32rem);
+  max-height: min(60dvh, 32rem);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -979,7 +979,7 @@ h1 {
 .release {
   position: relative;
   padding: 0 0 1.1rem 1.4rem;
-  border-left: 2px solid var(--line);
+  border-left: 2px solid var(--border);
   margin-left: 0.4rem;
 }
 
@@ -998,7 +998,7 @@ h1 {
   height: 0.8rem;
   border-radius: 50%;
   background: var(--surface);
-  border: 2px solid var(--line);
+  border: 2px solid var(--border);
 }
 
 .release.current::before {

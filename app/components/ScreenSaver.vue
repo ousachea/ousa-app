@@ -488,7 +488,7 @@ ol {
   position: absolute;
   right: clamp(0.5rem, 2vw, 2rem);
   bottom: 0;
-  font-size: clamp(10rem, 44vh, 36rem);
+  font-size: clamp(10rem, 44dvh, 36rem);
   font-weight: 400;
   line-height: 0.74;
   letter-spacing: -0.06em;
@@ -579,15 +579,15 @@ ol {
   padding: 0.45rem 0.9rem;
   font: inherit;
   color: inherit;
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  background: color-mix(in oklab, var(--ink) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--ink) 30%, transparent);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
 /* The page look's corners are busy; its hint sits under the top row instead */
 .look-page .hint {
-  top: clamp(4.5rem, 10vh, 6.5rem);
+  top: clamp(4.5rem, 10dvh, 6.5rem);
   bottom: auto;
   justify-content: flex-end;
   padding: 0 clamp(1rem, 3vw, 3rem);
@@ -606,7 +606,7 @@ ol {
 
   .weeks {
     width: 100%;
-    margin-bottom: 30vh;
+    margin-bottom: 30dvh;
   }
 }
 
@@ -629,7 +629,7 @@ ol {
 .away {
   position: absolute;
   right: clamp(1rem, 3vw, 3rem);
-  bottom: calc(clamp(10rem, 44vh, 36rem) * 0.8);
+  bottom: calc(clamp(10rem, 44dvh, 36rem) * 0.8);
   font-size: clamp(0.75rem, 1.05vw, 1.05rem);
   font-weight: 700;
 }

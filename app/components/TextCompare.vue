@@ -366,20 +366,20 @@ del {
 
 ins {
   color: var(--good-ink);
-  background: color-mix(in srgb, var(--green) 16%, transparent);
+  background: color-mix(in oklab, var(--green) 16%, transparent);
   text-decoration: underline;
 }
 
 del {
   color: var(--bad-ink);
-  background: color-mix(in srgb, var(--red) 13%, transparent);
+  background: color-mix(in oklab, var(--red) 13%, transparent);
   text-decoration: line-through;
 }
 
 ins.chg,
 del.chg {
   color: var(--warn-ink);
-  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  background: color-mix(in oklab, var(--orange) 16%, transparent);
 }
 
 .inline del.chg + ins.chg {
@@ -421,7 +421,7 @@ del.chg {
   display: grid;
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
   /* Vertical scrolling keeps working on touch screens; the handle takes sideways drags */
   touch-action: pan-y;
   cursor: col-resize;
@@ -444,11 +444,11 @@ del.chg {
 
 .original-layer {
   clip-path: inset(0 calc(100% - var(--split)) 0 0);
-  background: color-mix(in srgb, var(--red) 4%, var(--surface-2));
+  background: color-mix(in oklab, var(--red) 4%, var(--surface-2));
 }
 
 .modified-layer {
-  background: color-mix(in srgb, var(--green) 4%, var(--surface-2));
+  background: color-mix(in oklab, var(--green) 4%, var(--surface-2));
 }
 
 .layer-label {

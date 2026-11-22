@@ -268,7 +268,7 @@ const EXTRAS = [
   flex-direction: column;
   gap: 0.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .items li.unshared .sharers {
@@ -331,7 +331,7 @@ const EXTRAS = [
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
@@ -386,7 +386,7 @@ const EXTRAS = [
   justify-content: space-between;
   gap: 1rem;
   padding: 0.5rem 0;
-  border-bottom: 1px dashed var(--line);
+  border-bottom: 1px dashed var(--border);
 }
 
 .who {
@@ -445,7 +445,7 @@ const EXTRAS = [
   padding: 0.6rem 0.75rem;
   font-size: var(--text-sm);
   color: var(--warn-ink);
-  background: color-mix(in srgb, var(--orange) 12%, var(--surface));
+  background: color-mix(in oklab, var(--orange) 12%, var(--surface));
   border-radius: var(--radius);
 }
 

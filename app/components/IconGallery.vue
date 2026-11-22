@@ -216,7 +216,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
         <AppIcon name="search" />
         <input
           v-model="query"
-          type="search"
+          type="search" enterkeyhint="search"
           :placeholder="kind === 'icons' ? 'Search every icon: car, wallet, cloud…' : 'Search every brand: Stripe, Spotify…'"
           :aria-label="kind === 'icons' ? 'Search icons' : 'Search logos'"
           autocomplete="off"
@@ -354,7 +354,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   padding: 0 0.85rem;
   color: var(--ink-3);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
@@ -456,15 +456,15 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   font: inherit;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: background-color var(--dur-fast), border-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .tile:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
+  background: color-mix(in oklab, var(--accent) 5%, var(--surface));
 }
 
 .tile:active {
@@ -495,7 +495,7 @@ const fileLink = ([f, l]: Spot) => `app/${f}:${l}`
   font-size: var(--text-xl);
   background: #fff;
   border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .art img {
@@ -610,7 +610,7 @@ h4 {
   color: var(--ink);
   text-decoration: none;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
 }
 

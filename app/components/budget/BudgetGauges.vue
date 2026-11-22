@@ -119,7 +119,7 @@ const spentTotal = computed(() => total(expensesIn(all.value, props.range), conv
     </div>
 
     <Transition name="g-swap" mode="out-in">
-      <!-- Budget used: the share of the month's budget gone, the colour turning at the first alert -->
+      <!-- Budget used: the share of the month’s budget gone, the colour turning at the first alert -->
       <div v-if="view === 'progress' && status" key="progress" class="g-body">
         <div class="dial">
           <Gauge :value="Math.min(status.share ?? 0, 1)" :min="0" :max="1" :radius="200" :padding="30" transition :initial-value="0">
@@ -192,7 +192,7 @@ const spentTotal = computed(() => total(expensesIn(all.value, props.range), conv
         </div>
       </div>
 
-      <!-- Spending by category: stacked parts, the legend opens that category's payments -->
+      <!-- Spending by category: stacked parts, the legend opens that category’s payments -->
       <div v-else-if="view === 'categories'" key="categories" class="g-body wide">
         <GaugeParts :parts="byCategory" :format="v => money(v)" caption="spent" label="Spending by category" :selectable="false" @pick="k => showTxs({ cat: k })">
           <template #center>
@@ -212,7 +212,7 @@ const spentTotal = computed(() => total(expensesIn(all.value, props.range), conv
         </GaugeParts>
       </div>
 
-      <!-- Savings goals: each goal's savings against all the targets together -->
+      <!-- Savings goals: each goal’s savings against all the targets together -->
       <div v-else-if="view === 'savings' && savings" key="savings" class="g-body wide">
         <GaugeParts :parts="savings.parts" :max="savings.target" :format="v => money(v)" caption="saved" label="Savings goals" :selectable="false" @pick="go('savings')">
           <template #center="{ total: saved }">

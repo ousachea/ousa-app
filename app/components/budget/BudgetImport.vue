@@ -277,7 +277,7 @@ th,
 td {
   padding: 0.4rem;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 

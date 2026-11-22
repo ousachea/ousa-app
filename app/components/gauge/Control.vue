@@ -98,10 +98,10 @@ function key(e: KeyboardEvent) {
 /* The band shows faintly while you're on it, so you can see where to drag */
 .control:hover,
 .control.dragging {
-  stroke: color-mix(in srgb, currentColor 6%, transparent);
+  stroke: color-mix(in oklab, currentColor 6%, transparent);
 }
 
 .control:focus-visible {
-  stroke: color-mix(in srgb, var(--accent, currentColor) 22%, transparent);
+  stroke: color-mix(in oklab, var(--accent, currentColor) 22%, transparent);
 }
 </style>

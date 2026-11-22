@@ -419,7 +419,7 @@ function del() {
   font-weight: 600;
   color: var(--ink);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background-color var(--dur-fast), border-color var(--dur-fast);
@@ -487,8 +487,8 @@ function del() {
   padding: 0.75rem 1rem;
   font-size: var(--text-sm);
   color: var(--ink);
-  background: color-mix(in srgb, var(--orange) 14%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--orange) 45%, transparent);
+  background: color-mix(in oklab, var(--orange) 14%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--orange) 45%, transparent);
   border-radius: var(--radius);
 }
 

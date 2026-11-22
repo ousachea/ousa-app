@@ -72,7 +72,7 @@ function saveToVault(password: string) {
   margin: 0 0 1.75rem;
   padding: 4px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -95,6 +95,6 @@ function saveToVault(password: string) {
 .tab[aria-selected='true'] {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
+  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--border);
 }
 </style>

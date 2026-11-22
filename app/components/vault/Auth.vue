@@ -310,7 +310,7 @@ h2 {
   padding: 1rem;
   background: var(--surface-2);
   border-radius: var(--radius-lg);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .who {

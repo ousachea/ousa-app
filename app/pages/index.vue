@@ -295,7 +295,7 @@ h1 {
   text-align: center;
   text-decoration: none;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   transition: border-color var(--dur-fast);
 }
@@ -338,7 +338,7 @@ h1 {
     0 0 0 4px var(--plastic-edge),
     inset 0 -5px 0 rgb(0 0 0 / 0.12),
     inset 0 5px 8px rgb(255 255 255 / 0.25),
-    0 10px 18px -6px color-mix(in srgb, var(--accent) 70%, transparent);
+    0 10px 18px -6px color-mix(in oklab, var(--accent) 70%, transparent);
 }
 
 .tile:hover .sticker svg,
@@ -363,7 +363,7 @@ h1 {
       0 0 0 6px var(--accent),
       inset 0 -5px 0 rgb(0 0 0 / 0.12),
       inset 0 5px 8px rgb(255 255 255 / 0.25),
-      0 0 22px 4px color-mix(in srgb, var(--accent) 60%, transparent);
+      0 0 22px 4px color-mix(in oklab, var(--accent) 60%, transparent);
   }
   100% {
     box-shadow:
@@ -507,7 +507,7 @@ h1 {
     font-weight: 600;
     color: var(--ink-2);
     background: var(--surface);
-    border: 1px solid var(--line);
+    border: 1px solid var(--border);
     border-radius: var(--radius-pill);
     cursor: pointer;
   }

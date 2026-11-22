@@ -251,7 +251,7 @@ const fmtDay = (d: string) => new Date(`${d}T00:00`).toLocaleDateString('en-GB',
 }
 
 .habit.done {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
 }
 
 .top {
@@ -269,7 +269,7 @@ const fmtDay = (d: string) => new Date(`${d}T00:00`).toLocaleDateString('en-GB',
   font-size: var(--text-lg);
   color: var(--on-accent, #fff);
   background: var(--surface);
-  border: 2px solid var(--line);
+  border: 2px solid var(--border);
   border-radius: 50%;
   cursor: pointer;
   transition: background-color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-fast);
@@ -303,7 +303,7 @@ const fmtDay = (d: string) => new Date(`${d}T00:00`).toLocaleDateString('en-GB',
 
 .streak.hot {
   font-weight: 700;
-  color: color-mix(in srgb, var(--accent) 75%, var(--ink));
+  color: color-mix(in oklab, var(--accent) 75%, var(--ink));
 }
 
 .rename {
@@ -378,7 +378,7 @@ const fmtDay = (d: string) => new Date(`${d}T00:00`).toLocaleDateString('en-GB',
   aspect-ratio: 1;
   min-width: 0.7rem;
   border-radius: 3px;
-  background: color-mix(in srgb, var(--accent) calc(var(--share, 0) * 100%), var(--surface-2));
+  background: color-mix(in oklab, var(--accent) calc(var(--share, 0) * 100%), var(--surface-2));
 }
 
 .cell.future {

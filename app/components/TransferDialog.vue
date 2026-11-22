@@ -134,7 +134,7 @@ async function importFile(e: Event) {
 .part + .part {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 h3 {

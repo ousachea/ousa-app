@@ -90,7 +90,7 @@ function draw(el: HTMLElement) {
   // is read live so it can fade on hover; it's already strong, and may be transparent
   const color = custom ? '' : borderColor(el, s)
   const seen = !/^(transparent|rgba\(.*, 0\))$/.test(color)
-  r.style.stroke = custom ? 'var(--ants-color)' : seen ? `color-mix(in srgb, ${color}, var(--ink-3) 50%)` : color
+  r.style.stroke = custom ? 'var(--ants-color)' : seen ? `color-mix(in oklab, ${color}, var(--ink-3) 50%)` : color
 }
 
 // Borders change with hover, focus, dragging and classes; one redraw a frame covers them all

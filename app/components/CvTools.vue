@@ -24,8 +24,8 @@ const emit = defineEmits<{ edit: [], earlier: [], later: [], remove: [] }>()
   display: flex;
   gap: 0.15rem;
   padding: 0.2rem;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   box-shadow: 0 8px 20px -10px rgb(var(--shadow) / 0.45);
   backdrop-filter: blur(10px);

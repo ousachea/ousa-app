@@ -10,7 +10,7 @@ defineProps<{
 <template>
   <section class="step" :aria-label="n ? `Step ${n}: ${title}` : title" :style="n ? { '--step': Math.min(n, 5) - 1 } : undefined">
     <header class="step-head">
-      <!-- The number and title always stay together; only the aside drops below when it's tight -->
+      <!-- The number and title always stay together; only the aside drops below when it’s tight -->
       <div class="step-main">
         <span v-if="n" class="num" aria-hidden="true">{{ n }}</span>
         <div class="step-text">
@@ -32,7 +32,7 @@ defineProps<{
 .step {
   min-width: 0;
   animation: step-in var(--dur-slow) var(--ease-out) backwards;
-  animation-delay: calc(var(--step, 0) * 60ms);
+  animation-delay: calc(var(--step, 0) * 30ms);
 }
 
 @keyframes step-in {

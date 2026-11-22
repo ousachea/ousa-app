@@ -140,7 +140,7 @@ onBeforeUnmount(() => {
   color: var(--ink);
   background: var(--surface);
   border-radius: var(--radius-lg);
-  box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.4), 0 0 0 1px var(--line);
+  box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.4), 0 0 0 1px var(--border);
   transform-origin: top left;
 }
 
@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
 
 .item.danger:hover,
 .item.danger:focus-visible {
-  background: color-mix(in srgb, var(--red) 10%, var(--surface));
+  background: color-mix(in oklab, var(--red) 10%, var(--surface));
 }
 
 .icon {
@@ -220,7 +220,7 @@ kbd {
 hr {
   margin: 0.3rem 0.4rem;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 /* ---------- Touch: a sheet from the bottom ---------- */

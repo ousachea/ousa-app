@@ -309,7 +309,7 @@ const busy = computed(() => !!(justAdded.value || batch.value || duplicateOf.val
 <template>
   <div class="adder" :class="[variant, { busy }]">
     <!-- Inside a folder: one quiet row until you want it -->
-    <!-- Laid out like a bookmark (icon, title, line under it), so in the list it's one more row and in
+    <!-- Laid out like a bookmark (icon, title, line under it), so in the list it’s one more row and in
          the grid one more card -->
     <button v-if="variant === 'inline' && !expanded" type="button" class="add-here-row" @click="focus">
       <span class="plus" aria-hidden="true"><AppIcon name="plus" /></span>
@@ -371,7 +371,7 @@ const busy = computed(() => !!(justAdded.value || batch.value || duplicateOf.val
       @cancel="duplicateOf = undefined"
     />
 
-    <!-- One link, saved: what it looks like, with anything you'd like to change, or Undo -->
+    <!-- One link, saved: what it looks like, with anything you’d like to change, or Undo -->
     <Transition name="slide-down">
       <section v-if="added" class="review panel below" aria-label="Just added" @keydown.esc.stop="done">
         <div class="review-media">
@@ -474,11 +474,11 @@ const busy = computed(() => !!(justAdded.value || batch.value || duplicateOf.val
   padding: 0.6rem;
   background: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line), 0 14px 30px -18px rgb(var(--shadow) / 0.35);
+  box-shadow: 0 0 0 1px var(--border), 0 14px 30px -18px rgb(var(--shadow) / 0.35);
 }
 
 .inline .add-form {
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -489,7 +489,7 @@ const busy = computed(() => !!(justAdded.value || batch.value || duplicateOf.val
   padding: 0.25rem 0.25rem 0.25rem 0.7rem;
   background: var(--surface-2);
   border-radius: var(--radius-lg);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   transition: box-shadow var(--dur-fast);
 }
 
@@ -548,7 +548,7 @@ textarea:not(.input)::placeholder {
   background: var(--surface);
   border: 0;
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   cursor: pointer;
   transition: color var(--dur-fast), box-shadow var(--dur-fast);
 }
@@ -705,7 +705,7 @@ textarea:not(.input)::placeholder {
   font-size: var(--text-xl);
   font-weight: 700;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
   border-radius: var(--radius);
 }
 
@@ -847,7 +847,7 @@ textarea:not(.input)::placeholder {
   max-height: 22rem;
   overflow-y: auto;
   border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .row {
@@ -859,7 +859,7 @@ textarea:not(.input)::placeholder {
 }
 
 .row + .row {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .row.off {
@@ -932,7 +932,7 @@ textarea:not(.input)::placeholder {
 .tag.dupe {
   padding: 0.05rem 0.4rem;
   color: var(--warn-ink);
-  background: color-mix(in srgb, var(--orange) 14%, var(--surface));
+  background: color-mix(in oklab, var(--orange) 14%, var(--surface));
   border-radius: var(--radius-pill);
 }
 

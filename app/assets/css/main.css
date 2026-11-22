@@ -13,6 +13,7 @@
   --surface: #ffffff;
   --surface-2: #f3f5f8;
   --line: #d6dbe3;
+  --border: rgb(27 31 42 / 0.17); /* borders: see-through, so they read on any surface */
 
   /* Ink */
   --ink: #1b1f2a;
@@ -94,24 +95,25 @@
   --text-base: 0.925rem; /* dense body text: list rows, form hints */
   --text-md: 1rem; /* body */
   --text-title: 1.1rem; /* card and section titles */
-  --text-lg: 1.25rem; /* panel headings, medium figures */
-  --text-xl: 1.5rem; /* stat figures */
-  --text-2xl: 2rem; /* big figures */
-  --text-3xl: 2.5rem; /* the one result on a page */
+  --text-lg: clamp(1.15rem, 1.05rem + 0.45vw, 1.25rem); /* panel headings, medium figures */
+  --text-xl: clamp(1.3rem, 1.1rem + 0.9vw, 1.5rem); /* stat figures */
+  --text-2xl: clamp(1.65rem, 1.25rem + 1.6vw, 2rem); /* big figures */
+  --text-3xl: clamp(2rem, 1.4rem + 2.4vw, 2.5rem); /* the one result on a page */
   /* The headline result: scales with the window, from a phone up */
   --text-hero: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
 
   /* Breakpoints, by convention (media queries can't read variables). Every page uses these:
      480px small phones · 640px phones · 900px tablets · 1100px small laptops */
 
-  --shadow-sm: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
-  --shadow-md: 0 10px 24px -14px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
-  --shadow-lg: 0 30px 80px -20px rgb(var(--shadow) / 0.45), 0 0 0 1px var(--line);
+  --shadow-sm: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--border);
+  --shadow-md: 0 10px 24px -14px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--border);
+  --shadow-lg: 0 30px 80px -20px rgb(var(--shadow) / 0.45), 0 0 0 1px var(--border);
 
   /* Motion: one set of curves and durations for every app (CHECKLIST.md #03) */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1); /* things arriving */
   --ease-in: cubic-bezier(0.4, 0, 1, 1); /* things leaving */
-  --ease-spring: cubic-bezier(0.3, 1.5, 0.5, 1); /* small, playful pops */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* things moving from one place to another */
+  --ease-spring: cubic-bezier(0.3, 1.5, 0.5, 1); /* playful moments only, not everyday UI */
   --dur-fast: 0.15s; /* hover, focus, colour */
   --dur: 0.22s; /* popups, dropdowns, list items */
   --dur-slow: 0.32s; /* sidebars, big panels */
@@ -170,6 +172,7 @@
   --surface: #161a21;
   --surface-2: #1d222b;
   --line: #2b313c;
+  --border: rgb(255 255 255 / 0.1);
 
   --ink: #e8ebf1;
   --ink-2: #a3abba;
@@ -208,6 +211,28 @@ body {
   background: var(--bg);
 }
 
+html {
+  /* Controls draw their own pressed state (scale on press); the grey flash on tap is dropped */
+  -webkit-tap-highlight-color: transparent;
+  /* Room for the scrollbar is kept, so locking the page behind a popup doesn't shift it sideways */
+  scrollbar-gutter: stable;
+}
+
+/* An open popup holds the scroll: the page behind stays put, and its own scrolling doesn't chain out */
+html:has(dialog:modal) {
+  overflow: hidden;
+}
+
+dialog {
+  overscroll-behavior: contain;
+}
+
+/* Taps on controls register at once, with no double-tap zoom. :where keeps it at zero specificity,
+   so swipe rows (pan-y) and drawing areas still set their own */
+:where(a, button, label, summary, select, input, textarea, [role='button'], [role='switch'], [role='tab']) {
+  touch-action: manipulation;
+}
+
 body {
   font-family: var(--font);
   transition: background-color var(--dur), color var(--dur);
@@ -230,14 +255,29 @@ h3 {
 
 p {
   text-wrap: pretty;
+  /* Narrow columns break long words instead of leaving ragged gaps; short words are never split */
+  hyphens: auto;
+  hyphenate-limit-chars: 7 3 3;
+}
+
+/* Code, paths and keys are copied as written: a break there would read as a real hyphen */
+:where(code, kbd, pre, samp) {
+  hyphens: manual;
 }
 
 a {
   color: inherit;
 }
 
+/* Underlines sit clear of descenders and scale with the text */
+a,
+.link {
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: max(1px, 0.07em);
+}
+
 :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -263,11 +303,11 @@ a {
 }
 
 .btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent-btn, var(--accent)) 86%, #000);
+  background: color-mix(in oklab, var(--accent-btn, var(--accent)) 86%, #000);
 }
 
 .btn:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 .btn:disabled {
@@ -278,7 +318,7 @@ a {
 .btn-quiet {
   color: var(--ink);
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .btn-quiet:hover:not(:disabled) {
@@ -323,7 +363,7 @@ select.input {
   font-size: var(--text-md);
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
@@ -336,7 +376,7 @@ select.input {
 .input:focus-within {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
 }
 
 textarea.input {
@@ -350,6 +390,7 @@ textarea.input {
    own scoped button styles. */
 @media (pointer: coarse) {
   :root:root .link,
+  :root:root .icon-btn,
   :root:root .calendar-add .trigger,
   :root:root .confirm-delete,
   :root:root .pin,
@@ -358,6 +399,7 @@ textarea.input {
   }
 
   :root:root .link::before,
+  :root:root .icon-btn::before,
   :root:root .calendar-add .trigger::before,
   :root:root .confirm-delete::before,
   :root:root .pin::before,
@@ -415,8 +457,8 @@ textarea.input {
 }
 
 .sticky-bar.is-stuck {
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  box-shadow: 0 10px 24px -14px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
+  background: color-mix(in oklab, var(--bg) 82%, transparent);
+  box-shadow: 0 10px 24px -14px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--border);
   backdrop-filter: blur(14px);
 }
 
@@ -446,7 +488,7 @@ textarea.input {
   vertical-align: -0.2em;
   background: var(--surface) center / 100% no-repeat;
   border-radius: 0.32em;
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 30%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--ink) 30%, transparent);
   cursor: pointer;
   transition: background-color var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out, scale var(--dur-fast) ease-out;
 }
@@ -508,7 +550,7 @@ input[type='range']:disabled {
   display: flex;
   padding: 3px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
@@ -526,11 +568,11 @@ input[type='range']:disabled {
 .segmented label.active {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
+  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--border);
 }
 
 .segmented label:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
 }
 
 .segmented input {
@@ -556,7 +598,7 @@ input[type='number'] {
 
 .panel {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
 }
 
@@ -683,8 +725,7 @@ input[type='number'] {
   background: none;
   border: 0;
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
-  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in oklab, currentColor 40%, transparent);
   cursor: pointer;
   transition: color var(--dur-fast), text-decoration-color var(--dur-fast);
 }
@@ -692,6 +733,10 @@ input[type='number'] {
 .link:hover {
   color: var(--ink);
   text-decoration-color: currentColor;
+}
+
+.link:active {
+  opacity: 0.6;
 }
 
 /* Delete stays quiet until you point at it (CHECKLIST.md #02) */
@@ -731,7 +776,7 @@ input[type='number'] {
 
 .icon-btn.danger:hover {
   color: var(--bad-ink);
-  background: color-mix(in srgb, var(--red) 10%, transparent);
+  background: color-mix(in oklab, var(--red) 10%, transparent);
 }
 
 .icon-btn.on {
@@ -760,7 +805,7 @@ kbd {
   text-align: center;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-bottom-width: 2px;
   border-radius: var(--radius-xs);
 }
@@ -778,13 +823,13 @@ kbd {
   color: var(--ink-2);
   background: var(--surface-2);
   border-radius: var(--radius-pill);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
-.badge.good { color: var(--good-ink); background: color-mix(in srgb, var(--green) 12%, var(--surface)); box-shadow: none; }
-.badge.warn { color: var(--warn-ink); background: color-mix(in srgb, var(--orange) 14%, var(--surface)); box-shadow: none; }
-.badge.bad { color: var(--bad-ink); background: color-mix(in srgb, var(--red) 12%, var(--surface)); box-shadow: none; }
-.badge.info { color: var(--digit-ink); background: color-mix(in srgb, var(--blue) 12%, var(--surface)); box-shadow: none; }
+.badge.good { color: var(--good-ink); background: color-mix(in oklab, var(--green) 12%, var(--surface)); box-shadow: none; }
+.badge.warn { color: var(--warn-ink); background: color-mix(in oklab, var(--orange) 14%, var(--surface)); box-shadow: none; }
+.badge.bad { color: var(--bad-ink); background: color-mix(in oklab, var(--red) 12%, var(--surface)); box-shadow: none; }
+.badge.info { color: var(--digit-ink); background: color-mix(in oklab, var(--blue) 12%, var(--surface)); box-shadow: none; }
 
 /* ---------- Forms: required marks and errors (plugins/validate.ts, CHECKLIST.md #01 #13) ---------- */
 
@@ -810,7 +855,7 @@ kbd {
 .input.is-invalid:focus,
 .input.is-invalid:focus-within,
 .is-invalid .input:focus {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 22%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--red) 22%, transparent) !important;
 }
 
 .field-error {
@@ -880,7 +925,7 @@ kbd {
 /* ---------- Skeletons (components/Skeleton.vue, CHECKLIST.md #22) ---------- */
 .skeleton {
   display: block;
-  background: linear-gradient(90deg, var(--surface-2) 0%, color-mix(in srgb, var(--line) 70%, var(--surface-2)) 50%, var(--surface-2) 100%);
+  background: linear-gradient(90deg, var(--surface-2) 0%, color-mix(in oklab, var(--line) 70%, var(--surface-2)) 50%, var(--surface-2) 100%);
   background-size: 200% 100%;
   border-radius: var(--radius-sm);
   animation: skeleton 1.4s ease-in-out infinite;
@@ -912,7 +957,7 @@ kbd {
 }
 
 .pop-enter-active {
-  transition: opacity var(--dur) var(--ease-out), scale var(--dur) var(--ease-spring);
+  transition: opacity var(--dur) var(--ease-out), scale var(--dur) var(--ease-out);
 }
 
 .pop-leave-active {
@@ -942,11 +987,12 @@ kbd {
 /* Lists: new items grow in, removed ones fade out, the rest glide into place (sorting and filtering too).
    The doubled :root outranks each row's own scoped transition, which would otherwise replace these. */
 :root:root .list-move {
-  transition: transform var(--dur-slow) var(--ease-out);
+  transition: transform var(--dur-slow) var(--ease-in-out);
 }
 
 :root:root .list-enter-active {
   transition: opacity var(--dur) var(--ease-out), scale var(--dur) var(--ease-out);
+  transition-delay: calc(min(sibling-index() - 1, 5) * 30ms);
 }
 
 :root:root .list-leave-active {
@@ -996,7 +1042,7 @@ kbd {
 }
 
 [data-pill-glide]::after {
-  transition: translate var(--dur-slow) var(--ease-out), width var(--dur-slow) var(--ease-out), height var(--dur-slow) var(--ease-out);
+  transition: translate var(--dur-slow) var(--ease-in-out), width var(--dur-slow) var(--ease-in-out), height var(--dur-slow) var(--ease-in-out);
 }
 
 [data-pill] > :is([aria-checked='true'], [aria-selected='true'], .active, .on, :has(> input:checked)) {
@@ -1069,7 +1115,7 @@ kbd {
   0%, 30% {
     outline: 3px solid var(--accent);
     outline-offset: 3px;
-    box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 18%, transparent);
+    box-shadow: 0 0 0 8px color-mix(in oklab, var(--accent) 18%, transparent);
   }
   100% {
     outline: 3px solid transparent;
@@ -1104,11 +1150,19 @@ kbd {
   background: #fff;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgb(var(--shadow) / 0.25);
-  transition: transform var(--dur) var(--ease-spring);
+  transition: transform var(--dur) var(--ease-in-out), width var(--dur-fast) var(--ease-out);
 }
 
 .switch[aria-checked='true'] .knob {
   transform: translateX(1.5rem);
+}
+
+.switch:active .knob {
+  width: 1.82rem;
+}
+
+.switch[aria-checked='true']:active .knob {
+  transform: translateX(1.305rem);
 }
 
 /* ---------- Swipe to delete (plugins/swipe.ts, CHECKLIST.md #26) ---------- */
@@ -1133,7 +1187,7 @@ kbd {
   width: var(--swipe-w, 0);
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5'/%3E%3C/svg%3E") center / 1.35rem no-repeat,
-    color-mix(in srgb, var(--red) 70%, var(--surface));
+    color-mix(in oklab, var(--red) 70%, var(--surface));
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   transition: background-color var(--dur-fast);
 }
@@ -1167,7 +1221,7 @@ kbd {
   background: var(--accent);
   border-radius: 3px;
   pointer-events: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
 }
 
 [data-drop='before']::after,
@@ -1357,7 +1411,7 @@ html.keypad-open dialog[open] {
   translate: none;
   width: 1.1rem;
   height: 1.1rem;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  background: color-mix(in oklab, var(--surface) 85%, transparent);
   border-radius: var(--radius-xs);
 }
 
@@ -1544,4 +1598,37 @@ svg.ants rect {
 
 :root[data-netlify-preview] {
   --dock-lift: 4.5rem;
+}
+
+/* ---------- Scroll areas fade at the edges (.scroll-fade) ----------
+   Only the edge with more to see fades: none at the top until you scroll, none at the bottom once you
+   reach it. Browsers without scroll-driven animation show a plain hard edge. For inner lists only: the
+   mask would also clip a border or shadow on the same element */
+@property --fade-top {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-bottom {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.scroll-fade {
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+}
+
+@supports (animation-timeline: scroll()) {
+  .scroll-fade {
+    animation: scroll-fade linear both;
+    animation-timeline: scroll(self);
+  }
+}
+
+@keyframes scroll-fade {
+  0% { --fade-top: 0px; --fade-bottom: 18px; }
+  8%, 92% { --fade-top: 18px; --fade-bottom: 18px; }
+  100% { --fade-top: 18px; --fade-bottom: 0px; }
 }

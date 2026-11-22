@@ -39,7 +39,7 @@ defineProps<{ name: ToolIconName }>()
       <path d="M9 12.5l2.2 2.2L15.5 10" />
     </template>
 
-    <!-- Image compressor: four corners folding inward, with the picture's sun at the centre -->
+    <!-- Image compressor: four corners folding inward, with the picture’s sun at the centre -->
     <template v-else-if="name === 'compress'">
       <path d="M3.5 9H9V3.5" />
       <path d="M20.5 9H15V3.5" />

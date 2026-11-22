@@ -216,7 +216,7 @@ const fraction = computed(() => dialFraction(shown.value))
 const BANDS = [
   { to: 1, color: 'var(--red)', range: 'Under 1', down: 'Too slow for much', up: 'Too slow to send much', downShort: 'Too slow', upShort: 'Too slow', downIcon: 'lucide:snail', upIcon: 'lucide:snail' },
   { to: 5, color: 'var(--orange)', range: '1–5', down: 'Browsing and messages', up: 'Photos and messages', downShort: 'Browsing', upShort: 'Photos', downIcon: 'lucide:globe', upIcon: 'lucide:image' },
-  { to: 25, color: 'color-mix(in srgb, var(--yellow) 75%, var(--orange))', range: '5–25', down: 'HD video', up: 'Video calls', downShort: 'HD video', upShort: 'Video calls', downIcon: 'lucide:tv-minimal-play', upIcon: 'lucide:video' },
+  { to: 25, color: 'color-mix(in oklab, var(--yellow) 75%, var(--orange))', range: '5–25', down: 'HD video', up: 'Video calls', downShort: 'HD video', upShort: 'Video calls', downIcon: 'lucide:tv-minimal-play', upIcon: 'lucide:video' },
   { to: 100, color: 'var(--green)', range: '25–100', down: '4K video', up: 'Uploading video', downShort: '4K video', upShort: 'Video', downIcon: 'lucide:monitor-play', upIcon: 'lucide:cloud-upload' },
   { to: Infinity, color: 'var(--blue)', range: '100+', down: 'Big downloads fast', up: 'Big uploads fast', downShort: 'Big files', upShort: 'Big files', downIcon: 'lucide:hard-drive-download', upIcon: 'lucide:hard-drive-upload' }
 ]
@@ -463,7 +463,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             <GaugeZones :zones="BAND_ZONES" :width="14" :gap="0.8" end-cap="round" :opacity="0.22" />
             <!-- The filled part: a soft glow underneath and the bar on top -->
             <!-- The filled part: a glow in the colour of the band the speed is in, then the fill itself in each
-                 band's own colour up to the speed, so you can see which bands it has passed. Only the first
+                 band’s own colour up to the speed, so you can see which bands it has passed. Only the first
                  is rounded: the next one is drawn over its far end, so the joins stay square -->
             <template v-if="fraction > 0.002">
               <GaugeArc class="fill" :width="14" color="url(#speed-fill)" :opacity="0.45" filter="url(#speed-glow)" />
@@ -512,7 +512,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           </li>
         </ol>
 
-        <!-- What's happening, and what you can do about it -->
+        <!-- What’s happening, and what you can do about it -->
         <div class="dial-foot" :class="{ solo: !running && phase !== 'done' }">
           <p class="status" :class="[`is-${phase}`, { bad: phase === 'error' }]" role="status"><span class="status-dot" aria-hidden="true" />{{ status }}</p>
           <button v-if="running" type="button" class="btn btn-quiet btn-sm" @click="stop">
@@ -561,7 +561,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <h2>Good for</h2>
           <ul class="verdicts">
             <li v-for="(v, i) in good" :key="v.label" :class="{ ok: v.ok }" :style="{ '--i': i, '--use': USE_COLOR[v.key] }">
-              <!-- What it's for, with a tick or a cross on its corner -->
+              <!-- What it’s for, with a tick or a cross on its corner -->
               <span class="use-icon" aria-hidden="true">
                 <AppIcon :name="VERDICT_ICONS[v.key]" />
                 <AppIcon class="mark" :name="v.ok ? 'check' : 'x'" />
@@ -669,9 +669,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 <style scoped>
 .speed {
   --meter-a: var(--accent);
-  --meter-b: color-mix(in srgb, var(--accent) 55%, #ffb3f0);
+  --meter-b: color-mix(in oklab, var(--accent) 55%, #ffb3f0);
   --up-a: var(--cyan);
-  --up-b: color-mix(in srgb, var(--cyan) 50%, #9ff3ff);
+  --up-b: color-mix(in oklab, var(--cyan) 50%, #9ff3ff);
   width: 100%;
   display: grid;
   grid-template-areas: 'dial' 'stats' 'result' 'history';
@@ -808,9 +808,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   border-radius: 50%;
   color: var(--on-accent);
   background:
-    radial-gradient(80% 80% at 30% 25%, color-mix(in srgb, var(--accent) 60%, #fff) 0%, transparent 60%),
+    radial-gradient(80% 80% at 30% 25%, color-mix(in oklab, var(--accent) 60%, #fff) 0%, transparent 60%),
     var(--accent);
-  box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 40%, transparent), inset 0 -4px 0 rgb(0 0 0 / 0.15);
+  box-shadow: 0 10px 30px color-mix(in oklab, var(--accent) 40%, transparent), inset 0 -4px 0 rgb(0 0 0 / 0.15);
   font: inherit;
   cursor: pointer;
   transition: transform var(--dur) cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -989,13 +989,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .scale li.on {
-  background: color-mix(in srgb, var(--band) 12%, transparent);
+  background: color-mix(in oklab, var(--band) 12%, transparent);
 }
 
 .scale li.on .scale-bar {
   height: 8px;
   opacity: 1;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--band) 55%, transparent);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--band) 55%, transparent);
 }
 
 .scale li.on .scale-name {
@@ -1012,7 +1012,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   min-height: 3.25rem;
   margin-top: 0.85rem;
   padding-top: 0.85rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 /* Nothing to press (before a test; Go is in the dial): the status sits in the middle */
@@ -1089,7 +1089,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   gap: 0.2rem;
   padding: 0.9rem 1rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   transition: border-color var(--dur-slow), box-shadow var(--dur-slow), transform var(--dur-slow) cubic-bezier(0.2, 0.8, 0.2, 1);
   overflow: hidden;
@@ -1105,7 +1105,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .stat.active {
   border-color: var(--c);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--c) 18%, transparent);
   transform: translateY(-2px);
 }
 
@@ -1166,7 +1166,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .spark-area {
-  fill: color-mix(in srgb, var(--c) 16%, transparent);
+  fill: color-mix(in oklab, var(--c) 16%, transparent);
 }
 
 /* ---------- Result ---------- */
@@ -1221,7 +1221,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .verdicts li.ok .use-icon {
-  background: color-mix(in srgb, var(--use, var(--green)) 16%, var(--surface));
+  background: color-mix(in oklab, var(--use, var(--green)) 16%, var(--surface));
 }
 
 .verdicts svg {
@@ -1253,7 +1253,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   stroke-width: 2.6;
   background: var(--surface);
   border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .verdicts li:not(.ok) .mark {
@@ -1312,7 +1312,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   gap: 0.9rem 1.25rem;
   margin: 1.25rem 0 0;
   padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .conn div {
@@ -1381,7 +1381,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   background: var(--surface-2);
   border: 0;
   border-radius: var(--radius-pill);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   cursor: pointer;
 }
 
@@ -1467,7 +1467,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .day {
   background: var(--surface-2);
   border-radius: var(--radius-lg);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .day-h {
@@ -1506,7 +1506,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   color: var(--ink-2);
   background: var(--surface);
   border-radius: var(--radius-pill);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .day-best {
@@ -1585,7 +1585,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   list-style: none;
   background: var(--surface);
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .history-list li {
@@ -1595,7 +1595,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 0.75rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1690,7 +1690,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .plan-field {
   padding: 0.85rem 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .plan-input {

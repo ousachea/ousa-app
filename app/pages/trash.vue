@@ -214,7 +214,7 @@ function daysLeft(iso: string) {
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background-color var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
@@ -295,14 +295,14 @@ input[type='checkbox'] {
   gap: 0.85rem;
   padding: 0.7rem 0.75rem 0.7rem 0.85rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   transition: border-color var(--dur-fast), background-color var(--dur-fast);
 }
 
 .row.checked {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  border-color: color-mix(in oklab, var(--accent) 55%, var(--line));
+  background: color-mix(in oklab, var(--accent) 6%, var(--surface));
 }
 
 .row-check {

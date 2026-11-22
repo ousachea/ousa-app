@@ -26,8 +26,8 @@ const emit = defineEmits<{ resume: [], discard: [] }>()
   gap: 0.75rem;
   margin-bottom: 1rem;
   padding: 0.8rem 0.9rem;
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--line));
   border-radius: var(--radius-lg);
   animation: draft-in var(--dur) var(--ease-out);
 }

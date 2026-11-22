@@ -172,7 +172,7 @@ function onKey(e: KeyboardEvent) {
   height: 2.75rem;
   padding: 0;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
@@ -197,7 +197,7 @@ function onKey(e: KeyboardEvent) {
 
 .trigger.open {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
 }
 
 .picker {
@@ -208,7 +208,7 @@ function onKey(e: KeyboardEvent) {
   padding: 0.75rem;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: 0 22px 48px -14px rgb(var(--shadow) / 0.38), 0 2px 6px rgb(var(--shadow) / 0.08);
 }

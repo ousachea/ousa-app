@@ -41,7 +41,7 @@ function flip() {
 }
 
 .setting-row + .setting-row {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .text {

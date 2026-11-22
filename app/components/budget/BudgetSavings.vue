@@ -269,7 +269,7 @@ function delContribution(c: BudgetContribution) {
   height: 10px;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   overflow: hidden;
 }
 
@@ -311,7 +311,7 @@ function delContribution(c: BudgetContribution) {
   list-style: none;
   margin: 0;
   padding: 0.5rem 0 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .history li {

@@ -234,7 +234,7 @@ const volume = computed({
         <nav v-sticky-fit class="snav" aria-label="Settings sections">
           <label class="find">
             <AnimatedIcon name="search" />
-            <input v-model="find" type="search" placeholder="Find a setting" aria-label="Find a setting">
+            <input v-model="find" type="search" enterkeyhint="search" placeholder="Find a setting" aria-label="Find a setting">
           </label>
           <ul class="snav-list">
             <li v-for="s in found" :key="s.id">
@@ -527,13 +527,13 @@ const volume = computed({
   padding: 0 0.8rem;
   height: 2.6rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
 .find:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 .find svg {
@@ -589,7 +589,7 @@ const volume = computed({
 .snav-item[aria-current='page'] {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1px var(--line);
+  box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1px var(--border);
 }
 
 .snav-item svg {
@@ -719,7 +719,7 @@ const volume = computed({
   justify-content: space-between;
   gap: 0.6rem 1rem;
   padding: 0.85rem 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .setting-choice .text {
@@ -851,14 +851,14 @@ const volume = computed({
   padding: 0.75rem 0.85rem;
   font-family: var(--sample);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: border-color var(--dur-fast), background-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .font-opt:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
 }
 
 .font-opt:active {
@@ -872,7 +872,7 @@ const volume = computed({
 }
 
 .font-opt:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
 }
 
 .font-opt input {
@@ -904,7 +904,7 @@ const volume = computed({
   margin: 0.25rem 0 0.85rem;
   padding: 1rem 1.1rem;
   background: var(--surface-2);
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -988,7 +988,7 @@ const volume = computed({
 }
 
 .accent:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--ink) 40%, transparent);
   outline-offset: 3px;
 }
 
@@ -1058,7 +1058,7 @@ const volume = computed({
   padding: 0.6rem 0.8rem;
   font-size: var(--text-sm);
   font-weight: 600;
-  background: color-mix(in srgb, var(--yellow) 18%, var(--surface));
+  background: color-mix(in oklab, var(--yellow) 18%, var(--surface));
   border-radius: var(--radius-sm);
 }
 
@@ -1233,7 +1233,7 @@ const volume = computed({
   gap: 0.2rem;
   padding: 0.9rem 1rem 1rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
@@ -1245,11 +1245,11 @@ const volume = computed({
 
 .pack.active {
   border-color: var(--pack);
-  box-shadow: 0 0 0 1px var(--pack), 0 4px 14px color-mix(in srgb, var(--pack) 22%, transparent);
+  box-shadow: 0 0 0 1px var(--pack), 0 4px 14px color-mix(in oklab, var(--pack) 22%, transparent);
 }
 
 .pack:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--pack) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--pack) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -1316,7 +1316,7 @@ const volume = computed({
     padding: 0.45rem 0.75rem;
     background: var(--surface);
     border-radius: var(--radius-pill);
-    box-shadow: 0 0 0 1px var(--line);
+    box-shadow: 0 0 0 1px var(--border);
   }
 
   .snav-item[aria-current='page'] {

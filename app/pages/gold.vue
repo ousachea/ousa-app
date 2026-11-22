@@ -780,7 +780,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                     <span>{{ new Date(hover.time).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</span>
                   </div>
                 </div>
-                <!-- Where the price sits between this range's low and high, on a dial (components/gauge) -->
+                <!-- Where the price sits between this range’s low and high, on a dial (components/gauge) -->
                 <div class="chart-scale">
                   <span>Low<br><strong>{{ money(chart.min, 0) }}</strong></span>
                   <span class="range-dial" role="img" :aria-label="`Now ${money(chart.xy.at(-1)!.price, 0)}, between ${money(chart.min, 0)} and ${money(chart.max, 0)}`">
@@ -850,7 +850,7 @@ const PURITIES: { value: Purity, label: string }[] = [
               </div>
             </ClientOnly>
 
-            <!-- One card per purchase: what you paid → what it's worth now → the gain or loss -->
+            <!-- One card per purchase: what you paid → what it’s worth now → the gain or loss -->
             <ul v-if="purchases.length" class="purchases">
               <li
                 v-for="p in sorted"
@@ -1369,7 +1369,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .chart-area {
-  fill: color-mix(in srgb, var(--gold) 14%, transparent);
+  fill: color-mix(in oklab, var(--gold) 14%, transparent);
 }
 
 .chart-cross {
@@ -1427,7 +1427,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   justify-content: space-between;
   gap: 0.15rem 0.5rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -1437,8 +1437,8 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .units li.lead {
-  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
-  background: color-mix(in srgb, var(--gold) 9%, var(--surface));
+  border-color: color-mix(in oklab, var(--gold) 55%, var(--line));
+  background: color-mix(in oklab, var(--gold) 9%, var(--surface));
 }
 
 .u-name {
@@ -1476,7 +1476,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.35rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .convert-out dt {
@@ -1650,7 +1650,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   flex-direction: column;
   gap: 0.85rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-left: 4px solid var(--tone);
   border-radius: var(--radius-lg);
 }
@@ -1674,14 +1674,14 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 /* On white, soft-light barely shows; let the glow pick up the card's gain/loss tint instead */
 .purchase::before {
-  background: radial-gradient(circle at var(--mx) var(--my), color-mix(in srgb, var(--tone) 16%, transparent), transparent 55%);
+  background: radial-gradient(circle at var(--mx) var(--my), color-mix(in oklab, var(--tone) 16%, transparent), transparent 55%);
   mix-blend-mode: normal;
   z-index: -1; /* behind the text; the tilt transform keeps it inside the card's own layer */
 }
 
 /* The streak sits behind the text too, tinted rather than white, so it never washes out the numbers or the edge */
 .purchase::after {
-  background: linear-gradient(115deg, transparent calc(var(--mx) - 22%), color-mix(in srgb, var(--tone) 9%, transparent) var(--mx), transparent calc(var(--mx) + 22%));
+  background: linear-gradient(115deg, transparent calc(var(--mx) - 22%), color-mix(in oklab, var(--tone) 9%, transparent) var(--mx), transparent calc(var(--mx) + 22%));
   mix-blend-mode: normal;
   z-index: -1;
 }
@@ -1785,7 +1785,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   padding: 0.15rem 0.5rem 0.15rem 0.35rem;
   font-size: var(--text-xs);
   font-weight: 700;
-  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
   border-radius: var(--radius-pill);
 }
 
@@ -1854,7 +1854,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 .sign-in :deep(.google) {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(var(--shadow) / 0.12);
+  box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgb(var(--shadow) / 0.12);
 }
 
 .empty {
@@ -1918,7 +1918,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
@@ -1932,7 +1932,7 @@ const PURITIES: { value: Purity, label: string }[] = [
 }
 
 .paste-list li + li {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .paste-list li.missing {
@@ -2067,7 +2067,7 @@ const PURITIES: { value: Purity, label: string }[] = [
     min-height: 2rem;
     padding: 0.25rem 0.5rem;
     font-weight: 700;
-    color: color-mix(in srgb, var(--gold) 70%, var(--ink));
+    color: color-mix(in oklab, var(--gold) 70%, var(--ink));
     background: none;
     border-color: transparent;
     box-shadow: none;
@@ -2079,7 +2079,7 @@ const PURITIES: { value: Purity, label: string }[] = [
     gap: 0;
     overflow: hidden;
     background: var(--surface);
-    border: 1px solid var(--line);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
   }
 
@@ -2136,8 +2136,8 @@ const PURITIES: { value: Purity, label: string }[] = [
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.25rem;
     padding: 0.35rem;
-    background: color-mix(in srgb, var(--surface) 82%, transparent);
-    border: 1px solid var(--line);
+    background: color-mix(in oklab, var(--surface) 82%, transparent);
+    border: 1px solid var(--border);
     border-radius: var(--radius-2xl);
     box-shadow: 0 12px 32px -14px rgb(0 0 0 / 0.4);
     backdrop-filter: blur(18px) saturate(1.6);
@@ -2168,8 +2168,8 @@ const PURITIES: { value: Purity, label: string }[] = [
   }
 
   .tab-bar button.active {
-    color: color-mix(in srgb, var(--gold) 70%, var(--ink));
-    background: color-mix(in srgb, var(--gold) 15%, transparent);
+    color: color-mix(in oklab, var(--gold) 70%, var(--ink));
+    background: color-mix(in oklab, var(--gold) 15%, transparent);
   }
 
   .tab-bar svg {

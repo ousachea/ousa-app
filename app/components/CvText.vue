@@ -90,13 +90,13 @@ async function onBlur(e: FocusEvent) {
 }
 
 .cv-text.editable:hover {
-  --ants-color: color-mix(in srgb, #9b5cf5 55%, transparent);
+  --ants-color: color-mix(in oklab, #9b5cf5 55%, transparent);
 }
 
 .cv-text.editable:focus {
   --ants-color: transparent;
   outline: 2px solid #9b5cf5;
-  background: color-mix(in srgb, #9b5cf5 10%, transparent);
+  background: color-mix(in oklab, #9b5cf5 10%, transparent);
 }
 
 /* Something emptied: a faint hint of what goes there */

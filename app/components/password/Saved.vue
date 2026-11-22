@@ -168,7 +168,7 @@ onBeforeUnmount(() => clearTimeout(clipboardTimer))
             <input
               v-model="query"
               class="input search"
-              type="search"
+              type="search" enterkeyhint="search"
               placeholder="Search sites and usernames"
               aria-label="Search saved passwords"
             >
@@ -317,7 +317,7 @@ pre {
   font-size: var(--text-sm);
   line-height: 1.55;
   background: var(--surface-2);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .code-actions {
@@ -470,7 +470,7 @@ pre {
   align-items: center;
   gap: 0.5rem;
   padding: 0.45rem 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 dt {

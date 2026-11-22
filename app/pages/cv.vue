@@ -572,7 +572,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
     <div ref="cvEl" class="cv" :class="{ editing }" @pointermove="onPointer" @pointerleave="onLeave">
       <!-- How far down the page you are -->
       <span class="progress" aria-hidden="true" />
-      <!-- ========== The page's own nav ========== -->
+      <!-- ========== The page’s own nav ========== -->
       <nav class="cv-nav" :class="{ scrolled, open: menuOpen }" aria-label="CV sections">
         <a href="#top" class="nav-brand" @click="go('')">
           <img :src="cv.profile.photo" alt="" width="480" height="480">
@@ -1030,10 +1030,10 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
   --gap: clamp(4rem, 9vw, 7rem);
   --violet: #7c3aed;
   --violet-2: #9b5cf5; /* lighter, for rings and glows */
-  --violet-soft: color-mix(in srgb, var(--violet) 12%, var(--surface));
+  --violet-soft: color-mix(in oklab, var(--violet) 12%, var(--surface));
   --hero: linear-gradient(180deg, #8f5cf7 0%, var(--violet) 45%, #5b21b6 100%);
-  --glass: color-mix(in srgb, var(--surface) 82%, transparent);
-  --glass-line: color-mix(in srgb, var(--line) 70%, #fff);
+  --glass: color-mix(in oklab, var(--surface) 82%, transparent);
+  --glass-line: color-mix(in oklab, var(--line) 70%, #fff);
   --float: 0 24px 48px -24px rgb(var(--shadow) / 0.35), 0 2px 6px rgb(var(--shadow) / 0.06);
   display: flex;
   flex-direction: column;
@@ -1064,7 +1064,7 @@ onBeforeUnmount(() => cancelAnimationFrame(ringFrame))
 }
 
 :root[data-theme='dark'] .cv {
-  --glass-line: color-mix(in srgb, var(--line) 85%, #fff 8%);
+  --glass-line: color-mix(in oklab, var(--line) 85%, #fff 8%);
 }
 
 ul,
@@ -1219,7 +1219,7 @@ h3 {
 
 .fc-tag.good {
   color: var(--good-ink);
-  background: color-mix(in srgb, var(--green) 14%, var(--surface));
+  background: color-mix(in oklab, var(--green) 14%, var(--surface));
 }
 
 :root[data-theme='dark'] .fc-tag:not(.good) {
@@ -1316,7 +1316,7 @@ h3 {
   color: #fff;
   background: var(--hero);
   border-radius: 32px;
-  box-shadow: 0 30px 60px -30px color-mix(in srgb, var(--violet) 70%, transparent);
+  box-shadow: 0 30px 60px -30px color-mix(in oklab, var(--violet) 70%, transparent);
 }
 
 /* A drafting grid and soft light from the top */
@@ -1501,7 +1501,7 @@ h3 {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem 1rem 3.25rem;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
   border: 1px solid rgb(255 255 255 / 0.6);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: 0 -10px 40px -10px rgb(30 0 80 / 0.35);
@@ -1753,7 +1753,7 @@ h3 {
 .tabs button.active {
   color: #fff;
   background: var(--violet);
-  box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--violet) 80%, transparent);
+  box-shadow: 0 4px 12px -4px color-mix(in oklab, var(--violet) 80%, transparent);
 }
 
 .tabs.small {
@@ -1808,7 +1808,7 @@ h3 {
   opacity: 1;
   transform: none;
   cursor: default;
-  box-shadow: 0 30px 50px -24px color-mix(in srgb, var(--violet) 80%, transparent);
+  box-shadow: 0 30px 50px -24px color-mix(in oklab, var(--violet) 80%, transparent);
 }
 
 .service-icon {
@@ -2427,7 +2427,7 @@ h3 {
   z-index: -1;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--violet-2) 16%, transparent), transparent 70%);
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklab, var(--violet-2) 16%, transparent), transparent 70%);
   opacity: 0;
   transition: opacity var(--dur-slow);
   pointer-events: none;
@@ -2436,8 +2436,8 @@ h3 {
 @media (hover: hover) {
   .glow:hover {
     translate: 0 -4px;
-    border-color: color-mix(in srgb, var(--violet-2) 45%, var(--glass-line));
-    box-shadow: 0 30px 50px -26px color-mix(in srgb, var(--violet) 60%, transparent);
+    border-color: color-mix(in oklab, var(--violet-2) 45%, var(--glass-line));
+    box-shadow: 0 30px 50px -26px color-mix(in oklab, var(--violet) 60%, transparent);
   }
 
   .glow:hover::before {
@@ -2460,7 +2460,7 @@ h3 {
   /* Sits close above the hero instead of a whole section gap away */
   margin-bottom: calc(1rem - var(--gap));
   padding: 0.45rem 0.45rem 0.45rem 0.55rem;
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
   border: 1px solid var(--glass-line);
   border-radius: var(--radius-pill);
   box-shadow: 0 2px 10px rgb(var(--shadow) / 0.05);
@@ -2470,7 +2470,7 @@ h3 {
 }
 
 .cv-nav.scrolled {
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  background: color-mix(in oklab, var(--surface) 86%, transparent);
   box-shadow: 0 14px 36px -16px rgb(var(--shadow) / 0.35);
 }
 
@@ -2591,13 +2591,13 @@ h3 {
   text-decoration: none;
   background: var(--hero);
   border-radius: var(--radius-pill);
-  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--violet) 80%, transparent);
+  box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--violet) 80%, transparent);
   translate: var(--gx, 0px) var(--gy, 0px);
   transition: translate var(--dur-slow) var(--ease-out), transform var(--dur-fast), box-shadow var(--dur);
 }
 
 .nav-hire:hover {
-  box-shadow: 0 12px 26px -8px color-mix(in srgb, var(--violet) 90%, transparent);
+  box-shadow: 0 12px 26px -8px color-mix(in oklab, var(--violet) 90%, transparent);
 }
 
 .nav-hire:active {
@@ -2653,7 +2653,7 @@ h3 {
   display: flex;
   flex-direction: column;
   padding: 0.5rem;
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  background: color-mix(in oklab, var(--surface) 94%, transparent);
   border: 1px solid var(--glass-line);
   border-radius: var(--radius-xl);
   box-shadow: 0 24px 48px -20px rgb(var(--shadow) / 0.45);
@@ -2684,7 +2684,7 @@ h3 {
 .nav-sheet-pdf {
   margin-top: 0.25rem;
   color: var(--ink-2);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
@@ -2745,7 +2745,7 @@ h3 {
   font-weight: 700;
   color: var(--violet);
   background: var(--violet-soft);
-  border: 1px dashed color-mix(in srgb, var(--violet) 45%, transparent);
+  border: 1px dashed color-mix(in oklab, var(--violet) 45%, transparent);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background-color var(--dur-fast), transform var(--dur-fast);
@@ -2753,7 +2753,7 @@ h3 {
 }
 
 .edit-chip:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--violet) 20%, var(--surface));
+  background: color-mix(in oklab, var(--violet) 20%, var(--surface));
 }
 
 .edit-chip:active:not(:disabled) {
@@ -2803,8 +2803,8 @@ h3 {
   font: inherit;
   font-weight: 700;
   color: var(--violet);
-  background: color-mix(in srgb, var(--violet-soft) 60%, transparent);
-  border: 2px dashed color-mix(in srgb, var(--violet) 40%, transparent);
+  background: color-mix(in oklab, var(--violet-soft) 60%, transparent);
+  border: 2px dashed color-mix(in oklab, var(--violet) 40%, transparent);
   border-radius: var(--radius-xl);
   cursor: pointer;
   transition: background-color var(--dur), border-color var(--dur);
@@ -3044,7 +3044,7 @@ h3 {
   width: 34px;
   height: 34px;
   margin: -17px 0 0 -17px;
-  border: 1.5px solid color-mix(in srgb, var(--violet-2) 75%, transparent);
+  border: 1.5px solid color-mix(in oklab, var(--violet-2) 75%, transparent);
   border-radius: 50%;
   opacity: 0;
   pointer-events: none;
@@ -3064,8 +3064,8 @@ h3 {
   width: 58px;
   height: 58px;
   margin: -29px 0 0 -29px;
-  background: color-mix(in srgb, var(--violet-2) 10%, transparent);
-  border-color: color-mix(in srgb, var(--violet-2) 45%, transparent);
+  background: color-mix(in oklab, var(--violet-2) 10%, transparent);
+  border-color: color-mix(in oklab, var(--violet-2) 45%, transparent);
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -3283,7 +3283,7 @@ h3 {
 
 .logo-pill:hover {
   translate: 0 -3px;
-  border-color: color-mix(in srgb, var(--violet-2) 45%, var(--glass-line));
+  border-color: color-mix(in oklab, var(--violet-2) 45%, var(--glass-line));
 }
 
 .logo-pill:hover .logo-dot {

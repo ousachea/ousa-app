@@ -255,7 +255,7 @@ const repeatLabel = (r: Repeat) => REPEATS.find(x => x.value === r)?.label.toLow
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
@@ -331,7 +331,7 @@ const repeatLabel = (r: Repeat) => REPEATS.find(x => x.value === r)?.label.toLow
 }
 
 .task + .task {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .tick {
@@ -382,7 +382,7 @@ const repeatLabel = (r: Repeat) => REPEATS.find(x => x.value === r)?.label.toLow
 
 .due.now {
   font-weight: 600;
-  color: color-mix(in srgb, var(--accent) 75%, var(--ink));
+  color: color-mix(in oklab, var(--accent) 75%, var(--ink));
 }
 
 .due.late {

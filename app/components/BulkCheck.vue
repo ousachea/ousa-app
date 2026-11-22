@@ -6,7 +6,7 @@ defineEmits<{ pick: [e: MouseEvent] }>()
 </script>
 
 <template>
-  <!-- .stop: the row's own click (open, edit) must not run when the checkbox is clicked -->
+  <!-- .stop: the row’s own click (open, edit) must not run when the checkbox is clicked -->
   <label class="bulk-check" :class="{ inline }" @click.stop>
     <input type="checkbox" :checked="checked" :aria-label="label" @click="$emit('pick', $event)">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 12.5l3.5 3.5 7.5-8" /></svg>
@@ -47,7 +47,7 @@ input {
   margin: 0;
   border-radius: 50%;
   background: var(--surface);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 35%, transparent), 0 1px 3px rgb(var(--shadow) / 0.25);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--ink) 35%, transparent), 0 1px 3px rgb(var(--shadow) / 0.25);
   cursor: pointer;
   transition-property: background-color, box-shadow;
   transition-duration: 0.15s;

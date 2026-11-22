@@ -78,7 +78,7 @@ const nearBudget = computed(() => meters.value.some(m => m.pct >= 80))
   gap: 0.75rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 dl {

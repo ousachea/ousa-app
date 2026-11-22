@@ -40,7 +40,7 @@ const markAt = computed(() => (props.pace !== undefined ? Math.min(100, props.pa
   height: 8px;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .fill {

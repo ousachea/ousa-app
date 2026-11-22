@@ -99,7 +99,7 @@ const style = computed(() => ({
 </script>
 
 <template>
-  <!-- The drawings are this app's own (utils/animatedIcons.ts), never user input -->
+  <!-- The drawings are this app’s own (utils/animatedIcons.ts), never user input -->
   <svg
     ref="root"
     class="ai app-icon"

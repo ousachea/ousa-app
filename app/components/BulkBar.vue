@@ -100,7 +100,7 @@ body.bulk-open main.tool {
 
 /* On dark backgrounds a shadow alone disappears; a faint light ring keeps the edge */
 :root[data-theme='dark'] .bulk-bar {
-  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  background: color-mix(in oklab, var(--ink) 6%, var(--surface));
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 0.1),
     0 12px 32px rgb(0 0 0 / 0.5);
@@ -111,7 +111,7 @@ body.bulk-open main.tool {
   align-items: center;
   gap: 0.25rem;
   padding-right: 0.5rem;
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--border);
 }
 
 .bulk-close,
@@ -143,7 +143,7 @@ body.bulk-open main.tool {
 
 .bulk-close:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
 }
 
 .bulk-count {
@@ -171,7 +171,7 @@ body.bulk-open main.tool {
 }
 
 .bulk-all:hover {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
 }
 
 .bulk-actions {
@@ -204,7 +204,7 @@ body.bulk-open main.tool {
 }
 
 .bulk-act:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
 }
 
 .bulk-act:disabled {
@@ -217,7 +217,7 @@ body.bulk-open main.tool {
 }
 
 .bulk-delete:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--red) 10%, transparent);
+  background: color-mix(in oklab, var(--red) 10%, transparent);
 }
 
 /* Enter slides up a little; leaving is quicker and softer */
@@ -254,7 +254,7 @@ body.bulk-open main.tool {
   .bulk-head {
     padding: 0 0 0.25rem;
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--border);
   }
 
   .bulk-count {

@@ -350,7 +350,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
 .row.on {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: inset 3px 0 0 var(--tag, var(--accent)), 0 0 0 1px var(--line);
+  box-shadow: inset 3px 0 0 var(--tag, var(--accent)), 0 0 0 1px var(--border);
 }
 
 .row.muted .name {
@@ -360,14 +360,14 @@ watch(() => props.active, () => (openOnPhone.value = false))
 /* Where a drag will land */
 .row.drop-into {
   color: var(--ink);
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface));
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 /* While a bookmark is dragged, every folder that can take it gets a dashed outline */
 .drop-targets .row:not(.on, .drop-into) {
   /* Drawn by v-ants, so the dashes walk */
-  --ants-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  --ants-color: color-mix(in oklab, var(--accent) 55%, transparent);
   --ants-width: 1.5px;
   --ants-offset: -1.5px;
 }
@@ -468,7 +468,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
   color: var(--ink-2);
   text-align: left;
   background: none;
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--dur-fast), border-color var(--dur-fast);
@@ -510,7 +510,7 @@ watch(() => props.active, () => (openOnPhone.value = false))
     font-weight: 600;
     color: var(--ink);
     background: var(--surface);
-    border: 1px solid var(--line);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     cursor: pointer;
   }

@@ -190,8 +190,8 @@ function onBlur(e: FocusEvent) {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
-  background: color-mix(in srgb, var(--tag) 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--tag) 35%, transparent);
+  background: color-mix(in oklab, var(--tag) 12%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--tag) 35%, transparent);
   border-radius: var(--radius-pill);
 }
 
@@ -220,7 +220,7 @@ function onBlur(e: FocusEvent) {
 
 .chip-x:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--tag) 20%, transparent);
+  background: color-mix(in oklab, var(--tag) 20%, transparent);
 }
 
 .clear {
@@ -232,7 +232,7 @@ function onBlur(e: FocusEvent) {
 .options {
   position: fixed;
   inset: auto;
-  max-height: min(15rem, 60vh);
+  max-height: min(15rem, 60dvh);
   overscroll-behavior: contain;
   color: var(--ink);
   border: 0;
@@ -242,7 +242,7 @@ function onBlur(e: FocusEvent) {
   list-style: none;
   background: var(--surface);
   border-radius: var(--radius);
-  box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
+  box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--border);
 }
 
 .options.is-open {

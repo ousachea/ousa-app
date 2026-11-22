@@ -94,7 +94,7 @@ const dateText = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', mo
 
       <label class="search">
         <AppIcon name="search" />
-        <input v-model="query" type="search" placeholder="Search these bookmarks" aria-label="Search these bookmarks">
+        <input v-model="query" type="search" enterkeyhint="search" placeholder="Search these bookmarks" aria-label="Search these bookmarks">
       </label>
 
       <ul v-if="shown.length" class="marks">
@@ -221,7 +221,7 @@ h1 {
   background: var(--surface);
   border: 0;
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
   cursor: pointer;
   transition: box-shadow var(--dur-fast);
 }
@@ -251,7 +251,7 @@ h1 {
   padding: 0 0.85rem;
   background: var(--surface);
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .search:focus-within {
@@ -279,7 +279,7 @@ h1 {
   list-style: none;
   background: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--border);
   overflow: hidden;
 }
 
@@ -292,7 +292,7 @@ h1 {
 }
 
 .mark + .mark {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .mark:hover {

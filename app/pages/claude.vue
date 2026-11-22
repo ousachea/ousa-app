@@ -338,7 +338,7 @@ function refresh() {
   gap: 0.25rem;
   padding: 4px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -487,7 +487,7 @@ th,
 td {
   padding: 0.5rem 0;
   text-align: left;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 thead th {

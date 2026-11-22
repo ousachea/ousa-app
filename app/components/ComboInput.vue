@@ -122,7 +122,7 @@ function onBlur() {
 .list {
   position: fixed;
   inset: auto;
-  max-height: min(15rem, 60vh);
+  max-height: min(15rem, 60dvh);
   overscroll-behavior: contain;
   color: var(--ink);
   border: 0;
@@ -132,7 +132,7 @@ function onBlur() {
   list-style: none;
   background: var(--surface);
   border-radius: var(--radius);
-  box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--line);
+  box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 0 0 1px var(--border);
 }
 
 .list.is-open {

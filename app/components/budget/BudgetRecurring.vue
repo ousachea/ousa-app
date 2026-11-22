@@ -319,7 +319,7 @@ ul {
   display: grid;
   place-items: center;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--slot) 16%, var(--surface));
+  background: color-mix(in oklab, var(--slot) 16%, var(--surface));
 }
 
 .main {
@@ -366,7 +366,7 @@ div.due-list {
   justify-content: space-between;
   align-items: center;
   padding-top: 0.6rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
   font-size: var(--text-sm);
 }
 
@@ -375,7 +375,7 @@ div.due-list {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--line) 60%, transparent);
   font-size: var(--text-sm);
 }
 

@@ -494,7 +494,7 @@ watch(() => route.path, () => field.value && close())
               {{ key.label }}
             </button>
           </div>
-          <!-- On the phone's keyboard: a way back to the app's -->
+          <!-- On the phone’s keyboard: a way back to the app’s -->
           <button v-if="!sheet && prefs.textKeyboard" type="button" tabindex="-1" class="chip" aria-label="Use the app keyboard" @click="useAppKeyboard">
             <AppIcon name="keyboard" />
           </button>
@@ -631,9 +631,9 @@ watch(() => route.path, () => field.value && close())
   padding: 0;
   overflow: visible;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
   color: var(--ink);
-  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+  background: color-mix(in oklab, var(--surface-2) 92%, transparent);
   backdrop-filter: blur(16px) saturate(1.4);
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   box-shadow: 0 -8px 24px rgb(var(--shadow) / 0.08);
@@ -703,7 +703,7 @@ watch(() => route.path, () => field.value && close())
   flex: none;
   min-height: 2.25rem;
   padding: 0 0.8rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   color: var(--ink);
   background: var(--surface);
@@ -732,7 +732,7 @@ watch(() => route.path, () => field.value && close())
 .chip:active,
 .key:active {
   transform: scale(0.96);
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface));
 }
 
 .chip.done {
@@ -769,7 +769,7 @@ watch(() => route.path, () => field.value && close())
 }
 
 .key.fn {
-  background: color-mix(in srgb, var(--ink) 7%, var(--surface-2));
+  background: color-mix(in oklab, var(--ink) 7%, var(--surface-2));
 }
 
 .key.small {
@@ -873,7 +873,7 @@ watch(() => route.path, () => field.value && close())
 
 /* The letter under your finger, shown bigger above it */
 .letter.pressed {
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface));
 }
 
 .letter.pressed::after {
@@ -889,7 +889,7 @@ watch(() => route.path, () => field.value && close())
   transform: translateX(-50%);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.22), 0 0 0 1px var(--line);
+  box-shadow: 0 6px 18px rgb(var(--shadow) / 0.22), 0 0 0 1px var(--border);
   color: var(--ink);
   font-size: var(--text-2xl);
   font-weight: 500;

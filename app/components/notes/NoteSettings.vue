@@ -65,7 +65,7 @@ function resetAll() {
   padding: 1rem 1.15rem;
   background: var(--surface-2);
   border-radius: var(--radius-lg);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 /* No hairline above or below the card: it belongs to the heading */

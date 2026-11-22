@@ -222,7 +222,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   gap: 2px;
   background: var(--surface-2);
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .views button {
@@ -269,7 +269,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   background: var(--surface);
   border: 0;
   border-radius: var(--radius-pill);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   cursor: pointer;
   transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
 }
@@ -301,7 +301,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
   align-items: center;
   gap: 0.5rem 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .note {
@@ -400,7 +400,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
 .mini-bar {
   display: block;
   overflow: hidden;
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  background: color-mix(in oklab, var(--ink) 8%, transparent);
   border-radius: var(--radius-pill);
 }
 
@@ -449,7 +449,7 @@ const featuresOf = (to: string) => FEATURES.filter(f => hasFeature(to, f.key) &&
 
 .pills li.diff {
   color: var(--ink);
-  background: color-mix(in srgb, var(--orange) 16%, var(--surface));
+  background: color-mix(in oklab, var(--orange) 16%, var(--surface));
 }
 
 .none {
@@ -478,7 +478,7 @@ table {
 
 th,
 td {
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 tbody tr:last-child th,
@@ -534,7 +534,7 @@ thead .app-col {
   z-index: 1;
   min-width: 10rem;
   background: var(--surface);
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--border);
 }
 
 tbody .app-col {
@@ -579,23 +579,23 @@ td {
 
 tbody tr:hover th,
 tbody tr:hover td {
-  background: color-mix(in srgb, var(--ink) 3%, var(--surface));
+  background: color-mix(in oklab, var(--ink) 3%, var(--surface));
 }
 
 tr.picked th,
 tr.picked td {
-  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 7%, var(--surface));
 }
 
 /* A feature you filtered by, and one the compared apps don't share */
 th.want,
 td.want {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  background: color-mix(in oklab, var(--accent) 6%, transparent);
 }
 
 th.diff,
 td.diff {
-  background: color-mix(in srgb, var(--orange) 12%, transparent);
+  background: color-mix(in oklab, var(--orange) 12%, transparent);
 }
 
 /* Has it: a small tick in the app's colour. Doesn't: a faint dot */
@@ -605,7 +605,7 @@ td.diff {
   width: 1.3rem;
   height: 1.3rem;
   color: var(--app, var(--green));
-  background: color-mix(in srgb, var(--app, var(--green)) 14%, transparent);
+  background: color-mix(in oklab, var(--app, var(--green)) 14%, transparent);
   border-radius: 50%;
 }
 
@@ -619,7 +619,7 @@ td.diff {
   display: inline-block;
   width: 0.3rem;
   height: 0.3rem;
-  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  background: color-mix(in oklab, var(--ink) 18%, transparent);
   border-radius: 50%;
 }
 

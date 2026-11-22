@@ -283,7 +283,7 @@ const maxUsed = computed(() => Math.max(1, ...periods.value.map(p => p.perDay)))
   font-weight: 600;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
@@ -321,7 +321,7 @@ const maxUsed = computed(() => Math.max(1, ...periods.value.map(p => p.perDay)))
 .bands td {
   padding: 0.45rem 0.25rem;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .bands th {
@@ -360,7 +360,7 @@ const maxUsed = computed(() => Math.max(1, ...periods.value.map(p => p.perDay)))
 }
 
 .periods li + li {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .period-head {
@@ -387,7 +387,7 @@ const maxUsed = computed(() => Math.max(1, ...periods.value.map(p => p.perDay)))
 
 .bar {
   height: 0.5rem;
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  background: color-mix(in oklab, var(--ink) 8%, transparent);
   border-radius: var(--radius-pill);
   overflow: hidden;
 }

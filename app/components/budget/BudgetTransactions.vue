@@ -169,7 +169,7 @@ const describe = computed(() => {
       <div class="filter-row">
         <label class="search input">
           <AnimatedIcon name="search" />
-          <input v-model="searchText" type="search" placeholder="Search notes, merchants, tags…" aria-label="Search transactions">
+          <input v-model="searchText" type="search" enterkeyhint="search" placeholder="Search notes, merchants, tags…" aria-label="Search transactions">
         </label>
         <div class="segmented kinds" role="radiogroup" aria-label="Type">
           <label v-for="k in [{ v: '', l: 'All' }, { v: 'expense', l: 'Expenses' }, { v: 'income', l: 'Income' }]" :key="k.v" :class="{ active: kind === k.v }">
@@ -377,7 +377,7 @@ const describe = computed(() => {
 .tbl td {
   padding: 0.5rem 0.4rem;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .tbl th {

@@ -463,7 +463,7 @@ async function copyImage() {
 
       <Step title="Preview" v-sticky-fit class="preview">
         <div class="panel preview-panel">
-          <!-- The code on a sheet of paper with printer's crop marks -->
+          <!-- The code on a sheet of paper with printer’s crop marks -->
           <div class="paper">
             <span class="crop tl" aria-hidden="true" />
             <span class="crop tr" aria-hidden="true" />
@@ -584,7 +584,7 @@ async function copyImage() {
 
 .swatch input::-webkit-color-swatch-wrapper { padding: 0; }
 .swatch input::-webkit-color-swatch {
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
 
@@ -612,7 +612,7 @@ async function copyImage() {
   padding: 0.6rem;
   color: var(--ink);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
@@ -626,7 +626,7 @@ async function copyImage() {
 .logo-opt[data-checked='true'] {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
 }
 
 .logo-opt svg,
@@ -650,7 +650,7 @@ async function copyImage() {
 }
 
 .upload:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -704,7 +704,7 @@ async function copyImage() {
 }
 
 [data-scan='ok'] { color: var(--good-ink); }
-[data-scan='ok'] .scan-dot { background: var(--green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 20%, transparent); }
+[data-scan='ok'] .scan-dot { background: var(--green); box-shadow: 0 0 0 4px color-mix(in oklab, var(--green) 20%, transparent); }
 [data-scan='fail'] { color: var(--warn-ink); }
 [data-scan='fail'] .scan-dot { background: var(--orange); }
 
@@ -740,7 +740,7 @@ async function copyImage() {
   padding: 0.7rem 0.9rem;
   font-size: var(--text-sm);
   color: var(--warn-ink);
-  background: color-mix(in srgb, var(--orange) 10%, var(--surface));
+  background: color-mix(in oklab, var(--orange) 10%, var(--surface));
   border-radius: var(--radius-sm);
 }
 

@@ -153,7 +153,7 @@ svg {
 }
 
 svg:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 4px;
   border-radius: var(--radius-sm);
 }
@@ -246,7 +246,7 @@ th,
 td {
   padding: 0.3rem 0.25rem;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .num {

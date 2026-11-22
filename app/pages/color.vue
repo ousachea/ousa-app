@@ -291,7 +291,7 @@ async function copy(text: string) {
 
 .gradient {
   height: 9rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -355,7 +355,7 @@ async function copy(text: string) {
   align-items: center;
   gap: 0.75rem;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .fmt-label {
@@ -372,7 +372,7 @@ async function copy(text: string) {
 
 .preview {
   padding: 1rem 1.1rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
@@ -406,13 +406,13 @@ async function copy(text: string) {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--red);
-  background: color-mix(in srgb, var(--red) 10%, transparent);
+  background: color-mix(in oklab, var(--red) 10%, transparent);
   border-radius: var(--radius-sm);
 }
 
 .checks li.pass {
   color: var(--green);
-  background: color-mix(in srgb, var(--green) 12%, transparent);
+  background: color-mix(in oklab, var(--green) 12%, transparent);
 }
 
 .hint {

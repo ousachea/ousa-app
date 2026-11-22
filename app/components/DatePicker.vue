@@ -278,7 +278,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
       <AppIcon class="icon" name="calendar" />
       <span class="value">{{ label || placeholder || 'Pick a date' }}</span>
     </button>
-    <!-- Keeps the browser's "please fill in this field" check for required dates -->
+    <!-- Keeps the browser’s "please fill in this field" check for required dates -->
     <input v-if="required" ref="validateInput" class="validate" :value="model" required data-error="Pick a date" tabindex="-1" aria-hidden="true" @focus="(textInput ?? trigger)?.focus()">
 
     <div
@@ -377,7 +377,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
 .text-field:focus-within,
 .text-field.open {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
 }
 
 .text-field.invalid {
@@ -431,7 +431,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
   height: 2.5rem;
   color: var(--ink-2);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
@@ -462,7 +462,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
 
 .trigger.open {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
 }
 
 .icon {
@@ -507,7 +507,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
   padding: 0.75rem;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: 0 22px 48px -14px rgb(var(--shadow) / 0.38), 0 2px 6px rgb(var(--shadow) / 0.08);
 }
@@ -642,7 +642,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
 .day.today,
 .cell.current {
   font-weight: 700;
-  box-shadow: inset 0 0 0 1.5px var(--line);
+  box-shadow: inset 0 0 0 1.5px var(--border);
 }
 
 .day.selected,
@@ -670,7 +670,7 @@ const yearDisabled = (y: number) => (props.min && `${y}-12-31` < props.min) || (
   justify-content: space-between;
   margin-top: 0.5rem;
   padding-top: 0.55rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .link {

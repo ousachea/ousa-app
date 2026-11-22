@@ -68,7 +68,7 @@ async function copy(n: AnimatedIconName) {
       <slot name="switch" />
       <label class="search">
         <AppIcon name="search" />
-        <input v-model="query" type="search" placeholder="Find an icon" aria-label="Find an animated icon">
+        <input v-model="query" type="search" enterkeyhint="search" placeholder="Find an icon" aria-label="Find an animated icon">
       </label>
       <div class="segmented previews" role="radiogroup" aria-label="Preview with">
         <label v-for="p in PREVIEWS" :key="p.value" :class="{ active: preview === p.value }">
@@ -78,7 +78,7 @@ async function copy(n: AnimatedIconName) {
       <button type="button" class="btn btn-sm" @click="playAll">Play all</button>
       <p class="note">
         Point at an icon, or Tab to it, to see it move. They look the same as <code>&lt;AppIcon&gt;</code> until they play, so you can swap one for the other.
-        The drawings are Lucide's, split into the parts that move, in <code>utils/animatedIcons.ts</code>; the motion is in <code>components/AnimatedIcon.vue</code>.
+        The drawings are Lucide’s, split into the parts that move, in <code>utils/animatedIcons.ts</code>; the motion is in <code>components/AnimatedIcon.vue</code>.
         Nothing moves with reduced motion turned on.
       </p>
     </section>
@@ -139,7 +139,7 @@ async function copy(n: AnimatedIconName) {
   min-height: 2.4rem;
   color: var(--ink-3);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
@@ -190,7 +190,7 @@ async function copy(n: AnimatedIconName) {
   line-height: 1.7;
   background: var(--surface-2);
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .code span {
@@ -249,14 +249,14 @@ code {
   background: var(--surface-2);
   border: 0;
   border-radius: var(--radius-lg);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   cursor: pointer;
   transition: color var(--dur-fast), background-color var(--dur-fast), scale var(--dur-fast);
 }
 
 .demo:hover {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
 }
 
 .demo:active {

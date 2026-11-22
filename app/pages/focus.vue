@@ -314,7 +314,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
   .dial {
     grid-area: dial;
-    width: min(22rem, 52vh);
+    width: min(22rem, 52dvh);
   }
 }
 </style>

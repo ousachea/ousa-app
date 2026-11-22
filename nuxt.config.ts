@@ -49,6 +49,8 @@ export default defineNuxtConfig({
       siteUrl: ''
     }
   },
+  // Hover styles only where a pointer can hover, so they don't stick after a tap
+  postcss: { plugins: { './postcss/hover-only.mjs': {} } },
   app: {
     // Default for the first navigation; the transition middleware picks the direction after that
     pageTransition: { name: 'slide-forward', mode: 'out-in' },

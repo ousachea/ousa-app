@@ -417,12 +417,12 @@ ul {
 
 .subs {
   margin: 0.5rem 0 0.25rem 2.6rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .sub {
   padding: 0.35rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--line) 60%, transparent);
   font-size: var(--text-sm);
 }
 
@@ -495,7 +495,7 @@ ul {
 }
 
 .colors label:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
 }
 
 @media (max-width: 640px) {

@@ -402,7 +402,7 @@ onBeforeUnmount(clearAll)
       <strong>Drop images or PDFs here, or choose files</strong>
       <span>JPEG, PNG, WebP, PDF and more. Your files stay on this device.</span>
     </label>
-    <!-- Outside the label so it isn't read as part of the file picker, but shown inside the drop box -->
+    <!-- Outside the label so it isn’t read as part of the file picker, but shown inside the drop box -->
     <button type="button" class="btn btn-quiet btn-sm demo" :disabled="loadingDemo" @click="tryDemo">
       {{ loadingDemo ? 'Making example files…' : 'No files handy? Try 3 example files' }}
     </button>
@@ -551,7 +551,8 @@ onBeforeUnmount(clearAll)
             </Transition>
           </div>
           <div class="info">
-            <p class="name" :title="item.file.name">{{ item.file.name }}</p>
+            <!-- Long names lose their middle, so the end and the extension stay in sight -->
+            <p class="name" :title="item.file.name"><span>{{ item.file.name.slice(0, -10) }}</span><span>{{ item.file.name.slice(-10) }}</span></p>
             <p class="meta">
               {{ formatBytes(item.file.size) }}
               <template v-if="item.status === 'done'">
@@ -614,7 +615,7 @@ onBeforeUnmount(clearAll)
   padding: 2rem 1.5rem;
   text-align: center;
   color: var(--ink-3);
-  border: 2px dashed var(--line);
+  border: 2px dashed var(--border);
   border-radius: var(--radius-xl);
 }
 
@@ -629,7 +630,7 @@ onBeforeUnmount(clearAll)
   padding: 2.75rem 1.25rem;
   text-align: center;
   background: var(--surface);
-  border: 2px dashed var(--line);
+  border: 2px dashed var(--border);
   border-radius: var(--radius-xl);
   cursor: pointer;
   transition: border-color var(--dur-fast), background-color var(--dur-fast);
@@ -638,11 +639,11 @@ onBeforeUnmount(clearAll)
 .drop:hover,
 .drop.dragging {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 6%, var(--surface));
 }
 
 .drop:has(input:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -669,7 +670,7 @@ onBeforeUnmount(clearAll)
   place-items: center;
   font-size: var(--text-xl);
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
   border-radius: 50%;
   transition: transform var(--dur);
 }
@@ -706,7 +707,7 @@ onBeforeUnmount(clearAll)
   flex-direction: column;
   gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .pdf-settings h3 {
@@ -770,7 +771,7 @@ onBeforeUnmount(clearAll)
   gap: 0.75rem;
   padding: 0.75rem;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
 }
 
@@ -781,7 +782,7 @@ onBeforeUnmount(clearAll)
 
 .compare-frame {
   position: relative;
-  max-height: 70vh;
+  max-height: 70dvh;
   margin: 0 auto;
   overflow: hidden;
   border-radius: var(--radius-xl);
@@ -859,7 +860,7 @@ onBeforeUnmount(clearAll)
 }
 
 .tag-left { left: 0.75rem; }
-.tag-right { right: 0.75rem; background: color-mix(in srgb, var(--accent) 85%, #000); }
+.tag-right { right: 0.75rem; background: color-mix(in oklab, var(--accent) 85%, #000); }
 
 /* Hidden range input: gives keyboard and screen-reader control; pointer dragging is handled on the frame */
 .compare-range {
@@ -878,7 +879,7 @@ onBeforeUnmount(clearAll)
 }
 
 .compare-frame:has(.compare-range:focus-visible) {
-  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--accent) 55%, transparent);
   outline-offset: 3px;
 }
 
@@ -1003,10 +1004,19 @@ onBeforeUnmount(clearAll)
 }
 
 .name {
+  display: flex;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.name > :first-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.name > :last-child {
+  flex: none;
 }
 
 .meta {

@@ -155,7 +155,7 @@ function onListKey(e: KeyboardEvent) {
       <ul
         :id="`${uid}-list`"
         ref="list"
-        class="options"
+        class="options scroll-fade"
         role="listbox"
         tabindex="-1"
         :aria-label="ariaLabel"
@@ -198,7 +198,7 @@ function onListKey(e: KeyboardEvent) {
 
 .trigger.open {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
 }
 
 .value {
@@ -234,13 +234,13 @@ function onListKey(e: KeyboardEvent) {
   position: fixed;
   inset: auto;
   margin: 0;
-  max-height: min(18rem, 60vh);
+  max-height: min(18rem, 60dvh);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.35rem;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: 0 18px 40px -12px rgb(var(--shadow) / 0.35), 0 2px 6px rgb(var(--shadow) / 0.08);
   outline: none;
@@ -250,7 +250,7 @@ function onListKey(e: KeyboardEvent) {
   display: none;
   flex-direction: column;
   overflow: hidden;
-  max-height: min(21rem, 60vh);
+  max-height: min(21rem, 60dvh);
 }
 
 .menu.has-search:popover-open {
@@ -266,7 +266,7 @@ function onListKey(e: KeyboardEvent) {
   font-size: var(--text-md);
   color: var(--ink);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   outline: none;
 }

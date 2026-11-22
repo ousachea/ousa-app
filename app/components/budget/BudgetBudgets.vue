@@ -102,7 +102,7 @@ const showSpending = (l: BudgetLimit, range: { from: string, to: string }) =>
           <button type="button" class="link" @click="openForm(l)">Edit</button>
         </div>
         <!-- The overall budget also gets a dial (components/gauge): how much is used, and a mark where the month
-             is heading when that's still under the limit -->
+             is heading when that’s still under the limit -->
         <div v-if="l.scope === 'overall'" class="overall-dial" :class="`is-${s.level}`" aria-hidden="true">
           <Gauge :value="Math.min(s.share ?? 0, 1)" :min="0" :max="1" :start-angle="60" :end-angle="300" :radius="200" :padding="24" fit="content" transition :initial-value="0">
             <GaugeTrack :width="28" color="var(--ink)" :opacity="0.08" />
@@ -268,7 +268,7 @@ const showSpending = (l: BudgetLimit, range: { from: string, to: string }) =>
   display: grid;
   place-items: center;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--slot) 16%, var(--surface));
+  background: color-mix(in oklab, var(--slot) 16%, var(--surface));
 }
 
 .name {

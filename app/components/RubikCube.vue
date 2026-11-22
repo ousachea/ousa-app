@@ -534,7 +534,7 @@ onBeforeUnmount(() => {
 }
 
 .scene.interactive:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  outline: 3px solid color-mix(in oklab, var(--ink) 35%, transparent);
   outline-offset: -1.5rem;
 }
 

@@ -55,7 +55,7 @@ const rows = computed(() => flatTree(props.folders))
   padding: 0.9rem 1rem calc(1rem + env(safe-area-inset-bottom));
   background: var(--surface);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  box-shadow: 0 -10px 40px rgb(var(--shadow) / 0.22), 0 0 0 1px var(--line);
+  box-shadow: 0 -10px 40px rgb(var(--shadow) / 0.22), 0 0 0 1px var(--border);
 }
 
 .tray-head {
@@ -83,7 +83,7 @@ const rows = computed(() => flatTree(props.folders))
   min-height: 3rem;
   padding: 0 0.9rem 0 calc(0.9rem + var(--depth, 0) * 1.1rem);
   font-weight: 600;
-  border: 2px dashed var(--line);
+  border: 2px dashed var(--border);
   border-radius: var(--radius);
   transition: background-color var(--dur-fast), border-color var(--dur-fast), scale var(--dur-fast);
 }
@@ -95,7 +95,7 @@ const rows = computed(() => flatTree(props.folders))
 .tray-folder.over {
   border-style: solid;
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface));
   scale: 1.02;
 }
 

@@ -147,7 +147,7 @@ const ink = computed(() => tool.value?.onColor ?? '#ffffff')
   place-items: center;
   font-size: 76px;
   /* A deeper shade of the app colour so light colours (yellow, gold) still stand out on white */
-  color: color-mix(in srgb, var(--c-solid) 72%, #000);
+  color: color-mix(in oklab, var(--c-solid) 72%, #000);
   background: #fff;
   border-radius: 34px;
   box-shadow: 0 0 0 10px #12151d, 0 24px 50px rgb(0 0 0 / 0.25);

@@ -28,7 +28,7 @@ const STRENGTH_ZONES = [
   { to: 60, color: 'var(--red)' },
   { to: 75, color: 'var(--orange)' },
   { to: 100, color: 'var(--green)' },
-  { to: 160, color: 'color-mix(in srgb, var(--green) 65%, var(--ink))' }
+  { to: 160, color: 'color-mix(in oklab, var(--green) 65%, var(--ink))' }
 ]
 
 // Generate in the browser only: never render a password on the server
@@ -252,7 +252,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   text-align: left;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: border-color var(--dur-fast), box-shadow var(--dur-fast), background-color var(--dur-fast);
@@ -284,7 +284,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   display: grid;
   place-items: center;
   border-radius: var(--radius-xs);
-  box-shadow: inset 0 0 0 1.5px var(--line);
+  box-shadow: inset 0 0 0 1.5px var(--border);
   transition: background-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
@@ -303,7 +303,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 .set[aria-checked='true'] {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 6%, var(--surface));
 }
 
 .set[aria-checked='true'] .check {
@@ -363,7 +363,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   letter-spacing: 0.04em;
   overflow-wrap: anywhere;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -411,7 +411,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   gap: 0.15rem;
   border-radius: var(--radius-lg);
   background: var(--surface-2);
-  border-left: 5px solid var(--line);
+  border-left: 5px solid var(--border);
 }
 
 .crack[data-level='1'] { border-left-color: var(--red); }
@@ -443,9 +443,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
   inset: 0;
   border-radius: var(--radius-pill);
   background: linear-gradient(to right,
-    color-mix(in srgb, var(--red) 70%, transparent) 0 var(--weak),
-    color-mix(in srgb, var(--orange) 70%, transparent) var(--weak) var(--fair),
-    color-mix(in srgb, var(--green) 70%, transparent) var(--fair) 100%);
+    color-mix(in oklab, var(--red) 70%, transparent) 0 var(--weak),
+    color-mix(in oklab, var(--orange) 70%, transparent) var(--weak) var(--fair),
+    color-mix(in oklab, var(--green) 70%, transparent) var(--fair) 100%);
 }
 
 .marker {
@@ -520,7 +520,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer))
 }
 
 .copy.done {
-  background: color-mix(in srgb, var(--green) 80%, #000);
+  background: color-mix(in oklab, var(--green) 80%, #000);
 }
 
 .legend {

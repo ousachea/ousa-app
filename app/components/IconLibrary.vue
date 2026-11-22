@@ -44,7 +44,7 @@ const label = (id: string) => id.split(':')[1]!.replace(/-/g, ' ')
 
 <template>
   <div class="icon-library">
-    <input v-model="query" class="input" type="search" placeholder="Search icons: car, gym, water…" aria-label="Search icons" autocomplete="off">
+    <input v-model="query" class="input" type="search" enterkeyhint="search" placeholder="Search icons: car, gym, water…" aria-label="Search icons" autocomplete="off">
     <p v-if="failed" class="note">Couldn’t search the icon library. Check your connection and try again.</p>
     <p v-else-if="results && !results.length && !searching" class="note">No icons for “{{ query.trim() }}”. Try a simpler word.</p>
     <div v-else class="grid" role="radiogroup" aria-label="Icons" :aria-busy="searching">
@@ -99,7 +99,7 @@ const label = (id: string) => id.split(':')[1]!.replace(/-/g, ' ')
 
 .glyph:hover {
   color: var(--ink);
-  border-color: var(--line);
+  border-color: var(--border);
 }
 
 .glyph:active {

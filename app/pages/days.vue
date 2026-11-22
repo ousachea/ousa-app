@@ -394,7 +394,7 @@ async function copy(text: string) {
   margin: 0 0 1.75rem;
   padding: 4px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -418,7 +418,7 @@ async function copy(text: string) {
 .tab[aria-selected='true'] {
   color: var(--ink);
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--line);
+  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.12), 0 0 0 1px var(--border);
 }
 
 .workspace {
@@ -494,7 +494,7 @@ async function copy(text: string) {
   justify-content: space-between;
   gap: 1rem;
   padding-block: 0.5rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .facts dt {
@@ -518,7 +518,7 @@ async function copy(text: string) {
   align-items: center;
   gap: 0.15rem 0.75rem;
   padding-block: 0.6rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .formats dt {
@@ -537,7 +537,7 @@ async function copy(text: string) {
 .formats .pasted {
   margin-inline: -0.75rem;
   padding-inline: 0.75rem;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
   border-top-color: transparent;
   border-radius: var(--radius-sm);
   box-shadow: inset 3px 0 0 var(--accent);

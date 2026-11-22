@@ -189,7 +189,7 @@ const contactMenu = (c: Contact): MenuEntry[] => [
           <label class="check-all">
             <input type="checkbox" :checked="allChecked" :indeterminate="selectedList.length > 0 && !allChecked" aria-label="Select all" @change="toggleAll">
           </label>
-          <input v-model="query" class="input search" type="search" placeholder="Search name, number, email or notes" aria-label="Search my contacts">
+          <input v-model="query" class="input search" type="search" enterkeyhint="search" placeholder="Search name, number, email or notes" aria-label="Search my contacts">
         </div>
         <Transition name="slide-down">
           <div v-if="selectedList.length" class="bulk" role="toolbar" aria-label="Selected contacts">
@@ -330,7 +330,7 @@ input[type='checkbox'] {
   gap: 0.4rem;
   margin-top: 0.6rem;
   padding: 0.5rem 0.6rem;
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
   border-radius: var(--radius);
 }
 
@@ -360,11 +360,11 @@ input[type='checkbox'] {
 }
 
 .row + .row {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .row.checked {
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 6%, var(--surface));
 }
 
 .avatar {
@@ -376,7 +376,7 @@ input[type='checkbox'] {
   font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink);
-  background: color-mix(in srgb, var(--op) 14%, var(--surface));
+  background: color-mix(in oklab, var(--op) 14%, var(--surface));
   border: 2px solid var(--op);
   border-radius: 50%;
 }
@@ -417,7 +417,7 @@ input[type='checkbox'] {
   padding: 0.1rem 0.5rem;
   font-size: var(--text-xs);
   font-weight: 700;
-  background: color-mix(in srgb, var(--op) 14%, var(--surface));
+  background: color-mix(in oklab, var(--op) 14%, var(--surface));
   border-left: 3px solid var(--op);
   border-radius: 4px var(--radius-pill) var(--radius-pill) 4px;
 }

@@ -12,13 +12,18 @@ const style = computed(() => props.size && {
   height: `${props.size}px`,
   ...(props.size < 16 && { strokeWidth: 36 / props.size })
 })
+// Swapping to another icon (copy → check, eye → eye-off) blurs the new one in; the first draw doesn't animate
+const swapped = ref(false)
+watch(() => props.name, () => { swapped.value = true })
 if (import.meta.dev) watchEffect(() => body.value || console.warn(`[AppIcon] No icon called “${props.name}”`))
 </script>
 
 <template>
   <!-- The drawings come from the Lucide package, never from user input -->
   <svg
+    :key="name"
     class="app-icon"
+    :class="{ swapped }"
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     aria-hidden="true"
@@ -38,5 +43,21 @@ if (import.meta.dev) watchEffect(() => body.value || console.warn(`[AppIcon] No 
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.app-icon.swapped {
+  animation: icon-swap 0.2s var(--ease-out);
+}
+
+@keyframes icon-swap {
+  from {
+    opacity: 0;
+    scale: 0.6;
+    filter: blur(3px);
+  }
+}
+
+:root[data-effects='lite'] .app-icon.swapped {
+  animation: none;
 }
 </style>

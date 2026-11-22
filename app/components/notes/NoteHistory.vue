@@ -53,7 +53,7 @@ const when = (iso: string) => {
   display: grid;
   align-content: start;
   gap: 0.2rem;
-  max-height: 60vh;
+  max-height: 60dvh;
   margin: 0;
   padding: 0;
   overflow-y: auto;
@@ -75,11 +75,11 @@ const when = (iso: string) => {
 }
 
 .list button:hover {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: color-mix(in oklab, var(--ink) 6%, transparent);
 }
 
 .list button.on {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
 }
 
 .list strong {
@@ -105,14 +105,14 @@ const when = (iso: string) => {
 
 pre {
   width: 100%;
-  max-height: 50vh;
+  max-height: 50dvh;
   margin: 0;
   padding: 0.9rem 1rem;
   overflow: auto;
   font: inherit;
   line-height: 1.55;
   white-space: pre-wrap;
-  background: color-mix(in srgb, var(--ink) 4%, var(--surface));
+  background: color-mix(in oklab, var(--ink) 4%, var(--surface));
   border-radius: var(--radius);
 }
 
@@ -126,7 +126,7 @@ pre {
   }
 
   .list {
-    max-height: 30vh;
+    max-height: 30dvh;
   }
 }
 </style>

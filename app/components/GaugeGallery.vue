@@ -58,7 +58,7 @@ const ZONES_HEALTH = [
   { to: 70, color: 'var(--red)' },
   { to: 80, color: 'var(--orange)' },
   { to: 90, color: 'var(--green)' },
-  { to: 100, color: 'color-mix(in srgb, var(--green) 65%, var(--ink))' }
+  { to: 100, color: 'color-mix(in oklab, var(--green) 65%, var(--ink))' }
 ]
 const ZONES_CENTRED = [
   { to: -0.1, color: 'var(--red)' },
@@ -71,7 +71,7 @@ const rangeOf = (v: number): [number, number] => [20 + v * 30, 45 + v * 50]
 const stackOf = (v: number) => [
   { value: v * 0.55, color: 'var(--blue)' },
   { value: v * 0.3, color: 'var(--teal)' },
-  { value: v * 0.15, color: 'color-mix(in srgb, var(--ink) 35%, transparent)' }
+  { value: v * 0.15, color: 'color-mix(in oklab, var(--ink) 35%, transparent)' }
 ]
 const setControl = (n: number | undefined) => n !== undefined && (vals.control = n / 100)
 const toneOf = (v: number) => (v >= 1 ? 'var(--red)' : v >= 0.8 ? 'var(--orange)' : 'var(--green)')
@@ -179,7 +179,7 @@ const MORE: Example[] = [
     code: `<Gauge :value="level" :min="0" :max="1" :start-angle="60" :end-angle="300"
   :radius="200" :padding="30" fit="content" transition>
   <GaugeTicks :count="24" :length="44" :width="12" cap="round"
-    :color="v => v <= level ? 'var(--accent)' : 'color-mix(in srgb, var(--ink) 12%, transparent)'" />
+    :color="v => v <= level ? 'var(--accent)' : 'color-mix(in oklab, var(--ink) 12%, transparent)'" />
   <GaugeValue :y="10" :font-size="80" weight="bold" :format="v => \`\${Math.round(v * 100)}\`" />
 </Gauge>`
   },
@@ -443,7 +443,7 @@ async function copy(e: Example) {
     </header>
     <div class="grid">
       <article v-for="e in group.list" :key="e.id" class="panel card">
-        <!-- The drag control is the dial itself, so its card isn't one big shuffle button -->
+        <!-- The drag control is the dial itself, so its card isn’t one big shuffle button -->
         <div v-if="e.id === 'control'" class="demo still">
           <Gauge :value="Math.round(valOf(e.id) * 100)" :min="0" :max="100" :start-angle="45" :end-angle="315" :radius="200" :padding="22" fit="content" :transition="animate">
             <GaugeTrack :width="30" color="var(--ink)" :opacity="0.08" />
@@ -500,7 +500,7 @@ async function copy(e: Example) {
             <GaugeArc :to="valOf(e.id) * 0.7" :width="34" :offset="-88" color="var(--blue)" />
           </Gauge>
           <Gauge v-else-if="e.id === 'segments'" :value="valOf(e.id)" :min="0" :max="1" :start-angle="60" :end-angle="300" :radius="200" :padding="30" fit="content" :transition="animate">
-            <GaugeTicks :count="24" :length="44" :width="12" cap="round" :color="v => v <= valOf(e.id) + 1e-6 && valOf(e.id) > 0 ? 'var(--dial)' : 'color-mix(in srgb, var(--ink) 12%, transparent)'" />
+            <GaugeTicks :count="24" :length="44" :width="12" cap="round" :color="v => v <= valOf(e.id) + 1e-6 && valOf(e.id) > 0 ? 'var(--dial)' : 'color-mix(in oklab, var(--ink) 12%, transparent)'" />
             <GaugeValue :y="10" :font-size="80" weight="bold" color="var(--ink)" :format="v => `${Math.round(v * 100)}`" />
           </Gauge>
           <Gauge v-else-if="e.id === 'target'" :value="valOf(e.id)" :min="0" :max="1" :start-angle="90" :end-angle="270" :radius="200" :padding="58" fit="content" :transition="animate">
@@ -549,8 +549,8 @@ async function copy(e: Example) {
             <GaugeValue :font-size="76" weight="bold" color="var(--ink)" :format="v => `${v.toFixed(1)} GB`" />
           </Gauge>
           <Gauge v-else-if="e.id === 'tickfill'" :value="valOf(e.id)" :min="0" :max="1" :start-angle="60" :end-angle="300" :radius="200" :padding="30" fit="content" :transition="animate">
-            <GaugeTickFill :count="30" :length="34" :width="9" color="var(--dial)" track-color="color-mix(in srgb, var(--ink) 12%, transparent)" />
-            <GaugeTickFill mode="pointer" :count="30" :offset="-62" :length="22" :width="7" color="var(--ink)" track-color="color-mix(in srgb, var(--ink) 12%, transparent)" />
+            <GaugeTickFill :count="30" :length="34" :width="9" color="var(--dial)" track-color="color-mix(in oklab, var(--ink) 12%, transparent)" />
+            <GaugeTickFill mode="pointer" :count="30" :offset="-62" :length="22" :width="7" color="var(--ink)" track-color="color-mix(in oklab, var(--ink) 12%, transparent)" />
             <GaugeValue :y="20" :font-size="72" weight="bold" color="var(--ink)" :format="v => `${Math.round(v * 100)}`" />
           </Gauge>
           <Gauge v-else-if="e.id === 'inset'" :value="valOf(e.id) * 200" :min="0" :max="200" :start-angle="45" :end-angle="315" :radius="200" :padding="24" :transition="animate">
@@ -581,7 +581,7 @@ async function copy(e: Example) {
             <GaugeTicks :count="72" :length="10" :width="2" :offset="-8" color="var(--ink-3)" />
             <GaugeTicks :count="8" :length="22" :width="5" :offset="-14" color="var(--ink)" />
             <GaugeTickLabels :values="[0, 90, 180, 270]" :offset="-56" :font-size="34" weight="bold" :color="v => v === 0 ? 'var(--red)' : 'var(--ink)'" :format="v => 'NESW'[v / 90] ?? ''" />
-            <GaugeNeedle variant="compass" :length="0.55" :width="34" :tail="110" color="var(--red)" tail-color="color-mix(in srgb, var(--ink) 30%, transparent)" />
+            <GaugeNeedle variant="compass" :length="0.55" :width="34" :tail="110" color="var(--red)" tail-color="color-mix(in oklab, var(--ink) 30%, transparent)" />
             <GaugeHub :radius="10" color="var(--ink)" />
           </Gauge>
           <Gauge v-else-if="e.id === 'span'" :value="rangeOf(valOf(e.id))" :min="0" :max="100" :start-angle="60" :end-angle="300" :radius="200" :padding="30" fit="content" :transition="animate">
@@ -611,7 +611,7 @@ async function copy(e: Example) {
 
     <section class="panel parts">
       <h3>Parts</h3>
-      <p class="note">Put any of these inside a <code>&lt;Gauge&gt;</code>; each one draws itself from the root's value and angles. Sizes are in the gauge's own units, against a radius of 200 unless you set another.</p>
+      <p class="note">Put any of these inside a <code>&lt;Gauge&gt;</code>; each one draws itself from the root’s value and angles. Sizes are in the gauge’s own units, against a radius of 200 unless you set another.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th scope="col">Part</th><th scope="col">Main options</th><th scope="col">What it does</th></tr></thead>
@@ -722,7 +722,7 @@ async function copy(e: Example) {
 }
 
 .demo:not(.still):hover {
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
 }
 
 .demo.still {
@@ -790,7 +790,7 @@ async function copy(e: Example) {
   line-height: 1.5;
   background: var(--surface-2);
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 code {
@@ -828,7 +828,7 @@ td {
   padding: 0.55rem 0.6rem;
   text-align: left;
   vertical-align: top;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 thead th {
@@ -849,7 +849,7 @@ tbody th {
 }
 
 :root[data-theme='dark'] .gallery {
-  --dial: color-mix(in srgb, var(--accent), var(--ink) 55%);
+  --dial: color-mix(in oklab, var(--accent), var(--ink) 55%);
 }
 
 /* Phones: each part stacks (name, options, what it does) instead of three squeezed columns */
@@ -868,7 +868,7 @@ tbody th {
 
   tr {
     padding: 0.65rem 0;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--border);
   }
 
   tbody th,
