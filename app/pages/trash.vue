@@ -151,7 +151,7 @@ function daysLeft(iso: string) {
             <label class="row-check">
               <input type="checkbox" :checked="selected.has(e.id)" :aria-label="`Select ${e.label}`" @change="toggle(e.id)">
             </label>
-            <span class="app-icon" aria-hidden="true" :style="{ '--c': pageFor(e.app)?.color ?? 'var(--slate)', '--on-c': pageFor(e.app)?.onColor ?? '#fff' }">
+            <span class="app-icon" aria-hidden="true" :style="{ '--c': pageFor(e.app)?.color ?? 'var(--slate)', '--on-c': '#fff' }">
               <ToolIcon :name="pageFor(e.app)?.icon ?? 'list'" />
             </span>
             <span class="row-text">

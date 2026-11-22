@@ -62,7 +62,7 @@ const SHORTCUTS = computed(() => [
       <h3 id="about-new">What’s new</h3>
       <TransitionGroup tag="ol" name="list" class="releases">
         <li v-for="r in shown" :key="`${r.app}-${r.version}`" class="release">
-          <span class="rel-icon" aria-hidden="true" :style="{ '--c': pageFor(r.app)?.color ?? 'var(--plastic)', '--on-c': pageFor(r.app)?.onColor ?? '#fff' }">
+          <span class="rel-icon" aria-hidden="true" :style="{ '--c': pageFor(r.app)?.color ?? 'var(--plastic)', '--on-c': '#fff' }">
             <AppLogo v-if="!r.app" />
             <ToolIcon v-else :name="pageFor(r.app)?.icon ?? 'list'" />
           </span>

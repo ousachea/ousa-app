@@ -311,7 +311,8 @@ h1 {
   display: grid;
   place-items: center;
   font-size: var(--text-xl);
-  color: var(--on-accent);
+  /* App icons are always white, even on a light colour like yellow; text on it keeps --on-accent */
+  color: #fff;
   background: var(--sticker, var(--accent));
   border-radius: var(--radius);
   box-shadow:

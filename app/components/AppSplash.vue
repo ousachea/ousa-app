@@ -112,6 +112,7 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   width: 6.5rem;
+  color: #fff; /* app icons are always white; the name keeps --on-accent */
   height: 6.5rem;
   border-radius: var(--radius-2xl);
   font-size: 3.4rem;

@@ -50,7 +50,7 @@ function clearAll() {
           <li v-for="a in d.items" :key="a.id">
             <NuxtLink :to="a.kind === 'deleted' ? '/trash' : a.app" class="row">
               <time :datetime="a.at">{{ time(a.at) }}</time>
-              <span class="icon" aria-hidden="true" :style="{ '--c': pageFor(a.app)?.color ?? 'var(--slate)', '--on-c': pageFor(a.app)?.onColor ?? '#fff' }">
+              <span class="icon" aria-hidden="true" :style="{ '--c': pageFor(a.app)?.color ?? 'var(--slate)', '--on-c': '#fff' }">
                 <ToolIcon :name="pageFor(a.app)?.icon ?? 'list'" />
               </span>
               <span class="text">

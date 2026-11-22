@@ -61,7 +61,7 @@ onMounted(() => {
   // Tool colours are CSS variables like var(--teal); a favicon needs the real value
   const resolve = (c: string) => c.replace(/var\((--[\w-]+)\)/g, (_, name: string) => css.getPropertyValue(name).trim())
   const fill = resolve(tool.value.color)
-  const ink = resolve(tool.value.onColor ?? '#ffffff')
+  const ink = '#ffffff'
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">`
     + `<rect width="32" height="32" rx="8" fill="#1b1f2a"/>`
     + `<rect x="2" y="2" width="28" height="28" rx="6.5" fill="${fill}"/>`
@@ -332,7 +332,7 @@ function openSignIn() {
   display: grid;
   place-items: center;
   font-size: var(--text-2xl);
-  color: var(--on-accent);
+  color: #fff; /* app icons are always white */
   background: var(--sticker, var(--accent));
   border-radius: var(--radius-lg);
   /* Glossy sticker on black plastic, like the cube */
@@ -617,7 +617,7 @@ h1 {
   display: grid;
   place-items: center;
   font-size: var(--text-xl);
-  color: var(--on-accent);
+  color: #fff; /* app icons are always white */
   background: var(--sticker, var(--accent));
   border-radius: var(--radius);
   box-shadow: 0 0 0 3px var(--plastic), 0 0 0 4px var(--plastic-edge);

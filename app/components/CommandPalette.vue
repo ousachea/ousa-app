@@ -28,15 +28,14 @@ interface Entry {
   subtitle?: string
   icon: ToolIconName
   color: string
-  onColor?: string
   hint?: string
   run: () => void
 }
 
 interface Section { title: string, entries: Entry[] }
 
-const iconOf = (t: Tool | undefined): Pick<Entry, 'icon' | 'color' | 'onColor'> =>
-  t ? { icon: t.icon, color: t.gradient ?? t.color, onColor: t.onColor } : { icon: 'list', color: 'var(--plastic)' }
+const iconOf = (t: Tool | undefined): Pick<Entry, 'icon' | 'color'> =>
+  t ? { icon: t.icon, color: t.gradient ?? t.color } : { icon: 'list', color: 'var(--plastic)' }
 
 const appPath = (to: string) => to.split('?')[0]!
 
@@ -287,7 +286,7 @@ onMounted(() => (isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)))
             @pointermove="active = flat.indexOf(entry)"
             @click="run(entry)"
           >
-            <span class="icon" aria-hidden="true" :style="{ '--c': entry.color, '--on-c': entry.onColor ?? '#fff' }"><ToolIcon :name="entry.icon" /></span>
+            <span class="icon" aria-hidden="true" :style="{ '--c': entry.color, '--on-c': '#fff' }"><ToolIcon :name="entry.icon" /></span>
             <span class="text">
               <span class="title">{{ entry.title }}</span>
               <span v-if="entry.subtitle" class="sub">{{ entry.subtitle }}</span>

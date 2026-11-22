@@ -126,7 +126,7 @@ function faceStyle(cubie: Cubie, face: Face) {
   if (!color) return undefined
   const link = cubie.links[face]
   // App colours: the icon sticker takes its app's colour; plain stickers keep the cube's
-  if (props.appColors && link?.color) return { '--c': link.gradient ?? link.color, '--ink': link.onColor ?? '#ffffff' }
+  if (props.appColors && link?.color) return { '--c': link.gradient ?? link.color, '--ink': '#ffffff' }
   return { '--c': color, '--ink': inkOn(color) }
 }
 
