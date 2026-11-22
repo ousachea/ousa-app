@@ -10,7 +10,8 @@
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
     "postinstall": "nuxt prepare",
-    "og:images": "npx -y -p playwright sh -c 'NODE_PATH=$(dirname $(which playwright))/../ node scripts/og-images.cjs'"
+    "og:images": "npx -y -p playwright sh -c 'NODE_PATH=$(dirname $(which playwright))/../ node scripts/og-images.cjs'",
+    "skill:zip": "cd public/skills && rm -f ousa-ux-ui-animation-principal.zip && zip -qX -r ousa-ux-ui-animation-principal.zip ousa-ux-ui-animation-principal"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

@@ -30,6 +30,11 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.9.0',
+    date: '2026-11-22',
+    changes: ['A new app: Audit, 90 UX, animation and craft checks, each shown as a live before and after.']
+  },
+  {
     version: '2.8.0',
     date: '2026-10-26',
     changes: [
@@ -214,6 +219,9 @@ export const CHANGELOG: Record<string, Release[]> = {
   ],
   '/habits': [
     { version: '1.0.0', date: '2026-10-26', changes: ['Add small daily habits and tick them off each day.', 'Your streak and best run for each one, and a week row to fill in a day you forgot.', 'The last 12 weeks as a grid, darker on the days you kept more habits.'] }
+  ],
+  '/audit': [
+    { version: '1.0.0', date: '2026-11-22', changes: ['Ousa Chea’s 90 UX, animation and craft checks, in six sections.', 'Each one is a live before and after of the same element: play the motion, and tap or drag the ones you can try.', 'Search the checks, and jump to a section from the chips at the top.', 'Add the checks to Claude as a skill, to audit your own project with them.'] }
   ],
   '/tasks': [
     { version: '1.0.0', date: '2026-10-26', changes: ['Add tasks with a due date: today, tomorrow, next week, any day or none.', 'Today’s and overdue tasks first, then what’s coming up and what has no date.', 'Chores can repeat every day, week or month, and move to their next date when you tick them.'] }

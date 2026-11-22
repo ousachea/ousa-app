@@ -154,6 +154,13 @@ defineProps<{ name: ToolIconName }>()
       <path d="M15.5 8h5M17 12h3.5M18.5 16h2" />
     </template>
 
+    <!-- Audit: a clipboard with a tick on it -->
+    <template v-else-if="name === 'audit'">
+      <rect x="5" y="4" width="14" height="17" rx="2.5" />
+      <path d="M9 4V3h6v1.5H9z" />
+      <path d="M8.75 13l2.25 2.25 4.25-4.5" />
+    </template>
+
     <!-- Tasks: a checklist with two ticked lines -->
     <template v-else-if="name === 'tasks'">
       <rect x="4" y="3.5" width="16" height="17" rx="2.5" />

@@ -2,7 +2,7 @@ export type ToolIconName =
   | 'qr' | 'phone' | 'compress' | 'case' | 'password' | 'vault' | 'exchange' | 'sound' | 'settings' | 'list'
   | 'things' | 'eat' | 'weight' | 'countdown' | 'renewals' | 'bookmarks' | 'battery' | 'salary' | 'gold'
   | 'trash' | 'activity' | 'plus' | 'search' | 'notes' | 'speed' | 'claude' | 'budget' | 'cv' | 'game'
-  | 'days' | 'focus' | 'color' | 'habits' | 'tasks' | 'split' | 'electricity'
+  | 'days' | 'focus' | 'color' | 'habits' | 'tasks' | 'split' | 'electricity' | 'audit'
 
 export type ToolGroup = 'Tools' | 'Life'
 
@@ -296,6 +296,16 @@ export const TOOLS: Tool[] = [
     seoTitle: 'To-do list with due dates and repeating tasks',
     description: 'A simple to-do list: add tasks with a due date, see today’s and overdue ones first, and let chores repeat every day, week or month. Syncs across your devices.',
     demo: true
+  },
+  {
+    to: '/audit',
+    name: 'Audit',
+    summary: '90 UX, animation and craft checks, each shown as a live before and after.',
+    color: '#be185d',
+    icon: 'audit',
+    seoTitle: 'UX, animation and design craft checklist, before and after',
+    description: 'See 90 UX, motion, mobile, typography and polish checks as live before-and-after examples: play the motion, tap and drag the rest, and spot the difference.',
+    readOnly: true
   },
   {
     to: '/2048',
