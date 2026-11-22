@@ -188,7 +188,7 @@ export const TOOLS: Tool[] = [
   {
     to: '/salary',
     name: 'Salary',
-    summary: 'Work out what a raise is really worth after Cambodian salary tax.',
+    summary: 'See your take-home pay after Cambodian salary tax and NSSF, and what a raise is really worth.',
     color: 'var(--slate)',
     icon: 'salary',
     seoTitle: 'Cambodia salary tax and raise calculator',
