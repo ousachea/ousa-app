@@ -171,8 +171,8 @@ function onListKey(e: KeyboardEvent) {
           :aria-selected="o.value === model"
           :class="{ active: i === active }"
           @pointermove="active = i"
-          @click="pick(i)"
-        >
+          @click.prevent="pick(i)"
+        ><!-- .prevent: inside a <label>, the click would also be passed on to the trigger and reopen the list -->
           <span>{{ o.label }}</span>
           <AppIcon v-if="o.value === model" class="check" name="check" />
         </li>
