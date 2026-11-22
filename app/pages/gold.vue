@@ -13,14 +13,14 @@ interface Purchase {
   date: string // yyyy-mm-dd
 }
 
-type Unit = 'li' | 'hun' | 'chi' | 'gram' | 'damlung' | 'troyOz'
+type Unit = 'li' | 'hun' | 'chi' | 'gram' | 'damlung' | 'troyOz' | 'kg'
 type Lang = 'en' | 'km'
 type Range = '1H' | '1D' | '1W' | '1M'
 type Purity = 1 | 0.916 | 0.75 | 'custom'
 
 // NIST precious-metals conversion factor: one troy ounce in grams
 const TROY = 31.1034768
-const UNIT_GRAMS: Record<Unit, number> = { li: 0.0375, hun: 0.375, chi: 3.75, gram: 1, damlung: 37.5, troyOz: TROY }
+const UNIT_GRAMS: Record<Unit, number> = { li: 0.0375, hun: 0.375, chi: 3.75, gram: 1, damlung: 37.5, troyOz: TROY, kg: 1000 }
 const UNITS = Object.keys(UNIT_GRAMS) as Unit[]
 
 const SETTINGS_KEY = 'ousa-app:gold-settings'
@@ -45,7 +45,7 @@ const signedOut = computed(() => sync.state.value === 'device')
 // ---------- Words (English / Khmer) ----------
 const WORDS = {
   en: {
-    li: 'Li', hun: 'Hun', chi: 'Chi', gram: 'Gram', damlung: 'Damlung', troyOz: 'Troy oz',
+    li: 'Li', hun: 'Hun', chi: 'Chi', gram: 'Gram', damlung: 'Damlung', troyOz: 'Troy oz', kg: 'Kg',
     spot: 'Gold spot price', perOz: 'per troy ounce', live: 'Live', custom: 'My price', refresh: 'Refresh',
     byUnit: 'Price by unit', convert: 'Convert units', myGold: 'My gold', tabPrice: 'Price', tabUnits: 'Units', gained: 'Gained', lost: 'Lost', buys: 'buys', on: 'on', add: '+ Add purchase', noGold: 'No gold yet', noGoldText: 'Add the gold you bought and what you paid, and see what it’s worth at today’s price.',
     invested: 'Paid', worth: 'Worth now', gainLoss: 'Gain or loss', weight: 'Weight', paid: 'Paid', date: 'Date',
@@ -56,7 +56,7 @@ const WORDS = {
     signInTitle: 'Keep your gold safe', signInBody: 'Sign in to back up your purchases and see them on your phone and computer.'
   },
   km: {
-    li: 'លី', hun: 'ហុន', chi: 'ជី', gram: 'ក្រាម', damlung: 'ដំឡឹង', troyOz: 'អោន',
+    li: 'លី', hun: 'ហុន', chi: 'ជី', gram: 'ក្រាម', damlung: 'ដំឡឹង', troyOz: 'អោន', kg: 'គីឡូ',
     spot: 'តម្លៃមាសទីផ្សារ', perOz: 'ក្នុងមួយអោន', live: 'បន្តផ្ទាល់', custom: 'តម្លៃខ្ញុំ', refresh: 'ធ្វើបច្ចុប្បន្នភាព',
     byUnit: 'តម្លៃតាមឯកតា', convert: 'បម្លែងឯកតា', myGold: 'មាសរបស់ខ្ញុំ', tabPrice: 'តម្លៃ', tabUnits: 'ឯកតា', gained: 'ចំណេញ', lost: 'ខាត', buys: 'ការទិញ', on: 'លើ', add: '+ បន្ថែមការទិញ', noGold: 'មិនទាន់មានមាសនៅឡើយ', noGoldText: 'បន្ថែមមាសដែលអ្នកបានទិញ និងតម្លៃដែលអ្នកបានបង់ ដើម្បីមើលថាវាមានតម្លៃប៉ុន្មាននៅថ្ងៃនេះ។',
     invested: 'បានបង់', worth: 'តម្លៃឥឡូវ', gainLoss: 'ចំណេញ ឬខាត', weight: 'ទម្ងន់', paid: 'បានបង់', date: 'កាលបរិច្ឆេទ',
@@ -73,7 +73,7 @@ const lang = ref<Lang>('en')
 const showKHR = ref(false)
 const khrRate = ref(4100)
 const source = ref<'api' | 'custom'>('api')
-const customUnit = ref<'troyOz' | 'damlung' | 'chi'>('chi')
+const customUnit = ref<'troyOz' | 'damlung' | 'chi' | 'kg'>('chi')
 const customPrice = ref<number | null>(null)
 const apiKey = ref('')
 const autoRefresh = ref(0) // seconds, 0 = off
@@ -376,7 +376,9 @@ useAddAction(() => openAdd())
 function openAdd() {
   editingId.value = undefined
   Object.assign(form, { weight: null, unit: 'chi', price: null, date: today() })
+  pasteText.value = ''
   formOpen.value = true
+  if (addMode.value === 'paste') nextTick(() => pasteBox.value?.focus())
   draft.check()
   play('open')
 }
@@ -413,6 +415,52 @@ function savePurchase() {
     toast.success('Purchase saved', { description: `${entry.weight} ${w.value[entry.unit]} for ${money(entry.price)}`, action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
   }
   play('success')
+  formOpen.value = false
+}
+
+// ---------- Paste a receipt or message (goldPaste) ----------
+// One purchase fills the form to check before adding; several show as a list to add together
+const addMode = ref<'enter' | 'paste'>('enter')
+const pasteText = ref('')
+const pasteBox = ref<HTMLTextAreaElement>()
+const pasted = computed(() => pasteText.value.trim() ? parseGoldPaste(pasteText.value, khrRate.value) : [])
+const pastedReady = computed(() => pasted.value.filter(p => p.price != null))
+const pasting = computed(() => addMode.value === 'paste' && !editingId.value)
+
+function pickAddMode(m: 'enter' | 'paste') {
+  addMode.value = m
+  play('select')
+  if (m === 'paste') nextTick(() => pasteBox.value?.focus())
+}
+
+watch(pasted, (list) => {
+  const p = list.length === 1 ? list[0] : undefined
+  if (!p) return
+  Object.assign(form, { weight: p.weight, unit: p.unit, price: p.price, date: p.date ?? today() })
+})
+
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText()
+    if (text.trim()) {
+      pasteText.value = text
+      play('select')
+      return
+    }
+  } catch {}
+  // No clipboard access (or nothing on it): let them paste into the box themselves
+  pasteBox.value?.focus()
+}
+
+function addPasted() {
+  const rows = pastedReady.value.map(p => ({ weight: p.weight, unit: p.unit, price: p.price!, date: p.date ?? today() }))
+  if (!rows.length) return
+  const added = addMany(rows)
+  draft.clear()
+  play('success')
+  toast.success(`${rows.length} ${rows.length === 1 ? 'purchase' : 'purchases'} added`, {
+    action: { label: 'Undo', onClick: () => added.forEach(p => remove(p.id, { undoAdd: true })) }
+  })
   formOpen.value = false
 }
 
@@ -527,11 +575,11 @@ function saveSettings() {
       lang: lang.value, showKHR: showKHR.value, khrRate: khrRate.value, source: source.value,
       customUnit: customUnit.value, customPrice: customPrice.value, apiKey: apiKey.value,
       autoRefresh: autoRefresh.value, purity: purity.value, customPurity: customPurity.value,
-      range: range.value, sort: sort.value, quote: quote.value
+      range: range.value, sort: sort.value, quote: quote.value, addMode: addMode.value
     }))
   } catch {}
 }
-watch([lang, showKHR, khrRate, source, customUnit, customPrice, apiKey, autoRefresh, purity, customPurity, range, sort], saveSettings)
+watch([lang, showKHR, khrRate, source, customUnit, customPrice, apiKey, autoRefresh, purity, customPurity, range, sort, addMode], saveSettings)
 
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 let clock: ReturnType<typeof setInterval> | undefined
@@ -558,6 +606,7 @@ onMounted(() => {
       customPurity.value = s.customPurity ?? 99.99
       range.value = s.range ?? '1D'
       sort.value = s.sort ?? 'date-desc'
+      addMode.value = s.addMode === 'paste' ? 'paste' : 'enter'
     }
   } catch {}
   if (source.value === 'api') fetchQuote(!online.value)
@@ -672,7 +721,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                   </span>
                 </label>
                 <div class="segmented" role="radiogroup" aria-label="Price is per">
-                  <label v-for="u in (['chi', 'damlung', 'troyOz'] as const)" :key="u" :class="{ active: customUnit === u }">
+                  <label v-for="u in (['chi', 'damlung', 'troyOz', 'kg'] as const)" :key="u" :class="{ active: customUnit === u }">
                     <input type="radio" name="gold-custom-unit" :checked="customUnit === u" @change="customUnit = u">
                     per {{ w[u] }}
                   </label>
@@ -906,6 +955,46 @@ const PURITIES: { value: Purity, label: string }[] = [
       <Modal :open="formOpen" :title="editingId ? 'Edit purchase' : 'Add a purchase'" @close="formOpen = false">
         <form v-validate class="form" @submit.prevent="savePurchase">
           <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
+          <div v-if="!editingId" class="segmented add-mode" role="radiogroup" aria-label="How to add">
+            <label v-for="m in (['enter', 'paste'] as const)" :key="m" :class="{ active: addMode === m }">
+              <input type="radio" name="gold-add-mode" :checked="addMode === m" @change="pickAddMode(m)">
+              {{ m === 'enter' ? 'Enter' : 'Paste' }}
+            </label>
+          </div>
+          <div v-if="pasting" class="field paste">
+            <span class="field-head paste-head">
+              <span>Receipt or message</span>
+              <button type="button" class="link" @click="pasteFromClipboard">Paste</button>
+            </span>
+            <textarea ref="pasteBox" v-model="pasteText" class="input" rows="2" spellcheck="false" aria-label="Paste details" placeholder="A receipt or the shop’s message, like “2 chi, total $620, 20/11/2026”" />
+            <p v-if="pasteText.trim() && !pasted.length" class="form-note">No weight found. Write it with a unit, like “2 chi” or “1 ដំឡឹង”.</p>
+            <p v-else-if="pasted.length === 1" class="form-note">
+              Filled in below from your paste. Check it, then add.
+              <template v-if="pasted[0]!.price == null"> No price found, so enter what you paid.</template>
+              <template v-else-if="pasted[0]!.fromRiel"> Riel changed to dollars at {{ khrRate.toLocaleString('en-US') }} ៛ per $1.</template>
+              <template v-if="!pasted[0]!.date"> No date found, so it’s today.</template>
+            </p>
+          </div>
+
+          <!-- Several purchases in one paste: check the list, then add them together -->
+          <template v-if="pasting && pasted.length > 1">
+            <ul class="paste-list" aria-label="Purchases found">
+              <li v-for="(p, i) in pasted" :key="i" :class="{ missing: p.price == null }">
+                <strong>{{ fmtQty(p.weight) }} {{ w[p.unit] }}</strong>
+                <span>{{ p.price == null ? 'No price, left out' : money(p.price) }}<small v-if="p.fromRiel"> from riel</small></span>
+                <span class="paste-date">{{ formatDate(p.date ?? today()) }}</span>
+              </li>
+            </ul>
+            <p v-if="pasted.some(p => p.fromRiel)" class="form-note">Riel changed to dollars at {{ khrRate.toLocaleString('en-US') }} ៛ per $1.</p>
+            <div class="form-actions">
+              <button type="button" class="btn" :disabled="!pastedReady.length" @click="addPasted">Add {{ pastedReady.length }} {{ pastedReady.length === 1 ? 'purchase' : 'purchases' }}</button>
+              <button type="button" class="btn btn-quiet" @click="formOpen = false">Cancel</button>
+            </div>
+          </template>
+          <div v-else-if="pasting && !pasted.length" class="form-actions">
+            <button type="button" class="btn btn-quiet" @click="formOpen = false">Cancel</button>
+          </div>
+          <template v-else>
           <div class="form-row amount-row">
             <label class="field">
               <span class="field-head">{{ w.weight }}</span>
@@ -934,6 +1023,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add purchase' }}</button>
             <button type="button" class="btn btn-quiet" @click="formOpen = false">Cancel</button>
           </div>
+          </template>
         </form>
       </Modal>
 
@@ -1339,6 +1429,11 @@ const PURITIES: { value: Purity, label: string }[] = [
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
+}
+
+/* Every other unit a shade darker, so a price is easy to keep track of across the row */
+.units li:nth-child(even):not(.lead) {
+  background: var(--surface-2);
 }
 
 .units li.lead {
@@ -1802,6 +1897,53 @@ const PURITIES: { value: Purity, label: string }[] = [
   color: var(--ink-2);
 }
 
+.add-mode {
+  align-self: flex-start;
+}
+
+.paste textarea {
+  resize: vertical;
+}
+
+.paste-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.paste-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.paste-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.65rem 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.paste-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.paste-list li.missing {
+  color: var(--ink-3);
+}
+
+.paste-list small,
+.paste-date {
+  color: var(--ink-2);
+}
+
 /* A little more room above the buttons than between fields, so they read as the end of the form */
 .form-actions {
   display: flex;
@@ -1954,6 +2096,10 @@ const PURITIES: { value: Purity, label: string }[] = [
 
   .units li:not(.lead) {
     background: none;
+  }
+
+  .units li:nth-child(even):not(.lead) {
+    background: var(--surface-2);
   }
 
   .units li + li {
