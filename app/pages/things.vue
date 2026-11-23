@@ -14,6 +14,9 @@ interface Thing {
   currency: Currency
   // What it would sell for today, in the same currency; empty means "the same as you paid"
   currentValue?: number | null
+  // What you actually sold it for, in the same currency; set means it's gone and out of the "worth now" totals
+  soldPrice?: number | null
+  soldDate?: string | null // yyyy-mm-dd
   notes: string
   // Device details (CHECKLIST.md #45, #46), all optional
   company?: string
@@ -61,6 +64,7 @@ const DEMO = (): Omit<Thing, 'id'>[] => [
   { name: 'Sony WH-1000XM5', category: 'Headphones', company: 'Sony', model: 'WH-1000XM5', year: 2022, purchaseDate: isoDaysAgo(240), price: 399, currency: 'USD', currentValue: 280, notes: '' },
   { name: 'Sony PlayStation 5 Slim', category: 'Gaming', company: 'Sony', model: 'PlayStation 5', generation: 'Slim', year: 2023, storage: 1000, purchaseDate: isoDaysAgo(330), price: 499, currency: 'USD', currentValue: 430, notes: '' },
   { name: 'Honda Dream 125', category: 'Vehicle', company: 'Honda', purchaseDate: isoDaysAgo(1100), price: 2350, currency: 'USD', currentValue: 1800, notes: 'Plate 2AB-1234' },
+  { name: 'Apple iPhone 13', category: 'Phone', company: 'Apple', model: 'iPhone 13', year: 2021, storage: 128, purchaseDate: isoDaysAgo(1300), price: 799, currency: 'USD', soldPrice: 360, soldDate: isoDaysAgo(410), notes: 'Sold when the 15 Pro arrived' },
   { name: 'Rice cooker', category: 'Home', purchaseDate: isoDaysAgo(60), price: 180000, currency: 'KHR', currentValue: null, notes: '' }
 ]
 const { items, ready, sync, add, addMany, update, replace, remove, restore } = useCollection<Thing>('things', undefined, { demo: DEMO })
@@ -79,7 +83,7 @@ const today = () => localIsoDate()
 const lastCategory = useRemembered('things-category', 'Phone', v => NEW_TYPES.some(t => t.key === v))
 const lastCurrency = useRemembered<Currency>('things-currency', 'USD', v => v === 'USD' || v === 'KHR')
 const blank = (): Omit<Thing, 'id'> => ({
-  name: '', category: lastCategory.value, purchaseDate: today(), price: 0, currency: lastCurrency.value, currentValue: null, notes: '',
+  name: '', category: lastCategory.value, purchaseDate: today(), price: 0, currency: lastCurrency.value, currentValue: null, soldPrice: null, soldDate: null, notes: '',
   company: '', model: '', generation: '', year: null, storage: null, ram: null, display: null
 })
 const form = reactive(blank())
@@ -249,7 +253,9 @@ const sort = useRemembered<(typeof SORTS)[number]['value']>('things-sort', 'adde
 // Today's value: what the owner entered, otherwise what they paid. Nothing is estimated or written down
 // automatically; the value only changes when you say so
 const unvalued = (t: Thing) => t.currentValue == null
-const worth = (t: Thing) => t.currentValue ?? t.price
+const isSold = (t: Thing) => t.soldPrice != null
+// A sold thing is worth what it sold for, so the card's change and "keeps" bar show the profit or loss
+const worth = (t: Thing) => t.soldPrice ?? t.currentValue ?? t.price
 const change = (t: Thing) => (t.price ? worth(t) / t.price - 1 : 0)
 // Share of the price an item still holds, for the bar on each card (over 100% when it went up in value)
 const kept = (t: Thing) => (t.price ? worth(t) / t.price : 0)
@@ -269,6 +275,8 @@ const visible = computed(() => {
   const q = query.value.trim().toLowerCase()
   const list = items.value.filter(t => matchesFilters(t) && (!q || [t.name, typeLabel(t.category), t.company, t.model, t.generation, t.notes].join(' ').toLowerCase().includes(q)))
   return [...list].sort((a, b) => {
+    // Sold things sit after the ones you still own, whatever the sort
+    if (isSold(a) !== isSold(b)) return isSold(a) ? 1 : -1
     if (sort.value === 'value') return worthUsd(b) - worthUsd(a)
     if (sort.value === 'added') return touchedAt(b).localeCompare(touchedAt(a))
     if (sort.value === 'newest') return b.purchaseDate.localeCompare(a.purchaseDate)
@@ -282,8 +290,14 @@ const visible = computed(() => {
 })
 
 // Things left out of the totals still show in the list, dimmed
-const counted = computed(() => items.value.filter(t => !t.excluded))
-const excludedCount = computed(() => items.value.length - counted.value.length)
+const counted = computed(() => items.value.filter(t => !t.excluded && !isSold(t)))
+const sold = computed(() => items.value.filter(isSold))
+const excludedCount = computed(() => items.value.filter(t => t.excluded && !isSold(t)).length)
+const soldTotals = computed(() => {
+  const got = sold.value.reduce((n, t) => n + worthUsd(t), 0)
+  const paid = sold.value.reduce((n, t) => n + paidUsd(t), 0)
+  return { got, paid, profit: got - paid, change: paid ? got / paid - 1 : 0 }
+})
 
 const totals = computed(() => {
   const now = counted.value.reduce((n, t) => n + worthUsd(t), 0)
@@ -302,9 +316,9 @@ const byCategory = computed(() => {
   return [...map.entries()].map(([category, v]) => ({ category, ...v })).sort((a, b) => b.usd - a.usd)
 })
 
-function owned(date: string) {
+function owned(date: string, until?: string | null) {
   const start = new Date(date)
-  const now = new Date()
+  const now = until ? new Date(until) : new Date()
   let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
   if (now.getDate() < start.getDate()) months--
   if (months < 0) return 'Not bought yet'
@@ -360,11 +374,16 @@ function save(force = false) {
     ram: num(form.ram),
     display: num(form.display),
     // An empty field means "the same as I paid"; keep 0 as a real value (worth nothing)
-    currentValue: typeof form.currentValue === 'number' ? form.currentValue : null
+    currentValue: typeof form.currentValue === 'number' ? form.currentValue : null,
+    soldPrice: typeof form.soldPrice === 'number' ? form.soldPrice : null,
+    soldDate: typeof form.soldPrice === 'number' ? form.soldDate || today() : null
   }
   if (editingId.value) {
-    const before = update(editingId.value, { ...record, updatedAt: new Date().toISOString() })
+    const id = editingId.value
+    const before = update(id, { ...record, updatedAt: new Date().toISOString() })
     toastSaved(before && (() => replace(before)))
+    // Just sold: the card glows once so you see where it went (it moves to the end of the list)
+    if (record.soldPrice != null && before?.soldPrice == null) pulse(id)
   } else {
     const added = add({ ...record, createdAt: new Date().toISOString() })
     draft.clear()
@@ -376,12 +395,24 @@ function save(force = false) {
   cancel()
 }
 
+// The same glow as a search result you jumped to (plugins/focus.client.ts)
+function pulse(id: string) {
+  nextTick(() => {
+    const el = document.querySelector<HTMLElement>(`[data-item-id="${id}"]`)
+    if (!el) return
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    el.classList.add('found')
+    setTimeout(() => el.classList.remove('found'), 2200)
+  })
+}
+
 // Right-click / long-press (CHECKLIST.md #27)
 const menuFor = useRowMenu()
 const thingMenu = (t: Thing): MenuEntry[] => [
   { label: 'Edit', icon: 'edit', run: () => edit(t) },
   { label: t.favorite ? 'Remove from favourites' : 'Add to favourites', icon: 'star', run: () => toggleFavourite(t, t.name, update, replace) },
   { label: t.excluded ? 'Count in totals' : 'Leave out of totals', icon: 'restore', run: () => setExcluded([t], !t.excluded) },
+  { label: isSold(t) ? 'Edit sale' : 'Mark as sold', icon: 'sold', run: () => markSold(t) },
   { label: 'Duplicate', icon: 'duplicate', run: () => {
     const { id: _, ...rest } = t
     const copy = add({ ...rest, name: `${t.name} (copy)` })
@@ -403,10 +434,17 @@ function setExcluded(list: Thing[], excluded: boolean) {
   })
 }
 
+// Opens the edit form with the sale fields showing, dated today if it wasn't sold yet
+function markSold(t: Thing) {
+  edit(t)
+  form.soldDate ||= today()
+  nextTick(() => document.querySelector<HTMLInputElement>('dialog[open] [data-sold-price]')?.focus())
+}
+
 function edit(t: Thing) {
   editingId.value = t.id
   Object.assign(form, {
-    name: t.name, category: t.category, purchaseDate: t.purchaseDate, price: t.price, currency: t.currency, currentValue: t.currentValue ?? null, notes: t.notes,
+    name: t.name, category: t.category, purchaseDate: t.purchaseDate, price: t.price, currency: t.currency, currentValue: t.currentValue ?? null, soldPrice: t.soldPrice ?? null, soldDate: t.soldDate ?? null, notes: t.notes,
     company: t.company ?? '', model: t.model ?? '', generation: t.generation ?? '', year: t.year ?? null, storage: t.storage ?? null, ram: t.ram ?? null, display: t.display ?? null
   })
   step.value = 'details'
@@ -438,6 +476,10 @@ function editFromDetails(t: Thing) {
   viewingId.value = undefined
   edit(t)
 }
+function soldFromDetails(t: Thing) {
+  viewingId.value = undefined
+  markSold(t)
+}
 function deleteFromDetails(t: Thing) {
   viewingId.value = undefined
   del(t)
@@ -453,7 +495,8 @@ const detailRows = (t: Thing) => [
   ['Memory', t.ram && `${t.ram} GB RAM`],
   ['Screen', t.display && `${t.display}″`],
   ['Bought', `${formatDate(t.purchaseDate)} · ${owned(t.purchaseDate)}`],
-  ['In the totals', t.excluded ? 'Left out' : 'Counted']
+  ['Sold', t.soldDate && `${formatDate(t.soldDate)} · after ${owned(t.purchaseDate, t.soldDate)}`],
+  ['In the totals', isSold(t) ? 'Sold' : t.excluded ? 'Left out' : 'Counted']
 ].filter((r): r is [string, string | number] => r[1] !== undefined && r[1] !== null && r[1] !== '' && r[1] !== 0)
 
 // ---------- Import & export (CHECKLIST.md #18) ----------
@@ -472,12 +515,14 @@ const THING_COLUMNS: CsvColumn<Thing>[] = [
   { header: 'Price', get: t => t.price },
   { header: 'Currency', get: t => t.currency },
   { header: 'Worth now', get: t => t.currentValue ?? '' },
+  { header: 'Sold for', get: t => t.soldPrice ?? '' },
+  { header: 'Sold on', get: t => t.soldDate ?? '' },
   { header: 'Notes', get: t => t.notes }
 ]
 // Type by key or label ("Game console" → Gaming); anything unknown is Other
 const typeFrom = (s: string) => THING_TYPES.find(t => [t.key, t.label].some(x => x.toLowerCase() === s.trim().toLowerCase()))?.key ?? 'Other'
 const positive = (n: number | undefined) => (n && n > 0 ? n : null)
-function thingFrom(r: { name: string, type: string, date: string, price?: number, currency: string, worth?: number, notes: string, company?: string, model?: string, generation?: string, year?: number, storage?: number, ram?: number, display?: number }): Omit<Thing, 'id'> | undefined {
+function thingFrom(r: { name: string, type: string, date: string, price?: number, currency: string, worth?: number, soldFor?: number, soldOn?: string, notes: string, company?: string, model?: string, generation?: string, year?: number, storage?: number, ram?: number, display?: number }): Omit<Thing, 'id'> | undefined {
   const name = r.name.trim() || [r.company, r.model, r.generation].filter(Boolean).join(' ')
   if (!name) return undefined
   return {
@@ -487,6 +532,8 @@ function thingFrom(r: { name: string, type: string, date: string, price?: number
     price: r.price && r.price > 0 ? r.price : 0,
     currency: r.currency.toUpperCase() === 'KHR' ? 'KHR' : 'USD',
     currentValue: positive(r.worth),
+    soldPrice: r.soldFor != null && Number.isFinite(r.soldFor) && r.soldFor >= 0 ? r.soldFor : null,
+    soldDate: r.soldFor != null && Number.isFinite(r.soldFor) && r.soldFor >= 0 ? toIsoDate(r.soldOn ?? '') || today() : null,
     notes: r.notes.trim(),
     company: r.company?.trim() ?? '',
     model: r.model?.trim() ?? '',
@@ -501,12 +548,14 @@ function thingFrom(r: { name: string, type: string, date: string, price?: number
 const thingFromRow = (r: Record<string, string>) => thingFrom({
   name: cellOf(r, 'name', 'item', 'device'), type: cellOf(r, 'type', 'category'), date: cellOf(r, 'bought on', 'purchase date', 'date'),
   price: toNumber(cellOf(r, 'price', 'paid', 'cost')), currency: cellOf(r, 'currency'), worth: toNumber(cellOf(r, 'worth now', 'value', 'current value')),
+  soldFor: cellOf(r, 'sold for', 'sold price', 'sale price') ? toNumber(cellOf(r, 'sold for', 'sold price', 'sale price')) : undefined, soldOn: cellOf(r, 'sold on', 'sold date'),
   notes: cellOf(r, 'notes', 'note'), company: cellOf(r, 'company', 'brand', 'manufacturer'), model: cellOf(r, 'model'), generation: cellOf(r, 'generation'),
   year: toNumber(cellOf(r, 'release year', 'year')), storage: toNumber(cellOf(r, 'storage (gb)', 'storage')), ram: toNumber(cellOf(r, 'ram (gb)', 'ram')), display: toNumber(cellOf(r, 'screen (in)', 'screen', 'display'))
 })
 const thingFromJSON = (r: Record<string, unknown>) => thingFrom({
   name: String(r.name ?? ''), type: String(r.category ?? r.type ?? ''), date: String(r.purchaseDate ?? ''), price: Number(r.price), currency: String(r.currency ?? ''),
-  worth: r.currentValue == null ? undefined : Number(r.currentValue), notes: String(r.notes ?? ''), company: String(r.company ?? ''), model: String(r.model ?? ''),
+  worth: r.currentValue == null ? undefined : Number(r.currentValue),
+  soldFor: r.soldPrice == null ? undefined : Number(r.soldPrice), soldOn: String(r.soldDate ?? ''), notes: String(r.notes ?? ''), company: String(r.company ?? ''), model: String(r.model ?? ''),
   generation: String(r.generation ?? ''), year: Number(r.year) || undefined, storage: Number(r.storage) || undefined, ram: Number(r.ram) || undefined, display: Number(r.display) || undefined
 })
 const thingKey = (t: Omit<Thing, 'id'>) => `${t.name.toLowerCase()}|${t.purchaseDate}`
@@ -629,7 +678,7 @@ function del(t: Thing) {
 
           <label class="field">
             <span class="field-head">Name</span>
-            <input v-model="form.name" class="input" :placeholder="autoName || 'iPhone 16 Pro Max'" required data-error="Give it a name, like iPhone 16 Pro">
+            <input v-model="form.name" class="input" enterkeyhint="next" :placeholder="autoName || 'iPhone 16 Pro Max'" required data-error="Give it a name, like iPhone 16 Pro">
           </label>
         <label class="field">
           <span class="field-head">Bought on</span>
@@ -638,7 +687,7 @@ function del(t: Thing) {
         <div class="field">
           <span class="field-head">Price paid</span>
           <div class="price">
-            <input v-model.number="form.price" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="Price paid" required>
+            <input v-model.number="form.price" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="Price paid" enterkeyhint="done" required>
             <div class="segmented" role="radiogroup" aria-label="Currency">
               <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }">
                 <input v-model="form.currency" type="radio" name="currency" :value="c">
@@ -668,18 +717,29 @@ function del(t: Thing) {
             <input v-model.number="form.display" class="input" data-keys="inch" type="number" inputmode="decimal" min="1" step="0.1" placeholder="6.1">
           </label>
         </div>
-        <MoreFields :filled="!!form.currentValue || !!form.notes">
+        <MoreFields :filled="!!form.currentValue || !!form.notes || typeof form.soldPrice === 'number' || !!form.soldDate">
         <div class="field">
           <span class="field-head">What it’s worth now <span class="optional">Optional</span></span>
           <div class="price">
-            <input v-model.number="form.currentValue" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="What it’s worth now" :placeholder="form.price > 0 ? `${Math.round(form.price).toLocaleString('en-US')} (what you paid) if left empty` : 'Leave empty to use what you paid'">
+            <input v-model.number="form.currentValue" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="What it’s worth now" enterkeyhint="done" :placeholder="form.price > 0 ? `${Math.round(form.price).toLocaleString('en-US')} (what you paid) if left empty` : 'Leave empty to use what you paid'">
             <span class="unit">{{ form.currency === 'USD' ? '$' : '៛' }}</span>
           </div>
           <small class="hint">Leave it empty and it counts at what you paid. Enter a resale price when you know what it would sell for.</small>
         </div>
+        <div class="field">
+          <span class="field-head">Sold for <span class="optional">Optional</span></span>
+          <div class="sold">
+            <div class="price">
+              <input v-model.number="form.soldPrice" data-sold-price class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="Price you sold it for" enterkeyhint="done" placeholder="Not sold">
+              <span class="unit">{{ form.currency === 'USD' ? '$' : '៛' }}</span>
+            </div>
+            <input v-model="form.soldDate" class="input" type="date" aria-label="Date you sold it" :min="form.purchaseDate" :max="today()">
+          </div>
+          <small class="hint">Once sold, it shows your profit or loss and leaves the “worth now” totals.</small>
+        </div>
         <label class="field">
           <span class="field-head">Notes <span class="optional">Optional</span></span>
-          <input v-model="form.notes" class="input" placeholder="Daily driver, warranty until 2027…">
+          <input v-model="form.notes" class="input" enterkeyhint="done" placeholder="Daily driver, warranty until 2027…">
         </label>
         </MoreFields>
         </template>
@@ -733,6 +793,16 @@ function del(t: Thing) {
                     </dd>
                   </div>
                   <div><dt>Items</dt><dd>{{ counted.length }}</dd></div>
+                </dl>
+                <dl v-if="sold.length" class="stats sold-stats">
+                  <div><dt>Sold</dt><dd>{{ sold.length }} for {{ formatMoney(soldTotals.got, 'USD') }}</dd></div>
+                  <div>
+                    <dt>{{ soldTotals.profit >= 0 ? 'Profit' : 'Loss' }}</dt>
+                    <dd :class="trend(soldTotals.change)">
+                      {{ soldTotals.profit >= 0 ? '+' : '−' }}{{ formatMoney(Math.abs(soldTotals.profit), 'USD') }}
+                      <small>{{ pct(soldTotals.change) }}</small>
+                    </dd>
+                  </div>
                 </dl>
                 <p v-if="excludedCount" class="note">
                   {{ excludedCount }} {{ excludedCount === 1 ? 'thing is' : 'things are' }} left out of these totals. Right-click or long-press one to count it again.
@@ -851,7 +921,7 @@ function del(t: Thing) {
 
             <!-- One card per thing: what it is, what you paid → what it’s worth now, and how much of its price it keeps -->
             <TransitionGroup tag="ul" name="list" class="things" :class="view">
-              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing bulk-row" tabindex="0" :aria-label="`${t.name}, show details`" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)" @click="onCardClick($event, t)" @keydown.enter.self.prevent="showDetails(t)" :class="{ editing: editingId === t.id, 'bulk-picked': sel.has(t.id), excluded: t.excluded }" :style="categoryStyle(t.category)">
+              <li v-for="t in visible" :key="t.id" :data-item-id="t.id" class="thing bulk-row" tabindex="0" :aria-label="`${t.name}, show details`" v-bind="menuFor(() => thingMenu(t), t.name)" v-swipe-delete="() => del(t)" :data-bulk="sel.selecting || undefined" @click.capture="sel.onRowClick($event, t.id)" @click="onCardClick($event, t)" @keydown.enter.self.prevent="showDetails(t)" :class="{ editing: editingId === t.id, 'bulk-picked': sel.has(t.id), excluded: t.excluded && !isSold(t), sold: isSold(t) }" :style="categoryStyle(t.category)">
                 <BulkCheck v-if="sel.selecting" :checked="sel.has(t.id)" :label="`Select ${t.name}`" @pick="sel.pick(t.id, $event)" />
                 <header class="thing-head">
                   <span class="thing-icon" :class="{ logo: logoOf(t) }" :style="logoOf(t) && logoBg.get(logoOf(t)!) ? { '--logo-bg': logoBg.get(logoOf(t)!) } : undefined" aria-hidden="true">
@@ -859,8 +929,8 @@ function del(t: Thing) {
                     <CategoryIcon v-else :name="typeOf(t.category).icon" />
                   </span>
                   <span class="thing-title">
-                    <strong>{{ t.name }}<span v-if="t.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span><span v-if="t.excluded" class="not-counted">Not counted</span></strong>
-                    <span>{{ [typeLabel(t.category), t.company && !t.name.toLowerCase().includes(t.company.toLowerCase()) ? t.company : ''].filter(Boolean).join(' · ') }} · {{ owned(t.purchaseDate) }}</span>
+                    <strong>{{ t.name }}<span v-if="t.favorite" class="fav" title="Favourite" aria-label="Favourite"> ★</span><span v-if="isSold(t)" class="not-counted">Sold</span><span v-else-if="t.excluded" class="not-counted">Not counted</span></strong>
+                    <span>{{ [typeLabel(t.category), t.company && !t.name.toLowerCase().includes(t.company.toLowerCase()) ? t.company : ''].filter(Boolean).join(' · ') }} · {{ isSold(t) ? `kept ${owned(t.purchaseDate, t.soldDate)}` : owned(t.purchaseDate) }}</span>
                     <span v-if="specLine(t)" class="spec-line">{{ specLine(t) }}</span>
                   </span>
                 </header>
@@ -873,9 +943,9 @@ function del(t: Thing) {
                   </div>
                   <AnimatedIcon class="arrow" name="arrow-right" />
                   <div class="col end">
-                    <span class="k">Worth now</span>
+                    <span class="k">{{ isSold(t) ? 'Sold for' : 'Worth now' }}</span>
                     <b>{{ formatMoney(worth(t), t.currency) }}</b>
-                    <small class="delta" :class="trend(change(t))">{{ pct(change(t)) }}</small>
+                    <small class="delta" :class="trend(change(t))">{{ isSold(t) ? `${worth(t) >= t.price ? '+' : '−'}${formatMoney(Math.abs(worth(t) - t.price), t.currency)} · ` : '' }}{{ pct(change(t)) }}</small>
                   </div>
                 </div>
 
@@ -883,7 +953,7 @@ function del(t: Thing) {
                   <span class="kept-bar" role="img" :aria-label="`Keeps ${Math.round(kept(t) * 100)}% of what you paid`">
                     <span :style="{ width: `${Math.min(kept(t), 1) * 100}%` }" />
                   </span>
-                  <span class="kept-text">Keeps {{ Math.round(kept(t) * 100) }}%</span>
+                  <span class="kept-text">{{ isSold(t) ? 'Got back' : 'Keeps' }} {{ Math.round(kept(t) * 100) }}%</span>
                 </div>
 
                 <p v-if="t.notes" class="thing-notes">{{ t.notes }}</p>
@@ -927,12 +997,12 @@ function del(t: Thing) {
           </div>
           <AnimatedIcon class="arrow" name="arrow-right" />
           <div class="col end">
-            <span class="k">Worth now</span>
+            <span class="k">{{ isSold(viewing) ? 'Sold for' : 'Worth now' }}</span>
             <b>{{ formatMoney(worth(viewing), viewing.currency) }}</b>
-            <small class="delta" :class="trend(change(viewing))">{{ pct(change(viewing)) }} · keeps {{ Math.round(kept(viewing) * 100) }}%</small>
+            <small class="delta" :class="trend(change(viewing))">{{ isSold(viewing) ? `${worth(viewing) >= viewing.price ? '+' : '−'}${formatMoney(Math.abs(worth(viewing) - viewing.price), viewing.currency)} · ` : '' }}{{ pct(change(viewing)) }} · {{ isSold(viewing) ? 'got back' : 'keeps' }} {{ Math.round(kept(viewing) * 100) }}%</small>
           </div>
         </div>
-        <p v-if="unvalued(viewing)" class="details-note">No resale price entered, so it counts at what you paid.</p>
+        <p v-if="unvalued(viewing) && !isSold(viewing)" class="details-note">No resale price entered, so it counts at what you paid.</p>
 
         <dl class="details-list">
           <div v-for="[k, v] in detailRows(viewing)" :key="k"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>
@@ -945,6 +1015,7 @@ function del(t: Thing) {
 
         <div class="details-actions">
           <button type="button" class="btn" @click="editFromDetails(viewing)">Edit</button>
+          <button type="button" class="btn btn-quiet" @click="soldFromDetails(viewing)"><AppIcon name="hand-coins" /> {{ isSold(viewing) ? 'Edit sale' : 'Mark as sold' }}</button>
           <ConfirmDelete text :name="viewing.name" @confirm="deleteFromDetails(viewing)" />
           <button type="button" class="btn btn-quiet" @click="viewingId = undefined">Close</button>
         </div>
@@ -1046,7 +1117,7 @@ function del(t: Thing) {
   padding-top: 0.25rem;
 }
 
-.details-actions .btn-quiet {
+.details-actions .btn-quiet:last-child {
   margin-left: auto;
 }
 
@@ -1392,9 +1463,14 @@ function del(t: Thing) {
   color: var(--ink-3);
 }
 
-/* Left out of the totals: still listed, quieter */
+/* Left out of the totals: still listed, quieter. Colour goes, not contrast, so the text stays readable */
 .thing.excluded {
-  opacity: 0.6;
+  filter: grayscale(1);
+}
+
+/* Sold: the kind's colour turns grey but the profit or loss keeps its red or green */
+.thing.sold {
+  --cat: var(--ink-3) !important; /* beats the inline category colour on the card */
 }
 
 .not-counted {
@@ -1487,7 +1563,12 @@ function del(t: Thing) {
   border-radius: var(--radius-xl);
   /* A thin band of the category colour along the top */
   box-shadow: inset 0 4px 0 var(--cat);
-  transition: translate var(--dur-fast), box-shadow var(--dur-fast);
+  transition: translate var(--dur-fast), box-shadow var(--dur-fast), scale var(--dur-fast) var(--ease-out);
+}
+
+/* A card opens its details, so it gives a little on press like a button */
+.thing:not([data-bulk]):active {
+  scale: 0.98;
 }
 
 .thing:hover {
@@ -1613,6 +1694,7 @@ function del(t: Thing) {
 .kept-bar span {
   display: block;
   height: 100%;
+  transition: width var(--dur-slow) var(--ease-out);
   background: var(--cat);
   border-radius: inherit;
 }
@@ -1686,6 +1768,13 @@ function del(t: Thing) {
 .price .input {
   flex: 1;
   font-variant-numeric: tabular-nums;
+}
+
+/* Sold price and date side by side, stacked on narrow phones */
+.sold {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.5rem;
 }
 
 .price .segmented label {
@@ -2146,8 +2235,18 @@ function del(t: Thing) {
   margin: 0.5rem 0 0;
 }
 
+/* Re-sorting: cards lift a little mid-move, so they travel in an arc instead of a straight line */
+.things .thing.list-move {
+  animation: arc-lift var(--dur-slow) var(--ease-in-out);
+}
+
+@keyframes arc-lift {
+  50% { translate: 0 -10px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .thing,
   .thing:hover { translate: none; transition: none; }
+  .things .thing.list-move { animation: none; }
 }
 </style>

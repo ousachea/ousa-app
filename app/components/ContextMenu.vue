@@ -23,7 +23,7 @@ const isToolIcon = (i?: string): i is ToolIconName => !!i && !(i in MENU_ICONS)
 const MENU_ICONS: Record<MenuIcon, string> = {
   'open': 'lucide:arrow-right', 'new-tab': 'lucide:external-link', 'edit': 'lucide:pencil', 'copy': 'lucide:copy',
   'duplicate': 'lucide:copy-plus', 'delete': 'lucide:trash-2', 'restore': 'lucide:rotate-ccw', 'refresh': 'lucide:rotate-cw',
-  'folder': 'lucide:folder', 'pin': 'lucide:pin', 'calendar': 'lucide:calendar', 'star': 'lucide:star', 'select': 'lucide:square-check', 'share': 'lucide:share-2'
+  'folder': 'lucide:folder', 'pin': 'lucide:pin', 'calendar': 'lucide:calendar', 'star': 'lucide:star', 'select': 'lucide:square-check', 'share': 'lucide:share-2', 'sold': 'lucide:hand-coins'
 }
 
 watch(() => menu.open, async (open) => {
