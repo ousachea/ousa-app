@@ -137,7 +137,7 @@ usePullToRefresh(async () => {
 }
 
 .nav-item {
-  min-height: 2.6rem;
+  min-height: 2.75rem;
   padding: 0.5rem 0.75rem;
   display: flex;
   align-items: center;
@@ -219,6 +219,10 @@ usePullToRefresh(async () => {
     padding: 0.25rem 1rem;
     overflow-x: auto;
     scrollbar-width: none;
+    /* Fades at both edges so it's clear more sections scroll in; the padding keeps the first and last
+       tabs clear of the fade when scrolled to either end */
+    padding-right: 1.5rem;
+    mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1.75rem), transparent);
   }
 
   .budget-nav::-webkit-scrollbar {
@@ -227,7 +231,7 @@ usePullToRefresh(async () => {
 
   .nav-item {
     flex: none;
-    min-height: 2.5rem;
+    min-height: 2.75rem;
     padding: 0.45rem 0.85rem;
     background: var(--surface-2);
     border-radius: var(--radius-pill);

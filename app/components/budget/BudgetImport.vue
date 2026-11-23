@@ -286,7 +286,12 @@ td {
 }
 
 .dim {
-  opacity: 0.55;
+  /* Rows that won't be imported: the quiet text colour, still 4.5:1, rather than faded */
+  color: var(--ink-3);
+}
+
+.dim :deep(*) {
+  color: inherit;
 }
 
 .actions {

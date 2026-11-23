@@ -249,7 +249,8 @@ function delContribution(c: BudgetContribution) {
 }
 
 .goal.archived {
-  opacity: 0.65;
+  /* Muted by losing its colour, not by fading the text, so it stays readable */
+  filter: grayscale(1);
 }
 
 .top {

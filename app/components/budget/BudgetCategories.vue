@@ -327,7 +327,8 @@ ul {
 }
 
 .archived {
-  opacity: 0.6;
+  /* Muted by losing its colour, not by fading the text, so it stays readable */
+  filter: grayscale(1);
 }
 
 .cat-row,
@@ -443,8 +444,8 @@ ul {
 }
 
 .icon-pick {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.75rem;
+  height: 2.75rem;
   font-size: var(--text-title);
   background: var(--surface-2);
   border: 1px solid transparent;
@@ -469,8 +470,8 @@ ul {
 }
 
 .colors label {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.75rem;
+  height: 2.75rem;
   display: grid;
   place-items: center;
   border-radius: 50%;

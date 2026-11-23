@@ -303,7 +303,8 @@ ul {
 
 
 .bill.paused {
-  opacity: 0.65;
+  /* Muted by losing its colour, not by fading the text; the Paused badge says why */
+  filter: grayscale(1);
 }
 
 .top {
@@ -401,5 +402,17 @@ div.due-list {
   height: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+/* "Every N days": no browser up/down arrows */
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 </style>

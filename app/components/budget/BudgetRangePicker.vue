@@ -83,7 +83,8 @@ const to = computed({ get: () => range.value.to, set: v => (range.value = { from
 }
 
 .arrow {
-  min-width: 2.5rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   padding-inline: 0.5rem;
 }
 

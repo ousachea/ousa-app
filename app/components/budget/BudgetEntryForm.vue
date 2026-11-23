@@ -263,6 +263,7 @@ function del() {
             class="input"
             min="0"
             placeholder="0"
+            enterkeyhint="next"
             required
             autofocus
             :data-keys="form.currency === 'KHR' ? 'riel' : 'money'"
@@ -306,7 +307,7 @@ function del() {
           <div class="chips">
             <button v-if="!addingSub" type="button" v-ants class="chip add" @click="addingSub = true">+ New subcategory</button>
             <span v-else class="new-sub">
-              <input v-model="newSub" class="input" placeholder="Name" aria-label="New subcategory name" data-keys="text" @keydown.enter.prevent="addSub">
+              <input v-model="newSub" class="input" placeholder="Name" aria-label="New subcategory name" enterkeyhint="done" data-keys="text" @keydown.enter.prevent="addSub">
               <button type="button" class="btn btn-sm" @click="addSub">Add</button>
               <button type="button" class="btn btn-quiet btn-sm" @click="addingSub = false; newSub = ''">Cancel</button>
             </span>
@@ -331,15 +332,15 @@ function del() {
           </div>
           <label class="field">
             <span class="field-head">Note</span>
-            <input v-model="form.note" class="input" autocomplete="off" :placeholder="form.kind === 'income' ? 'October salary' : 'Lunch with team'" data-keys="text">
+            <input v-model="form.note" class="input" autocomplete="off" enterkeyhint="next" :placeholder="form.kind === 'income' ? 'October salary' : 'Lunch with team'" data-keys="text">
           </label>
           <label v-if="form.kind === 'expense'" class="field">
             <span class="field-head">Merchant or place</span>
-            <input v-model="form.merchant" class="input" autocomplete="off" placeholder="Brown Coffee, Aeon Mall…" data-keys="text">
+            <input v-model="form.merchant" class="input" autocomplete="off" enterkeyhint="next" placeholder="Brown Coffee, Aeon Mall…" data-keys="text">
           </label>
           <label class="field">
             <span class="field-head">Tags</span>
-            <input v-model="form.tags" class="input" autocomplete="off" placeholder="work, trip" data-keys="text">
+            <input v-model="form.tags" class="input" autocomplete="off" enterkeyhint="done" placeholder="work, trip" data-keys="text">
           </label>
           <label v-if="form.kind === 'expense' && bills.length" class="field">
             <span class="field-head">Pays a recurring bill</span>
@@ -409,7 +410,7 @@ function del() {
 
 /* Touch-friendly chips: at least 40px tall */
 .chip {
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: 0.4rem 0.8rem;
   display: inline-flex;
   align-items: center;

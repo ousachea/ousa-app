@@ -186,7 +186,9 @@ const rateLabel = computed(() => {
 }
 
 .methods .archived {
-  opacity: 0.55;
+  /* Muted by losing its colour, not by fading the text, so it stays readable */
+  filter: grayscale(1);
+  color: var(--ink-2);
 }
 
 .widgets {
@@ -199,6 +201,6 @@ const rateLabel = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 2.25rem;
+  min-height: 2.75rem;
 }
 </style>

@@ -208,6 +208,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['See how much of your phone battery is really left compared with when it was new.'] }
   ],
   '/budget': [
+    { version: '1.3.0', date: '2026-11-23', changes: ['Easier to tap: the section tabs, the date arrows, the category chips when adding, and the category icon and colour pickers are all at least 44px.', 'Archived categories, goals and payment methods, paused bills and rows an import will skip stay readable: they lose their colour instead of fading.', 'On a phone, the section tabs fade at the edge so it’s clear more scroll in.', 'The add form’s return key says Next or Done, and “Every N days” has no fiddly arrows.'] },
     { version: '1.2.0', date: '2026-10-19', changes: ['The overall monthly budget gets a dial showing how much is used, with a mark where the month is heading while that’s still under the limit.'] },
     { version: '1.1.0', date: '2026-10-12', changes: ['A numbered “How to use Budget” guide on the dashboard ticks off each step as you do it. Hide it any time, and bring it back with How to use.', 'Every subcategory has its own icon.'] },
     { version: '1.0.0', date: '2026-10-12', changes: [
