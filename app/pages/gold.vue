@@ -53,7 +53,8 @@ const WORDS = {
     step2: 'Choose your gold’s purity', step2Hint: 'Jewellery is often 22K or 18K, so it’s worth less than pure 24K gold.',
     step3: 'Add the gold you own', step3Hint: 'Enter what you bought and paid to see what it’s worth today.',
     boughtFor: 'You paid', gain: 'Gain', loss: 'Loss', each: 'each',
-    signInTitle: 'Keep your gold safe', signInBody: 'Sign in to back up your purchases and see them on your phone and computer.'
+    signInTitle: 'Keep your gold safe', signInBody: 'Sign in to back up your purchases and see them on your phone and computer.',
+    showAs: 'Show as', cards: 'Cards', grid: 'Grid', list: 'List'
   },
   km: {
     li: 'លី', hun: 'ហុន', chi: 'ជី', gram: 'ក្រាម', damlung: 'ដំឡឹង', troyOz: 'អោន', kg: 'គីឡូ',
@@ -64,7 +65,8 @@ const WORDS = {
     step2: 'ជ្រើសរើសភាពសុទ្ធនៃមាស', step2Hint: 'គ្រឿងអលង្ការជាញឹកញាប់ 22K ឬ 18K ដូច្នេះតម្លៃទាបជាងមាសសុទ្ធ 24K។',
     step3: 'បន្ថែមមាសដែលអ្នកមាន', step3Hint: 'បញ្ចូលអ្វីដែលអ្នកបានទិញ និងតម្លៃដែលបានបង់ ដើម្បីដឹងតម្លៃថ្ងៃនេះ។',
     boughtFor: 'អ្នកបានបង់', gain: 'ចំណេញ', loss: 'ខាត', each: 'ក្នុងមួយ',
-    signInTitle: 'រក្សាទុកមាសរបស់អ្នកឱ្យមានសុវត្ថិភាព', signInBody: 'ចូលគណនី ដើម្បីបម្រុងទុកការទិញរបស់អ្នក និងមើលវានៅលើទូរស័ព្ទ និងកុំព្យូទ័ររបស់អ្នក។'
+    signInTitle: 'រក្សាទុកមាសរបស់អ្នកឱ្យមានសុវត្ថិភាព', signInBody: 'ចូលគណនី ដើម្បីបម្រុងទុកការទិញរបស់អ្នក និងមើលវានៅលើទូរស័ព្ទ និងកុំព្យូទ័ររបស់អ្នក។',
+    showAs: 'បង្ហាញជា', cards: 'កាត', grid: 'ក្រឡា', list: 'បញ្ជី'
   }
 } as const
 
@@ -92,6 +94,11 @@ const SORTS = [
   { value: 'weight-desc', label: 'Heaviest' }
 ] as const
 const sort = useRemembered<(typeof SORTS)[number]['value']>('gold-sort', 'date-desc', v => SORTS.some(s => s.value === v))
+// How purchases show: big cards, a grid of small tiles, or one row each
+const VIEWS = ['cards', 'grid', 'list'] as const
+type View = typeof VIEWS[number]
+const view = smoothRef(useRemembered<View>('gold-view', 'cards', v => VIEWS.includes(v as View)))
+const viewOptions = computed(() => VIEWS.map(v => ({ value: v, label: w.value[v] })))
 const unitOptions = computed(() => UNITS.map(u => ({ value: u, label: w.value[u] })))
 
 const w = computed(() => WORDS[lang.value])
@@ -210,7 +217,24 @@ interface Point { id: string, price: number, time: number }
 const HISTORY_MAX = 500
 // A steady price is only recorded again after a while, so auto-refresh doesn't fill the log with repeats
 const SAME_PRICE_GAP_MS = 5 * 60_000
-const { items: priceLog, sync: historySync, add: addPoint, addMany: addPoints, remove: removePoint } = useCollection<Point>('gold-prices', undefined, { app: '/gold', trash: false })
+// Demo: a month of prices ending at today's, so the example chart has a line to show. A gentle,
+// repeatable wander (no randomness), every 6 hours for the month and hourly for the last day
+function demoPrices(): Omit<Point, 'id'>[] {
+  const end = quote.value.price || 3500
+  const t = Date.now()
+  const times = [
+    ...Array.from({ length: 116 }, (_, i) => t - 30 * 86_400_000 + i * 6 * 3_600_000),
+    ...Array.from({ length: 24 }, (_, i) => t - (24 - i) * 3_600_000),
+    t
+  ]
+  const n = times.length
+  return times.map((time, i) => {
+    const k = (n - 1 - i) / (n - 1) // 1 a month ago, 0 now
+    const wander = Math.sin(i * 0.37) * 0.012 + Math.sin(i * 0.11 + 1) * 0.02 + Math.sin(i * 1.7) * 0.003
+    return { time, price: Math.round(end * (1 - k * 0.045 + wander * k) * 100) / 100 }
+  })
+}
+const { items: priceLog, sync: historySync, add: addPoint, addMany: addPoints, remove: removePoint } = useCollection<Point>('gold-prices', undefined, { app: '/gold', trash: false, demo: demoPrices })
 const history = computed(() => [...priceLog.value].sort((a, b) => a.time - b.time))
 
 // Prices fetched while the log is still loading wait, so the load doesn't overwrite them
@@ -398,9 +422,13 @@ function openEdit(p: Purchase) {
   play('select')
 }
 
-function useTodayPrice() {
-  form.price = Math.round(priceOf(form.unit, form.weight || 1) * 100) / 100
-  play('select')
+// The purchase just added or changed glows for a moment, so you can see where it landed
+const justSaved = ref<string>()
+let savedTimer: ReturnType<typeof setTimeout> | undefined
+function flash(id: string) {
+  justSaved.value = id
+  clearTimeout(savedTimer)
+  savedTimer = setTimeout(() => (justSaved.value = undefined), 2200)
 }
 
 function savePurchase() {
@@ -408,9 +436,11 @@ function savePurchase() {
   const entry = { weight: form.weight!, unit: form.unit, price: form.price!, date: form.date || today() }
   if (editingId.value) {
     const before = update(editingId.value, entry)
+    flash(editingId.value)
     toastSaved(before && (() => replace(before)))
   } else {
     const added = add(entry)
+    flash(added.id)
     draft.clear()
     toast.success('Purchase saved', { description: `${entry.weight} ${w.value[entry.unit]} for ${money(entry.price)}`, action: { label: 'Undo', onClick: () => remove(added.id, { undoAdd: true }) } })
   }
@@ -473,6 +503,13 @@ function deleteSelected() {
 const bulkActions = computed<BulkAction[]>(() => [
   { label: 'Delete', icon: 'delete', danger: true, run: deleteSelected }
 ])
+
+// From the edit popup: close it, then delete (to the Recycle Bin, with Undo)
+function deleteEditing() {
+  const p = purchases.value.find(x => x.id === editingId.value)
+  formOpen.value = false
+  if (p) del(p)
+}
 
 function del(p: Purchase) {
   const removed = remove(p.id)
@@ -622,6 +659,11 @@ onBeforeUnmount(() => {
   IDLE_EVENTS.forEach(e => window.removeEventListener(e, resetIdle))
 })
 
+// "24K", "22K"… or the custom percentage, for the price strip on My gold
+const purityLabel = computed(() => purity.value === 'custom'
+  ? `${Number(customPurity.value) || 0}%`
+  : PURITIES.find(p => p.value === purity.value)?.label ?? '24K')
+
 const PURITIES: { value: Purity, label: string }[] = [
   { value: 1, label: '24K' },
   { value: 0.916, label: '22K' },
@@ -641,6 +683,7 @@ const PURITIES: { value: Purity, label: string }[] = [
     <template #settings>
       <SettingChoice v-model="autoRefresh" title="Refresh the price" :options="[{ value: 0, label: 'Off' }, { value: 30, label: 'Every 30 seconds' }, { value: 60, label: 'Every minute' }, { value: 300, label: 'Every 5 minutes' }]" />
       <SettingChoice v-model="sort" title="Sort purchases by" :options="SORTS" />
+      <SettingChoice v-model="view" title="Show purchases as" :options="viewOptions" />
       <label class="setting-field">
         <span class="title">Riel per dollar</span>
         <span class="desc">Used when prices show in riel.</span>
@@ -717,7 +760,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                   <span class="field-head">Price you were quoted</span>
                   <span class="money input">
                     <span class="unit" aria-hidden="true">$</span>
-                    <input v-model.number="customPrice" data-keys="price" type="number" inputmode="decimal" min="0" step="0.01" aria-label="Your gold price in dollars">
+                    <GroupedNumberInput v-model="customPrice" data-keys="price" min="0" enterkeyhint="done" aria-label="Your gold price in dollars" />
                   </span>
                 </label>
                 <div class="segmented" role="radiogroup" aria-label="Price is per">
@@ -741,7 +784,7 @@ const PURITIES: { value: Purity, label: string }[] = [
               <label v-if="purity === 'custom'" class="field purity-custom">
                 <span class="field-head">Fine gold</span>
                 <span class="money input">
-                  <input v-model.number="customPurity" type="number" min="0" max="100" step="0.01" aria-label="Fine gold percentage">
+                  <input v-model.number="customPurity" type="number" min="0" max="100" step="0.01" inputmode="decimal" enterkeyhint="done" aria-label="Fine gold percentage">
                   <span class="unit" aria-hidden="true">%</span>
                 </span>
               </label>
@@ -794,7 +837,12 @@ const PURITIES: { value: Purity, label: string }[] = [
                   <span class="high">High<br><strong>{{ money(chart.max, 0) }}</strong></span>
                 </div>
               </template>
-              <p v-else class="muted">Refresh the price a few times and the chart fills in.</p>
+              <div v-else class="chart-empty">
+                <svg viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M0,60L600,60" class="chart-line dashed" vector-effect="non-scaling-stroke" />
+                </svg>
+                <p class="muted">Your price history starts today. Each time you open Gold or refresh, the price is saved here, and the line fills in. Signed in, all your devices add to it.</p>
+              </div>
             </div>
           </Step>
 
@@ -804,6 +852,19 @@ const PURITIES: { value: Purity, label: string }[] = [
         <div v-sticky-fit class="side">
           <Step :n="3" :title="w.step3" :hint="w.step3Hint" class="ledger-step pane-gold">
             <template #aside><span class="aside-tools"><BulkToggle v-if="purchases.length" :select="sel" /><DataSource :sync="sync" /></span></template>
+
+            <!-- Phones only (CSS): the price your gold is valued at, with Refresh, without going back to the Price tab -->
+            <div v-if="spot" class="price-strip">
+              <span class="ps-price">
+                <span class="ps-what">1 {{ w.chi }} · {{ purityLabel }}</span>
+                <strong>{{ money(priceOf('chi')) }}</strong>
+              </span>
+              <span class="status" :data-status="status"><i aria-hidden="true" />{{ STATUS_LABEL[status] }}</span>
+              <button v-if="source === 'api'" type="button" class="refresh ps-refresh" :disabled="loading" @click="refresh">
+                <AnimatedIcon name="rotate-cw" :spin="loading" />
+                {{ loading ? 'Loading…' : w.refresh }}
+              </button>
+            </div>
 
             <div v-if="purchases.length" class="panel summary">
               <div><span>{{ w.invested }}</span><strong>{{ money(totals.paid) }}</strong></div>
@@ -838,6 +899,13 @@ const PURITIES: { value: Purity, label: string }[] = [
             <div v-if="purchases.length" class="ledger-bar">
               <button type="button" class="btn add-btn" @click="openAdd">{{ w.add }}</button>
               <AppSelect v-if="purchases.length > 1" v-model="sort" class="sort" aria-label="Sort purchases" :options="SORTS" />
+              <div class="segmented views" role="radiogroup" :aria-label="w.showAs">
+                <label v-for="v in VIEWS" :key="v" :class="{ active: view === v }" :title="w[v]">
+                  <input v-model="view" type="radio" name="gold-view" :value="v">
+                  <AppIcon :name="v === 'cards' ? 'rectangle-horizontal' : v === 'grid' ? 'layout-grid' : 'list'" />
+                  <span class="view-label">{{ w[v] }}</span>
+                </label>
+              </div>
             </div>
 
             <ClientOnly>
@@ -851,16 +919,16 @@ const PURITIES: { value: Purity, label: string }[] = [
             </ClientOnly>
 
             <!-- One card per purchase: what you paid → what it’s worth now → the gain or loss -->
-            <ul v-if="purchases.length" class="purchases">
+            <TransitionGroup v-if="purchases.length" tag="ul" name="list" class="purchases" :class="view">
               <li
                 v-for="p in sorted"
                 :key="p.id"
                 class="purchase shine bulk-row"
-                :class="[spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : '', { 'bulk-picked': sel.has(p.id) }]"
+                :class="[spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : '', { 'bulk-picked': sel.has(p.id), found: justSaved === p.id }]"
                 :data-bulk="sel.selecting || undefined"
                 @click.capture="sel.onRowClick($event, p.id)"
                 tabindex="0"
-                title="Click to edit"
+                title="Tap or click to edit"
                 :aria-label="`${fmtQty(p.weight)} ${w[p.unit]} bought ${formatDate(p.date)}. Press Enter to edit.`"
                 @click="openEdit(p)"
                 @keydown="onCardKey($event, p)"
@@ -897,13 +965,9 @@ const PURITIES: { value: Purity, label: string }[] = [
                     <strong>{{ signed(gainOf(p)) }}</strong>
                     <span class="p-pct">{{ gainPct(p) >= 0 ? '+' : '−' }}{{ Math.abs(gainPct(p)).toFixed(1) }}%</span>
                   </span>
-                  <span class="p-actions">
-                    <button type="button" class="link" @click.stop="openEdit(p)">Edit</button>
-                    <ConfirmDelete text name="this purchase" @confirm="del(p)" />
-                  </span>
                 </footer>
               </li>
-            </ul>
+            </TransitionGroup>
 
             <div v-else-if="ready" class="panel empty-panel">
               <EmptyState :title="w.noGold" icon="gold" :action="w.add" @action="openAdd">{{ w.noGoldText }}</EmptyState>
@@ -926,7 +990,7 @@ const PURITIES: { value: Purity, label: string }[] = [
           <Step :title="w.convert" class="pane-units">
             <div class="panel pad convert">
               <div class="convert-row">
-                <input v-model.number="convAmount" class="input" type="number" min="0" step="any" inputmode="decimal" aria-label="Amount to convert">
+                <input v-model.number="convAmount" class="input" type="number" min="0" step="any" inputmode="decimal" enterkeyhint="done" aria-label="Amount to convert">
                 <AppSelect v-model="convUnit" aria-label="Unit" :options="unitOptions" />
               </div>
               <dl class="convert-out">
@@ -998,7 +1062,10 @@ const PURITIES: { value: Purity, label: string }[] = [
           <div class="form-row amount-row">
             <label class="field">
               <span class="field-head">{{ w.weight }}</span>
-              <input v-model.number="form.weight" class="input" type="number" min="0" step="any" inputmode="decimal" required v-check="Number(form.weight) > 0 ? '' : 'Enter how much gold'">
+              <span class="money input">
+                <input v-model.number="form.weight" type="number" min="0" step="any" inputmode="decimal" enterkeyhint="next" required :aria-label="`${w.weight} in ${w[form.unit]}`" v-check="Number(form.weight) > 0 ? '' : 'Enter how much gold'">
+                <span class="unit" aria-hidden="true">{{ w[form.unit] }}</span>
+              </span>
             </label>
             <label class="field">
               <span class="field-head">Unit</span>
@@ -1007,8 +1074,11 @@ const PURITIES: { value: Purity, label: string }[] = [
           </div>
           <div class="form-row">
             <label class="field">
-              <span class="field-head">{{ w.paid }} (USD)</span>
-              <input v-model.number="form.price" data-keys="price" class="input" type="number" min="0" step="any" inputmode="decimal" required v-check="Number(form.price) > 0 ? '' : 'Enter what you paid'">
+              <span class="field-head">{{ w.paid }}</span>
+              <span class="money input">
+                <span class="unit" aria-hidden="true">$</span>
+                <GroupedNumberInput v-model="form.price" data-keys="price" min="0" enterkeyhint="done" required aria-label="Paid in dollars" v-check="Number(form.price) > 0 ? '' : 'Enter what you paid'" />
+              </span>
             </label>
             <label class="field">
               <span class="field-head">{{ w.date }}</span>
@@ -1017,11 +1087,12 @@ const PURITIES: { value: Purity, label: string }[] = [
           </div>
           <p v-if="spot && form.weight" class="form-note">
             Worth about {{ money(priceOf(form.unit, form.weight)) }} today.
-            <button type="button" class="link" @click="useTodayPrice">Use today’s price</button>
           </p>
           <div class="form-actions">
             <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add purchase' }}</button>
             <button type="button" class="btn btn-quiet" @click="formOpen = false">Cancel</button>
+            <!-- Delete lives here, beside the purchase it's about, rather than on every card -->
+            <ConfirmDelete v-if="editingId" text name="this purchase" class="form-delete" @confirm="deleteEditing" />
           </div>
           </template>
         </form>
@@ -1099,7 +1170,7 @@ const PURITIES: { value: Purity, label: string }[] = [
   border: 0;
   background:
     linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.35) 45%, transparent 60%),
-    linear-gradient(160deg, #f2cf6a, var(--gold) 55%, #a87a12);
+    linear-gradient(160deg, #f2cf6a, var(--gold) 55%, #b38418); /* dark end lifted so small ink text stays above 4.5:1 */
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), 0 14px 30px -14px rgb(120 84 6 / 0.55);
 }
 
@@ -1209,7 +1280,6 @@ const PURITIES: { value: Purity, label: string }[] = [
   margin: 0.3rem 0 0;
   font-size: var(--text-base);
   font-weight: 600;
-  opacity: 0.75;
 }
 
 .local {
@@ -1243,7 +1313,6 @@ const PURITIES: { value: Purity, label: string }[] = [
   margin: 0.8rem 0 0;
   font-size: var(--text-sm);
   font-weight: 500;
-  opacity: 0.75;
 }
 
 .quote-actions {
@@ -1272,8 +1341,8 @@ const PURITIES: { value: Purity, label: string }[] = [
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  min-height: 2.4rem;
-  padding: 0 0.9rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
   font: inherit;
   font-size: var(--text-base);
   font-weight: 700;
@@ -1502,6 +1571,8 @@ const PURITIES: { value: Purity, label: string }[] = [
 /* ---------- Ledger ---------- */
 /* Gained against lost: one bar split green and red, with the two totals under it */
 .pl {
+  /* A gap from the totals above, so the two read as separate boxes */
+  margin-top: 0.75rem;
   padding: 0.85rem 1.1rem;
   display: flex;
   flex-direction: column;
@@ -1612,9 +1683,14 @@ const PURITIES: { value: Purity, label: string }[] = [
 .ledger-bar {
   margin-top: 1.5rem;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
+}
+
+/* Sort and view sit together, on the right */
+.ledger-bar .sort {
+  margin-left: auto;
 }
 
 /* The same height as the sort dropdown beside it */
@@ -1657,9 +1733,14 @@ const PURITIES: { value: Purity, label: string }[] = [
 
 .purchase.is-up { --tone: var(--green); --tone-ink: var(--good-ink); }
 
-/* The whole card opens the edit popup */
+/* The whole card opens the edit popup, and presses in a little when you do */
 .purchase {
   cursor: pointer;
+  transition: scale 0.12s var(--ease-out);
+}
+
+.purchase:active:not(:has(button:active, a:active)) {
+  scale: 0.985;
 }
 
 .purchase:focus-visible {
@@ -1767,10 +1848,13 @@ const PURITIES: { value: Purity, label: string }[] = [
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem 1rem;
+  /* Pushed to the bottom: cards in a row end with their gain or loss lined up, whatever is above it */
+  margin-top: auto;
 }
 
-/* The result reads as one line: [▲ Gain] +$12.00 +2.4% */
+/* The result reads as one line, spread across the card: [▲ Gain] … +$12.00 +2.4% */
 .p-result {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1806,11 +1890,6 @@ const PURITIES: { value: Purity, label: string }[] = [
 .p-pct {
   font-size: var(--text-sm);
   font-weight: 600;
-}
-
-.p-actions {
-  display: flex;
-  gap: 0.9rem;
 }
 
 
@@ -1947,8 +2026,14 @@ const PURITIES: { value: Purity, label: string }[] = [
 /* A little more room above the buttons than between fields, so they read as the end of the form */
 .form-actions {
   display: flex;
+  align-items: center;
   gap: 0.6rem;
   margin-top: 0.35rem;
+}
+
+/* Delete sits apart, at the far end, away from Save */
+.form-delete {
+  margin-left: auto;
 }
 
 /* ---------- Screensaver ---------- */
@@ -1984,8 +2069,9 @@ const PURITIES: { value: Purity, label: string }[] = [
   color: #8a92a3;
 }
 
-.fade-enter-active,
-.fade-leave-active { transition: opacity 0.4s ease; }
+.fade-enter-active { transition: opacity 0.3s var(--ease-out); }
+/* Leaving is quicker than arriving */
+.fade-leave-active { transition: opacity 0.24s var(--ease-in); }
 .fade-enter-from,
 .fade-leave-to { opacity: 0; }
 
@@ -2214,6 +2300,270 @@ const PURITIES: { value: Purity, label: string }[] = [
   .pane-gold,
   .pane-units {
     animation: none;
+  }
+}
+
+/* Number fields without the browser's tiny up/down arrows */
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Before there's any history: a flat dashed line and what will fill it */
+.chart-empty {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.chart-empty svg {
+  width: 100%;
+  height: 3rem;
+}
+
+.chart-line.dashed {
+  stroke-dasharray: 6 6;
+  opacity: 0.5;
+}
+
+/* ---------- Views: cards (the default), grid, list ---------- */
+.views label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.views :deep(svg) {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Grid: small tiles, several to a row (two on a phone) */
+.purchases.grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
+  gap: 0.6rem;
+}
+
+.grid .purchase {
+  --tilt: 4deg;
+  gap: 0.55rem;
+  padding: 0.8rem 0.85rem 0.7rem;
+}
+
+.grid .p-weight strong {
+  font-size: var(--text-lg);
+}
+
+.grid .p-compare {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+}
+
+.grid .p-arrow,
+.grid .p-col small,
+.grid .p-badge {
+  display: none;
+}
+
+.grid .p-col:last-child {
+  text-align: left;
+}
+
+.grid .p-col strong,
+.grid .p-result strong {
+  font-size: var(--text-md);
+}
+
+.grid .p-foot {
+  gap: 0.25rem 0.75rem;
+}
+
+/* List: one row each, in a single panel; everything lines up in columns */
+.purchases.list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.list .purchase {
+  --tilt: 0deg;
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem 1rem;
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-left: 4px solid var(--tone);
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.list .purchase:first-child {
+  border-top: 0;
+}
+
+.list .p-head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.list .p-weight strong {
+  font-size: var(--text-lg);
+}
+
+.list .p-compare {
+  /* Centred on the arrow: paid ends just left of the column's middle, worth starts just right of it,
+     so every row's arrow lines up and the figures read down in straight columns */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0;
+  background: none;
+}
+
+.list .p-label,
+.list .p-col small,
+.list .p-badge {
+  display: none;
+}
+
+.list .p-col {
+  text-align: right;
+}
+
+.list .p-col:last-child {
+  text-align: left;
+}
+
+.list .p-col strong,
+.list .p-result strong {
+  font-size: var(--text-md);
+}
+
+/* The foot's gain or loss takes the last column, centred in it */
+.list .p-foot {
+  display: contents;
+}
+
+.list .p-result {
+  /* The same about the middle: the amount ends just left of centre, the % starts just right of it */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  justify-self: stretch;
+}
+
+.list .p-result strong {
+  justify-self: end;
+}
+
+.list .p-result .p-pct {
+  justify-self: start;
+}
+
+/* Grid tiles are narrow: the amount above its date */
+.grid .p-head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+@media (max-width: 640px) {
+  .view-label {
+    display: none;
+  }
+
+  /* Phones: Add on a row of its own; sort and view share the next */
+  .ledger-bar .add-btn {
+    flex: 1 1 100%;
+  }
+
+  .ledger-bar .sort {
+    flex: 1;
+    margin-left: 0;
+  }
+
+  /* Phone list: amount and gain on top, paid → worth under them */
+  .list .purchase {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 0.65rem 0.85rem;
+  }
+
+  .list .p-head { grid-column: 1; grid-row: 1; flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 0.6rem; }
+  /* The gain or loss spans both lines, centred on the row, amount above % */
+  .list .p-result { grid-column: 2; grid-row: 1 / span 2; align-self: center; justify-self: end; }
+  .list .p-compare { grid-column: 1; grid-row: 2; grid-template-columns: auto auto auto; justify-content: start; }
+  .list .p-compare .p-col { text-align: left; }
+  .list .p-result { display: flex; flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.25; }
+}
+
+/* The popup's fields with a unit symbol: the same size as its other fields */
+.form .money input {
+  font-size: var(--text-md);
+}
+
+/* Cards: the Gain/Loss label on the left, the amount in the centre (under the paid → worth arrow),
+   the % at the right end (under "Worth now"). Equal outer columns keep the amount truly centred */
+.purchases.cards .p-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  /* The same inset as the paid → worth box above, so the label and % line up with its figures */
+  padding-inline: 0.85rem;
+}
+
+.purchases.cards .p-badge {
+  justify-self: start;
+}
+
+.purchases.cards .p-pct {
+  justify-self: end;
+}
+
+/* ---------- The price strip on My gold (phones, where the price card is on another tab) ---------- */
+.price-strip {
+  display: none;
+}
+
+@media (max-width: 719.98px) {
+  .price-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+    padding: 0.7rem 0.75rem 0.7rem 1rem;
+    color: #1b1f2a;
+    background: linear-gradient(160deg, #f2cf6a, var(--gold));
+    border-radius: var(--radius-lg);
+  }
+
+  .ps-price {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.2;
+  }
+
+  .ps-what {
+    font-size: var(--text-xs);
+    font-weight: 700;
+  }
+
+  .ps-price strong {
+    font-size: var(--text-lg);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
   }
 }
 </style>
