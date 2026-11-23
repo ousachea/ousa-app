@@ -701,7 +701,9 @@ watch(() => route.path, () => field.value && close())
 
 .chip {
   flex: none;
-  min-height: 2.25rem;
+  /* A full 44px target even for a one-digit quick amount like "5" */
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   padding: 0 0.8rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);

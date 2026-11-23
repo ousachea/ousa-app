@@ -406,7 +406,7 @@ textarea.input {
   :root:root .version::before {
     content: '';
     position: absolute;
-    inset: -0.6rem -0.3rem;
+    inset: -0.75rem -0.3rem; /* a 20px text link becomes a 44px tap */
   }
 
   /* On/off switches: the same invisible margin around them */
@@ -416,10 +416,14 @@ textarea.input {
     inset: -0.5rem -0.25rem;
   }
 
-  :root:root .chip,
   :root:root .life-seg button,
   :root:root .segmented label {
-    min-height: 2.25rem;
+    min-height: 2.25rem; /* with the control's own frame, about 44px */
+  }
+
+  /* Chips stand alone, so they get the full 44px themselves */
+  :root:root .chip {
+    min-height: 2.75rem;
   }
 
   :root:root .segmented label {
