@@ -121,12 +121,26 @@ function createCubies(): Cubie[] {
 const LIGHT_STICKERS = new Set([COLORS.top, COLORS.bottom, COLORS.left])
 const inkOn = (color?: string) => (color && LIGHT_STICKERS.has(color) ? '#1b1f2a' : '#ffffff')
 
+// App colours for the plain stickers too: every app's colour, and each plain sticker always gets the
+// same one (picked by a fixed scramble of where it sits on its piece), so they stay put as the cube turns
+const appPalette = computed(() => props.links.flatMap(l => (l.color ? [l.gradient ?? l.color] : [])))
+function plainAppColor(cubie: Cubie, face: Face) {
+  const n = appPalette.value.length
+  if (!n) return undefined
+  const spot = cubies.indexOf(cubie) * 6 + FACES.indexOf(face)
+  // Knuth's multiplicative hash: neighbouring stickers land far apart in the palette
+  return appPalette.value[(Math.imul(spot + 1, 2654435761) >>> 0) % n]
+}
+
 function faceStyle(cubie: Cubie, face: Face) {
   const color = cubie.stickers[face]
   if (!color) return undefined
   const link = cubie.links[face]
-  // App colours: the icon sticker takes its app's colour; plain stickers keep the cube's
-  if (props.appColors && link?.color) return { '--c': link.gradient ?? link.color, '--ink': '#ffffff' }
+  if (props.appColors) {
+    // App colours: an icon sticker takes its app's colour, a plain one another app's
+    const app = link?.color ? link.gradient ?? link.color : plainAppColor(cubie, face)
+    if (app) return { '--c': app, '--ink': '#ffffff' }
+  }
   return { '--c': color, '--ink': inkOn(color) }
 }
 

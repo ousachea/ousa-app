@@ -314,13 +314,16 @@ li {
   cursor: pointer;
 }
 
-li.active {
-  background: var(--surface-2);
-}
-
+/* The list takes the app's colour: the chosen option is lightly tinted with it, and the one under the
+   pointer or keyboard a little more. Light enough that the text keeps full contrast in both themes */
 li[aria-selected='true'] {
   font-weight: 600;
   color: var(--ink);
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
+}
+
+li.active {
+  background: color-mix(in oklab, var(--accent) 18%, var(--surface));
 }
 
 .check {

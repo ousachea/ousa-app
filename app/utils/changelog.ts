@@ -30,6 +30,11 @@ const OFFLINE = 'Keeps working offline, with the last saved data; changes sync w
 // Changes to the app as a whole (search, menu, settings…), newest first; shown in Settings → About
 export const APP_RELEASES: Release[] = [
   {
+    version: '2.10.0',
+    date: '2026-11-23',
+    changes: ['The home cube is in your apps’ colours, every sticker; Settings → Cube colours brings back the classic Rubik’s ones.', 'Dropdown lists take the app’s colour: the option you’re on and the one chosen are tinted with it.']
+  },
+  {
     version: '2.9.0',
     date: '2026-11-22',
     changes: ['A new app: Audit, 90 UX, animation and craft checks, each shown as a live before and after.']

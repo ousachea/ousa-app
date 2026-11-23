@@ -56,7 +56,7 @@ const DEFAULTS: Prefs = {
   textSize: TEXT_SIZE.default,
   pinnedApps: [],
   accent: 'apps',
-  cubeColors: 'cube',
+  cubeColors: 'apps', // each sticker in its own app's colour; Settings → Cube colours brings back the classic Rubik's ones
   defaultView: 'list',
   lowSpec: false,
   condensed: false
