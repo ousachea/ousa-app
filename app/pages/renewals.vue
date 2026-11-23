@@ -371,7 +371,7 @@ function del(r: Renewal) {
         <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
         <label class="field">
           <span class="field-head">Name</span>
-          <input v-model="form.name" class="input" list="renewal-services" autocomplete="off" placeholder="Netflix, iCloud, phone plan…" required data-error="Give it a name, like Netflix">
+          <input v-model="form.name" class="input" list="renewal-services" autocomplete="off" enterkeyhint="next" placeholder="Netflix, iCloud, phone plan…" required data-error="Give it a name, like Netflix">
           <!-- Known services as suggestions while typing (#13, #54); anything else can still be typed -->
           <datalist id="renewal-services">
             <option v-for="s in SERVICES" :key="s.name" :value="s.name" />
@@ -387,7 +387,7 @@ function del(r: Renewal) {
         <div class="field">
           <span class="field-head">Price</span>
           <div class="price">
-            <input v-model.number="form.price" class="input" type="number" inputmode="decimal" min="0" step="any" aria-label="Price" required v-check="Number(form.price) > 0 ? '' : 'Enter what it costs'">
+            <GroupedNumberInput :model-value="form.price || null" class="input" placeholder="0" enterkeyhint="done" aria-label="Price" required v-check="Number(form.price) > 0 ? '' : 'Enter what it costs'" @update:model-value="form.price = $event ?? 0" />
             <div class="segmented" role="radiogroup" aria-label="Currency">
               <label v-for="c in (['USD', 'KHR'] as const)" :key="c" :class="{ active: form.currency === c }">
                 <input v-model="form.currency" type="radio" name="currency" :value="c">
@@ -471,7 +471,7 @@ function del(r: Renewal) {
               <div class="limit">
                 <span class="label">Monthly limit</span>
                 <form v-if="!limitUsd || editingLimit" class="limit-form" @submit.prevent="saveLimit">
-                  <label class="limit-input"><span aria-hidden="true">$</span><input v-model="limitDraft" class="input" inputmode="decimal" placeholder="50" aria-label="Monthly limit in US dollars" autocomplete="off"></label>
+                  <label class="limit-input"><span aria-hidden="true">$</span><input v-model="limitDraft" class="input" inputmode="decimal" placeholder="50" aria-label="Monthly limit in US dollars" autocomplete="off" enterkeyhint="done"></label>
                   <button type="submit" class="btn btn-sm">Set</button>
                   <button v-if="editingLimit" type="button" class="link" @click="editingLimit = false">Cancel</button>
                 </form>
@@ -1045,7 +1045,8 @@ function del(r: Renewal) {
 
 /* Expired: everything steps back */
 .is-expired {
-  opacity: 0.7;
+  /* Steps back by losing its colour, not by fading the text */
+  filter: grayscale(1);
 }
 
 .is-expired .when {

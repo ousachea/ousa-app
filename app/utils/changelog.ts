@@ -299,6 +299,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Log your weight and see the trend.'] }
   ],
   '/countdown': [
+    { version: '2.7.0', date: '2026-11-23', changes: ['The clock’s seconds are easier to read on the purple band.', 'The keyboard’s return key says Next or Done when you name a date.'] },
     { version: '2.6.0', date: '2026-10-19', changes: ['The featured countdown’s progress is a ring that closes as the day comes.'] },
     { version: '2.5.0', date: '2026-10-18', changes: ['Dates can repeat every week, month, 3 or 6 months, or year, so a birthday only needs adding once.', 'A 30-day timeline of your dates, renewals and public holidays.', 'Dates this week get the same Today, Tomorrow and This week badges as Renewals, and an all-day date stays up for its whole day.', 'A heads-up when something is today or tomorrow.', 'Time left reads the same everywhere in Calendar, holidays included.'] },
     { version: '2.4.0', date: '2026-10-18', changes: ['Renewals is now part of Calendar: switch between Dates and Renewals under the name. Your subscriptions and links to them are where they were.'] },
@@ -310,6 +311,7 @@ export const CHANGELOG: Record<string, Release[]> = {
     { version: '1.0.0', date: '2026-10-05', changes: ['Count down to the dates that matter.'] }
   ],
   '/renewals': [
+    { version: '2.3.0', date: '2026-11-23', changes: ['The price groups its digits as you type (12,000) and has no fiddly arrows; the return key says Next or Done.', 'Expired subscriptions lose their colour instead of fading, so they stay readable.'] },
     { version: '2.2.0', date: '2026-10-19', changes: ['Set a monthly limit to see what everything that renews costs a month against it, on a dial that turns orange near the limit and red over it.', 'Known services show their brand’s own logo, in its colours.'] },
     { version: '2.1.0', date: '2026-10-18', changes: ['The 30-day timeline shows your dates and public holidays too, each in its own colour.', 'One heads-up a day for everything in Calendar due today or tomorrow: renewals, dates and holidays.'] },
     { version: '2.0.0', date: '2026-10-08', changes: ['Each subscription shows its service’s icon automatically; pick another, a letter, or your own image link.', 'A live countdown that gets more exact as the date nears: months, then weeks, days, hours, and minutes and seconds in the last hour.', 'Status at a glance: Safe, Upcoming, Soon, Due and Expired, in words as well as colour.', 'Prices and totals in both dollars and riel, using today’s rate.', 'See what everything costs per day, week, month, quarter, half-year or year.', 'New billing options: every 6 months, and one-off dates that expire.'] },

@@ -268,7 +268,7 @@ function del(e: CountdownEvent) {
           <DraftCard v-if="draft.offered.value" :lines="draft.lines.value" @resume="draft.resume()" @discard="draft.discard()" />
           <label class="field">
             <span class="field-head">What’s happening?</span>
-            <input ref="titleInput" v-model="form.title" class="input" placeholder="Khmer New Year, trip to Siem Reap…" required data-error="Name what you’re counting down to">
+            <input ref="titleInput" v-model="form.title" class="input" enterkeyhint="next" placeholder="Khmer New Year, trip to Siem Reap…" required data-error="Name what you’re counting down to">
           </label>
           <div class="row">
             <label class="field">
@@ -451,7 +451,7 @@ function del(e: CountdownEvent) {
       <form v-validate class="edit-form" @submit.prevent="saveEdit">
         <label class="field">
           <span class="field-head">What’s happening?</span>
-          <input v-model="editForm.title" class="input" required data-error="Name what you’re counting down to">
+          <input v-model="editForm.title" class="input" enterkeyhint="done" required data-error="Name what you’re counting down to">
         </label>
         <div class="edit-row">
           <label class="field">
@@ -963,7 +963,7 @@ function del(e: CountdownEvent) {
 
 .now-time small {
   font-size: 0.55em;
-  opacity: 0.75;
+  opacity: 0.85; /* quieter than the hours, still 4.5:1 on the band */
 }
 
 .now-period {
