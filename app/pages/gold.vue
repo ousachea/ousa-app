@@ -11,6 +11,9 @@ interface Purchase {
   unit: Unit
   price: number // USD paid
   date: string // yyyy-mm-dd
+  // What it sold for (USD) and when; set means it's gone: out of the "worth now" totals, its profit counted once
+  soldPrice?: number | null
+  soldDate?: string | null
 }
 
 type Unit = 'li' | 'hun' | 'chi' | 'gram' | 'damlung' | 'troyOz' | 'kg'
@@ -31,7 +34,7 @@ const { play } = useSound()
 // Demo: a few purchases over two years, mostly in chi, bought when gold was cheaper
 const DEMO = (): Omit<Purchase, 'id'>[] => [
   { weight: 1, unit: 'chi', price: 255, date: isoDaysAgo(720) },
-  { weight: 2, unit: 'chi', price: 560, date: isoDaysAgo(500) },
+  { weight: 2, unit: 'chi', price: 560, date: isoDaysAgo(500), soldPrice: 780, soldDate: isoDaysAgo(60) },
   { weight: 5, unit: 'chi', price: 1650, date: isoDaysAgo(330) },
   { weight: 1, unit: 'damlung', price: 3900, date: isoDaysAgo(150) },
   { weight: 0.5, unit: 'chi', price: 262, date: isoDaysAgo(20) },
@@ -54,7 +57,11 @@ const WORDS = {
     step3: 'Add the gold you own', step3Hint: 'Enter what you bought and paid to see what it’s worth today.',
     boughtFor: 'You paid', gain: 'Gain', loss: 'Loss', each: 'each',
     signInTitle: 'Keep your gold safe', signInBody: 'Sign in to back up your purchases and see them on your phone and computer.',
-    showAs: 'Show as', cards: 'Cards', grid: 'Grid', list: 'List'
+    showAs: 'Show as', cards: 'Cards', grid: 'Grid', list: 'List',
+    sold: 'Sold', soldFor: 'Sold for', soldGold: 'Gold you sold', salesProfit: 'Profit from sales', salesLoss: 'Loss from sales',
+    shopPays: 'A shop would pay', buyback: 'buy-back', setBuyback: 'Set the shop’s buy-back %',
+    avgTitle: 'Your average', avgPaid: 'Average paid', today: 'Today', breakEven: 'Break-even price', perChi: 'per chi', perOzShort: '/oz',
+    aboveBE: 'above break-even', belowBE: 'below break-even'
   },
   km: {
     li: 'លី', hun: 'ហុន', chi: 'ជី', gram: 'ក្រាម', damlung: 'ដំឡឹង', troyOz: 'អោន', kg: 'គីឡូ',
@@ -66,7 +73,11 @@ const WORDS = {
     step3: 'បន្ថែមមាសដែលអ្នកមាន', step3Hint: 'បញ្ចូលអ្វីដែលអ្នកបានទិញ និងតម្លៃដែលបានបង់ ដើម្បីដឹងតម្លៃថ្ងៃនេះ។',
     boughtFor: 'អ្នកបានបង់', gain: 'ចំណេញ', loss: 'ខាត', each: 'ក្នុងមួយ',
     signInTitle: 'រក្សាទុកមាសរបស់អ្នកឱ្យមានសុវត្ថិភាព', signInBody: 'ចូលគណនី ដើម្បីបម្រុងទុកការទិញរបស់អ្នក និងមើលវានៅលើទូរស័ព្ទ និងកុំព្យូទ័ររបស់អ្នក។',
-    showAs: 'បង្ហាញជា', cards: 'កាត', grid: 'ក្រឡា', list: 'បញ្ជី'
+    showAs: 'បង្ហាញជា', cards: 'កាត', grid: 'ក្រឡា', list: 'បញ្ជី',
+    sold: 'បានលក់', soldFor: 'លក់បាន', soldGold: 'មាសដែលអ្នកបានលក់', salesProfit: 'ចំណេញពីការលក់', salesLoss: 'ខាតពីការលក់',
+    shopPays: 'ហាងនឹងទិញវិញ', buyback: 'កាត់ពេលលក់វិញ', setBuyback: 'កំណត់ % ដែលហាងកាត់ពេលទិញវិញ',
+    avgTitle: 'មធ្យមរបស់អ្នក', avgPaid: 'តម្លៃទិញជាមធ្យម', today: 'ថ្ងៃនេះ', breakEven: 'តម្លៃរួចដើម', perChi: 'ក្នុងមួយជី', perOzShort: '/អោន',
+    aboveBE: 'លើសតម្លៃរួចដើម', belowBE: 'ក្រោមតម្លៃរួចដើម'
   }
 } as const
 
@@ -79,6 +90,9 @@ const customUnit = ref<'troyOz' | 'damlung' | 'chi' | 'kg'>('chi')
 const customPrice = ref<number | null>(null)
 const apiKey = ref('')
 const autoRefresh = ref(0) // seconds, 0 = off
+// How much below the world price a shop pays when you sell back to it, in percent (0 = the full spot value)
+const buyback = ref(0)
+const settingsOpen = useAppSettingsOpen()
 const purity = ref<Purity>(1)
 const customPurity = ref(99.99)
 const range = ref<Range>('1D')
@@ -110,14 +124,19 @@ const TABS = ['price', 'gold', 'units'] as const
 type Tab = typeof TABS[number]
 const tab = useRemembered<Tab>('gold-tab', 'price', v => TABS.includes(v as Tab))
 const workspace = ref<HTMLElement>()
+// Opening a tab redraws the purchase list, which measured its cards while the tab was hidden (all at the top) and
+// animated them down from there over the summary. For the two frames a tab opens, the cards don't transition
+const tabOpening = ref(false)
 function pickTab(t: Tab) {
   const el = workspace.value
   // Scrolled down into the screen: the next one starts from its top, as does tapping the open tab
   const past = el && el.getBoundingClientRect().top < 0
   const same = t === tab.value
   if (!same) {
+    tabOpening.value = true
     tab.value = t
     play('select')
+    requestAnimationFrame(() => requestAnimationFrame(() => (tabOpening.value = false)))
   }
   if (past) nextTick(() => el.scrollIntoView({ block: 'start', behavior: same ? 'smooth' : 'instant' }))
 }
@@ -144,7 +163,10 @@ const priceOf = (unit: Unit, qty = 1) => perGram.value * UNIT_GRAMS[unit] * qty
 const online = useOnline()
 
 // `quiet`: an automatic refresh; offline it just keeps the saved price instead of complaining every time
-async function fetchQuote(quiet = false) {
+// `simulate` (development only): the refresh button moves the price up to $5 either way, since the real price
+// rarely moves between clicks, so the up/down flash can be seen. Always from the real price just fetched, so
+// clicks don't add up and drift away from it. It's never saved to the price history
+async function fetchQuote(quiet = false, simulate = false) {
   if (loading.value) return
   if (!online.value) {
     if (quote.value.price) quote.value = { ...quote.value, status: 'cached' }
@@ -152,14 +174,21 @@ async function fetchQuote(quiet = false) {
     return
   }
   loading.value = true
+  const startedAt = Date.now()
   const before = quote.value.price
   let next: Quote | undefined
-  try {
-    const r = await fetch('https://api.gold-api.com/price/XAU', { cache: 'no-store', signal: AbortSignal.timeout(8000) })
-    const d = await r.json()
-    const price = Number(d?.price)
-    if (r.ok && price >= 100 && price <= 20000) next = { price, status: 'live', provider: 'gold-api.com', at: d?.updatedAt ?? new Date().toISOString() }
-  } catch {}
+  // This site's own /api/gold first (blockers can't stop it), then gold-api.com straight from the browser
+  for (const url of ['/api/gold', 'https://api.gold-api.com/price/XAU']) {
+    try {
+      const r = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(8000) })
+      const d = await r.json()
+      const price = Number(d?.price)
+      if (r.ok && price >= 100 && price <= 20000) {
+        next = { price, status: 'live', provider: 'gold-api.com', at: d?.updatedAt ?? new Date().toISOString() }
+        break
+      }
+    } catch {}
+  }
   // A goldapi.io key, if given, is the fallback
   if (!next && apiKey.value.trim()) {
     try {
@@ -169,7 +198,12 @@ async function fetchQuote(quiet = false) {
       if (r.ok && price >= 100 && price <= 20000) next = { price, status: 'live', provider: 'goldapi.io', at: d?.timestamp ? new Date(d.timestamp * 1000).toISOString() : new Date().toISOString() }
     } catch {}
   }
+  // A refresh you asked for shows its loading state for at least half a second, so it reads as a refresh, not a flicker
+  if (!quiet) await new Promise(r => setTimeout(r, Math.max(0, 500 - (Date.now() - startedAt))))
   loading.value = false
+
+  const simulated = import.meta.dev && simulate && !!next && !!before
+  if (simulated) next = { ...next!, price: Math.round((next!.price + (Math.random() * 2 - 1) * 5) * 100) / 100 }
 
   if (next) {
     quote.value = next
@@ -177,8 +211,10 @@ async function fetchQuote(quiet = false) {
       tick.value = next.price > before ? 'up' : 'down'
       setTimeout(() => (tick.value = null), 1200)
     }
-    pushHistory(next.price)
-    saveSettings()
+    if (!simulated) {
+      pushHistory(next.price)
+      saveSettings()
+    }
   } else if (quote.value.price) {
     quote.value = { ...quote.value, status: 'cached' }
     if (!quiet) {
@@ -193,13 +229,13 @@ async function fetchQuote(quiet = false) {
 
 function refresh() {
   play('press')
-  fetchQuote()
+  fetchQuote(false, true)
 }
 // Pull down on a phone for a fresh price (CHECKLIST.md #26)
 usePullToRefresh(() => source.value === 'api' ? fetchQuote() : undefined)
 
-const STATUS_LABEL = { live: 'Live', cached: 'Saved price', custom: 'Your price', none: 'No price yet' }
-const status = computed(() => (source.value === 'custom' ? 'custom' : quote.value.status))
+const STATUS_LABEL = { live: 'Live', cached: 'Saved price', custom: 'Your price', none: 'No price yet', loading: 'Updating…' }
+const status = computed(() => (source.value === 'custom' ? 'custom' : loading.value ? 'loading' : quote.value.status))
 
 const now = ref(Date.now())
 const observed = computed(() => {
@@ -317,8 +353,12 @@ const grams = (qty: number, unit: Unit) => qty * UNIT_GRAMS[unit]
 const fmtQty = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: n < 1 ? 4 : 3 })
 
 // ---------- Ledger ----------
-const valueOf = (p: Purchase) => perGram.value * grams(p.weight, p.unit)
+const isSold = (p: Purchase) => p.soldPrice != null
+// A sold purchase is worth what it sold for, so its card and gain show the real profit or loss
+const valueOf = (p: Purchase) => p.soldPrice ?? perGram.value * grams(p.weight, p.unit)
 const gainOf = (p: Purchase) => valueOf(p) - p.price
+const owned = computed(() => purchases.value.filter(p => !isSold(p)))
+const soldOnes = computed(() => purchases.value.filter(isSold))
 // A weight of gold the way it's counted here: chi, or damlung from 10 chi up
 function asGold(g: number) {
   const chi = g / UNIT_GRAMS.chi
@@ -356,14 +396,14 @@ function onShineLeave(e: PointerEvent) {
 const gainPct = (p: Purchase) => (p.price ? (gainOf(p) / p.price) * 100 : 0)
 // What one unit cost then and costs now, so different-sized purchases compare at a glance
 const paidPerUnit = (p: Purchase) => (p.weight ? p.price / p.weight : 0)
+// Totals are the gold you still own; sales get their own line
 const totals = computed(() => {
-  const paid = purchases.value.reduce((s, p) => s + p.price, 0)
-  const worth = purchases.value.reduce((s, p) => s + valueOf(p), 0)
-  const g = purchases.value.reduce((s, p) => s + grams(p.weight, p.unit), 0)
-  // Gains and losses kept apart, so a loss on one purchase still shows when the whole lot is up
-  // Gains and losses kept apart, with how much gold sits in each
-  const up = purchases.value.filter(p => gainOf(p) > 0)
-  const down = purchases.value.filter(p => gainOf(p) < 0)
+  const paid = owned.value.reduce((s, p) => s + p.price, 0)
+  const worth = owned.value.reduce((s, p) => s + valueOf(p), 0)
+  const g = owned.value.reduce((s, p) => s + grams(p.weight, p.unit), 0)
+  // Gains and losses kept apart, with how much gold sits in each, so a loss on one purchase still shows when the whole lot is up
+  const up = owned.value.filter(p => gainOf(p) > 0)
+  const down = owned.value.filter(p => gainOf(p) < 0)
   const sum = (list: Purchase[], f: (p: Purchase) => number) => list.reduce((s, p) => s + f(p), 0)
   const weight = (p: Purchase) => grams(p.weight, p.unit)
   return {
@@ -373,21 +413,43 @@ const totals = computed(() => {
   }
 })
 
+const sales = computed(() => {
+  const got = soldOnes.value.reduce((s, p) => s + (p.soldPrice ?? 0), 0)
+  const paid = soldOnes.value.reduce((s, p) => s + p.price, 0)
+  return { got, paid, profit: got - paid, pct: paid ? (got - paid) / paid * 100 : 0 }
+})
+
+// What a shop would pay for what you own today, after its buy-back discount
+const keep = computed(() => 1 - (Number(buyback.value) || 0) / 100)
+const shopPays = computed(() => totals.value.worth * keep.value)
+
+// Average cost of the gold you own, and the world price (per troy ounce) at which selling it all to a shop
+// gets back exactly what you paid: paid = spot / TROY × purity × grams × (1 − buy-back)
+const average = computed(() => {
+  const { paid, chi, grams: g } = totals.value
+  if (!g || !paid) return null
+  const breakEven = paid / (g * purityFactor.value * keep.value) * TROY
+  return { perChi: paid / chi, breakEven, vsSpot: spot.value ? (spot.value / breakEven - 1) * 100 : 0 }
+})
+
 const sorted = computed(() => {
-  const list = [...purchases.value]
-  switch (sort.value) {
-    case 'date-asc': return list.sort((a, b) => a.date.localeCompare(b.date))
-    case 'gl-desc': return list.sort((a, b) => gainOf(b) - gainOf(a))
-    case 'gl-asc': return list.sort((a, b) => gainOf(a) - gainOf(b))
-    case 'weight-desc': return list.sort((a, b) => grams(b.weight, b.unit) - grams(a.weight, a.unit))
-    default: return list.sort((a, b) => b.date.localeCompare(a.date))
+  const order = (a: Purchase, b: Purchase) => {
+    switch (sort.value) {
+      case 'date-asc': return a.date.localeCompare(b.date)
+      case 'gl-desc': return gainOf(b) - gainOf(a)
+      case 'gl-asc': return gainOf(a) - gainOf(b)
+      case 'weight-desc': return grams(b.weight, b.unit) - grams(a.weight, a.unit)
+      default: return b.date.localeCompare(a.date)
+    }
   }
+  // Sold purchases sit after the gold you still own, whatever the sort
+  return [...purchases.value].sort((a, b) => Number(isSold(a)) - Number(isSold(b)) || order(a, b))
 })
 
 const today = () => localIsoDate()
 const formOpen = ref(false)
 const editingId = ref<string>()
-const form = reactive({ weight: null as number | null, unit: 'chi' as Unit, price: null as number | null, date: today() })
+const form = reactive({ weight: null as number | null, unit: 'chi' as Unit, price: null as number | null, date: today(), soldPrice: null as number | null, soldDate: '' })
 const canSave = computed(() => (form.weight ?? 0) > 0 && (form.price ?? 0) > 0)
 
 const draft = useDraft('gold', form, {
@@ -399,7 +461,7 @@ const draft = useDraft('gold', form, {
 useAddAction(() => openAdd())
 function openAdd() {
   editingId.value = undefined
-  Object.assign(form, { weight: null, unit: 'chi', price: null, date: today() })
+  Object.assign(form, { weight: null, unit: 'chi', price: null, date: today(), soldPrice: null, soldDate: '' })
   pasteText.value = ''
   formOpen.value = true
   if (addMode.value === 'paste') nextTick(() => pasteBox.value?.focus())
@@ -417,7 +479,7 @@ function onCardKey(e: KeyboardEvent, p: Purchase) {
 
 function openEdit(p: Purchase) {
   editingId.value = p.id
-  Object.assign(form, { weight: p.weight, unit: p.unit, price: p.price, date: p.date })
+  Object.assign(form, { weight: p.weight, unit: p.unit, price: p.price, date: p.date, soldPrice: p.soldPrice ?? null, soldDate: p.soldDate ?? '' })
   formOpen.value = true
   play('select')
 }
@@ -433,7 +495,8 @@ function flash(id: string) {
 
 function savePurchase() {
   if (!canSave.value) return
-  const entry = { weight: form.weight!, unit: form.unit, price: form.price!, date: form.date || today() }
+  const sold = typeof form.soldPrice === 'number' && form.soldPrice >= 0
+  const entry = { weight: form.weight!, unit: form.unit, price: form.price!, date: form.date || today(), soldPrice: sold ? form.soldPrice : null, soldDate: sold ? form.soldDate || today() : null }
   if (editingId.value) {
     const before = update(editingId.value, entry)
     flash(editingId.value)
@@ -534,7 +597,7 @@ async function importCSV(e: Event) {
   }
   const lines = text.trim().split(/\r?\n/).filter(l => l.trim())
   const head = (lines[0] ?? '').split(',').map(h => h.trim().toLowerCase())
-  const [wi, ui, pi, di] = ['weight', 'unit', 'paid', 'date'].map(k => head.indexOf(k))
+  const [wi, ui, pi, di, si, sdi] = ['weight', 'unit', 'paid', 'date', 'sold for', 'sold on'].map(k => head.indexOf(k))
   if (wi === -1 || pi === -1) {
     toast.error('That file has no Weight and Paid columns')
     play('error')
@@ -546,7 +609,9 @@ async function importCSV(e: Event) {
     const price = Number.parseFloat(c[pi!] ?? '')
     if (!(weight > 0) || !(price >= 0)) return []
     const unit = UNITS.includes(c[ui!] as Unit) ? c[ui!] as Unit : 'chi'
-    return [{ weight, unit, price, date: (di !== -1 && c[di!]) || today() }]
+    const soldPrice = si !== -1 && c[si!] ? Number.parseFloat(c[si!]!) : Number.NaN
+    const sold = soldPrice >= 0
+    return [{ weight, unit, price, date: (di !== -1 && c[di!]) || today(), soldPrice: sold ? soldPrice : null, soldDate: sold ? (sdi !== -1 && c[sdi!]) || today() : null }]
   })
   if (!rows.length) {
     toast.error('No purchases found in that file')
@@ -575,7 +640,7 @@ async function importCSV(e: Event) {
 }
 
 function exportCSV() {
-  const csv = ['Weight,Unit,Paid,Date', ...purchases.value.map(p => `${p.weight},${p.unit},${p.price.toFixed(2)},${p.date}`)].join('\n')
+  const csv = ['Weight,Unit,Paid,Date,Sold for,Sold on', ...purchases.value.map(p => `${p.weight},${p.unit},${p.price.toFixed(2)},${p.date},${p.soldPrice?.toFixed(2) ?? ''},${p.soldDate ?? ''}`)].join('\n')
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
   a.download = `gold-${today()}.csv`
@@ -612,11 +677,11 @@ function saveSettings() {
       lang: lang.value, showKHR: showKHR.value, khrRate: khrRate.value, source: source.value,
       customUnit: customUnit.value, customPrice: customPrice.value, apiKey: apiKey.value,
       autoRefresh: autoRefresh.value, purity: purity.value, customPurity: customPurity.value,
-      range: range.value, sort: sort.value, quote: quote.value, addMode: addMode.value
+      range: range.value, sort: sort.value, quote: quote.value, addMode: addMode.value, buyback: buyback.value
     }))
   } catch {}
 }
-watch([lang, showKHR, khrRate, source, customUnit, customPrice, apiKey, autoRefresh, purity, customPurity, range, sort, addMode], saveSettings)
+watch([lang, showKHR, khrRate, source, customUnit, customPrice, apiKey, autoRefresh, purity, customPurity, range, sort, addMode, buyback], saveSettings)
 
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 let clock: ReturnType<typeof setInterval> | undefined
@@ -644,6 +709,7 @@ onMounted(() => {
       range.value = s.range ?? '1D'
       sort.value = s.sort ?? 'date-desc'
       addMode.value = s.addMode === 'paste' ? 'paste' : 'enter'
+      buyback.value = Number(s.buyback) >= 0 && Number(s.buyback) < 100 ? Number(s.buyback) : 0
     }
   } catch {}
   if (source.value === 'api') fetchQuote(!online.value)
@@ -677,13 +743,18 @@ const PURITIES: { value: Purity, label: string }[] = [
     <template #transfer>
       <button type="button" class="btn btn-quiet btn-sm" @click="fileInput?.click()">Import CSV</button>
       <button type="button" class="btn btn-quiet btn-sm" :disabled="!purchases.length" @click="exportCSV">Export CSV</button>
-      <span>With Weight, Unit, Paid and Date columns, for spreadsheets.</span>
+      <span>With Weight, Unit, Paid, Date, Sold for and Sold on columns, for spreadsheets.</span>
       <input ref="fileInput" type="file" accept=".csv,text/csv" hidden @change="importCSV">
     </template>
     <template #settings>
       <SettingChoice v-model="autoRefresh" title="Refresh the price" :options="[{ value: 0, label: 'Off' }, { value: 30, label: 'Every 30 seconds' }, { value: 60, label: 'Every minute' }, { value: 300, label: 'Every 5 minutes' }]" />
       <SettingChoice v-model="sort" title="Sort purchases by" :options="SORTS" />
       <SettingChoice v-model="view" title="Show purchases as" :options="viewOptions" />
+      <label class="setting-field">
+        <span class="title">Shop buy-back <span class="optional">%</span></span>
+        <span class="desc">How far below the world price a shop pays when you sell your gold back. Used for “A shop would pay” and the break-even price.</span>
+        <input v-model.number="buyback" class="input" type="number" min="0" max="50" step="0.1" inputmode="decimal" placeholder="0">
+      </label>
       <label class="setting-field">
         <span class="title">Riel per dollar</span>
         <span class="desc">Used when prices show in riel.</span>
@@ -713,12 +784,12 @@ const PURITIES: { value: Purity, label: string }[] = [
     </template>
 
     <ClientOnly>
-      <div ref="workspace" class="workspace" :data-tab="tab">
+      <div ref="workspace" class="workspace" :class="{ 'tab-opening': tabOpening }" :data-tab="tab">
         <!-- ===== Market ===== -->
         <div v-sticky-fit class="market pane-price">
           <!-- The quote: one gold bar of a card -->
           <Step :n="1" :title="w.step1" :hint="w.step1Hint">
-            <section class="panel quote shine" aria-live="polite" @pointermove="onShineMove" @pointerleave="onShineLeave">
+            <section class="panel quote shine" :class="{ loading }" :aria-busy="loading" aria-live="polite" @pointermove="onShineMove" @pointerleave="onShineLeave">
               <div class="quote-top">
                 <span class="label">{{ w.spot }}</span>
                 <span class="status" :data-status="status"><i aria-hidden="true" />{{ STATUS_LABEL[status] }}</span>
@@ -854,7 +925,7 @@ const PURITIES: { value: Purity, label: string }[] = [
             <template #aside><span class="aside-tools"><BulkToggle v-if="purchases.length" :select="sel" /><DataSource :sync="sync" /></span></template>
 
             <!-- Phones only (CSS): the price your gold is valued at, with Refresh, without going back to the Price tab -->
-            <div v-if="spot" class="price-strip">
+            <div v-if="spot" class="price-strip" :class="{ loading }" :aria-busy="loading">
               <span class="ps-price">
                 <span class="ps-what">1 {{ w.chi }} · {{ purityLabel }}</span>
                 <strong>{{ money(priceOf('chi')) }}</strong>
@@ -866,7 +937,7 @@ const PURITIES: { value: Purity, label: string }[] = [
               </button>
             </div>
 
-            <div v-if="purchases.length" class="panel summary">
+            <div v-if="owned.length" class="panel summary">
               <div><span>{{ w.invested }}</span><strong>{{ money(totals.paid) }}</strong></div>
               <div><span>{{ w.worth }}</span><strong>{{ money(totals.worth) }}</strong></div>
               <div :class="totals.gain >= 0 ? 'up' : 'down'">
@@ -875,10 +946,38 @@ const PURITIES: { value: Purity, label: string }[] = [
                 <small>{{ totals.pct >= 0 ? '+' : '' }}{{ totals.pct.toFixed(1) }}%</small>
               </div>
               <div><span>{{ w.weight }}</span><strong>{{ fmtQty(totals.chi) }} {{ w.chi }}</strong><small>{{ fmtQty(totals.grams) }} g</small></div>
+              <!-- Selling back to a shop: the world price minus its buy-back discount -->
+              <div v-if="spot" class="shop-row">
+                <span>{{ w.shopPays }}</span>
+                <strong>{{ money(shopPays) }}</strong>
+                <small v-if="buyback">−{{ buyback }}% {{ w.buyback }} · <span :class="shopPays >= totals.paid ? 'up' : 'down'">{{ signed(shopPays - totals.paid) }}</span></small>
+                <button v-else type="button" class="link" @click="settingsOpen = true">{{ w.setBuyback }}</button>
+              </div>
+            </div>
+
+            <!-- What your gold cost on average, and the world price where selling it all gets your money back -->
+            <div v-if="average && spot" class="panel average">
+              <span class="avg-title">{{ w.avgTitle }}</span>
+              <dl>
+                <div><dt>{{ w.avgPaid }}</dt><dd>{{ money(average.perChi) }}<small> {{ w.perChi }}</small></dd></div>
+                <div><dt>{{ w.today }}</dt><dd>{{ money(priceOf('chi') * keep) }}<small> {{ w.perChi }}</small></dd></div>
+                <div>
+                  <dt>{{ w.breakEven }}</dt>
+                  <dd>{{ money(average.breakEven) }}<small>{{ w.perOzShort }}</small></dd>
+                  <small :class="average.vsSpot >= 0 ? 'up' : 'down'">{{ money(spot) }}{{ w.perOzShort }} · {{ average.vsSpot >= 0 ? '+' : '−' }}{{ Math.abs(average.vsSpot).toFixed(1) }}% {{ average.vsSpot >= 0 ? w.aboveBE : w.belowBE }}</small>
+                </div>
+              </dl>
+            </div>
+
+            <!-- Gold you sold: what it brought in against what it cost -->
+            <div v-if="soldOnes.length" class="panel sales" :class="sales.profit >= 0 ? 'up' : 'down'">
+              <span>{{ w.soldGold }} · {{ soldOnes.length }}</span>
+              <strong>{{ money(sales.got) }}</strong>
+              <small>{{ sales.profit >= 0 ? w.salesProfit : w.salesLoss }} <b>{{ signed(sales.profit) }}</b> ({{ sales.pct >= 0 ? '+' : '−' }}{{ Math.abs(sales.pct).toFixed(1) }}%)</small>
             </div>
 
             <!-- How much is up and how much is down, side by side on one bar -->
-            <div v-if="purchases.length && spot" class="panel pl" :aria-label="`${w.gained} ${money(totals.up)} on ${asGold(totals.upGrams)}; ${w.lost} ${money(totals.down)} on ${asGold(totals.downGrams)}`">
+            <div v-if="owned.length && spot" class="panel pl" :aria-label="`${w.gained} ${money(totals.up)} on ${asGold(totals.upGrams)}; ${w.lost} ${money(totals.down)} on ${asGold(totals.downGrams)}`">
               <div class="pl-bar" aria-hidden="true">
                 <i class="pl-up" :style="{ flexGrow: totals.up }" />
                 <i class="pl-down" :style="{ flexGrow: totals.down }" />
@@ -924,7 +1023,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                 v-for="p in sorted"
                 :key="p.id"
                 class="purchase shine bulk-row"
-                :class="[spot ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : '', { 'bulk-picked': sel.has(p.id), found: justSaved === p.id }]"
+                :class="[spot || isSold(p) ? (gainOf(p) >= 0 ? 'is-up' : 'is-down') : '', { 'bulk-picked': sel.has(p.id), found: justSaved === p.id, sold: isSold(p) }]"
                 :data-bulk="sel.selecting || undefined"
                 @click.capture="sel.onRowClick($event, p.id)"
                 tabindex="0"
@@ -938,7 +1037,7 @@ const PURITIES: { value: Purity, label: string }[] = [
                 <BulkCheck v-if="sel.selecting" :checked="sel.has(p.id)" :label="`Select ${fmtQty(p.weight)} ${w[p.unit]} bought ${formatDate(p.date)}`" @pick="sel.pick(p.id, $event)" />
                 <header class="p-head">
                   <span class="p-weight"><strong>{{ fmtQty(p.weight) }}</strong> {{ w[p.unit] }}</span>
-                  <span class="p-date">{{ formatDate(p.date) }}</span>
+                  <span class="p-date"><span v-if="isSold(p)" class="p-sold">{{ w.sold }}</span>{{ formatDate(p.date) }}</span>
                 </header>
 
                 <div class="p-compare">
@@ -950,14 +1049,15 @@ const PURITIES: { value: Purity, label: string }[] = [
                   </div>
                   <AppIcon class="p-arrow" name="arrow-right" />
                   <div class="p-col">
-                    <span class="p-label">{{ w.worth }}</span>
-                    <strong>{{ spot ? money(valueOf(p)) : '—' }}</strong>
-                    <small v-if="spot && p.weight !== 1">{{ money(priceOf(p.unit)) }} {{ w.each }} {{ w[p.unit] }}</small>
+                    <span class="p-label">{{ isSold(p) ? w.soldFor : w.worth }}</span>
+                    <strong>{{ spot || isSold(p) ? money(valueOf(p)) : '—' }}</strong>
+                    <small v-if="isSold(p)">{{ formatDate(p.soldDate!) }}</small>
+                    <small v-else-if="spot && p.weight !== 1">{{ money(priceOf(p.unit)) }} {{ w.each }} {{ w[p.unit] }}</small>
                   </div>
                 </div>
 
                 <footer class="p-foot">
-                  <span v-if="spot" class="p-result">
+                  <span v-if="spot || isSold(p)" class="p-result">
                     <span class="p-badge">
                       <AppIcon :name="gainOf(p) >= 0 ? 'arrow-up' : 'arrow-down'" />
                       {{ gainOf(p) >= 0 ? w.gain : w.loss }}
@@ -1085,8 +1185,25 @@ const PURITIES: { value: Purity, label: string }[] = [
               <DatePicker v-model="form.date" aria-label="Date" />
             </label>
           </div>
-          <p v-if="spot && form.weight" class="form-note">
-            Worth about {{ money(priceOf(form.unit, form.weight)) }} today.
+          <p v-if="spot && form.weight && typeof form.soldPrice !== 'number'" class="form-note">
+            Worth about {{ money(priceOf(form.unit, form.weight)) }} today<template v-if="buyback">; a shop would pay about {{ money(priceOf(form.unit, form.weight) * keep) }}</template>.
+          </p>
+          <!-- Selling: only for gold you've already added -->
+          <div v-if="editingId" class="form-row">
+            <label class="field">
+              <span class="field-head">{{ w.soldFor }} <span class="optional">Optional</span></span>
+              <span class="money input">
+                <span class="unit" aria-hidden="true">$</span>
+                <GroupedNumberInput v-model="form.soldPrice" min="0" enterkeyhint="done" aria-label="Sold for, in dollars" placeholder="Not sold" />
+              </span>
+            </label>
+            <label class="field">
+              <span class="field-head">Sold on</span>
+              <DatePicker v-model="form.soldDate" aria-label="Sold on" />
+            </label>
+          </div>
+          <p v-if="editingId && typeof form.soldPrice === 'number' && form.price" class="form-note">
+            {{ form.soldPrice >= form.price ? 'A profit of' : 'A loss of' }} {{ money(Math.abs(form.soldPrice - form.price)) }} on what you paid. Sold gold leaves the Worth now totals.
           </p>
           <div class="form-actions">
             <button type="submit" class="btn">{{ editingId ? 'Save changes' : 'Add purchase' }}</button>
@@ -1262,6 +1379,25 @@ const PURITIES: { value: Purity, label: string }[] = [
 .status[data-status='live'] i { background: #127a43; }
 .status[data-status='cached'] i { background: #b85a00; }
 .status[data-status='custom'] i { background: #1f5bd8; }
+.status[data-status='loading'] i { background: currentColor; animation: price-wait 0.8s var(--ease-in-out) infinite alternate; }
+
+/* Fetching a price: the numbers breathe until the new one lands */
+.loading .big,
+.loading .local strong,
+.loading .ps-price strong {
+  animation: price-wait 0.8s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes price-wait {
+  to { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading .big,
+  .loading .local strong,
+  .loading .ps-price strong,
+  .status[data-status='loading'] i { animation: none; opacity: 0.55; }
+}
 
 .big {
   margin: 0.6rem 0 0;
@@ -1566,6 +1702,120 @@ const PURITIES: { value: Purity, label: string }[] = [
 .convert-value strong {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+/* Selling back to a shop: the last row of the totals, across the full width */
+.summary .shop-row {
+  grid-column: 1 / -1;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.summary .shop-row .link {
+  align-self: start;
+  font-size: var(--text-sm);
+}
+
+.summary .shop-row small .up { color: var(--good-ink); }
+.summary .shop-row small .down { color: var(--bad-ink); }
+
+/* Your average: three figures in a row, the break-even one with how far today's price is from it */
+.average,
+.sales {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1.1rem;
+}
+
+.avg-title,
+.sales > span {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.average dl {
+  margin: 0.5rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.average dl > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.average dt {
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+}
+
+.average dd {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.average dd small {
+  margin-left: 0.2em;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.average dl > div > small {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.average .up { color: var(--good-ink); }
+.average .down { color: var(--bad-ink); }
+
+/* Gold you sold: what it brought in, and the profit or loss on it */
+.sales {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.sales strong {
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.sales small {
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.sales.up b { color: var(--good-ink); }
+.sales.down b { color: var(--bad-ink); }
+
+/* A sold purchase steps back from the gold you still own: same layout, quieter colours */
+.purchase.sold {
+  filter: saturate(0.35);
+}
+
+.p-sold {
+  margin-right: 0.45rem;
+  padding: 0.05rem 0.45rem;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+
+@media (max-width: 640px) {
+  .average dl { grid-template-columns: 1fr 1fr; }
+  .average dl > div:last-child { grid-column: 1 / -1; }
 }
 
 /* ---------- Ledger ---------- */
@@ -2125,6 +2375,10 @@ const PURITIES: { value: Purity, label: string }[] = [
   .workspace:not([data-tab='units']) .pane-units,
   .workspace[data-tab='price'] .side {
     display: none;
+  }
+
+  .workspace.tab-opening .purchases > li {
+    transition: none !important;
   }
 
   /* Each screen eases in as its tab opens (the animation restarts whenever it comes back into view) */
